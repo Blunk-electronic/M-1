@@ -1,0 +1,63 @@
+#!/usr/local/bin/kermit +
+
+#version 3.1
+
+#echo \%2
+
+define close_connection {
+	close
+	echo
+	echo "BSC not responding properly"
+	EXIT 1
+	}
+
+
+
+set exit warning on
+
+set modem type none
+set line \%2
+set speed 9600
+#set speed 19200
+#set speed 38400
+set flow rts/cts
+set carrier-watch off
+set protocol xmodem
+set duplex full
+set output pacing 15
+#set input echo on
+set input echo off
+
+
+# INIT
+	output nonsense\13
+	input 2 cmd>
+		IF FAIL close_connection
+
+#start boot loader BSC
+	output call\13
+	input 2 mem_adr:
+		IF FAIL close_connection
+	output 8000\13
+
+	input 2 {ready}
+		IF FAIL close_connection
+	input 2 cmd>
+		IF FAIL close_connection
+
+
+#send vec_file
+	output load\13
+	input 2 destination_adr:
+		IF FAIL close_connection
+	output \%3\13
+	input 2 {please send file via xmodem !}
+		IF FAIL close_connection
+	close
+	set line \%2
+	send /QUIET \%1
+
+    echo "ready"
+close
+echo
+exit

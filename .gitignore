@@ -1,0 +1,9 @@
+*~
+*.o
+*.ali
+include
+#bin
+DEADJOE
+*.vec
+*.bin
+*.lis
