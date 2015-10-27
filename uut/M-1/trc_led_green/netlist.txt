@@ -1,0 +1,6495 @@
+Section netlist
+
+
+
+
+
+
+ SubSection A_RAM19_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 147 io_p147 | 777 bc_2 output3 x 776 1 pull0 | 778 bc_2 input x
+ EndSubSection
+
+ SubSection A_RAM20_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 148 io_p148 | 780 bc_2 output3 x 779 1 pull0 | 781 bc_2 input x
+ EndSubSection
+
+ SubSection A_RAM21_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 149 io_p149 | 783 bc_2 output3 x 782 1 pull0 | 784 bc_2 input x
+ EndSubSection
+
+ SubSection A_RAM22_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 150 io_p150 | 786 bc_2 output3 x 785 1 pull0 | 787 bc_2 input x
+ EndSubSection
+
+ SubSection A_RAM23_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 152 io_p152 | 789 bc_2 output3 x 788 1 pull0 | 790 bc_2 input x
+ EndSubSection
+
+ SubSection CCLK_sub class NA
+  IC1_sub ? XCF04S SSOP20 3 clk | 0 bc_1 input x
+  IC2_sub ? XC3S400PQ208 PQ208 104 cclk_p104 | 621 bc_2 output3 x 620 1 pull1 | 622 bc_2 input x
+  JP1_sub ? conf 2X10 13
+ EndSubSection
+
+ SubSection CLK_SCAN_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 181 io_p181 | 100 bc_2 output3 x 99 1 pull0 | 101 bc_2 input x
+  OSC1_sub ? X091 X091 3
+  OSC2_sub ? X053 X053 3
+ EndSubSection
+
+ SubSection DIN_sub class NA
+  IC1_sub ? XCF04S SSOP20 1 d0 | 4 bc_1 output3 x 3 0 z
+  IC2_sub ? XC3S400PQ208 PQ208 92 io_p92 | 552 bc_2 output3 x 551 1 pull0 | 553 bc_2 input x
+  JP1_sub ? conf 2X10 11
+ EndSubSection
+
+ SubSection DONE_sub class NA
+  IC1_sub ? XCF04S SSOP20 10 ce | 15 bc_1 input x
+  IC2_sub ? XC3S400PQ208 PQ208 103 done_p103 | 618 bc_2 output3 x 617 1 pull1 | 619 bc_2 input x
+  JP1_sub ? conf 2X10 17
+  R5_sub ? 330 0207/10 1
+ EndSubSection
+
+ SubSection DOUT_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 81 io_p81 | 519 bc_2 output3 x 518 1 pull0 | 520 bc_2 input x
+  P15_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection HSWAP_EN_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 206 hswap_en_p206 | 210 bc_2 input x
+  JP1_sub ? conf 2X10 3
+ EndSubSection
+
+ SubSection INIT_B_sub class NA
+  IC1_sub ? XCF04S SSOP20 8 oe_reset | 19 bc_1 output3 x 18 0 z | 20 bc_1 input x
+  IC2_sub ? XC3S400PQ208 PQ208 83 io_p83 | 522 bc_2 output3 x 521 1 pull0 | 523 bc_2 input x
+  JP1_sub ? conf 2X10 15
+  R6_sub ? 4k7 0207/10 1
+ EndSubSection
+
+ SubSection M0_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 55 m0_p55 | 405 bc_2 input x
+  JP1_sub ? conf 2X10 5
+ EndSubSection
+
+ SubSection M1_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 54 m1_p54 | 404 bc_2 input x
+  JP1_sub ? conf 2X10 7
+ EndSubSection
+
+ SubSection M2_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 56 m2_p56 | 406 bc_2 input x
+  JP1_sub ? conf 2X10 9
+ EndSubSection
+
+ SubSection PROG_B_sub class NA
+  IC1_sub ? XCF04S SSOP20 7 cf | 22 bc_1 output3 x 21 0 z
+  IC2_sub ? XC3S400PQ208 PQ208 207 prog_b
+  JP1_sub ? conf 2X10 19
+  R4_sub ? 4k7 0207/10 1
+ EndSubSection
+
+ SubSection RSV_0_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 16 io_p16 | 258 bc_2 output3 x 257 1 pull0 | 259 bc_2 input x
+  P3_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_1_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 15 io_p15 | 255 bc_2 output3 x 254 1 pull0 | 256 bc_2 input x
+  P14_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_2_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 19 io_p19 | 264 bc_2 output3 x 263 1 pull0 | 265 bc_2 input x
+  P20_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_3_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 18 io_p18 | 261 bc_2 output3 x 260 1 pull0 | 262 bc_2 input x
+  P21_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_4_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 21 io_p21 | 270 bc_2 output3 x 269 1 pull0 | 271 bc_2 input x
+  P22_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_5_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 20 io_p20 | 267 bc_2 output3 x 266 1 pull0 | 268 bc_2 input x
+  P23_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_8_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 27 io_p27 | 306 bc_2 output3 x 305 1 pull0 | 307 bc_2 input x
+  P27_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_13_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 85 io_p85 | 525 bc_2 output3 x 524 1 pull0 | 526 bc_2 input x
+  P4_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_14_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 42 io_p42 | 363 bc_2 output3 x 362 1 pull0 | 364 bc_2 input x
+  P2_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_15_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 102 io_p102 | 615 bc_2 output3 x 614 1 pull0 | 616 bc_2 input x
+  P6_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_16_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 80 io_p80 | 516 bc_2 output3 x 515 1 pull0 | 517 bc_2 input x
+  P7_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_17_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 79 io_p79 | 513 bc_2 output3 x 512 1 pull0 | 514 bc_2 input x
+  P8_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_18_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 90 io_p90 | 549 bc_2 output3 x 548 1 pull0 | 550 bc_2 input x
+  P9_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_19_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 87 io_p87 | 531 bc_2 output3 x 530 1 pull0 | 532 bc_2 input x
+  P10_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_20_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 86 io_p86 | 528 bc_2 output3 x 527 1 pull0 | 529 bc_2 input x
+  P11_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_30_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 101 io_p101 | 612 bc_2 output3 x 611 1 pull0 | 613 bc_2 input x
+  P16_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_31_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 100 io_p100 | 609 bc_2 output3 x 608 1 pull0 | 610 bc_2 input x
+  P17_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_32_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 93 io_p93 | 555 bc_2 output3 x 554 1 pull0 | 556 bc_2 input x
+  P18_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_33_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 95 io_p95 | 561 bc_2 output3 x 560 1 pull0 | 562 bc_2 input x
+  P12_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_34_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 94 io_p94 | 558 bc_2 output3 x 557 1 pull0 | 559 bc_2 input x
+  P13_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection RSV_35_sub class NR
+  IC2_sub ? XC3S400PQ208 PQ208 97 io_p97 | 576 bc_2 output3 x 575 1 pull0 | 577 bc_2 input x
+  P19_sub ? PAD pads P$1
+ EndSubSection
+
+ SubSection !CPU_BUSACK_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 45 pb06_02 | 533 bc_1 input x | 532 bc_1 output3 x 531 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 38
+ EndSubSection
+
+ SubSection !CPU_BUSREQ_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 43 pb04_14 | 605 bc_1 input x | 604 bc_1 output3 x 603 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 36
+ EndSubSection
+
+ SubSection !CPU_HALT_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 40 pb04_11 | 614 bc_1 input x | 613 bc_1 output3 x 612 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 32
+ EndSubSection
+
+ SubSection !CPU_INT_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 44 pb04_16 | 599 bc_1 input x | 598 bc_1 output3 x 597 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 36
+ EndSubSection
+
+ SubSection !CPU_IOREQ_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 35 pb04_04 | 635 bc_1 input x | 634 bc_1 output3 x 633 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 24
+ EndSubSection
+
+ SubSection !CPU_M1_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 28 pb02_01 | 752 bc_1 input x | 751 bc_1 output3 x 750 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 20
+ EndSubSection
+
+ SubSection !CPU_MREQ_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 31 pb02_11 | 722 bc_1 input x | 721 bc_1 output3 x 720 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 22
+ EndSubSection
+
+ SubSection !CPU_NMI_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 48 pb06_11 | 506 bc_1 input x | 505 bc_1 output3 x 504 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 38
+ EndSubSection
+
+ SubSection !CPU_RD_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 33 pb02_14 | 713 bc_1 input x | 712 bc_1 output3 x 711 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 26
+ EndSubSection
+
+ SubSection !CPU_RESET_moni class DL
+  IC201_moni ? XC95288XL_TQ144 TQ144 143 pb05_14 | 551 bc_1 input x | 550 bc_1 output3 x 549 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 40
+  JP601_moni ? PIO_DBG 2X20 40
+  R323_moni ? 160 0207/10 2
+ EndSubSection
+
+ SubSection !CPU_RFSH_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 39 pb04_09 | 620 bc_1 input x | 619 bc_1 output3 x 618 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 30
+ EndSubSection
+
+ SubSection !CPU_WAIT_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 41 pb04_13 | 608 bc_1 input x | 607 bc_1 output3 x 606 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 34
+ EndSubSection
+
+ SubSection !CPU_WR_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 34 pb04_01 | 644 bc_1 input x | 643 bc_1 output3 x 642 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 28
+ EndSubSection
+
+ SubSection A0_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 19 pb01_16 | 761 bc_1 input x | 760 bc_1 output3 x 759 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 2
+ EndSubSection
+
+ SubSection A1_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 17 pb01_14 | 767 bc_1 input x | 766 bc_1 output3 x 765 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 4
+ EndSubSection
+
+ SubSection A2_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 16 pb01_13 | 770 bc_1 input x | 769 bc_1 output3 x 768 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 6
+ EndSubSection
+
+ SubSection A3_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 15 pb01_11 | 776 bc_1 input x | 775 bc_1 output3 x 774 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 8
+ EndSubSection
+
+ SubSection A4_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 14 pb01_09 | 782 bc_1 input x | 781 bc_1 output3 x 780 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 10
+ EndSubSection
+
+ SubSection A5_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 13 pb01_07 | 788 bc_1 input x | 787 bc_1 output3 x 786 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 12
+ EndSubSection
+
+ SubSection A6_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 12 pb01_05 | 794 bc_1 input x | 793 bc_1 output3 x 792 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 14
+ EndSubSection
+
+ SubSection A7_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 11 pb01_04 | 797 bc_1 input x | 796 bc_1 output3 x 795 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 16
+ EndSubSection
+
+ SubSection A8_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 10 pb01_02 | 803 bc_1 input x | 802 bc_1 output3 x 801 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 18
+ EndSubSection
+
+ SubSection A9_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 9 pb01_01 | 806 bc_1 input x | 805 bc_1 output3 x 804 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 20
+ EndSubSection
+
+ SubSection A10_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 7 pb03_13 | 662 bc_1 input x | 661 bc_1 output3 x 660 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 22
+ EndSubSection
+
+ SubSection A11_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 6 pb03_11 | 668 bc_1 input x | 667 bc_1 output3 x 666 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 24
+ EndSubSection
+
+ SubSection A12_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 5 pb03_07 | 680 bc_1 input x | 679 bc_1 output3 x 678 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 26
+ EndSubSection
+
+ SubSection A13_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 4 pb03_05 | 686 bc_1 input x | 685 bc_1 output3 x 684 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 28
+ EndSubSection
+
+ SubSection A14_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 3 pb03_04 | 689 bc_1 input x | 688 bc_1 output3 x 687 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 30
+ EndSubSection
+
+ SubSection A15_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 2 pb03_01 | 698 bc_1 input x | 697 bc_1 output3 x 696 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 32
+ EndSubSection
+
+ SubSection AC_SEL0_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 94 pb15_05 | 38 bc_1 input x | 37 bc_1 output3 x 36 0 z
+  RN502_moni ? 1k SIL8 1
+ EndSubSection
+
+ SubSection AC_SEL1_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 92 pb15_02 | 47 bc_1 input x | 46 bc_1 output3 x 45 0 z
+  RN502_moni ? 1k SIL8 3
+ EndSubSection
+
+ SubSection AC_SEL2_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 91 pb15_01 | 50 bc_1 input x | 49 bc_1 output3 x 48 0 z
+  RN502_moni ? 1k SIL8 5
+ EndSubSection
+
+ SubSection AC_SEL3_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 88 pb14_16 | 59 bc_1 input x | 58 bc_1 output3 x 57 0 z
+  RN502_moni ? 1k SIL8 7
+ EndSubSection
+
+ SubSection AC_SEL4_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 95 pb15_07 | 32 bc_1 input x | 31 bc_1 output3 x 30 0 z
+  RN504_moni ? 1k SIL8 1
+ EndSubSection
+
+ SubSection AC_SEL5_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 93 pb15_04 | 41 bc_1 input x | 40 bc_1 output3 x 39 0 z
+  RN504_moni ? 1k SIL8 3
+ EndSubSection
+
+ SubSection CLK_OSC_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 30 pb02_09 | 728 bc_1 input x | 727 bc_1 output3 x 726 0 z
+  IC601_moni ? 4093N DIL14 3
+  P606_moni ? PAD pads P$1
+ EndSubSection
+
+ SubSection CPU_CLK_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 38 pb04_07 | 626 bc_1 input x | 625 bc_1 output3 x 624 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 40
+ EndSubSection
+
+ SubSection D0_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 27 pb00_16 | 815 bc_1 input x | 814 bc_1 output3 x 813 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 2
+ EndSubSection
+
+ SubSection D1_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 26 pb00_14 | 821 bc_1 input x | 820 bc_1 output3 x 819 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 4
+ EndSubSection
+
+ SubSection D2_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 25 pb00_13 | 824 bc_1 input x | 823 bc_1 output3 x 822 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 6
+ EndSubSection
+
+ SubSection D3_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 24 pb00_11 | 830 bc_1 input x | 829 bc_1 output3 x 828 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 8
+ EndSubSection
+
+ SubSection D4_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 23 pb00_09 | 836 bc_1 input x | 835 bc_1 output3 x 834 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 10
+ EndSubSection
+
+ SubSection D5_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 22 pb00_07 | 842 bc_1 input x | 841 bc_1 output3 x 840 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 12
+ EndSubSection
+
+ SubSection D6_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 21 pb00_05 | 848 bc_1 input x | 847 bc_1 output3 x 846 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 14
+ EndSubSection
+
+ SubSection D7_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 20 pb00_04 | 851 bc_1 input x | 850 bc_1 output3 x 849 0 z
+  JP101_moni ? CPU_CTRL&DATA 2X20 16
+ EndSubSection
+
+ SubSection DEBUG0_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 79 pb14_01 | 104 bc_1 input x | 103 bc_1 output3 x 102 0 z
+  JP601_moni ? PIO_DBG 2X20 18
+  R308_moni ? 160 0207/10 2
+  RN603_moni ? 10k SIL9 2
+  S602_moni ? S4 DIP08YL 4
+ EndSubSection
+
+ SubSection DEBUG1_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 78 pb12_16 | 167 bc_1 input x | 166 bc_1 output3 x 165 0 z
+  JP601_moni ? PIO_DBG 2X20 24
+  R309_moni ? 160 0207/10 2
+  RN603_moni ? 10k SIL9 3
+  S602_moni ? S4 DIP08YL 5
+ EndSubSection
+
+ SubSection DEBUG2_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 77 pb12_14 | 173 bc_1 input x | 172 bc_1 output3 x 171 0 z
+  JP601_moni ? PIO_DBG 2X20 26
+  R310_moni ? 160 0207/10 2
+  RN603_moni ? 10k SIL9 4
+  S602_moni ? S4 DIP08YL 6
+ EndSubSection
+
+ SubSection DEBUG3_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 76 pb12_13 | 176 bc_1 input x | 175 bc_1 output3 x 174 0 z
+  JP601_moni ? PIO_DBG 2X20 28
+  R311_moni ? 160 0207/10 2
+  RN603_moni ? 10k SIL9 5
+ EndSubSection
+
+ SubSection DEBUG4_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 75 pb12_10 | 185 bc_1 input x | 184 bc_1 output3 x 183 0 z
+  JP601_moni ? PIO_DBG 2X20 30
+  R312_moni ? 160 0207/10 2
+  RN603_moni ? 10k SIL9 6
+ EndSubSection
+
+ SubSection DEBUG5_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 74 pb12_07 | 194 bc_1 input x | 193 bc_1 output3 x 192 0 z
+  JP601_moni ? PIO_DBG 2X20 36
+  R313_moni ? 160 0207/10 2
+  RN603_moni ? 10k SIL9 7
+ EndSubSection
+
+ SubSection DEBUG6_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 58 pb08_13 | 392 bc_1 input x | 391 bc_1 output3 x 390 0 z
+  R314_moni ? 160 0207/10 2
+  RN603_moni ? 10k SIL9 8
+ EndSubSection
+
+ SubSection DEBUG7_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 59 pb08_16 | 383 bc_1 input x | 382 bc_1 output3 x 381 0 z
+  R315_moni ? 160 0207/10 2
+  RN603_moni ? 10k SIL9 9
+ EndSubSection
+
+ SubSection DEBUG8_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 60 pb10_02 | 317 bc_1 input x | 316 bc_1 output3 x 315 0 z
+  R316_moni ? 160 0207/10 2
+ EndSubSection
+
+ SubSection DEBUG9_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 61 pb10_04 | 311 bc_1 input x | 310 bc_1 output3 x 309 0 z
+  R317_moni ? 160 0207/10 2
+ EndSubSection
+
+ SubSection DEBUG10_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 64 pb10_09 | 296 bc_1 input x | 295 bc_1 output3 x 294 0 z
+  R318_moni ? 160 0207/10 2
+ EndSubSection
+
+ SubSection DEBUG11_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 71 pb12_01 | 212 bc_1 input x | 211 bc_1 output3 x 210 0 z
+  R319_moni ? 160 0207/10 2
+ EndSubSection
+
+ SubSection IEI_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 46 pb06_04 | 527 bc_1 input x | 526 bc_1 output3 x 525 0 z
+  JP103_moni ? CPU_CTRL&ADDR 2X20 34
+ EndSubSection
+
+ SubSection PIO0_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 49 pb06_14 | 497 bc_1 input x | 496 bc_1 output3 x 495 0 z
+  JP601_moni ? PIO_DBG 2X20 2
+  RN602_moni ? 10k SIL9 6
+ EndSubSection
+
+ SubSection PIO1_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 50 pb08_01 | 428 bc_1 input x | 427 bc_1 output3 x 426 0 z
+  JP601_moni ? PIO_DBG 2X20 4
+  RN602_moni ? 10k SIL9 5
+ EndSubSection
+
+ SubSection PIO2_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 51 pb08_02 | 425 bc_1 input x | 424 bc_1 output3 x 423 0 z
+  JP601_moni ? PIO_DBG 2X20 6
+  RN602_moni ? 10k SIL9 2
+ EndSubSection
+
+ SubSection PIO3_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 52 pb08_04 | 419 bc_1 input x | 418 bc_1 output3 x 417 0 z
+  JP601_moni ? PIO_DBG 2X20 8
+  RN602_moni ? 10k SIL9 3
+ EndSubSection
+
+ SubSection PIO4_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 53 pb08_05 | 416 bc_1 input x | 415 bc_1 output3 x 414 0 z
+  JP601_moni ? PIO_DBG 2X20 10
+  RN602_moni ? 10k SIL9 4
+ EndSubSection
+
+ SubSection PIO5_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 54 pb08_07 | 410 bc_1 input x | 409 bc_1 output3 x 408 0 z
+  JP601_moni ? PIO_DBG 2X20 12
+  RN602_moni ? 10k SIL9 7
+ EndSubSection
+
+ SubSection PIO6_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 56 pb08_10 | 401 bc_1 input x | 400 bc_1 output3 x 399 0 z
+  JP601_moni ? PIO_DBG 2X20 14
+  RN602_moni ? 10k SIL9 8
+ EndSubSection
+
+ SubSection PIO7_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 57 pb08_11 | 398 bc_1 input x | 397 bc_1 output3 x 396 0 z
+  JP601_moni ? PIO_DBG 2X20 16
+  RN602_moni ? 10k SIL9 9
+ EndSubSection
+
+ SubSection RSV_300_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 66 pb10_10 | 293 bc_1 input x | 292 bc_1 output3 x 291 0 z
+  RN601_moni ? 10k SIL9 6
+  S602_moni ? S4 DIP08YL 7
+ EndSubSection
+
+ SubSection RSV_GCK2_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 32 pb02_13 | 716 bc_1 input x | 715 bc_1 output3 x 714 0 z
+  P1_moni ? PAD pads P$1
+  RN601_moni ? 10k SIL9 5
+  S602_moni ? S4 DIP08YL 8
+ EndSubSection
+
+ SubSection SEG0_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 87 pb14_14 | 65 bc_1 input x | 64 bc_1 output3 x 63 0 z
+  RN402_moni ? 1k SIL8 1
+ EndSubSection
+
+ SubSection SEG1_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 86 pb14_13 | 68 bc_1 input x | 67 bc_1 output3 x 66 0 z
+  RN402_moni ? 1k SIL8 3
+ EndSubSection
+
+ SubSection SEG2_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 85 pb14_11 | 74 bc_1 input x | 73 bc_1 output3 x 72 0 z
+  RN402_moni ? 1k SIL8 5
+ EndSubSection
+
+ SubSection SEG3_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 83 pb14_10 | 77 bc_1 input x | 76 bc_1 output3 x 75 0 z
+  RN402_moni ? 1k SIL8 7
+ EndSubSection
+
+ SubSection SEG4_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 82 pb14_09 | 80 bc_1 input x | 79 bc_1 output3 x 78 0 z
+  RN404_moni ? 1k SIL8 1
+ EndSubSection
+
+ SubSection SEG5_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 81 pb14_07 | 86 bc_1 input x | 85 bc_1 output3 x 84 0 z
+  RN404_moni ? 1k SIL8 3
+ EndSubSection
+
+ SubSection SEG6_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 80 pb14_02 | 101 bc_1 input x | 100 bc_1 output3 x 99 0 z
+  RN404_moni ? 1k SIL8 5
+ EndSubSection
+
+ SubSection SWITCH0_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 70 pb10_16 | 275 bc_1 input x | 274 bc_1 output3 x 273 0 z
+  RN601_moni ? 10k SIL9 2
+  S602_moni ? S4 DIP08YL 1
+  S604_moni ? S3 B3F-10XX 3
+  S604_moni ? S3 B3F-10XX 4
+ EndSubSection
+
+ SubSection SWITCH1_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 69 pb10_13 | 284 bc_1 input x | 283 bc_1 output3 x 282 0 z
+  RN601_moni ? 10k SIL9 3
+  S602_moni ? S4 DIP08YL 2
+  S603_moni ? S2 B3F-10XX 3
+  S603_moni ? S2 B3F-10XX 4
+ EndSubSection
+
+ SubSection SWITCH2_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 68 pb10_11 | 290 bc_1 input x | 289 bc_1 output3 x 288 0 z
+  RN601_moni ? 10k SIL9 4
+  S601_moni ? S1 B3F-10XX 3
+  S601_moni ? S1 B3F-10XX 4
+  S602_moni ? S4 DIP08YL 3
+ EndSubSection
+
+ SubSection !I2C_SEL_0_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 3 io_12 | 623 bc_1 input x | 622 bc_1 output3 x 621 0 z
+  IC300_trc ? ULN2003AD SO16 2
+ EndSubSection
+
+ SubSection !I2C_SEL_1_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 4 io_13 | 620 bc_1 input x | 619 bc_1 output3 x 618 0 z
+  IC300_trc ? ULN2003AD SO16 3
+ EndSubSection
+
+ SubSection !I2C_SEL_2_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 5 io_14 | 617 bc_1 input x | 616 bc_1 output3 x 615 0 z
+  IC300_trc ? ULN2003AD SO16 4
+ EndSubSection
+
+ SubSection !TRST1_DRV_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 106 io_133 | 260 bc_1 input x | 259 bc_1 output3 x 258 0 z
+  K103_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+ EndSubSection
+
+ SubSection !TRST2_DRV_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 86 io_223 | 110 bc_1 input x | 109 bc_1 output3 x 108 0 z
+  K203_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+ EndSubSection
+
+ SubSection AIO1_REL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 48 io_97 | 398 bc_1 input x | 397 bc_1 output3 x 396 0 z
+  IC200_trc ? ULN2003AD SO16 4
+  R200_trc ? 8x1k SIL9 6
+ EndSubSection
+
+ SubSection AIO2_REL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 46 io_93 | 410 bc_1 input x | 409 bc_1 output3 x 408 0 z
+  IC201_trc ? ULN2003AD SO16 4
+  R201_trc ? 8x1k SIL9 6
+ EndSubSection
+
+ SubSection DBG0_trc class NR
+  D40_trc ? green LED3MM K
+  IC1_trc ? XC2C384_TQ144 TQ144 42 io_78 | 425 bc_1 input x | 424 bc_1 output3 x 423 0 z
+ EndSubSection
+
+ SubSection DBG1_trc class NA
+  D41_trc ? yellow LED3MM K
+  IC1_trc ? XC2C384_TQ144 TQ144 41 io_77 | 428 bc_1 input x | 427 bc_1 output3 x 426 0 z
+ EndSubSection
+
+ SubSection DBG2_trc class NA
+  D42_trc ? red LED3MM K
+  IC1_trc ? XC2C384_TQ144 TQ144 40 io_76 | 431 bc_1 input x | 430 bc_1 output3 x 429 0 z
+ EndSubSection
+
+ SubSection DBG3_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 39 io_74 | 437 bc_1 input x | 436 bc_1 output3 x 435 0 z
+  P5_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection DBG4_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 38 io_71 | 446 bc_1 input x | 445 bc_1 output3 x 444 0 z
+  P4_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection DBG5_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 34 io_63 | 530 bc_1 input x | 529 bc_1 output3 x 528 0 z
+  P7_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection DBG6_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 33 io_64 | 527 bc_1 input x | 526 bc_1 output3 x 525 0 z
+  P6_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection DBG7_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 143 io_2 | 713 bc_1 input x | 712 bc_1 output3 x 711 0 z
+  P8_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection DIO1_REL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 50 io_99 | 392 bc_1 input x | 391 bc_1 output3 x 390 0 z
+  IC200_trc ? ULN2003AD SO16 3
+  R200_trc ? 8x1k SIL9 7
+ EndSubSection
+
+ SubSection DIO2_REL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 49 io_98 | 395 bc_1 input x | 394 bc_1 output3 x 393 0 z
+  IC201_trc ? ULN2003AD SO16 3
+  R201_trc ? 8x1k SIL9 7
+ EndSubSection
+
+ SubSection DIO11_DRV_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 102 io_152 | 233 bc_1 input x | 232 bc_1 output3 x 231 0 z
+  K104_trc ? DIP05-2A72-21D DIPXX-2A72-21X 14
+  K107_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+ EndSubSection
+
+ SubSection DIO12_DRV_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 105 io_134 | 257 bc_1 input x | 256 bc_1 output3 x 255 0 z
+  K104_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+  K107_trc ? DIP05-2A72-21D DIPXX-2A72-21X 14
+ EndSubSection
+
+ SubSection DIO21_DRV_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 87 io_224 | 107 bc_1 input x | 106 bc_1 output3 x 105 0 z
+  K204_trc ? DIP05-2A72-21D DIPXX-2A72-21X 14
+  K207_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+ EndSubSection
+
+ SubSection DIO22_DRV_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 85 io_222 | 113 bc_1 input x | 112 bc_1 output3 x 111 0 z
+  K204_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+  K207_trc ? DIP05-2A72-21D DIPXX-2A72-21X 14
+ EndSubSection
+
+ SubSection GND1_REL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 53 io_112 | 383 bc_1 input x | 382 bc_1 output3 x 381 0 z
+  IC200_trc ? ULN2003AD SO16 1
+  R200_trc ? 8x1k SIL9 9
+ EndSubSection
+
+ SubSection GND2_REL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 54 io_114 | 377 bc_1 input x | 376 bc_1 output3 x 375 0 z
+  IC201_trc ? ULN2003AD SO16 1
+  R201_trc ? 8x1k SIL9 9
+ EndSubSection
+
+ SubSection I2C_EN_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 2 io_10 | 629 bc_1 input x | 628 bc_1 output3 x 627 0 z
+  IC300_trc ? ULN2003AD SO16 1
+  R300_trc ? 1k 0207/10 1
+ EndSubSection
+
+ SubSection OSC_OUT_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 28 io_81 | 506 bc_1 input x | 505 bc_1 output3 x 504 0 z
+  P3_trc ? PAD 11-07-12 P$1
+  R10_trc ? 10k 0207/10 1
+ EndSubSection
+
+ SubSection OSC_RC_trc class NA
+  C10_trc ? 4n7 C050-025X075 1
+  IC1_trc ? XC2C384_TQ144 TQ144 30 io_68 | 515 bc_1 input x | 514 bc_1 output3 x 513 0 z
+  P1_trc ? PAD 11-07-12 P$1
+  R10_trc ? 10k 0207/10 2
+ EndSubSection
+
+ SubSection RSV1_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 142 io_3 | 710 bc_1 input x | 709 bc_1 output3 x 708 0 z
+  P9_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV2_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 118 io_146 | 311 bc_1 input x | 310 bc_1 output3 x 309 0 z
+  P10_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV3_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 117 io_144 | 317 bc_1 input x | 316 bc_1 output3 x 315 0 z
+  P11_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV4_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 116 io_141 | 326 bc_1 input x | 325 bc_1 output3 x 324 0 z
+  P12_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV5_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 115 io_126 | 341 bc_1 input x | 340 bc_1 output3 x 339 0 z
+  P13_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV6_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 114 io_125 | 344 bc_1 input x | 343 bc_1 output3 x 342 0 z
+  P14_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV7_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 113 io_123 | 350 bc_1 input x | 349 bc_1 output3 x 348 0 z
+  P15_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV8_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 132 io_42 | 653 bc_1 input x | 652 bc_1 output3 x 651 0 z
+  P17_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV9_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 133 io_41 | 656 bc_1 input x | 655 bc_1 output3 x 654 0 z
+  P16_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV10_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 110 io_131 | 266 bc_1 input x | 265 bc_1 output3 x 264 0 z
+  P18_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV11_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 82 io_205 | 134 bc_1 input x | 133 bc_1 output3 x 132 0 z
+  P19_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV12_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 81 io_202 | 143 bc_1 input x | 142 bc_1 output3 x 141 0 z
+  P20_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV13_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 80 io_200 | 149 bc_1 input x | 148 bc_1 output3 x 147 0 z
+  P21_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV15_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 78 io_186 | 161 bc_1 input x | 160 bc_1 output3 x 159 0 z
+  P23_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV16_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 77 io_185 | 164 bc_1 input x | 163 bc_1 output3 x 162 0 z
+  P24_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV17_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 131 io_46 | 641 bc_1 input x | 640 bc_1 output3 x 639 0 z
+  P22_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV18_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 75 io_183 | 170 bc_1 input x | 169 bc_1 output3 x 168 0 z
+  P26_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV19_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 74 io_182 | 173 bc_1 input x | 172 bc_1 output3 x 171 0 z
+  P27_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV20_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 134 io_29 | 662 bc_1 input x | 661 bc_1 output3 x 660 0 z
+  P25_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV22_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 100 io_159 | 212 bc_1 input x | 211 bc_1 output3 x 210 0 z
+  P29_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV23_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 98 io_172 | 203 bc_1 input x | 202 bc_1 output3 x 201 0 z
+  P32_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV24_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 97 io_173 | 200 bc_1 input x | 199 bc_1 output3 x 198 0 z
+  P28_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV30_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 56 io_237 | 8 bc_1 input x | 7 bc_1 output3 x 6 0 z
+  P30_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV31_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 57 io_235 | 14 bc_1 input x | 13 bc_1 output3 x 12 0 z
+  P31_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV32_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 58 io_231 | 26 bc_1 input x | 25 bc_1 output3 x 24 0 z
+  P33_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV33_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 59 io_217 | 38 bc_1 input x | 37 bc_1 output3 x 36 0 z
+  P34_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV34_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 68 io_193 | 80 bc_1 input x | 79 bc_1 output3 x 78 0 z
+  P35_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV35_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 69 io_192 | 83 bc_1 input x | 82 bc_1 output3 x 81 0 z
+  P36_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection SCL_PF_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 7 io_19 | 602 bc_1 input x | 601 bc_1 output3 x 600 0 z
+  JP2_trc ? LED_PANEL_FRONT 2X05 5
+  R403_trc ? 8x10k SIL9 2
+ EndSubSection
+
+ SubSection SDA_PF_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 6 io_18 | 605 bc_1 input x | 604 bc_1 output3 x 603 0 z
+  JP2_trc ? LED_PANEL_FRONT 2X05 7
+  R403_trc ? 8x10k SIL9 3
+ EndSubSection
+
+ SubSection TAP1_REL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 51 io_110 | 389 bc_1 input x | 388 bc_1 output3 x 387 0 z
+  IC200_trc ? ULN2003AD SO16 2
+  R200_trc ? 8x1k SIL9 8
+ EndSubSection
+
+ SubSection TAP2_REL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 52 io_111 | 386 bc_1 input x | 385 bc_1 output3 x 384 0 z
+  IC201_trc ? ULN2003AD SO16 2
+  R201_trc ? 8x1k SIL9 8
+ EndSubSection
+
+ SubSection TCK1_DRV_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 104 io_136 | 251 bc_1 input x | 250 bc_1 output3 x 249 0 z
+  K101_trc ? DIP05-2A72-21D DIPXX-2A72-21X 14
+ EndSubSection
+
+ SubSection TCK2_DRV_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 92 io_227 | 98 bc_1 input x | 97 bc_1 output3 x 96 0 z
+  K201_trc ? DIP05-2A72-21D DIPXX-2A72-21X 14
+ EndSubSection
+
+ SubSection TDI1_COMP_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 137 io_23 | 680 bc_1 input x | 679 bc_1 output3 x 678 0 z
+  IC101_trc ? MAX962 SO08 7
+  P101_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection TDI2_COMP_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 138 io_22 | 683 bc_1 input x | 682 bc_1 output3 x 681 0 z
+  IC101_trc ? MAX962 SO08 6
+  P111_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection TDO1_DRV_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 107 io_132 | 263 bc_1 input x | 262 bc_1 output3 x 261 0 z
+  K102_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+ EndSubSection
+
+ SubSection TDO2_DRV_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 88 io_225 | 104 bc_1 input x | 103 bc_1 output3 x 102 0 z
+  K202_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+ EndSubSection
+
+ SubSection TMS1_DRV_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 103 io_150 | 239 bc_1 input x | 238 bc_1 output3 x 237 0 z
+  K101_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+ EndSubSection
+
+ SubSection TMS2_DRV_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 91 io_226 | 101 bc_1 input x | 100 bc_1 output3 x 99 0 z
+  K201_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+ EndSubSection
+
+ SubSection TRM_DIO1_REL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 43 io_79 | 422 bc_1 input x | 421 bc_1 output3 x 420 0 z
+  IC200_trc ? ULN2003AD SO16 6
+  R200_trc ? 8x1k SIL9 4
+ EndSubSection
+
+ SubSection TRM_DIO2_REL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 44 io_90 | 419 bc_1 input x | 418 bc_1 output3 x 417 0 z
+  IC201_trc ? ULN2003AD SO16 5
+  R201_trc ? 8x1k SIL9 5
+ EndSubSection
+
+ SubSection TRM_TDI_REL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 45 io_91 | 416 bc_1 input x | 415 bc_1 output3 x 414 0 z
+  IC200_trc ? ULN2003AD SO16 5
+  R200_trc ? 8x1k SIL9 5
+ EndSubSection
+
+ SubSection !OVERLOAD_1_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 120 io_149 | 302 bc_1 input x | 301 bc_1 output3 x 300 0 z
+  IC701_pwr ? LM311D SO08 7
+  P707_pwr ? PAD 11-07-12 P$1
+  R710_pwr ? 8x1k8 SIL9 2
+ EndSubSection
+
+ SubSection !OVERLOAD_2_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 119 io_148 | 305 bc_1 input x | 304 bc_1 output3 x 303 0 z
+  IC800_pwr ? LM311D SO08 7
+  P807_pwr ? PAD 11-07-12 P$1
+  R710_pwr ? 8x1k8 SIL9 3
+ EndSubSection
+
+ SubSection !OVERLOAD_3_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 118 io_146 | 311 bc_1 input x | 310 bc_1 output3 x 309 0 z
+  IC900_pwr ? LM311D SO08 7
+  P907_pwr ? PAD 11-07-12 P$1
+  R710_pwr ? 8x1k8 SIL9 4
+ EndSubSection
+
+ SubSection DBG0_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 74 io_182 | 173 bc_1 input x | 172 bc_1 output3 x 171 0 z
+  P36_pwr ? PAD 11-07-12 P$1
+  R13_pwr ? 8x1k8 SIL9 2
+  R9_pwr ? 160 0207/10 1
+ EndSubSection
+
+ SubSection DBG1_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 75 io_183 | 170 bc_1 input x | 169 bc_1 output3 x 168 0 z
+  P115_pwr ? PAD 11-07-12 P$1
+  R11_pwr ? 160 0207/10 1
+  R13_pwr ? 8x1k8 SIL9 3
+ EndSubSection
+
+ SubSection DBG2_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 76 io_184 | 167 bc_1 input x | 166 bc_1 output3 x 165 0 z
+  P116_pwr ? PAD 11-07-12 P$1
+  R12_pwr ? 160 0207/10 1
+  R13_pwr ? 8x1k8 SIL9 4
+ EndSubSection
+
+ SubSection DBG3_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 77 io_185 | 164 bc_1 input x | 163 bc_1 output3 x 162 0 z
+  P117_pwr ? PAD 11-07-12 P$1
+  R13_pwr ? 8x1k8 SIL9 5
+ EndSubSection
+
+ SubSection DBG4_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 78 io_186 | 161 bc_1 input x | 160 bc_1 output3 x 159 0 z
+  P118_pwr ? PAD 11-07-12 P$1
+  R13_pwr ? 8x1k8 SIL9 6
+ EndSubSection
+
+ SubSection DBG5_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 79 io_187 | 158 bc_1 input x | 157 bc_1 output3 x 156 0 z
+  P119_pwr ? PAD 11-07-12 P$1
+  R13_pwr ? 8x1k8 SIL9 7
+ EndSubSection
+
+ SubSection DBG6_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 80 io_200 | 149 bc_1 input x | 148 bc_1 output3 x 147 0 z
+  P120_pwr ? PAD 11-07-12 P$1
+  R13_pwr ? 8x1k8 SIL9 8
+ EndSubSection
+
+ SubSection DBG7_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 81 io_202 | 143 bc_1 input x | 142 bc_1 output3 x 141 0 z
+  P121_pwr ? PAD 11-07-12 P$1
+  R13_pwr ? 8x1k8 SIL9 9
+ EndSubSection
+
+ SubSection GCK1_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 32 io_65 | 524 bc_1 input x | 523 bc_1 output3 x 522 0 z
+  P102_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection GCK2_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 38 io_71 | 446 bc_1 input x | 445 bc_1 output3 x 444 0 z
+  P101_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection GSR_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 143 io_2 | 713 bc_1 input x | 712 bc_1 output3 x 711 0 z
+  P105_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection GTS0_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 5 io_14 | 617 bc_1 input x | 616 bc_1 output3 x 615 0 z
+  P103_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection GTS1_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 6 io_18 | 605 bc_1 input x | 604 bc_1 output3 x 603 0 z
+  P104_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection LED_P1_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 1
+  IC5_pwr ? XC2C384_TQ144 TQ144 107 io_132 | 263 bc_1 input x | 262 bc_1 output3 x 261 0 z
+  R401_pwr ? 8x1k8 SIL9 9
+ EndSubSection
+
+ SubSection LED_P2_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 2
+  IC5_pwr ? XC2C384_TQ144 TQ144 106 io_133 | 260 bc_1 input x | 259 bc_1 output3 x 258 0 z
+  R401_pwr ? 8x1k8 SIL9 8
+ EndSubSection
+
+ SubSection LED_P3_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 3
+  IC5_pwr ? XC2C384_TQ144 TQ144 105 io_134 | 257 bc_1 input x | 256 bc_1 output3 x 255 0 z
+  R401_pwr ? 8x1k8 SIL9 7
+ EndSubSection
+
+ SubSection LED_PGND_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 4
+  IC5_pwr ? XC2C384_TQ144 TQ144 104 io_136 | 251 bc_1 input x | 250 bc_1 output3 x 249 0 z
+  R401_pwr ? 8x1k8 SIL9 6
+ EndSubSection
+
+ SubSection OSC_OUT_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 28 io_81 | 506 bc_1 input x | 505 bc_1 output3 x 504 0 z
+  P3_pwr ? PAD 11-07-12 P$1
+  R10_pwr ? 10k 0207/10 1
+ EndSubSection
+
+ SubSection OSC_RC_pwr class NA
+  C10_pwr ? 4n7 C050-025X075 1
+  IC5_pwr ? XC2C384_TQ144 TQ144 30 io_68 | 515 bc_1 input x | 514 bc_1 output3 x 513 0 z
+  P1_pwr ? PAD 11-07-12 P$1
+  R10_pwr ? 10k 0207/10 2
+ EndSubSection
+
+ SubSection PWR_1_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 1
+  IC5_pwr ? XC2C384_TQ144 TQ144 71 io_190 | 89 bc_1 input x | 88 bc_1 output3 x 87 0 z
+  R400_pwr ? 8x1k8 SIL9 2
+ EndSubSection
+
+ SubSection PWR_2_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 2
+  IC5_pwr ? XC2C384_TQ144 TQ144 70 io_191 | 86 bc_1 input x | 85 bc_1 output3 x 84 0 z
+  R400_pwr ? 8x1k8 SIL9 3
+ EndSubSection
+
+ SubSection PWR_3_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 3
+  IC5_pwr ? XC2C384_TQ144 TQ144 69 io_192 | 83 bc_1 input x | 82 bc_1 output3 x 81 0 z
+  R400_pwr ? 8x1k8 SIL9 4
+ EndSubSection
+
+ SubSection PWR_GND_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 4
+  IC5_pwr ? XC2C384_TQ144 TQ144 68 io_193 | 80 bc_1 input x | 79 bc_1 output3 x 78 0 z
+  R400_pwr ? 8x1k8 SIL9 5
+ EndSubSection
+
+ SubSection RSV0_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 142 io_3 | 710 bc_1 input x | 709 bc_1 output3 x 708 0 z
+  P9_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV1_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 133 io_41 | 656 bc_1 input x | 655 bc_1 output3 x 654 0 z
+  P2_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV2_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 139 io_6 | 701 bc_1 input x | 700 bc_1 output3 x 699 0 z
+  P6_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV3_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 138 io_22 | 683 bc_1 input x | 682 bc_1 output3 x 681 0 z
+  P7_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV4_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 137 io_23 | 680 bc_1 input x | 679 bc_1 output3 x 678 0 z
+  P8_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV5_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 136 io_24 | 677 bc_1 input x | 676 bc_1 output3 x 675 0 z
+  P10_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV6_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 135 io_25 | 674 bc_1 input x | 673 bc_1 output3 x 672 0 z
+  P11_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV7_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 134 io_29 | 662 bc_1 input x | 661 bc_1 output3 x 660 0 z
+  P12_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV8_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 40 io_76 | 431 bc_1 input x | 430 bc_1 output3 x 429 0 z
+  P94_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV9_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 41 io_77 | 428 bc_1 input x | 427 bc_1 output3 x 426 0 z
+  P100_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV10_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 42 io_78 | 425 bc_1 input x | 424 bc_1 output3 x 423 0 z
+  P99_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV11_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 43 io_79 | 422 bc_1 input x | 421 bc_1 output3 x 420 0 z
+  P98_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV12_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 44 io_90 | 419 bc_1 input x | 418 bc_1 output3 x 417 0 z
+  P97_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV13_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 45 io_91 | 416 bc_1 input x | 415 bc_1 output3 x 414 0 z
+  P96_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection RSV14_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 46 io_93 | 410 bc_1 input x | 409 bc_1 output3 x 408 0 z
+  P95_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection !EX_BUSAK_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 98 pb15_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 38
+ EndSubSection
+
+ SubSection secondary_nets_of !EX_BUSAK_moni
+
+   SubSection !CPU_BUSAK class NA
+     JP100 ? EXT_CTRL&DATA 2X20 38 
+     PLD_1 ? 2X20 pinhead 22 
+   EndSubSection
+
+   SubSection !CPU_BUSAK_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 184 io_p184 | 109 bc_2 output3 x 108 1 pull0 | 110 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 22
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EX_BUSAK_moni
+
+
+
+ SubSection !EX_BUSREQ_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 100 pb13_02 | 155 bc_1 input x | 154 bc_1 output3 x 153 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 36
+ EndSubSection
+
+ SubSection secondary_nets_of !EX_BUSREQ_moni
+
+   SubSection !CPU_BUSREQ class NA
+     JP100 ? EXT_CTRL&DATA 2X20 36 
+     PLD_1 ? 2X20 pinhead 20 
+   EndSubSection
+
+   SubSection !CPU_BUSREQ_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 183 io_p183 | 106 bc_2 output3 x 105 1 pull0 | 107 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 20
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EX_BUSREQ_moni
+
+
+
+ SubSection !EX_HALT_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 102 pb13_05 | 146 bc_1 input x | 145 bc_1 output3 x 144 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 32
+ EndSubSection
+
+ SubSection secondary_nets_of !EX_HALT_moni
+
+   SubSection !CPU_HALT class NA
+     JP100 ? EXT_CTRL&DATA 2X20 32 
+     PLD_1 ? 2X20 pinhead 26 
+   EndSubSection
+
+   SubSection !CPU_HALT_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 187 io_p187 | 115 bc_2 output3 x 114 1 pull0 | 116 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 26
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EX_HALT_moni
+
+
+
+ SubSection !EX_INT_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 112 pb11_04 | 257 bc_1 input x | 256 bc_1 output3 x 255 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 36
+ EndSubSection
+
+ SubSection secondary_nets_of !EX_INT_moni
+
+   SubSection !CPU_INT class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 36 
+     PLD_1 ? 2X20 pinhead 32 
+   EndSubSection
+
+   SubSection !CPU_INT_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 191 io_p191 | 124 bc_2 output3 x 123 1 pull0 | 125 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 32
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EX_INT_moni
+
+
+
+ SubSection !EX_IOREQ_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 106 pb13_13 | 122 bc_1 input x | 121 bc_1 output3 x 120 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 24
+ EndSubSection
+
+ SubSection secondary_nets_of !EX_IOREQ_moni
+
+   SubSection !CPU_IOREQ class NA
+     JP100 ? EXT_CTRL&DATA 2X20 24 
+     PLD_1 ? 2X20 pinhead 38 
+   EndSubSection
+
+   SubSection !CPU_IOREQ_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 176 io_p176 | 91 bc_2 output3 x 90 1 pull0 | 92 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 38
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EX_IOREQ_moni
+
+
+
+ SubSection !EX_M1_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 96 pb15_09 | 26 bc_1 input x | 25 bc_1 output3 x 24 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 20
+ EndSubSection
+
+ SubSection secondary_nets_of !EX_M1_moni
+
+   SubSection !CPU_M1 class NA
+     JP100 ? EXT_CTRL&DATA 2X20 20 
+     PLD_1 ? 2X20 pinhead 24 
+   EndSubSection
+
+   SubSection !CPU_M1_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 185 io_p185 | 112 bc_2 output3 x 111 1 pull0 | 113 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 24
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EX_M1_moni
+
+
+
+ SubSection !EX_MREQ_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 107 pb13_14 | 119 bc_1 input x | 118 bc_1 output3 x 117 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 22
+ EndSubSection
+
+ SubSection secondary_nets_of !EX_MREQ_moni
+
+   SubSection !CPU_MREQ class NA
+     JP100 ? EXT_CTRL&DATA 2X20 22 
+     PLD_1 ? 2X20 pinhead 37 
+   EndSubSection
+
+   SubSection !CPU_MREQ_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 178 io_p178 | 94 bc_2 output3 x 93 1 pull0 | 95 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 37
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EX_MREQ_moni
+
+
+
+ SubSection !EX_NMI_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 111 pb11_02 | 263 bc_1 input x | 262 bc_1 output3 x 261 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 38
+ EndSubSection
+
+ SubSection secondary_nets_of !EX_NMI_moni
+
+   SubSection !CPU_NMI class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 38 
+     PLD_1 ? 2X20 pinhead 34 
+   EndSubSection
+
+   SubSection !CPU_NMI_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 194 io_p194 | 142 bc_2 output3 x 141 1 pull0 | 143 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 34
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EX_NMI_moni
+
+
+
+ SubSection !EX_RD_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 105 pb13_10 | 131 bc_1 input x | 130 bc_1 output3 x 129 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 26
+ EndSubSection
+
+ SubSection secondary_nets_of !EX_RD_moni
+
+   SubSection !CPU_RD class NA
+     JP100 ? EXT_CTRL&DATA 2X20 26 
+     PLD_1 ? 2X20 pinhead 40 
+   EndSubSection
+
+   SubSection !CPU_RD_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 172 io_p172 | 70 bc_2 output3 x 69 1 pull0 | 71 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 40
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EX_RD_moni
+
+
+
+ SubSection !EX_RFSH_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 103 pb13_07 | 140 bc_1 input x | 139 bc_1 output3 x 138 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 30
+ EndSubSection
+
+ SubSection secondary_nets_of !EX_RFSH_moni
+
+   SubSection !CPU_RFSH class NA
+     JP100 ? EXT_CTRL&DATA 2X20 30 
+     PLD_1 ? 2X20 pinhead 30 
+   EndSubSection
+
+   SubSection !CPU_RFSH_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 190 io_p190 | 121 bc_2 output3 x 120 1 pull0 | 122 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 30
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EX_RFSH_moni
+
+
+
+ SubSection !EX_WAIT_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 101 pb13_04 | 149 bc_1 input x | 148 bc_1 output3 x 147 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 34
+ EndSubSection
+
+ SubSection secondary_nets_of !EX_WAIT_moni
+
+   SubSection !CPU_WAIT class NA
+     JP100 ? EXT_CTRL&DATA 2X20 34 
+     PLD_1 ? 2X20 pinhead 28 
+   EndSubSection
+
+   SubSection !CPU_WAIT_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 189 io_p189 | 118 bc_2 output3 x 117 1 pull0 | 119 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 28
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EX_WAIT_moni
+
+
+
+ SubSection !EX_WR_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 104 pb13_09 | 134 bc_1 input x | 133 bc_1 output3 x 132 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 28
+ EndSubSection
+
+ SubSection secondary_nets_of !EX_WR_moni
+
+   SubSection !CPU_WR class NA
+     JP100 ? EXT_CTRL&DATA 2X20 28 
+     PLD_1 ? 2X20 pinhead 39 
+   EndSubSection
+
+   SubSection !CPU_WR_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 175 io_p175 | 88 bc_2 output3 x 87 1 pull0 | 89 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 39
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EX_WR_moni
+
+
+
+ SubSection !CS_RAM_IN_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 117 io_p117 | 663 bc_2 output3 x 662 1 pull0 | 664 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 33
+ EndSubSection
+
+ SubSection secondary_nets_of !CS_RAM_IN_sub
+
+   SubSection !CS_RAM_IN class NA
+     IC600 ? BS62LV4006 DIL32 22 
+     JP2 ? DBG 2X20 30 
+     PLD_3 ? 2X20 pinhead 33 
+   EndSubSection
+
+ EndSubSection secondary_nets_of !CS_RAM_IN_sub
+
+
+
+ SubSection !CS_RAM_OUT_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 116 io_p116 | 660 bc_2 output3 x 659 1 pull0 | 661 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 34
+ EndSubSection
+
+ SubSection secondary_nets_of !CS_RAM_OUT_sub
+
+   SubSection !CS_RAM_OUT class NA
+     IC601 ? BS62LV4006 DIL32 22 
+     JP2 ? DBG 2X20 32 
+     PLD_3 ? 2X20 pinhead 34 
+   EndSubSection
+
+ EndSubSection secondary_nets_of !CS_RAM_OUT_sub
+
+
+
+ SubSection !EMRGCY_PWR_OFF_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 21 io_103 | 470 bc_1 input x | 469 bc_1 output3 x 468 0 z
+  JP1_pwr ? PWR_CTRL_AIO 2X20 8
+  P14_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection secondary_nets_of !EMRGCY_PWR_OFF_pwr
+
+   SubSection !EMRGCY_PWR_OFF class NA
+     JP200 ? Tranceiver 2X20 34 
+     PLD_2 ? 2X25 pinhead 26 
+   EndSubSection
+
+   SubSection !EMRGCY_PWR_OFF_trc class NA
+     JP1_trc ? PWR_CTRL_AIO 2X20 8
+     JP3_trc ? VEC_EX 2X20 34
+   EndSubSection
+
+   SubSection !EMRGCY_PWR_OFF_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 31 io_p31 | 315 bc_2 output3 x 314 1 pull0 | 316 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 26
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EMRGCY_PWR_OFF_pwr
+
+
+
+ SubSection !OE_RAM_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 120 io_p120 | 669 bc_2 output3 x 668 1 pull0 | 670 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 32
+ EndSubSection
+
+ SubSection secondary_nets_of !OE_RAM_sub
+
+   SubSection !OE_RAM class NA
+     IC600 ? BS62LV4006 DIL32 24 
+     IC601 ? BS62LV4006 DIL32 24 
+     JP2 ? DBG 2X20 26 
+     PLD_3 ? 2X20 pinhead 32 
+   EndSubSection
+
+ EndSubSection secondary_nets_of !OE_RAM_sub
+
+
+
+ SubSection !RESET_2_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 22 io_102 | 473 bc_1 input x | 472 bc_1 output3 x 471 0 z
+  JP1_pwr ? PWR_CTRL_AIO 2X20 6
+  P13_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection secondary_nets_of !RESET_2_pwr
+
+   SubSection !RESET_2 class NA
+     JP200 ? Tranceiver 2X20 36 
+     PLD_2 ? 2X25 pinhead 28 
+   EndSubSection
+
+   SubSection !RESET_2_trc class NA
+     JP1_trc ? PWR_CTRL_AIO 2X20 6
+     JP3_trc ? VEC_EX 2X20 36
+   EndSubSection
+
+   SubSection !RESET_2_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 29 io_p29 | 312 bc_2 output3 x 311 1 pull0 | 313 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 28
+   EndSubSection
+
+ EndSubSection secondary_nets_of !RESET_2_pwr
+
+
+
+ SubSection !RESET_CPU_CL_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 182 io_p182 | 103 bc_2 output3 x 102 1 pull0 | 104 bc_2 input x
+  PLD_1_sub ? PINHD-2X20 pinhead 35
+ EndSubSection
+
+ SubSection secondary_nets_of !RESET_CPU_CL_sub
+
+   SubSection !RESET_CPU_CL class NA
+     D201 ? 1N4728/3V3 DO41Z10 C 
+     P15 ? PAD 11-07-12 P$1 
+     PLD_1 ? 2X20 pinhead 35 
+     R203 ? 0 0207/10 2 
+   EndSubSection
+
+ EndSubSection secondary_nets_of !RESET_CPU_CL_sub
+
+
+
+ SubSection !START_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 35 io_p35 | 348 bc_2 output3 x 347 1 pull0 | 349 bc_2 input x
+  PLD_2_sub ? PINHD-2X25 pinhead 9
+ EndSubSection
+
+ SubSection secondary_nets_of !START_sub
+
+   SubSection !START class NA
+     PLD_2 ? 2X25 pinhead 9 
+     X100 ? FRONT_PANEL W237-4 2 
+   EndSubSection
+
+ EndSubSection secondary_nets_of !START_sub
+
+
+
+ SubSection !STOP_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 34 io_p34 | 345 bc_2 output3 x 344 1 pull0 | 346 bc_2 input x
+  PLD_2_sub ? PINHD-2X25 pinhead 7
+ EndSubSection
+
+ SubSection secondary_nets_of !STOP_sub
+
+   SubSection !STOP class NA
+     PLD_2 ? 2X25 pinhead 7 
+     X100 ? FRONT_PANEL W237-4 1 
+   EndSubSection
+
+ EndSubSection secondary_nets_of !STOP_sub
+
+
+
+ SubSection !EX_RESET_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 110 pb11_01 | 266 bc_1 input x | 265 bc_1 output3 x 264 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 40
+ EndSubSection
+
+ SubSection secondary_nets_of !EX_RESET_moni
+
+   SubSection !SYS_RESET class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 40 
+     R203 ? 0 0207/10 1 
+     T80 ? BC548C TO92 3 
+   EndSubSection
+
+ EndSubSection secondary_nets_of !EX_RESET_moni
+
+
+
+ SubSection !TRC_RESET_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 35 io_60 | 539 bc_1 input x | 538 bc_1 output3 x 537 0 z
+  JP3_trc ? VEC_EX 2X20 39
+  P61_trc ? PAD 11-07-12 P$1
+  R403_trc ? 8x10k SIL9 5
+ EndSubSection
+
+ SubSection secondary_nets_of !TRC_RESET_trc
+
+   SubSection !TRC_RESET class NA
+     JP200 ? Tranceiver 2X20 39 
+     T81 ? BC548C TO92 3 
+   EndSubSection
+
+ EndSubSection secondary_nets_of !TRC_RESET_trc
+
+
+
+ SubSection !TRST_1_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 12 io_33 | 590 bc_1 input x | 589 bc_1 output3 x 588 0 z
+  JP3_trc ? VEC_EX 2X20 8
+ EndSubSection
+
+ SubSection secondary_nets_of !TRST_1_trc
+
+   SubSection !TRST_1 class NA
+     JP200 ? Tranceiver 2X20 8 
+     PLD_2 ? 2X25 pinhead 12 
+   EndSubSection
+
+   SubSection !TRST_1_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 65 io_p65 | 471 bc_2 output3 x 470 1 pull0 | 472 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 12
+   EndSubSection
+
+ EndSubSection secondary_nets_of !TRST_1_trc
+
+
+
+ SubSection !TRST_2_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 16 io_56 | 551 bc_1 input x | 550 bc_1 output3 x 549 0 z
+  JP3_trc ? VEC_EX 2X20 16
+ EndSubSection
+
+ SubSection secondary_nets_of !TRST_2_trc
+
+   SubSection !TRST_2 class NA
+     JP200 ? Tranceiver 2X20 16 
+     PLD_2 ? 2X25 pinhead 20 
+   EndSubSection
+
+   SubSection !TRST_2_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 64 io_p64 | 468 bc_2 output3 x 467 1 pull0 | 469 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 20
+   EndSubSection
+
+ EndSubSection secondary_nets_of !TRST_2_trc
+
+
+
+ SubSection !UUT_PWR_FAIL_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 23 io_101 | 476 bc_1 input x | 475 bc_1 output3 x 474 0 z
+  JP1_pwr ? PWR_CTRL_AIO 2X20 4
+  P5_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection secondary_nets_of !UUT_PWR_FAIL_pwr
+
+   SubSection !UUT_PWR_FAIL class NA
+     JP200 ? Tranceiver 2X20 38 
+     PLD_2 ? 2X25 pinhead 30 
+   EndSubSection
+
+   SubSection !UUT_PWR_FAIL_trc class NA
+     JP1_trc ? PWR_CTRL_AIO 2X20 4
+     JP3_trc ? VEC_EX 2X20 38
+     R403_trc ? 8x10k SIL9 9
+   EndSubSection
+
+   SubSection !UUT_PWR_FAIL_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 28 io_p28 | 309 bc_2 output3 x 308 1 pull0 | 310 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 30
+   EndSubSection
+
+ EndSubSection secondary_nets_of !UUT_PWR_FAIL_pwr
+
+
+
+ SubSection !WR_RAM_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 119 io_p119 | 666 bc_2 output3 x 665 1 pull0 | 667 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 31
+ EndSubSection
+
+ SubSection secondary_nets_of !WR_RAM_sub
+
+   SubSection !WR_RAM class NA
+     IC600 ? BS62LV4006 DIL32 29 
+     IC601 ? BS62LV4006 DIL32 29 
+     JP2 ? DBG 2X20 28 
+     PLD_3 ? 2X20 pinhead 31 
+   EndSubSection
+
+ EndSubSection secondary_nets_of !WR_RAM_sub
+
+
+
+ SubSection A_EX0_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 142 pb05_13 | 554 bc_1 input x | 553 bc_1 output3 x 552 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 2
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX0_moni
+
+   SubSection A0 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 2 
+     PLD_1 ? 2X20 pinhead 1 
+   EndSubSection
+
+   SubSection A0_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 198 io_p198 | 151 bc_2 output3 x 150 1 pull0 | 152 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 1
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX0_moni
+
+
+
+ SubSection A_EX1_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 140 pb05_09 | 566 bc_1 input x | 565 bc_1 output3 x 564 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 4
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX1_moni
+
+   SubSection A1 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 4 
+     PLD_1 ? 2X20 pinhead 3 
+   EndSubSection
+
+   SubSection A1_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 199 io_p199 | 154 bc_2 output3 x 153 1 pull0 | 155 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 3
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX1_moni
+
+
+
+ SubSection A_EX2_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 139 pb05_07 | 572 bc_1 input x | 571 bc_1 output3 x 570 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 6
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX2_moni
+
+   SubSection A2 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 6 
+     PLD_1 ? 2X20 pinhead 5 
+   EndSubSection
+
+   SubSection A2_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 200 io_p200 | 163 bc_2 output3 x 162 1 pull0 | 164 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 5
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX2_moni
+
+
+
+ SubSection A_EX3_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 138 pb05_05 | 578 bc_1 input x | 577 bc_1 output3 x 576 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 8
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX3_moni
+
+   SubSection A3 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 8 
+     PLD_1 ? 2X20 pinhead 7 
+   EndSubSection
+
+   SubSection A3_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 203 io_p203 | 202 bc_2 output3 x 201 1 pull0 | 203 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 7
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX3_moni
+
+
+
+ SubSection A_EX4_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 137 pb05_04 | 581 bc_1 input x | 580 bc_1 output3 x 579 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 10
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX4_moni
+
+   SubSection A4 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 10 
+     PLD_1 ? 2X20 pinhead 9 
+   EndSubSection
+
+   SubSection A4_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 204 io_p204 | 205 bc_2 output3 x 204 1 pull0 | 206 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 9
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX4_moni
+
+
+
+ SubSection A_EX5_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 136 pb05_02 | 587 bc_1 input x | 586 bc_1 output3 x 585 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 12
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX5_moni
+
+   SubSection A5 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 12 
+     PLD_1 ? 2X20 pinhead 11 
+   EndSubSection
+
+   SubSection A5_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 205 io_p205 | 208 bc_2 output3 x 207 1 pull0 | 209 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 11
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX5_moni
+
+
+
+ SubSection A_EX6_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 135 pb05_01 | 590 bc_1 input x | 589 bc_1 output3 x 588 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 14
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX6_moni
+
+   SubSection A6 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 14 
+     PLD_1 ? 2X20 pinhead 13 
+   EndSubSection
+
+   SubSection A6_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 2 io_p2 | 213 bc_2 output3 x 212 1 pull0 | 214 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 13
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX6_moni
+
+
+
+ SubSection A_EX7_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 134 pb07_09 | 458 bc_1 input x | 457 bc_1 output3 x 456 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 16
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX7_moni
+
+   SubSection A7 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 16 
+     PLD_1 ? 2X20 pinhead 15 
+   EndSubSection
+
+   SubSection A7_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 3 io_p3 | 216 bc_2 output3 x 215 1 pull0 | 217 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 15
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX7_moni
+
+
+
+ SubSection A_EX8_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 133 pb07_07 | 464 bc_1 input x | 463 bc_1 output3 x 462 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 18
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX8_moni
+
+   SubSection A8 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 18 
+     PLD_1 ? 2X20 pinhead 17 
+   EndSubSection
+
+   SubSection A8_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 4 io_p4 | 225 bc_2 output3 x 224 1 pull0 | 226 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 17
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX8_moni
+
+
+
+ SubSection A_EX9_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 132 pb07_04 | 473 bc_1 input x | 472 bc_1 output3 x 471 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 20
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX9_moni
+
+   SubSection A9 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 20 
+     PLD_1 ? 2X20 pinhead 19 
+   EndSubSection
+
+   SubSection A9_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 5 io_p5 | 228 bc_2 output3 x 227 1 pull0 | 229 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 19
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX9_moni
+
+
+
+ SubSection A_EX10_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 131 pb07_02 | 479 bc_1 input x | 478 bc_1 output3 x 477 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 22
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX10_moni
+
+   SubSection A10 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 22 
+     PLD_1 ? 2X20 pinhead 21 
+   EndSubSection
+
+   SubSection A10_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 7 io_p7 | 237 bc_2 output3 x 236 1 pull0 | 238 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 21
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX10_moni
+
+
+
+ SubSection A_EX11_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 130 pb07_01 | 482 bc_1 input x | 481 bc_1 output3 x 480 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 24
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX11_moni
+
+   SubSection A11 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 24 
+     PLD_1 ? 2X20 pinhead 23 
+   EndSubSection
+
+   SubSection A11_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 9 io_p9 | 240 bc_2 output3 x 239 1 pull0 | 241 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 23
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX11_moni
+
+
+
+ SubSection A_EX12_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 129 pb09_16 | 329 bc_1 input x | 328 bc_1 output3 x 327 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 26
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX12_moni
+
+   SubSection A12 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 26 
+     PLD_1 ? 2X20 pinhead 25 
+   EndSubSection
+
+   SubSection A12_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 10 io_p10 | 243 bc_2 output3 x 242 1 pull0 | 244 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 25
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX12_moni
+
+
+
+ SubSection A_EX13_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 128 pb09_13 | 338 bc_1 input x | 337 bc_1 output3 x 336 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 28
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX13_moni
+
+   SubSection A13 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 28 
+     PLD_1 ? 2X20 pinhead 27 
+   EndSubSection
+
+   SubSection A13_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 11 io_p11 | 246 bc_2 output3 x 245 1 pull0 | 247 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 27
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX13_moni
+
+
+
+ SubSection A_EX14_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 126 pb09_11 | 344 bc_1 input x | 343 bc_1 output3 x 342 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 30
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX14_moni
+
+   SubSection A14 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 30 
+     PLD_1 ? 2X20 pinhead 29 
+   EndSubSection
+
+   SubSection A14_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 12 io_p12 | 249 bc_2 output3 x 248 1 pull0 | 250 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 29
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX14_moni
+
+
+
+ SubSection A_EX15_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 125 pb09_10 | 347 bc_1 input x | 346 bc_1 output3 x 345 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 32
+ EndSubSection
+
+ SubSection secondary_nets_of A_EX15_moni
+
+   SubSection A15 class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 32 
+     PLD_1 ? 2X20 pinhead 31 
+   EndSubSection
+
+   SubSection A15_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 13 io_p13 | 252 bc_2 output3 x 251 1 pull0 | 253 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 31
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_EX15_moni
+
+
+
+ SubSection A_RAM0_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 122 io_p122 | 672 bc_2 output3 x 671 1 pull0 | 673 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 28
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM0_sub
+
+   SubSection A_RAM0 class NA
+     IC600 ? BS62LV4006 DIL32 12 
+     IC601 ? BS62LV4006 DIL32 12 
+     PLD_3 ? 2X20 pinhead 28 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM0_sub
+
+
+
+ SubSection A_RAM1_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 123 io_p123 | 675 bc_2 output3 x 674 1 pull0 | 676 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 27
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM1_sub
+
+   SubSection A_RAM1 class NA
+     IC600 ? BS62LV4006 DIL32 11 
+     IC601 ? BS62LV4006 DIL32 11 
+     PLD_3 ? 2X20 pinhead 27 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM1_sub
+
+
+
+ SubSection A_RAM2_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 124 io_p124 | 678 bc_2 output3 x 677 1 pull0 | 679 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 26
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM2_sub
+
+   SubSection A_RAM2 class NA
+     IC600 ? BS62LV4006 DIL32 10 
+     IC601 ? BS62LV4006 DIL32 10 
+     PLD_3 ? 2X20 pinhead 26 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM2_sub
+
+
+
+ SubSection A_RAM3_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 125 io_p125 | 681 bc_2 output3 x 680 1 pull0 | 682 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 25
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM3_sub
+
+   SubSection A_RAM3 class NA
+     IC600 ? BS62LV4006 DIL32 9 
+     IC601 ? BS62LV4006 DIL32 9 
+     PLD_3 ? 2X20 pinhead 25 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM3_sub
+
+
+
+ SubSection A_RAM4_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 126 io_p126 | 708 bc_2 output3 x 707 1 pull0 | 709 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 24
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM4_sub
+
+   SubSection A_RAM4 class NA
+     IC600 ? BS62LV4006 DIL32 8 
+     IC601 ? BS62LV4006 DIL32 8 
+     PLD_3 ? 2X20 pinhead 24 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM4_sub
+
+
+
+ SubSection A_RAM5_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 128 io_p128 | 711 bc_2 output3 x 710 1 pull0 | 712 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 23
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM5_sub
+
+   SubSection A_RAM5 class NA
+     IC600 ? BS62LV4006 DIL32 7 
+     IC601 ? BS62LV4006 DIL32 7 
+     PLD_3 ? 2X20 pinhead 23 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM5_sub
+
+
+
+ SubSection A_RAM6_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 130 io_p130 | 714 bc_2 output3 x 713 1 pull0 | 715 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 22
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM6_sub
+
+   SubSection A_RAM6 class NA
+     IC600 ? BS62LV4006 DIL32 6 
+     IC601 ? BS62LV4006 DIL32 6 
+     PLD_3 ? 2X20 pinhead 22 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM6_sub
+
+
+
+ SubSection A_RAM7_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 131 io_p131 | 717 bc_2 output3 x 716 1 pull0 | 718 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 21
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM7_sub
+
+   SubSection A_RAM7 class NA
+     IC600 ? BS62LV4006 DIL32 5 
+     IC601 ? BS62LV4006 DIL32 5 
+     PLD_3 ? 2X20 pinhead 21 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM7_sub
+
+
+
+ SubSection A_RAM8_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 132 io_p132 | 720 bc_2 output3 x 719 1 pull0 | 721 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 20
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM8_sub
+
+   SubSection A_RAM8 class NA
+     IC600 ? BS62LV4006 DIL32 27 
+     IC601 ? BS62LV4006 DIL32 27 
+     PLD_3 ? 2X20 pinhead 20 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM8_sub
+
+
+
+ SubSection A_RAM9_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 133 io_p133 | 723 bc_2 output3 x 722 1 pull0 | 724 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 19
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM9_sub
+
+   SubSection A_RAM9 class NA
+     IC600 ? BS62LV4006 DIL32 26 
+     IC601 ? BS62LV4006 DIL32 26 
+     PLD_3 ? 2X20 pinhead 19 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM9_sub
+
+
+
+ SubSection A_RAM10_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 135 io_p135 | 726 bc_2 output3 x 725 1 pull0 | 727 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 17
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM10_sub
+
+   SubSection A_RAM10 class NA
+     IC600 ? BS62LV4006 DIL32 23 
+     IC601 ? BS62LV4006 DIL32 23 
+     PLD_3 ? 2X20 pinhead 17 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM10_sub
+
+
+
+ SubSection A_RAM11_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 137 io_p137 | 729 bc_2 output3 x 728 1 pull0 | 730 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 15
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM11_sub
+
+   SubSection A_RAM11 class NA
+     IC600 ? BS62LV4006 DIL32 25 
+     IC601 ? BS62LV4006 DIL32 25 
+     PLD_3 ? 2X20 pinhead 15 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM11_sub
+
+
+
+ SubSection A_RAM12_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 138 io_p138 | 756 bc_2 output3 x 755 1 pull0 | 757 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 14
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM12_sub
+
+   SubSection A_RAM12 class NA
+     IC600 ? BS62LV4006 DIL32 4 
+     IC601 ? BS62LV4006 DIL32 4 
+     PLD_3 ? 2X20 pinhead 14 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM12_sub
+
+
+
+ SubSection A_RAM13_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 139 io_p139 | 759 bc_2 output3 x 758 1 pull0 | 760 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 13
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM13_sub
+
+   SubSection A_RAM13 class NA
+     IC600 ? BS62LV4006 DIL32 28 
+     IC601 ? BS62LV4006 DIL32 28 
+     PLD_3 ? 2X20 pinhead 13 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM13_sub
+
+
+
+ SubSection A_RAM14_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 140 io_p140 | 762 bc_2 output3 x 761 1 pull0 | 763 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 12
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM14_sub
+
+   SubSection A_RAM14 class NA
+     IC600 ? BS62LV4006 DIL32 3 
+     IC601 ? BS62LV4006 DIL32 3 
+     PLD_3 ? 2X20 pinhead 12 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM14_sub
+
+
+
+ SubSection A_RAM15_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 141 io_p141 | 765 bc_2 output3 x 764 1 pull0 | 766 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 11
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM15_sub
+
+   SubSection A_RAM15 class NA
+     IC600 ? BS62LV4006 DIL32 31 
+     IC601 ? BS62LV4006 DIL32 31 
+     PLD_3 ? 2X20 pinhead 11 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM15_sub
+
+
+
+ SubSection A_RAM16_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 143 io_p143 | 768 bc_2 output3 x 767 1 pull0 | 769 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 10
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM16_sub
+
+   SubSection A_RAM16 class NA
+     IC600 ? BS62LV4006 DIL32 2 
+     IC601 ? BS62LV4006 DIL32 2 
+     PLD_3 ? 2X20 pinhead 10 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM16_sub
+
+
+
+ SubSection A_RAM17_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 144 io_p144 | 771 bc_2 output3 x 770 1 pull0 | 772 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 9
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM17_sub
+
+   SubSection A_RAM17 class NA
+     IC600 ? BS62LV4006 DIL32 30 
+     IC601 ? BS62LV4006 DIL32 30 
+     PLD_3 ? 2X20 pinhead 9 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM17_sub
+
+
+
+ SubSection A_RAM18_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 146 io_p146 | 774 bc_2 output3 x 773 1 pull0 | 775 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 8
+ EndSubSection
+
+ SubSection secondary_nets_of A_RAM18_sub
+
+   SubSection A_RAM18 class NA
+     IC600 ? BS62LV4006 DIL32 1 
+     IC601 ? BS62LV4006 DIL32 1 
+     PLD_3 ? 2X20 pinhead 8 
+   EndSubSection
+
+ EndSubSection secondary_nets_of A_RAM18_sub
+
+
+
+ SubSection CLK_CPU_CL_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 180 io_p180 | 97 bc_2 output3 x 96 1 pull0 | 98 bc_2 input x
+  PLD_1_sub ? PINHD-2X20 pinhead 36
+ EndSubSection
+
+ SubSection secondary_nets_of CLK_CPU_CL_sub
+
+   SubSection CLK_CPU_CL class NA
+     D200 ? 1N4728/3V3 DO41Z10 C 
+     P14 ? PAD 11-07-12 P$1 
+     PLD_1 ? 2X20 pinhead 36 
+     R202 ? 0 0207/10 2 
+   EndSubSection
+
+ EndSubSection secondary_nets_of CLK_CPU_CL_sub
+
+
+
+ SubSection EX_CLK_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 97 pb15_10 | 23 bc_1 input x | 22 bc_1 output3 x 21 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 40
+ EndSubSection
+
+ SubSection secondary_nets_of EX_CLK_moni
+
+   SubSection CPU_CLK class NA
+     JP100 ? EXT_CTRL&DATA 2X20 40 
+     R202 ? 0 0207/10 1 
+   EndSubSection
+
+ EndSubSection secondary_nets_of EX_CLK_moni
+
+
+
+ SubSection CPU_IEO_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 197 io_p197 | 148 bc_2 output3 x 147 1 pull0 | 149 bc_2 input x
+  PLD_1_sub ? PINHD-2X20 pinhead 18
+ EndSubSection
+
+ SubSection secondary_nets_of CPU_IEO_sub
+
+   SubSection CPU_IEO class NA
+     PLD_1 ? 2X20 pinhead 18 
+   EndSubSection
+
+ EndSubSection secondary_nets_of CPU_IEO_sub
+
+
+
+ SubSection D_EX0_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 124 pb09_09 | 350 bc_1 input x | 349 bc_1 output3 x 348 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 2
+ EndSubSection
+
+ SubSection secondary_nets_of D_EX0_moni
+
+   SubSection D0 class NA
+     JP100 ? EXT_CTRL&DATA 2X20 2 
+     PLD_1 ? 2X20 pinhead 2 
+   EndSubSection
+
+   SubSection D0_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 161 io_p161 | 1 bc_2 output3 x 0 1 pull0 | 2 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 2
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_EX0_moni
+
+
+
+ SubSection D_EX1_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 121 pb09_07 | 356 bc_1 input x | 355 bc_1 output3 x 354 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 4
+ EndSubSection
+
+ SubSection secondary_nets_of D_EX1_moni
+
+   SubSection D1 class NA
+     JP100 ? EXT_CTRL&DATA 2X20 4 
+     PLD_1 ? 2X20 pinhead 4 
+   EndSubSection
+
+   SubSection D1_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 162 io_p162 | 4 bc_2 output3 x 3 1 pull0 | 5 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 4
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_EX1_moni
+
+
+
+ SubSection D_EX2_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 120 pb09_05 | 362 bc_1 input x | 361 bc_1 output3 x 360 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 6
+ EndSubSection
+
+ SubSection secondary_nets_of D_EX2_moni
+
+   SubSection D2 class NA
+     JP100 ? EXT_CTRL&DATA 2X20 6 
+     PLD_1 ? 2X20 pinhead 6 
+   EndSubSection
+
+   SubSection D2_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 165 io_p165 | 22 bc_2 output3 x 21 1 pull0 | 23 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 6
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_EX2_moni
+
+
+
+ SubSection D_EX3_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 119 pb09_04 | 365 bc_1 input x | 364 bc_1 output3 x 363 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 8
+ EndSubSection
+
+ SubSection secondary_nets_of D_EX3_moni
+
+   SubSection D3 class NA
+     JP100 ? EXT_CTRL&DATA 2X20 8 
+     PLD_1 ? 2X20 pinhead 8 
+   EndSubSection
+
+   SubSection D3_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 166 io_p166 | 25 bc_2 output3 x 24 1 pull0 | 26 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 8
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_EX3_moni
+
+
+
+ SubSection D_EX4_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 118 pb09_02 | 371 bc_1 input x | 370 bc_1 output3 x 369 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 10
+ EndSubSection
+
+ SubSection secondary_nets_of D_EX4_moni
+
+   SubSection D4 class NA
+     JP100 ? EXT_CTRL&DATA 2X20 10 
+     PLD_1 ? 2X20 pinhead 10 
+   EndSubSection
+
+   SubSection D4_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 167 io_p167 | 58 bc_2 output3 x 57 1 pull0 | 59 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 10
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_EX4_moni
+
+
+
+ SubSection D_EX5_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 117 pb09_01 | 374 bc_1 input x | 373 bc_1 output3 x 372 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 12
+ EndSubSection
+
+ SubSection secondary_nets_of D_EX5_moni
+
+   SubSection D5 class NA
+     JP100 ? EXT_CTRL&DATA 2X20 12 
+     PLD_1 ? 2X20 pinhead 12 
+   EndSubSection
+
+   SubSection D5_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 168 io_p168 | 61 bc_2 output3 x 60 1 pull0 | 62 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 12
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_EX5_moni
+
+
+
+ SubSection D_EX6_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 116 pb11_11 | 236 bc_1 input x | 235 bc_1 output3 x 234 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 14
+ EndSubSection
+
+ SubSection secondary_nets_of D_EX6_moni
+
+   SubSection D6 class NA
+     JP100 ? EXT_CTRL&DATA 2X20 14 
+     PLD_1 ? 2X20 pinhead 14 
+   EndSubSection
+
+   SubSection D6_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 169 io_p169 | 64 bc_2 output3 x 63 1 pull0 | 65 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 14
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_EX6_moni
+
+
+
+ SubSection D_EX7_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 115 pb11_09 | 242 bc_1 input x | 241 bc_1 output3 x 240 0 z
+  JP102_moni ? EXT_CTRL&DATA 2X20 16
+ EndSubSection
+
+ SubSection secondary_nets_of D_EX7_moni
+
+   SubSection D7 class NA
+     JP100 ? EXT_CTRL&DATA 2X20 16 
+     PLD_1 ? 2X20 pinhead 16 
+   EndSubSection
+
+   SubSection D7_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 171 io_p171 | 67 bc_2 output3 x 66 1 pull0 | 68 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 16
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_EX7_moni
+
+
+
+ SubSection DBG_0_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 61 io_p61 | 429 bc_2 output3 x 428 1 pull0 | 430 bc_2 input x
+  PLD_2_sub ? PINHD-2X25 pinhead 19
+ EndSubSection
+
+ SubSection secondary_nets_of DBG_0_sub
+
+   SubSection DBG_0 class NA
+     JP2 ? DBG 2X20 2 
+     P1 ? PAD pads P$1 
+     PLD_2 ? 2X25 pinhead 19 
+     R600 ? 160 0207/10 2 
+   EndSubSection
+
+ EndSubSection secondary_nets_of DBG_0_sub
+
+
+
+ SubSection DBG_1_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 33 io_p33 | 318 bc_2 output3 x 317 1 pull0 | 319 bc_2 input x
+  PLD_2_sub ? PINHD-2X25 pinhead 21
+ EndSubSection
+
+ SubSection secondary_nets_of DBG_1_sub
+
+   SubSection DBG_1 class NA
+     JP2 ? DBG 2X20 4 
+     P2 ? PAD pads P$1 
+     PLD_2 ? 2X25 pinhead 21 
+     R601 ? 160 0207/10 2 
+   EndSubSection
+
+ EndSubSection secondary_nets_of DBG_1_sub
+
+
+
+ SubSection DBG_2_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 44 io_p44 | 369 bc_2 output3 x 368 1 pull0 | 370 bc_2 input x
+  PLD_2_sub ? PINHD-2X25 pinhead 23
+ EndSubSection
+
+ SubSection secondary_nets_of DBG_2_sub
+
+   SubSection DBG_2 class NA
+     JP2 ? DBG 2X20 6 
+     P3 ? PAD pads P$1 
+     PLD_2 ? 2X25 pinhead 23 
+     R602 ? 300 0207/10 2 
+   EndSubSection
+
+ EndSubSection secondary_nets_of DBG_2_sub
+
+
+
+ SubSection DBG_3_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 43 io_p43 | 366 bc_2 output3 x 365 1 pull0 | 367 bc_2 input x
+  PLD_2_sub ? PINHD-2X25 pinhead 25
+ EndSubSection
+
+ SubSection secondary_nets_of DBG_3_sub
+
+   SubSection DBG_3 class NA
+     JP2 ? DBG 2X20 8 
+     P4 ? PAD pads P$1 
+     PLD_2 ? 2X25 pinhead 25 
+   EndSubSection
+
+ EndSubSection secondary_nets_of DBG_3_sub
+
+
+
+ SubSection DBG_4_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 96 io_p96 | 570 bc_2 output3 x 569 1 pull0 | 571 bc_2 input x
+  P5_sub ? PAD pads P$1
+  PLD_2_sub ? PINHD-2X25 pinhead 27
+ EndSubSection
+
+ SubSection secondary_nets_of DBG_4_sub
+
+   SubSection DBG_4 class NA
+     JP2 ? DBG 2X20 10 
+     P5 ? PAD pads P$1 
+     PLD_2 ? 2X25 pinhead 27 
+   EndSubSection
+
+ EndSubSection secondary_nets_of DBG_4_sub
+
+
+
+ SubSection DBG_5_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 40 io_p40 | 360 bc_2 output3 x 359 1 pull0 | 361 bc_2 input x
+  PLD_2_sub ? PINHD-2X25 pinhead 29
+ EndSubSection
+
+ SubSection secondary_nets_of DBG_5_sub
+
+   SubSection DBG_5 class NA
+     JP2 ? DBG 2X20 12 
+     P6 ? PAD pads P$1 
+     PLD_2 ? 2X25 pinhead 29 
+   EndSubSection
+
+ EndSubSection secondary_nets_of DBG_5_sub
+
+
+
+ SubSection DBG_6_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 39 io_p39 | 357 bc_2 output3 x 356 1 pull0 | 358 bc_2 input x
+  PLD_2_sub ? PINHD-2X25 pinhead 31
+ EndSubSection
+
+ SubSection secondary_nets_of DBG_6_sub
+
+   SubSection DBG_6 class NA
+     JP2 ? DBG 2X20 14 
+     P7 ? PAD pads P$1 
+     PLD_2 ? 2X25 pinhead 31 
+   EndSubSection
+
+ EndSubSection secondary_nets_of DBG_6_sub
+
+
+
+ SubSection DBG_7_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 37 io_p37 | 354 bc_2 output3 x 353 1 pull0 | 355 bc_2 input x
+  PLD_2_sub ? PINHD-2X25 pinhead 33
+ EndSubSection
+
+ SubSection secondary_nets_of DBG_7_sub
+
+   SubSection DBG_7 class NA
+     JP2 ? DBG 2X20 16 
+     P8 ? PAD pads P$1 
+     PLD_2 ? 2X25 pinhead 33 
+   EndSubSection
+
+ EndSubSection secondary_nets_of DBG_7_sub
+
+
+
+ SubSection D_RAM0_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 106 io_p106 | 624 bc_2 output3 x 623 1 pull0 | 625 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 29
+ EndSubSection
+
+ SubSection secondary_nets_of D_RAM0_sub
+
+   SubSection D_RAM0 class NA
+     IC601 ? BS62LV4006 DIL32 13 
+     PLD_3 ? 2X20 pinhead 29 
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_RAM0_sub
+
+
+
+ SubSection D_RAM1_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 107 io_p107 | 627 bc_2 output3 x 626 1 pull0 | 628 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 30
+ EndSubSection
+
+ SubSection secondary_nets_of D_RAM1_sub
+
+   SubSection D_RAM1 class NA
+     IC601 ? BS62LV4006 DIL32 14 
+     PLD_3 ? 2X20 pinhead 30 
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_RAM1_sub
+
+
+
+ SubSection D_RAM2_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 108 io_p108 | 642 bc_2 output3 x 641 1 pull0 | 643 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 39
+ EndSubSection
+
+ SubSection secondary_nets_of D_RAM2_sub
+
+   SubSection D_RAM2 class NA
+     IC601 ? BS62LV4006 DIL32 15 
+     PLD_3 ? 2X20 pinhead 39 
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_RAM2_sub
+
+
+
+ SubSection D_RAM3_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 109 io_p109 | 645 bc_2 output3 x 644 1 pull0 | 646 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 40
+ EndSubSection
+
+ SubSection secondary_nets_of D_RAM3_sub
+
+   SubSection D_RAM3 class NA
+     IC601 ? BS62LV4006 DIL32 17 
+     PLD_3 ? 2X20 pinhead 40 
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_RAM3_sub
+
+
+
+ SubSection D_RAM4_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 111 io_p111 | 648 bc_2 output3 x 647 1 pull0 | 649 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 37
+ EndSubSection
+
+ SubSection secondary_nets_of D_RAM4_sub
+
+   SubSection D_RAM4 class NA
+     IC601 ? BS62LV4006 DIL32 18 
+     PLD_3 ? 2X20 pinhead 37 
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_RAM4_sub
+
+
+
+ SubSection D_RAM5_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 113 io_p113 | 651 bc_2 output3 x 650 1 pull0 | 652 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 38
+ EndSubSection
+
+ SubSection secondary_nets_of D_RAM5_sub
+
+   SubSection D_RAM5 class NA
+     IC601 ? BS62LV4006 DIL32 19 
+     PLD_3 ? 2X20 pinhead 38 
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_RAM5_sub
+
+
+
+ SubSection D_RAM6_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 114 io_p114 | 654 bc_2 output3 x 653 1 pull0 | 655 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 35
+ EndSubSection
+
+ SubSection secondary_nets_of D_RAM6_sub
+
+   SubSection D_RAM6 class NA
+     IC601 ? BS62LV4006 DIL32 20 
+     PLD_3 ? 2X20 pinhead 35 
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_RAM6_sub
+
+
+
+ SubSection D_RAM7_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 115 io_p115 | 657 bc_2 output3 x 656 1 pull0 | 658 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 36
+ EndSubSection
+
+ SubSection secondary_nets_of D_RAM7_sub
+
+   SubSection D_RAM7 class NA
+     IC601 ? BS62LV4006 DIL32 21 
+     PLD_3 ? 2X20 pinhead 36 
+   EndSubSection
+
+ EndSubSection secondary_nets_of D_RAM7_sub
+
+
+
+ SubSection EXT_IEI_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 113 pb11_07 | 248 bc_1 input x | 247 bc_1 output3 x 246 0 z
+  JP104_moni ? EXT_CTRL&ADDR 2X20 34
+ EndSubSection
+
+ SubSection secondary_nets_of EXT_IEI_moni
+
+   SubSection EXT_IEI class NA
+     JP101 ? EXT_CTRL&ADDR 2X20 34 
+     PLD_1 ? 2X20 pinhead 33 
+   EndSubSection
+
+   SubSection EXT_IEI_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 196 io_p196 | 145 bc_2 output3 x 144 1 pull0 | 146 bc_2 input x
+     PLD_1_sub ? PINHD-2X20 pinhead 33
+   EndSubSection
+
+ EndSubSection secondary_nets_of EXT_IEI_moni
+
+
+
+ SubSection FAIL_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 58 io_p58 | 411 bc_2 output3 x 410 1 pull0 | 412 bc_2 input x
+  PLD_2_sub ? PINHD-2X25 pinhead 13
+ EndSubSection
+
+ SubSection secondary_nets_of FAIL_sub
+
+   SubSection FAIL class NA
+     PLD_2 ? 2X25 pinhead 13 
+     R102 ? 2k7 0207/10 1 
+   EndSubSection
+
+ EndSubSection secondary_nets_of FAIL_sub
+
+
+
+ SubSection FAIL_1_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 63 io_p63 | 465 bc_2 output3 x 464 1 pull0 | 466 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 18
+ EndSubSection
+
+ SubSection secondary_nets_of FAIL_1_sub
+
+   SubSection FAIL_1 class NA
+     IC600 ? BS62LV4006 DIL32 14 
+     PLD_3 ? 2X20 pinhead 18 
+   EndSubSection
+
+ EndSubSection secondary_nets_of FAIL_1_sub
+
+
+
+ SubSection FAIL_2_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 62 io_p62 | 432 bc_2 output3 x 431 1 pull0 | 433 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 16
+ EndSubSection
+
+ SubSection secondary_nets_of FAIL_2_sub
+
+   SubSection FAIL_2 class NA
+     IC600 ? BS62LV4006 DIL32 17 
+     PLD_3 ? 2X20 pinhead 16 
+   EndSubSection
+
+ EndSubSection secondary_nets_of FAIL_2_sub
+
+
+
+ SubSection GPIO_0_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 19 io_105 | 464 bc_1 input x | 463 bc_1 output3 x 462 0 z
+  JP3_trc ? VEC_EX 2X20 22
+ EndSubSection
+
+ SubSection secondary_nets_of GPIO_0_trc
+
+   SubSection GPIO_0 class NA
+     IC600 ? BS62LV4006 DIL32 18 
+     JP200 ? Tranceiver 2X20 22 
+     PLD_2 ? 2X25 pinhead 34 
+   EndSubSection
+
+   SubSection GPIO_0_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 45 io_p45 | 372 bc_2 output3 x 371 1 pull0 | 373 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 34
+   EndSubSection
+
+ EndSubSection secondary_nets_of GPIO_0_trc
+
+
+
+ SubSection GPIO_1_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 20 io_104 | 467 bc_1 input x | 466 bc_1 output3 x 465 0 z
+  JP3_trc ? VEC_EX 2X20 24
+ EndSubSection
+
+ SubSection secondary_nets_of GPIO_1_trc
+
+   SubSection GPIO_1 class NA
+     IC600 ? BS62LV4006 DIL32 19 
+     JP200 ? Tranceiver 2X20 24 
+     PLD_2 ? 2X25 pinhead 36 
+   EndSubSection
+
+   SubSection GPIO_1_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 46 io_p46 | 375 bc_2 output3 x 374 1 pull0 | 376 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 36
+   EndSubSection
+
+ EndSubSection secondary_nets_of GPIO_1_trc
+
+
+
+ SubSection GPIO_2_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 21 io_103 | 470 bc_1 input x | 469 bc_1 output3 x 468 0 z
+  JP3_trc ? VEC_EX 2X20 26
+ EndSubSection
+
+ SubSection secondary_nets_of GPIO_2_trc
+
+   SubSection GPIO_2 class NA
+     IC600 ? BS62LV4006 DIL32 20 
+     JP200 ? Tranceiver 2X20 26 
+     PLD_2 ? 2X25 pinhead 38 
+   EndSubSection
+
+   SubSection GPIO_2_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 48 io_p48 | 378 bc_2 output3 x 377 1 pull0 | 379 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 38
+   EndSubSection
+
+ EndSubSection secondary_nets_of GPIO_2_trc
+
+
+
+ SubSection GPIO_3_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 22 io_102 | 473 bc_1 input x | 472 bc_1 output3 x 471 0 z
+  JP3_trc ? VEC_EX 2X20 28
+ EndSubSection
+
+ SubSection secondary_nets_of GPIO_3_trc
+
+   SubSection GPIO_3 class NA
+     IC600 ? BS62LV4006 DIL32 21 
+     JP200 ? Tranceiver 2X20 28 
+     PLD_2 ? 2X25 pinhead 40 
+   EndSubSection
+
+   SubSection GPIO_3_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 50 io_p50 | 381 bc_2 output3 x 380 1 pull0 | 382 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 40
+   EndSubSection
+
+ EndSubSection secondary_nets_of GPIO_3_trc
+
+
+
+ SubSection PASS_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 57 io_p57 | 408 bc_2 output3 x 407 1 pull0 | 409 bc_2 input x
+  PLD_2_sub ? PINHD-2X25 pinhead 11
+ EndSubSection
+
+ SubSection secondary_nets_of PASS_sub
+
+   SubSection PASS class NA
+     PLD_2 ? 2X25 pinhead 11 
+     R103 ? 2k7 0207/10 1 
+   EndSubSection
+
+ EndSubSection secondary_nets_of PASS_sub
+
+
+
+ SubSection RSV_6_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 24 io_p24 | 300 bc_2 output3 x 299 1 pull0 | 301 bc_2 input x
+  P25_sub ? PAD pads P$1
+  PLD_2_sub ? PINHD-2X25 pinhead 15
+ EndSubSection
+
+ SubSection secondary_nets_of RSV_6_sub
+
+   SubSection RSV_6 class NA
+     P17 ? PAD pads P$1 
+     PLD_2 ? 2X25 pinhead 15 
+   EndSubSection
+
+ EndSubSection secondary_nets_of RSV_6_sub
+
+
+
+ SubSection RSV_7_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 22 io_p22 | 297 bc_2 output3 x 296 1 pull0 | 298 bc_2 input x
+  P26_sub ? PAD pads P$1
+  PLD_2_sub ? PINHD-2X25 pinhead 17
+ EndSubSection
+
+ SubSection secondary_nets_of RSV_7_sub
+
+   SubSection RSV_7 class NA
+     P18 ? PAD pads P$1 
+     PLD_2 ? 2X25 pinhead 17 
+   EndSubSection
+
+ EndSubSection secondary_nets_of RSV_7_sub
+
+
+
+ SubSection RSV_100_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 154 io_p154 | 792 bc_2 output3 x 791 1 pull0 | 793 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 1
+ EndSubSection
+
+ SubSection secondary_nets_of RSV_100_sub
+
+   SubSection RSV_100 class NA
+     JP2 ? DBG 2X20 18 
+     PLD_3 ? 2X20 pinhead 1 
+     R1 ? 8x10k SIL9 7 
+   EndSubSection
+
+ EndSubSection secondary_nets_of RSV_100_sub
+
+
+
+ SubSection RSV_101_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 156 io_p156 | 813 bc_2 output3 x 812 1 pull0 | 814 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 3
+ EndSubSection
+
+ SubSection secondary_nets_of RSV_101_sub
+
+   SubSection RSV_101 class NA
+     JP2 ? DBG 2X20 20 
+     PLD_3 ? 2X20 pinhead 3 
+     R1 ? 8x10k SIL9 8 
+   EndSubSection
+
+ EndSubSection secondary_nets_of RSV_101_sub
+
+
+
+ SubSection RSV_102_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 155 io_p155 | 810 bc_2 output3 x 809 1 pull0 | 811 bc_2 input x
+  PLD_3_sub ? PINHD-2X20 pinhead 5
+ EndSubSection
+
+ SubSection secondary_nets_of RSV_102_sub
+
+   SubSection RSV_102 class NA
+     JP2 ? DBG 2X20 22 
+     PLD_3 ? 2X20 pinhead 5 
+     R1 ? 8x10k SIL9 9 
+   EndSubSection
+
+ EndSubSection secondary_nets_of RSV_102_sub
+
+
+
+ SubSection SCL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 32 io_65 | 524 bc_1 input x | 523 bc_1 output3 x 522 0 z
+  IC302_trc ? HC4051 SO16 3
+  JP3_trc ? VEC_EX 2X20 32
+  P48_trc ? PAD 11-07-12 P$1
+  R403_trc ? 8x10k SIL9 7
+ EndSubSection
+
+ SubSection secondary_nets_of SCL_trc
+
+   SubSection SCL class NA
+     JP2 ? DBG 2X20 40 
+     JP200 ? Tranceiver 2X20 32 
+     P21 ? PAD 11-07-12 P$1 
+     PLD_2 ? 2X25 pinhead 44 
+     R1 ? 8x10k SIL9 5 
+   EndSubSection
+
+   SubSection SCL_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 51 io_p51 | 399 bc_2 output3 x 398 1 pull0 | 400 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 44
+   EndSubSection
+
+ EndSubSection secondary_nets_of SCL_trc
+
+
+
+ SubSection SDA_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 31 io_67 | 518 bc_1 input x | 517 bc_1 output3 x 516 0 z
+  IC301_trc ? HC4051 SO16 3
+  JP3_trc ? VEC_EX 2X20 30
+  P47_trc ? PAD 11-07-12 P$1
+  R403_trc ? 8x10k SIL9 6
+ EndSubSection
+
+ SubSection secondary_nets_of SDA_trc
+
+   SubSection SDA class NA
+     JP2 ? DBG 2X20 39 
+     JP200 ? Tranceiver 2X20 30 
+     P20 ? PAD 11-07-12 P$1 
+     PLD_2 ? 2X25 pinhead 42 
+     R1 ? 8x10k SIL9 6 
+   EndSubSection
+
+   SubSection SDA_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 52 io_p52 | 402 bc_2 output3 x 401 1 pull0 | 403 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 42
+   EndSubSection
+
+ EndSubSection secondary_nets_of SDA_trc
+
+
+
+ SubSection SPARE_1_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 24 io_100 | 479 bc_1 input x | 478 bc_1 output3 x 477 0 z
+  JP1_pwr ? PWR_CTRL_AIO 2X20 2
+  P4_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection secondary_nets_of SPARE_1_pwr
+
+   SubSection SPARE_1 class NA
+     JP200 ? Tranceiver 2X20 40 
+     PLD_2 ? 2X25 pinhead 32 
+   EndSubSection
+
+   SubSection SPARE_1_trc class NA
+     JP1_trc ? PWR_CTRL_AIO 2X20 2
+     JP3_trc ? VEC_EX 2X20 40
+     R403_trc ? 8x10k SIL9 8
+   EndSubSection
+
+   SubSection SPARE_1_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 36 io_p36 | 351 bc_2 output3 x 350 1 pull0 | 352 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 32
+   EndSubSection
+
+ EndSubSection secondary_nets_of SPARE_1_pwr
+
+
+
+ SubSection TCK_1_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 9 io_30 | 599 bc_1 input x | 598 bc_1 output3 x 597 0 z
+  JP3_trc ? VEC_EX 2X20 2
+ EndSubSection
+
+ SubSection secondary_nets_of TCK_1_trc
+
+   SubSection TCK_1 class NA
+     JP200 ? Tranceiver 2X20 2 
+     PLD_2 ? 2X25 pinhead 6 
+   EndSubSection
+
+   SubSection TCK_1_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 76 io_p76 | 504 bc_2 output3 x 503 1 pull0 | 505 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 6
+   EndSubSection
+
+ EndSubSection secondary_nets_of TCK_1_trc
+
+
+
+ SubSection TCK_2_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 13 io_51 | 566 bc_1 input x | 565 bc_1 output3 x 564 0 z
+  JP3_trc ? VEC_EX 2X20 10
+ EndSubSection
+
+ SubSection secondary_nets_of TCK_2_trc
+
+   SubSection TCK_2 class NA
+     JP200 ? Tranceiver 2X20 10 
+     PLD_2 ? 2X25 pinhead 14 
+   EndSubSection
+
+   SubSection TCK_2_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 77 io_p77 | 507 bc_2 output3 x 506 1 pull0 | 508 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 14
+   EndSubSection
+
+ EndSubSection secondary_nets_of TCK_2_trc
+
+
+
+ SubSection TDI_1_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 17 io_57 | 548 bc_1 input x | 547 bc_1 output3 x 546 0 z
+  JP3_trc ? VEC_EX 2X20 18
+ EndSubSection
+
+ SubSection secondary_nets_of TDI_1_trc
+
+   SubSection TDI_1 class NA
+     IC600 ? BS62LV4006 DIL32 13 
+     JP200 ? Tranceiver 2X20 18 
+     PLD_2 ? 2X25 pinhead 22 
+   EndSubSection
+
+   SubSection TDI_1_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 78 io_p78 | 510 bc_2 output3 x 509 1 pull0 | 511 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 22
+   EndSubSection
+
+ EndSubSection secondary_nets_of TDI_1_trc
+
+
+
+ SubSection TDI_2_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 18 io_59 | 542 bc_1 input x | 541 bc_1 output3 x 540 0 z
+  JP3_trc ? VEC_EX 2X20 20
+ EndSubSection
+
+ SubSection secondary_nets_of TDI_2_trc
+
+   SubSection TDI_2 class NA
+     IC600 ? BS62LV4006 DIL32 15 
+     JP200 ? Tranceiver 2X20 20 
+     PLD_2 ? 2X25 pinhead 24 
+   EndSubSection
+
+   SubSection TDI_2_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 71 io_p71 | 495 bc_2 output3 x 494 1 pull0 | 496 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 24
+   EndSubSection
+
+ EndSubSection secondary_nets_of TDI_2_trc
+
+
+
+ SubSection TDO_1_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 11 io_32 | 593 bc_1 input x | 592 bc_1 output3 x 591 0 z
+  JP3_trc ? VEC_EX 2X20 6
+ EndSubSection
+
+ SubSection secondary_nets_of TDO_1_trc
+
+   SubSection TDO_1 class NA
+     JP200 ? Tranceiver 2X20 6 
+     PLD_2 ? 2X25 pinhead 10 
+   EndSubSection
+
+   SubSection TDO_1_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 68 io_p68 | 477 bc_2 output3 x 476 1 pull0 | 478 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 10
+   EndSubSection
+
+ EndSubSection secondary_nets_of TDO_1_trc
+
+
+
+ SubSection TDO_2_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 15 io_53 | 560 bc_1 input x | 559 bc_1 output3 x 558 0 z
+  JP3_trc ? VEC_EX 2X20 14
+ EndSubSection
+
+ SubSection secondary_nets_of TDO_2_trc
+
+   SubSection TDO_2 class NA
+     JP200 ? Tranceiver 2X20 14 
+     PLD_2 ? 2X25 pinhead 18 
+   EndSubSection
+
+   SubSection TDO_2_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 67 io_p67 | 474 bc_2 output3 x 473 1 pull0 | 475 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 18
+   EndSubSection
+
+ EndSubSection secondary_nets_of TDO_2_trc
+
+
+
+ SubSection TMS_1_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 10 io_31 | 596 bc_1 input x | 595 bc_1 output3 x 594 0 z
+  JP3_trc ? VEC_EX 2X20 4
+ EndSubSection
+
+ SubSection secondary_nets_of TMS_1_trc
+
+   SubSection TMS_1 class NA
+     JP200 ? Tranceiver 2X20 4 
+     PLD_2 ? 2X25 pinhead 8 
+   EndSubSection
+
+   SubSection TMS_1_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 74 io_p74 | 501 bc_2 output3 x 500 1 pull0 | 502 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 8
+   EndSubSection
+
+ EndSubSection secondary_nets_of TMS_1_trc
+
+
+
+ SubSection TMS_2_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 14 io_52 | 563 bc_1 input x | 562 bc_1 output3 x 561 0 z
+  JP3_trc ? VEC_EX 2X20 12
+ EndSubSection
+
+ SubSection secondary_nets_of TMS_2_trc
+
+   SubSection TMS_2 class NA
+     JP200 ? Tranceiver 2X20 12 
+     PLD_2 ? 2X25 pinhead 16 
+   EndSubSection
+
+   SubSection TMS_2_sub class NA
+     IC2_sub ? XC3S400PQ208 PQ208 72 io_p72 | 498 bc_2 output3 x 497 1 pull0 | 499 bc_2 input x
+     PLD_2_sub ? PINHD-2X25 pinhead 16
+   EndSubSection
+
+ EndSubSection secondary_nets_of TMS_2_trc
+
+
+
+ SubSection WDG_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 26 io_p26 | 303 bc_2 output3 x 302 1 pull0 | 304 bc_2 input x
+  P28_sub ? PAD pads P$1
+  PLD_4_sub ? PINHD-2X20 pinhead 2
+ EndSubSection
+
+ SubSection secondary_nets_of WDG_sub
+
+   SubSection WDG class NA
+     IC80 ? 4093N DIL14 9 
+     P80 ? PAD pads P$1 
+     PLD_4 ? 2X20 pinhead 2 
+   EndSubSection
+
+ EndSubSection secondary_nets_of WDG_sub
+
+
+
+ SubSection SCL1_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 16 io_56 | 551 bc_1 input x | 550 bc_1 output3 x 549 0 z
+  JP1_pwr ? PWR_CTRL_AIO 2X20 10
+  P15_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection secondary_nets_of SCL1_pwr
+
+   SubSection SCL1_trc class NA
+     IC100_trc ? MAX519SO SO16 6
+     IC110_trc ? MAX517SO SO08 3
+     IC111_trc ? MAX517SO SO08 3
+     IC302_trc ? HC4051 SO16 13
+     IC620_trc ? MAX519SO SO16 6
+     IC621_trc ? MAX517SO SO08 3
+     IC622_trc ? MAX517SO SO08 3
+     JP1_trc ? PWR_CTRL_AIO 2X20 10
+     R303_trc ? 8x10k SIL9 7
+   EndSubSection
+
+ EndSubSection secondary_nets_of SCL1_pwr
+
+
+
+ SubSection SCL2_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 12 io_33 | 590 bc_1 input x | 589 bc_1 output3 x 588 0 z
+  JP1_pwr ? PWR_CTRL_AIO 2X20 18
+  P19_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection secondary_nets_of SCL2_pwr
+
+   SubSection SCL2_trc class NA
+     IC302_trc ? HC4051 SO16 14
+     JP1_trc ? PWR_CTRL_AIO 2X20 18
+     R303_trc ? 8x10k SIL9 5
+   EndSubSection
+
+ EndSubSection secondary_nets_of SCL2_pwr
+
+
+
+ SubSection SCL3_pwr class NA
+  IC1_pwr ? MAX517SO SO08 3
+  IC2_pwr ? MAX517SO SO08 3
+  IC3_pwr ? MAX517SO SO08 3
+  IC5_pwr ? XC2C384_TQ144 TQ144 14 io_52 | 563 bc_1 input x | 562 bc_1 output3 x 561 0 z
+  JP1_pwr ? PWR_CTRL_AIO 2X20 14
+  P17_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection secondary_nets_of SCL3_pwr
+
+   SubSection SCL3_trc class NA
+     IC302_trc ? HC4051 SO16 15
+     JP1_trc ? PWR_CTRL_AIO 2X20 14
+     R303_trc ? 8x10k SIL9 4
+   EndSubSection
+
+ EndSubSection secondary_nets_of SCL3_pwr
+
+
+
+ SubSection SCL4_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 10 io_31 | 596 bc_1 input x | 595 bc_1 output3 x 594 0 z
+  JP1_pwr ? PWR_CTRL_AIO 2X20 22
+  P21_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection secondary_nets_of SCL4_pwr
+
+   SubSection SCL4_trc class NA
+     IC302_trc ? HC4051 SO16 12
+     JP1_trc ? PWR_CTRL_AIO 2X20 22
+     R303_trc ? 8x10k SIL9 9
+   EndSubSection
+
+ EndSubSection secondary_nets_of SCL4_pwr
+
+
+
+ SubSection SDA1_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 15 io_53 | 560 bc_1 input x | 559 bc_1 output3 x 558 0 z
+  JP1_pwr ? PWR_CTRL_AIO 2X20 12
+  P16_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection secondary_nets_of SDA1_pwr
+
+   SubSection SDA1_trc class NA
+     IC100_trc ? MAX519SO SO16 8
+     IC110_trc ? MAX517SO SO08 4
+     IC111_trc ? MAX517SO SO08 4
+     IC301_trc ? HC4051 SO16 13
+     IC620_trc ? MAX519SO SO16 8
+     IC621_trc ? MAX517SO SO08 4
+     IC622_trc ? MAX517SO SO08 4
+     JP1_trc ? PWR_CTRL_AIO 2X20 12
+     R302_trc ? 8x10k SIL9 2
+   EndSubSection
+
+ EndSubSection secondary_nets_of SDA1_pwr
+
+
+
+ SubSection SDA2_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 11 io_32 | 593 bc_1 input x | 592 bc_1 output3 x 591 0 z
+  JP1_pwr ? PWR_CTRL_AIO 2X20 20
+  P20_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection secondary_nets_of SDA2_pwr
+
+   SubSection SDA2_trc class NA
+     IC301_trc ? HC4051 SO16 14
+     JP1_trc ? PWR_CTRL_AIO 2X20 20
+     R302_trc ? 8x10k SIL9 4
+   EndSubSection
+
+ EndSubSection secondary_nets_of SDA2_pwr
+
+
+
+ SubSection SDA3_pwr class NA
+  IC1_pwr ? MAX517SO SO08 4
+  IC2_pwr ? MAX517SO SO08 4
+  IC3_pwr ? MAX517SO SO08 4
+  IC5_pwr ? XC2C384_TQ144 TQ144 13 io_51 | 566 bc_1 input x | 565 bc_1 output3 x 564 0 z
+  JP1_pwr ? PWR_CTRL_AIO 2X20 16
+  P18_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection secondary_nets_of SDA3_pwr
+
+   SubSection SDA3_trc class NA
+     IC301_trc ? HC4051 SO16 15
+     JP1_trc ? PWR_CTRL_AIO 2X20 16
+     R302_trc ? 8x10k SIL9 3
+   EndSubSection
+
+ EndSubSection secondary_nets_of SDA3_pwr
+
+
+
+ SubSection SDA4_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 9 io_30 | 599 bc_1 input x | 598 bc_1 output3 x 597 0 z
+  JP1_pwr ? PWR_CTRL_AIO 2X20 24
+  P22_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection secondary_nets_of SDA4_pwr
+
+   SubSection SDA4_trc class NA
+     IC301_trc ? HC4051 SO16 12
+     JP1_trc ? PWR_CTRL_AIO 2X20 24
+     R302_trc ? 8x10k SIL9 6
+   EndSubSection
+
+ EndSubSection secondary_nets_of SDA4_pwr
+
+
+
+ SubSection !RESET_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 35 io_60 | 539 bc_1 input x | 538 bc_1 output3 x 537 0 z
+  JP1_pwr ? PWR_CTRL_AIO 2X20 40
+  P23_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection secondary_nets_of !RESET_pwr
+
+ EndSubSection secondary_nets_of !RESET_pwr
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ SubSection !PWR_GOOD_NAND_WDG class NA
+  IC80 ? 4093N DIL14 11 
+  IC80 ? 4093N DIL14 2 
+ EndSubSection
+
+ SubSection !TRST_LOCAL class NA
+  JP400 ? JTAG 2X05 9 
+  P19 ? PAD 11-07-12 P$1 
+  PLD_2 ? 2X25 pinhead 43 
+  R402 ? 8x10k SIL9 2 
+ EndSubSection
+
+ SubSection +1V2 class NA
+  C505 ? 1� E2,5-6E + 
+  IC501 ? LM317 317TS 2 
+  P502 ? PAD 11-07-12 P$1 
+  PLD_4 ? 2X20 pinhead 18 
+  PLD_4 ? 2X20 pinhead 20 
+  PLD_4 ? 2X20 pinhead 22 
+  PLD_4 ? 2X20 pinhead 24 
+  PLD_4 ? 2X20 pinhead 26 
+  R506 ? 240 0207/10 2 
+ EndSubSection
+
+ SubSection +2V5 class NA
+  C503 ? 1� E2,5-6E + 
+  IC500 ? LM317 317TS 2 
+  JP1 ? 1X02 pinhead 1 
+  P500 ? PAD 11-07-12 P$1 
+  PLD_4 ? 2X20 pinhead 28 
+  PLD_4 ? 2X20 pinhead 30 
+  PLD_4 ? 2X20 pinhead 32 
+  PLD_4 ? 2X20 pinhead 34 
+  PLD_4 ? 2X20 pinhead 36 
+  PLD_4 ? 2X20 pinhead 38 
+  PLD_4 ? 2X20 pinhead 40 
+  R502 ? 240 0207/10 2 
+  R503 ? 100 0207/10 2 
+ EndSubSection
+
+ SubSection +3V3 class NA
+  C500 ? 100�/25V E2,5-7 + 
+  C600 ? 100n C0805 1 
+  C601 ? 100n C0805 1 
+  C81 ? 100n C050-025X075 1 
+  D600 ? red LED3MM A 
+  D601 ? yellow LED3MM A 
+  D602 ? blue LED3MM A 
+  D80 ? BAT48 DO35-10 C 
+  IC600 ? BS62LV4006 DIL32 32 
+  IC601 ? BS62LV4006 DIL32 32 
+  IC80 ? 4093N DIL14 14 
+  PLD_2 ? 2X25 pinhead 49 
+  PLD_2 ? 2X25 pinhead 50 
+  PLD_4 ? 2X20 pinhead 10 
+  PLD_4 ? 2X20 pinhead 12 
+  PLD_4 ? 2X20 pinhead 14 
+  PLD_4 ? 2X20 pinhead 16 
+  PLD_4 ? 2X20 pinhead 4 
+  PLD_4 ? 2X20 pinhead 6 
+  PLD_4 ? 2X20 pinhead 8 
+  R1 ? 8x10k SIL9 1 
+  R505 ? 100 0207/10 2 
+  R80 ? 680 0207/10 2 
+  R81 ? 33k 0207/10 2 
+  X101 ? FRONT_PANEL W237-4 4 
+  X500 ? BSC_PWR_IN W237-4 1 
+  X500 ? BSC_PWR_IN W237-4 2 
+ EndSubSection
+
+ SubSection +12V class NA
+  C506 ? 100�/25V E2,5-7 + 
+  R510 ? 33 KH208-8 2 
+  X101 ? FRONT_PANEL W237-4 3 
+  X500 ? BSC_PWR_IN W237-4 3 
+ EndSubSection
+
+ SubSection +REG_IN class NA
+  C501 ? 100�/25V E2,5-7 + 
+  C502 ? 100n C050-025X075 1 
+  C504 ? 100n C050-025X075 1 
+  IC500 ? LM317 317TS 3 
+  IC501 ? LM317 317TS 3 
+  P501 ? PAD 11-07-12 P$1 
+  R500 ? 680 0207/10 2 
+  R510 ? 33 KH208-8 1 
+ EndSubSection
+
+ SubSection 2V5_LED_A class NA
+  D501 ? green LED3MM A 
+  R503 ? 100 0207/10 1 
+ EndSubSection
+
+ SubSection 3V3_LED_A class NA
+  D502 ? green LED3MM A 
+  R505 ? 100 0207/10 1 
+ EndSubSection
+
+ SubSection ADJ_+3V3 class NA
+  IC500 ? LM317 317TS 1 
+  R501 ? 240 0207/10 2 
+  R502 ? 240 0207/10 1 
+ EndSubSection
+
+ SubSection CLK_SLOW class NA
+  IC80 ? 4093N DIL14 4 
+  P9 ? PAD pads P$1 
+  R4 ? 1M 0207/10 1 
+ EndSubSection
+
+ SubSection CPU_RSV0 class NA
+  JP100 ? EXT_CTRL&DATA 2X20 18 
+ EndSubSection
+
+ SubSection DBG_0_LED_C class NA
+  D600 ? red LED3MM K 
+  R600 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DBG_1_LED_C class NA
+  D601 ? yellow LED3MM K 
+  R601 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DBG_2_LED_C class NA
+  D602 ? blue LED3MM K 
+  R602 ? 300 0207/10 1 
+ EndSubSection
+
+ SubSection FAIL_B class NA
+  R102 ? 2k7 0207/10 2 
+  T100 ? BC548C TO92-EBC B 
+ EndSubSection
+
+ SubSection FAIL_LED_C class NA
+  R100 ? 160 0207/10 1 
+  T100 ? BC548C TO92-EBC C 
+ EndSubSection
+
+ SubSection FAIL_LED_C_R class NA
+  R100 ? 160 0207/10 2 
+  X101 ? FRONT_PANEL W237-4 2 
+ EndSubSection
+
+ SubSection GND class NA
+  C2 ? 4u7 E2,5-6E - 
+  C500 ? 100�/25V E2,5-7 - 
+  C501 ? 100�/25V E2,5-7 - 
+  C502 ? 100n C050-025X075 2 
+  C503 ? 1� E2,5-6E - 
+  C504 ? 100n C050-025X075 2 
+  C505 ? 1� E2,5-6E - 
+  C506 ? 100�/25V E2,5-7 - 
+  C600 ? 100n C0805 2 
+  C601 ? 100n C0805 2 
+  C80 ? 100uF/25V E2,5-6E - 
+  C81 ? 100n C050-025X075 2 
+  D200 ? 1N4728/3V3 DO41Z10 A 
+  D201 ? 1N4728/3V3 DO41Z10 A 
+  D500 ? green LED3MM K 
+  D501 ? green LED3MM K 
+  D502 ? green LED3MM K 
+  H1 ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1 
+  H10 ? MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE B3,2 
+  H2 ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1 
+  H3 ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1 
+  H4 ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1 
+  H7 ? MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE B3,2 
+  H8 ? MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE B3,2 
+  H9 ? MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE B3,2 
+  IC501 ? LM317 317TS 1 
+  IC600 ? BS62LV4006 DIL32 16 
+  IC601 ? BS62LV4006 DIL32 16 
+  IC80 ? 4093N DIL14 7 
+  JP100 ? EXT_CTRL&DATA 2X20 1 
+  JP100 ? EXT_CTRL&DATA 2X20 11 
+  JP100 ? EXT_CTRL&DATA 2X20 13 
+  JP100 ? EXT_CTRL&DATA 2X20 15 
+  JP100 ? EXT_CTRL&DATA 2X20 17 
+  JP100 ? EXT_CTRL&DATA 2X20 19 
+  JP100 ? EXT_CTRL&DATA 2X20 21 
+  JP100 ? EXT_CTRL&DATA 2X20 23 
+  JP100 ? EXT_CTRL&DATA 2X20 25 
+  JP100 ? EXT_CTRL&DATA 2X20 27 
+  JP100 ? EXT_CTRL&DATA 2X20 29 
+  JP100 ? EXT_CTRL&DATA 2X20 3 
+  JP100 ? EXT_CTRL&DATA 2X20 31 
+  JP100 ? EXT_CTRL&DATA 2X20 33 
+  JP100 ? EXT_CTRL&DATA 2X20 35 
+  JP100 ? EXT_CTRL&DATA 2X20 37 
+  JP100 ? EXT_CTRL&DATA 2X20 39 
+  JP100 ? EXT_CTRL&DATA 2X20 5 
+  JP100 ? EXT_CTRL&DATA 2X20 7 
+  JP100 ? EXT_CTRL&DATA 2X20 9 
+  JP101 ? EXT_CTRL&ADDR 2X20 1 
+  JP101 ? EXT_CTRL&ADDR 2X20 11 
+  JP101 ? EXT_CTRL&ADDR 2X20 13 
+  JP101 ? EXT_CTRL&ADDR 2X20 15 
+  JP101 ? EXT_CTRL&ADDR 2X20 17 
+  JP101 ? EXT_CTRL&ADDR 2X20 19 
+  JP101 ? EXT_CTRL&ADDR 2X20 21 
+  JP101 ? EXT_CTRL&ADDR 2X20 23 
+  JP101 ? EXT_CTRL&ADDR 2X20 25 
+  JP101 ? EXT_CTRL&ADDR 2X20 27 
+  JP101 ? EXT_CTRL&ADDR 2X20 29 
+  JP101 ? EXT_CTRL&ADDR 2X20 3 
+  JP101 ? EXT_CTRL&ADDR 2X20 31 
+  JP101 ? EXT_CTRL&ADDR 2X20 33 
+  JP101 ? EXT_CTRL&ADDR 2X20 35 
+  JP101 ? EXT_CTRL&ADDR 2X20 37 
+  JP101 ? EXT_CTRL&ADDR 2X20 39 
+  JP101 ? EXT_CTRL&ADDR 2X20 5 
+  JP101 ? EXT_CTRL&ADDR 2X20 7 
+  JP101 ? EXT_CTRL&ADDR 2X20 9 
+  JP2 ? DBG 2X20 1 
+  JP2 ? DBG 2X20 11 
+  JP2 ? DBG 2X20 13 
+  JP2 ? DBG 2X20 15 
+  JP2 ? DBG 2X20 17 
+  JP2 ? DBG 2X20 19 
+  JP2 ? DBG 2X20 21 
+  JP2 ? DBG 2X20 23 
+  JP2 ? DBG 2X20 25 
+  JP2 ? DBG 2X20 27 
+  JP2 ? DBG 2X20 29 
+  JP2 ? DBG 2X20 3 
+  JP2 ? DBG 2X20 31 
+  JP2 ? DBG 2X20 35 
+  JP2 ? DBG 2X20 36 
+  JP2 ? DBG 2X20 37 
+  JP2 ? DBG 2X20 38 
+  JP2 ? DBG 2X20 5 
+  JP2 ? DBG 2X20 7 
+  JP2 ? DBG 2X20 9 
+  JP200 ? Tranceiver 2X20 1 
+  JP200 ? Tranceiver 2X20 11 
+  JP200 ? Tranceiver 2X20 13 
+  JP200 ? Tranceiver 2X20 15 
+  JP200 ? Tranceiver 2X20 17 
+  JP200 ? Tranceiver 2X20 19 
+  JP200 ? Tranceiver 2X20 21 
+  JP200 ? Tranceiver 2X20 23 
+  JP200 ? Tranceiver 2X20 25 
+  JP200 ? Tranceiver 2X20 27 
+  JP200 ? Tranceiver 2X20 29 
+  JP200 ? Tranceiver 2X20 3 
+  JP200 ? Tranceiver 2X20 31 
+  JP200 ? Tranceiver 2X20 33 
+  JP200 ? Tranceiver 2X20 35 
+  JP200 ? Tranceiver 2X20 37 
+  JP200 ? Tranceiver 2X20 5 
+  JP200 ? Tranceiver 2X20 7 
+  JP200 ? Tranceiver 2X20 9 
+  JP400 ? JTAG 2X05 2 
+  JP400 ? JTAG 2X05 4 
+  JP400 ? JTAG 2X05 6 
+  JP400 ? JTAG 2X05 8 
+  PLD_2 ? 2X25 pinhead 1 
+  PLD_2 ? 2X25 pinhead 2 
+  PLD_2 ? 2X25 pinhead 3 
+  PLD_2 ? 2X25 pinhead 4 
+  PLD_2 ? 2X25 pinhead 45 
+  PLD_2 ? 2X25 pinhead 46 
+  PLD_2 ? 2X25 pinhead 47 
+  PLD_2 ? 2X25 pinhead 48 
+  PLD_3 ? 2X20 pinhead 2 
+  PLD_3 ? 2X20 pinhead 4 
+  PLD_3 ? 2X20 pinhead 6 
+  PLD_4 ? 2X20 pinhead 1 
+  PLD_4 ? 2X20 pinhead 11 
+  PLD_4 ? 2X20 pinhead 13 
+  PLD_4 ? 2X20 pinhead 15 
+  PLD_4 ? 2X20 pinhead 17 
+  PLD_4 ? 2X20 pinhead 19 
+  PLD_4 ? 2X20 pinhead 21 
+  PLD_4 ? 2X20 pinhead 23 
+  PLD_4 ? 2X20 pinhead 25 
+  PLD_4 ? 2X20 pinhead 27 
+  PLD_4 ? 2X20 pinhead 29 
+  PLD_4 ? 2X20 pinhead 3 
+  PLD_4 ? 2X20 pinhead 31 
+  PLD_4 ? 2X20 pinhead 33 
+  PLD_4 ? 2X20 pinhead 35 
+  PLD_4 ? 2X20 pinhead 37 
+  PLD_4 ? 2X20 pinhead 39 
+  PLD_4 ? 2X20 pinhead 5 
+  PLD_4 ? 2X20 pinhead 7 
+  PLD_4 ? 2X20 pinhead 9 
+  R400 ? 300 0207/10 2 
+  R401 ? 300 0207/10 2 
+  R501 ? 240 0207/10 1 
+  R506 ? 240 0207/10 1 
+  R80 ? 680 0207/10 1 
+  R82 ? 15k 0207/10 1 
+  T100 ? BC548C TO92-EBC E 
+  T101 ? BC548C TO92-EBC E 
+  T80 ? BC548C TO92 1 
+  T81 ? BC548C TO92 1 
+  X100 ? FRONT_PANEL W237-4 3 
+  X100 ? FRONT_PANEL W237-4 4 
+  X500 ? BSC_PWR_IN W237-4 4 
+  X501 ? W237-102 con-wago-500 1 
+ EndSubSection
+
+ SubSection N$78 class NA
+  C2 ? 4u7 E2,5-6E + 
+  IC80 ? 4093N DIL14 5 
+  IC80 ? 4093N DIL14 6 
+  R4 ? 1M 0207/10 2 
+ EndSubSection
+
+ SubSection PASS_B class NA
+  R103 ? 2k7 0207/10 2 
+  T101 ? BC548C TO92-EBC B 
+ EndSubSection
+
+ SubSection PASS_LED_C class NA
+  R101 ? 160 0207/10 1 
+  T101 ? BC548C TO92-EBC C 
+ EndSubSection
+
+ SubSection PASS_LED_C_R class NA
+  R101 ? 160 0207/10 2 
+  X101 ? FRONT_PANEL W237-4 1 
+ EndSubSection
+
+ SubSection PWR_GOOD class NA
+  R85 ? 10k 0207/10 2 
+  X501 ? W237-102 con-wago-500 2 
+ EndSubSection
+
+ SubSection PWR_GOOD_DIV class NA
+  IC80 ? 4093N DIL14 8 
+  R82 ? 15k 0207/10 2 
+  R85 ? 10k 0207/10 1 
+ EndSubSection
+
+ SubSection PWR_GOOD_NAND_WDG class NA
+  IC80 ? 4093N DIL14 10 
+  IC80 ? 4093N DIL14 12 
+  IC80 ? 4093N DIL14 13 
+ EndSubSection
+
+ SubSection REG_IN_LED_A class NA
+  D500 ? green LED3MM A 
+  R500 ? 680 0207/10 1 
+ EndSubSection
+
+ SubSection RST_C+ class NA
+  C80 ? 100uF/25V E2,5-6E + 
+  D80 ? BAT48 DO35-10 A 
+  IC80 ? 4093N DIL14 1 
+  P22 ? PAD pads P$1 
+  R81 ? 33k 0207/10 1 
+ EndSubSection
+
+ SubSection RSV_200 class NA
+  JP2 ? DBG 2X20 24 
+  P12 ? PAD pads P$1 
+  PLD_3 ? 2X20 pinhead 7 
+ EndSubSection
+
+ SubSection SYS_RESET class NA
+  IC80 ? 4093N DIL14 3 
+  R83 ? 2k7 0207/10 2 
+  R84 ? 2k7 0207/10 2 
+ EndSubSection
+
+ SubSection SYS_RESET_B class NA
+  R83 ? 2k7 0207/10 1 
+  T80 ? BC548C TO92 2 
+ EndSubSection
+
+ SubSection SYS_RESET_B1 class NA
+  R84 ? 2k7 0207/10 1 
+  T81 ? BC548C TO92 2 
+ EndSubSection
+
+ SubSection TCK_LOCAL class NA
+  JP400 ? JTAG 2X05 1 
+  P10 ? PAD 11-07-12 P$1 
+  PLD_2 ? 2X25 pinhead 37 
+  R400 ? 300 0207/10 1 
+ EndSubSection
+
+ SubSection TDI_LOCAL class NA
+  JP400 ? JTAG 2X05 7 
+  P16 ? PAD 11-07-12 P$1 
+  PLD_2 ? 2X25 pinhead 41 
+  R402 ? 8x10k SIL9 3 
+ EndSubSection
+
+ SubSection TDO_LOCAL class NA
+  JP400 ? JTAG 2X05 5 
+  P13 ? PAD 11-07-12 P$1 
+  PLD_2 ? 2X25 pinhead 39 
+  R402 ? 8x10k SIL9 4 
+ EndSubSection
+
+ SubSection TMS_LOCAL class NA
+  JP400 ? JTAG 2X05 3 
+  P11 ? PAD 11-07-12 P$1 
+  PLD_2 ? 2X25 pinhead 35 
+  R401 ? 300 0207/10 1 
+ EndSubSection
+
+ SubSection VREF_JTAG class NA
+  JP1 ? 1X02 pinhead 2 
+  JP400 ? JTAG 2X05 10 
+  R402 ? 8x10k SIL9 1 
+ EndSubSection
+
+ SubSection !TRST_LOCAL_sub class NA
+  PLD_2_sub ? PINHD-2X25 pinhead 43
+ EndSubSection
+
+ SubSection +1V2_sub class NA
+  C3_sub ? 100n C0805 1
+  C4_sub ? 10uF/16V 153CLV-0405 +
+  C5_sub ? 100n C0805 1
+  C7_sub ? 100n C0805 1
+  C9_sub ? 100n C0805 1
+  IC2_sub ? XC3S400PQ208 PQ208 174 vccint
+  IC2_sub ? XC3S400PQ208 PQ208 192 vccint
+  IC2_sub ? XC3S400PQ208 PQ208 70 vccint
+  IC2_sub ? XC3S400PQ208 PQ208 88 vccint
+  PLD_4_sub ? PINHD-2X20 pinhead 18
+  PLD_4_sub ? PINHD-2X20 pinhead 20
+  PLD_4_sub ? PINHD-2X20 pinhead 22
+  PLD_4_sub ? PINHD-2X20 pinhead 24
+  PLD_4_sub ? PINHD-2X20 pinhead 26
+ EndSubSection
+
+ SubSection +2V5_sub class NA
+  C10_sub ? 100n C0805 1
+  C11_sub ? 100n C0805 1
+  C12_sub ? 100n C0805 1
+  C13_sub ? 100n C0805 1
+  C14_sub ? 100n C0805 1
+  C15_sub ? 100n C0805 1
+  C16_sub ? 100n C0805 1
+  C17_sub ? 100n C0805 1
+  C18_sub ? 100n C0805 1
+  C19_sub ? 100n C0805 1
+  C6_sub ? 10uF/16V 153CLV-0405 +
+  IC1_sub ? XCF04S SSOP20 19 vcco
+  IC1_sub ? XCF04S SSOP20 20 vccj
+  IC2_sub ? XC3S400PQ208 PQ208 121 vccaux
+  IC2_sub ? XC3S400PQ208 PQ208 142 vccaux
+  IC2_sub ? XC3S400PQ208 PQ208 17 vccaux
+  IC2_sub ? XC3S400PQ208 PQ208 173 vccaux
+  IC2_sub ? XC3S400PQ208 PQ208 193 vccaux
+  IC2_sub ? XC3S400PQ208 PQ208 38 vccaux
+  IC2_sub ? XC3S400PQ208 PQ208 69 vccaux
+  IC2_sub ? XC3S400PQ208 PQ208 84 vcco4
+  IC2_sub ? XC3S400PQ208 PQ208 89 vccaux
+  IC2_sub ? XC3S400PQ208 PQ208 98 vcco4
+  JP1_sub ? conf 2X10 10
+  PLD_4_sub ? PINHD-2X20 pinhead 28
+  PLD_4_sub ? PINHD-2X20 pinhead 30
+  PLD_4_sub ? PINHD-2X20 pinhead 32
+  PLD_4_sub ? PINHD-2X20 pinhead 34
+  PLD_4_sub ? PINHD-2X20 pinhead 36
+  PLD_4_sub ? PINHD-2X20 pinhead 38
+  PLD_4_sub ? PINHD-2X20 pinhead 40
+  R1_sub ? 330 0207/10 2
+  R2_sub ? 4k7 0207/10 2
+  R4_sub ? 4k7 0207/10 2
+  R5_sub ? 330 0207/10 2
+  R6_sub ? 4k7 0207/10 2
+ EndSubSection
+
+ SubSection +3V3_sub class NA
+  C1_sub ? 100n C0805 1
+  C2_sub ? 100n C0805 1
+  C20_sub ? 100n C0805 1
+  C21_sub ? 100n C0805 1
+  C22_sub ? 100n C0805 1
+  C23_sub ? 100n C0805 1
+  C24_sub ? 100n C0805 1
+  C25_sub ? 100n C0805 1
+  C26_sub ? 100n C0805 1
+  C27_sub ? 100n C0805 1
+  C28_sub ? 100n C0805 1
+  C29_sub ? 100n C0805 1
+  C30_sub ? 100n C0805 1
+  C31_sub ? 100n C0805 1
+  C32_sub ? 100n C0805 1
+  C33_sub ? 100n C0805 1
+  C34_sub ? 10uF/16V 153CLV-0405 +
+  C8_sub ? 10uF/16V 153CLV-0405 +
+  IC1_sub ? XCF04S SSOP20 18 vccint
+  IC2_sub ? XC3S400PQ208 PQ208 110 vcco3
+  IC2_sub ? XC3S400PQ208 PQ208 127 vcco3
+  IC2_sub ? XC3S400PQ208 PQ208 136 vcco2
+  IC2_sub ? XC3S400PQ208 PQ208 153 vcco2
+  IC2_sub ? XC3S400PQ208 PQ208 164 vcco1
+  IC2_sub ? XC3S400PQ208 PQ208 177 vcco1
+  IC2_sub ? XC3S400PQ208 PQ208 188 vcco0
+  IC2_sub ? XC3S400PQ208 PQ208 201 vcco0
+  IC2_sub ? XC3S400PQ208 PQ208 23 vcco7
+  IC2_sub ? XC3S400PQ208 PQ208 32 vcco6
+  IC2_sub ? XC3S400PQ208 PQ208 49 vcco6
+  IC2_sub ? XC3S400PQ208 PQ208 6 vcco7
+  IC2_sub ? XC3S400PQ208 PQ208 60 vcco5
+  IC2_sub ? XC3S400PQ208 PQ208 73 vcco5
+  OSC1_sub ? X091 X091 4
+  OSC2_sub ? X053 X053 4
+  PLD_2_sub ? PINHD-2X25 pinhead 49
+  PLD_2_sub ? PINHD-2X25 pinhead 50
+  PLD_4_sub ? PINHD-2X20 pinhead 10
+  PLD_4_sub ? PINHD-2X20 pinhead 12
+  PLD_4_sub ? PINHD-2X20 pinhead 14
+  PLD_4_sub ? PINHD-2X20 pinhead 16
+  PLD_4_sub ? PINHD-2X20 pinhead 4
+  PLD_4_sub ? PINHD-2X20 pinhead 6
+  PLD_4_sub ? PINHD-2X20 pinhead 8
+ EndSubSection
+
+ SubSection CLK_SCAN_ENABLE_sub class NA
+  JP1_sub ? conf 2X10 12
+  OSC1_sub ? X091 X091 1
+  OSC2_sub ? X053 X053 1
+  P24_sub ? PAD pads P$1
+  R1_sub ? 330 0207/10 1
+ EndSubSection
+
+ SubSection GND_sub class NA
+  C1_sub ? 100n C0805 2
+  C10_sub ? 100n C0805 2
+  C11_sub ? 100n C0805 2
+  C12_sub ? 100n C0805 2
+  C13_sub ? 100n C0805 2
+  C14_sub ? 100n C0805 2
+  C15_sub ? 100n C0805 2
+  C16_sub ? 100n C0805 2
+  C17_sub ? 100n C0805 2
+  C18_sub ? 100n C0805 2
+  C19_sub ? 100n C0805 2
+  C2_sub ? 100n C0805 2
+  C20_sub ? 100n C0805 2
+  C21_sub ? 100n C0805 2
+  C22_sub ? 100n C0805 2
+  C23_sub ? 100n C0805 2
+  C24_sub ? 100n C0805 2
+  C25_sub ? 100n C0805 2
+  C26_sub ? 100n C0805 2
+  C27_sub ? 100n C0805 2
+  C28_sub ? 100n C0805 2
+  C29_sub ? 100n C0805 2
+  C3_sub ? 100n C0805 2
+  C30_sub ? 100n C0805 2
+  C31_sub ? 100n C0805 2
+  C32_sub ? 100n C0805 2
+  C33_sub ? 100n C0805 2
+  C34_sub ? 10uF/16V 153CLV-0405 -
+  C4_sub ? 10uF/16V 153CLV-0405 -
+  C5_sub ? 100n C0805 2
+  C6_sub ? 10uF/16V 153CLV-0405 -
+  C7_sub ? 100n C0805 2
+  C8_sub ? 10uF/16V 153CLV-0405 -
+  C9_sub ? 100n C0805 2
+  IC1_sub ? XCF04S SSOP20 11 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 1 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 105 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 112 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 118 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 129 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 134 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 14 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 145 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 151 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 157 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 163 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 170 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 179 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 186 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 195 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 202 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 25 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 30 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 41 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 47 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 53 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 59 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 66 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 75 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 8 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 82 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 91 gnd
+  IC2_sub ? XC3S400PQ208 PQ208 99 gnd
+  JP1_sub ? conf 2X10 14
+  JP1_sub ? conf 2X10 16
+  JP1_sub ? conf 2X10 18
+  JP1_sub ? conf 2X10 20
+  JP1_sub ? conf 2X10 4
+  JP1_sub ? conf 2X10 6
+  JP1_sub ? conf 2X10 8
+  OSC1_sub ? X091 X091 2
+  OSC2_sub ? X053 X053 2
+  PLD_2_sub ? PINHD-2X25 pinhead 1
+  PLD_2_sub ? PINHD-2X25 pinhead 2
+  PLD_2_sub ? PINHD-2X25 pinhead 3
+  PLD_2_sub ? PINHD-2X25 pinhead 4
+  PLD_2_sub ? PINHD-2X25 pinhead 45
+  PLD_2_sub ? PINHD-2X25 pinhead 46
+  PLD_2_sub ? PINHD-2X25 pinhead 47
+  PLD_2_sub ? PINHD-2X25 pinhead 48
+  PLD_3_sub ? PINHD-2X20 pinhead 2
+  PLD_3_sub ? PINHD-2X20 pinhead 4
+  PLD_3_sub ? PINHD-2X20 pinhead 6
+  PLD_4_sub ? PINHD-2X20 pinhead 1
+  PLD_4_sub ? PINHD-2X20 pinhead 11
+  PLD_4_sub ? PINHD-2X20 pinhead 13
+  PLD_4_sub ? PINHD-2X20 pinhead 15
+  PLD_4_sub ? PINHD-2X20 pinhead 17
+  PLD_4_sub ? PINHD-2X20 pinhead 19
+  PLD_4_sub ? PINHD-2X20 pinhead 21
+  PLD_4_sub ? PINHD-2X20 pinhead 23
+  PLD_4_sub ? PINHD-2X20 pinhead 25
+  PLD_4_sub ? PINHD-2X20 pinhead 27
+  PLD_4_sub ? PINHD-2X20 pinhead 29
+  PLD_4_sub ? PINHD-2X20 pinhead 3
+  PLD_4_sub ? PINHD-2X20 pinhead 31
+  PLD_4_sub ? PINHD-2X20 pinhead 33
+  PLD_4_sub ? PINHD-2X20 pinhead 35
+  PLD_4_sub ? PINHD-2X20 pinhead 37
+  PLD_4_sub ? PINHD-2X20 pinhead 39
+  PLD_4_sub ? PINHD-2X20 pinhead 5
+  PLD_4_sub ? PINHD-2X20 pinhead 7
+  PLD_4_sub ? PINHD-2X20 pinhead 9
+ EndSubSection
+
+ SubSection RSV_200_sub class NA
+  P1_sub ? PAD pads P$1
+  PLD_3_sub ? PINHD-2X20 pinhead 7
+ EndSubSection
+
+ SubSection TCK_LOCAL_sub class NA
+  IC1_sub ? XCF04S SSOP20 6 tck
+  IC2_sub ? XC3S400PQ208 PQ208 159 tck
+  PLD_2_sub ? PINHD-2X25 pinhead 37
+ EndSubSection
+
+ SubSection TDI_LOCAL_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 208 tdi
+  PLD_2_sub ? PINHD-2X25 pinhead 41
+ EndSubSection
+
+ SubSection TDI_PROM_sub class NA
+  IC1_sub ? XCF04S SSOP20 4 tdi
+  JP1_sub ? conf 2X10 2
+  R2_sub ? 4k7 0207/10 1
+ EndSubSection
+
+ SubSection TDO_FPGA_sub class NA
+  IC2_sub ? XC3S400PQ208 PQ208 158 tdo
+  JP1_sub ? conf 2X10 1
+ EndSubSection
+
+ SubSection TDO_LOCAL_sub class NA
+  IC1_sub ? XCF04S SSOP20 17 tdo
+  PLD_2_sub ? PINHD-2X25 pinhead 39
+ EndSubSection
+
+ SubSection TMS_LOCAL_sub class NA
+  IC1_sub ? XCF04S SSOP20 5 tms
+  IC2_sub ? XC3S400PQ208 PQ208 160 tms
+  PLD_2_sub ? PINHD-2X25 pinhead 35
+ EndSubSection
+
+ SubSection +3V3_moni class NA
+  C101_moni ? 100�/25V E2,5-7 +
+  C201_moni ? 100n C0805 1
+  C202_moni ? 100n C0805 1
+  C203_moni ? 100n C0805 1
+  C204_moni ? 100n C0805 1
+  C205_moni ? 100n C0805 1
+  C206_moni ? 100n C0805 1
+  C207_moni ? 100n C0805 1
+  C208_moni ? 100n C0805 1
+  C209_moni ? 100n C0805 1
+  C210_moni ? 100n C0805 1
+  C601_moni ? 100n C0805 1
+  D301_moni ? bl LED3MM A
+  D302_moni ? bl LED3MM A
+  D303_moni ? bl LED3MM A
+  D304_moni ? bl LED3MM A
+  D305_moni ? bl LED3MM A
+  D306_moni ? bl LED3MM A
+  D307_moni ? bl LED3MM A
+  D308_moni ? bl LED3MM A
+  D309_moni ? bl LED3MM A
+  D310_moni ? bl LED3MM A
+  D311_moni ? bl LED3MM A
+  D312_moni ? bl LED3MM A
+  D315_moni ? bl LED3MM A
+  D316_moni ? bl LED3MM A
+  IC201_moni ? XC95288XL_TQ144 TQ144 1 vccio_1
+  IC201_moni ? XC95288XL_TQ144 TQ144 109 vccio_5
+  IC201_moni ? XC95288XL_TQ144 TQ144 127 vccio_6
+  IC201_moni ? XC95288XL_TQ144 TQ144 141 vccint_3
+  IC201_moni ? XC95288XL_TQ144 TQ144 37 vccio_2
+  IC201_moni ? XC95288XL_TQ144 TQ144 42 vccint_1
+  IC201_moni ? XC95288XL_TQ144 TQ144 55 vccio_3
+  IC201_moni ? XC95288XL_TQ144 TQ144 73 vccio_4
+  IC201_moni ? XC95288XL_TQ144 TQ144 8 vccint_vpp
+  IC201_moni ? XC95288XL_TQ144 TQ144 84 vccint_2
+  IC601_moni ? 4093N DIL14 14
+  JP106_moni ? 1X02 pinhead 1
+  JP601_moni ? PIO_DBG 2X20 1
+  JP601_moni ? PIO_DBG 2X20 3
+  JP601_moni ? PIO_DBG 2X20 5
+  R101_moni ? 160 0207/10 2
+  RN401_moni ? 10k SIL9 1
+  RN501_moni ? 10k SIL9 1
+  RN601_moni ? 10k SIL9 1
+  RN602_moni ? 10k SIL9 1
+  RN603_moni ? 10k SIL9 1
+  T401_moni ? BC327 TO92-CBE E
+  T402_moni ? BC327 TO92-CBE E
+  T403_moni ? BC327 TO92-CBE E
+  T404_moni ? BC327 TO92-CBE E
+  T409_moni ? BC327 TO92-CBE E
+  T410_moni ? BC327 TO92-CBE E
+  T411_moni ? BC327 TO92-CBE E
+  T501_moni ? BD140 TO126AV E
+  T502_moni ? BD140 TO126AV E
+  T503_moni ? BD140 TO126AV E
+  T507_moni ? BD140 TO126AV E
+  T508_moni ? BD140 TO126AV E
+  T509_moni ? BD140 TO126AV E
+  X101_moni ? PWR W237-4 1
+ EndSubSection
+
+ SubSection +5V_moni class NA
+  C102_moni ? 100�/25V E2,5-7 +
+  X101_moni ? PWR W237-4 2
+ EndSubSection
+
+ SubSection 3V3_LED_A_moni class NA
+  D101_moni ? green LED3MM A
+  R101_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection AC_SEL0_DRV_moni class NA
+  DIS303_moni ? VQEXX VQE_2DIGIT 5
+  T501_moni ? BD140 TO126AV C
+  T504_moni ? BD139 TO126AV C
+ EndSubSection
+
+ SubSection AC_SEL1_DRV_moni class NA
+  DIS303_moni ? VQEXX VQE_2DIGIT 4
+  T502_moni ? BD140 TO126AV C
+  T505_moni ? BD139 TO126AV C
+ EndSubSection
+
+ SubSection AC_SEL2_DRV_moni class NA
+  DIS302_moni ? VQEXX VQE_2DIGIT 5
+  T503_moni ? BD140 TO126AV C
+  T506_moni ? BD139 TO126AV C
+ EndSubSection
+
+ SubSection AC_SEL3_DRV_moni class NA
+  DIS302_moni ? VQEXX VQE_2DIGIT 4
+  T507_moni ? BD140 TO126AV C
+  T510_moni ? BD139 TO126AV C
+ EndSubSection
+
+ SubSection AC_SEL4_DRV_moni class NA
+  DIS301_moni ? VQEXX VQE_2DIGIT 5
+  T508_moni ? BD140 TO126AV C
+  T511_moni ? BD139 TO126AV C
+ EndSubSection
+
+ SubSection AC_SEL5_DRV_moni class NA
+  DIS301_moni ? VQEXX VQE_2DIGIT 4
+  T509_moni ? BD140 TO126AV C
+  T512_moni ? BD139 TO126AV C
+ EndSubSection
+
+ SubSection AC_SEL_B0_moni class NA
+  RN501_moni ? 10k SIL9 2
+  RN502_moni ? 1k SIL8 2
+  RN503_moni ? 10k SIL9 2
+  T501_moni ? BD140 TO126AV B
+  T504_moni ? BD139 TO126AV B
+ EndSubSection
+
+ SubSection AC_SEL_B1_moni class NA
+  RN501_moni ? 10k SIL9 3
+  RN502_moni ? 1k SIL8 4
+  RN503_moni ? 10k SIL9 3
+  T502_moni ? BD140 TO126AV B
+  T505_moni ? BD139 TO126AV B
+ EndSubSection
+
+ SubSection AC_SEL_B2_moni class NA
+  RN501_moni ? 10k SIL9 4
+  RN502_moni ? 1k SIL8 6
+  RN503_moni ? 10k SIL9 4
+  T503_moni ? BD140 TO126AV B
+  T506_moni ? BD139 TO126AV B
+ EndSubSection
+
+ SubSection AC_SEL_B3_moni class NA
+  RN501_moni ? 10k SIL9 5
+  RN502_moni ? 1k SIL8 8
+  RN503_moni ? 10k SIL9 5
+  T507_moni ? BD140 TO126AV B
+  T510_moni ? BD139 TO126AV B
+ EndSubSection
+
+ SubSection AC_SEL_B4_moni class NA
+  RN501_moni ? 10k SIL9 6
+  RN503_moni ? 10k SIL9 6
+  RN504_moni ? 1k SIL8 2
+  T508_moni ? BD140 TO126AV B
+  T511_moni ? BD139 TO126AV B
+ EndSubSection
+
+ SubSection AC_SEL_B5_moni class NA
+  RN501_moni ? 10k SIL9 7
+  RN503_moni ? 10k SIL9 7
+  RN504_moni ? 1k SIL8 4
+  T509_moni ? BD140 TO126AV B
+  T512_moni ? BD139 TO126AV B
+ EndSubSection
+
+ SubSection CLK_SLOW_moni class NA
+  IC601_moni ? 4093N DIL14 1
+  IC601_moni ? 4093N DIL14 2
+  IC601_moni ? 4093N DIL14 4
+  R601_moni ? 10k 0207/10 1
+ EndSubSection
+
+ SubSection CPU_RSV0_moni class NA
+  JP101_moni ? CPU_CTRL&DATA 2X20 18
+ EndSubSection
+
+ SubSection DEBUG0_LED_moni class NA
+  D301_moni ? bl LED3MM K
+  R308_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection DEBUG1_LED_moni class NA
+  D302_moni ? bl LED3MM K
+  R309_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection DEBUG2_LED_moni class NA
+  D303_moni ? bl LED3MM K
+  R310_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection DEBUG3_LED_moni class NA
+  D304_moni ? bl LED3MM K
+  R311_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection DEBUG4_LED_moni class NA
+  D305_moni ? bl LED3MM K
+  R312_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection DEBUG5_LED_moni class NA
+  D306_moni ? bl LED3MM K
+  R313_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection DEBUG6_LED_moni class NA
+  D307_moni ? bl LED3MM K
+  R314_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection DEBUG7_LED_moni class NA
+  D308_moni ? bl LED3MM K
+  R315_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection DEBUG8_LED_moni class NA
+  D309_moni ? bl LED3MM K
+  R316_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection DEBUG9_LED_moni class NA
+  D310_moni ? bl LED3MM K
+  R317_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection DEBUG10_LED_moni class NA
+  D311_moni ? bl LED3MM K
+  R318_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection DEBUG11_LED_moni class NA
+  D312_moni ? bl LED3MM K
+  R319_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection GND_moni class NA
+  C101_moni ? 100�/25V E2,5-7 -
+  C102_moni ? 100�/25V E2,5-7 -
+  C201_moni ? 100n C0805 2
+  C202_moni ? 100n C0805 2
+  C203_moni ? 100n C0805 2
+  C204_moni ? 100n C0805 2
+  C205_moni ? 100n C0805 2
+  C206_moni ? 100n C0805 2
+  C207_moni ? 100n C0805 2
+  C208_moni ? 100n C0805 2
+  C209_moni ? 100n C0805 2
+  C210_moni ? 100n C0805 2
+  C601_moni ? 100n C0805 2
+  C602_moni ? 4n7 C050-025X075 2
+  D101_moni ? green LED3MM K
+  H101_moni ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1
+  H102_moni ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1
+  H103_moni ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1
+  H104_moni ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1
+  IC201_moni ? XC95288XL_TQ144 TQ144 108 vssio_6
+  IC201_moni ? XC95288XL_TQ144 TQ144 114 vssint_5
+  IC201_moni ? XC95288XL_TQ144 TQ144 123 vssio_7
+  IC201_moni ? XC95288XL_TQ144 TQ144 144 vssio_8
+  IC201_moni ? XC95288XL_TQ144 TQ144 18 vssint_1
+  IC201_moni ? XC95288XL_TQ144 TQ144 29 vssint_2
+  IC201_moni ? XC95288XL_TQ144 TQ144 36 vssio_1
+  IC201_moni ? XC95288XL_TQ144 TQ144 47 vssio_2
+  IC201_moni ? XC95288XL_TQ144 TQ144 62 vssint_3
+  IC201_moni ? XC95288XL_TQ144 TQ144 72 vssio_3
+  IC201_moni ? XC95288XL_TQ144 TQ144 89 vssio_4
+  IC201_moni ? XC95288XL_TQ144 TQ144 90 vssint_4
+  IC201_moni ? XC95288XL_TQ144 TQ144 99 vssio_5
+  IC601_moni ? 4093N DIL14 7
+  JP101_moni ? CPU_CTRL&DATA 2X20 1
+  JP101_moni ? CPU_CTRL&DATA 2X20 11
+  JP101_moni ? CPU_CTRL&DATA 2X20 13
+  JP101_moni ? CPU_CTRL&DATA 2X20 15
+  JP101_moni ? CPU_CTRL&DATA 2X20 17
+  JP101_moni ? CPU_CTRL&DATA 2X20 19
+  JP101_moni ? CPU_CTRL&DATA 2X20 21
+  JP101_moni ? CPU_CTRL&DATA 2X20 23
+  JP101_moni ? CPU_CTRL&DATA 2X20 25
+  JP101_moni ? CPU_CTRL&DATA 2X20 27
+  JP101_moni ? CPU_CTRL&DATA 2X20 29
+  JP101_moni ? CPU_CTRL&DATA 2X20 3
+  JP101_moni ? CPU_CTRL&DATA 2X20 31
+  JP101_moni ? CPU_CTRL&DATA 2X20 33
+  JP101_moni ? CPU_CTRL&DATA 2X20 35
+  JP101_moni ? CPU_CTRL&DATA 2X20 37
+  JP101_moni ? CPU_CTRL&DATA 2X20 39
+  JP101_moni ? CPU_CTRL&DATA 2X20 5
+  JP101_moni ? CPU_CTRL&DATA 2X20 7
+  JP101_moni ? CPU_CTRL&DATA 2X20 9
+  JP102_moni ? EXT_CTRL&DATA 2X20 1
+  JP102_moni ? EXT_CTRL&DATA 2X20 11
+  JP102_moni ? EXT_CTRL&DATA 2X20 13
+  JP102_moni ? EXT_CTRL&DATA 2X20 15
+  JP102_moni ? EXT_CTRL&DATA 2X20 17
+  JP102_moni ? EXT_CTRL&DATA 2X20 19
+  JP102_moni ? EXT_CTRL&DATA 2X20 21
+  JP102_moni ? EXT_CTRL&DATA 2X20 23
+  JP102_moni ? EXT_CTRL&DATA 2X20 25
+  JP102_moni ? EXT_CTRL&DATA 2X20 27
+  JP102_moni ? EXT_CTRL&DATA 2X20 29
+  JP102_moni ? EXT_CTRL&DATA 2X20 3
+  JP102_moni ? EXT_CTRL&DATA 2X20 31
+  JP102_moni ? EXT_CTRL&DATA 2X20 33
+  JP102_moni ? EXT_CTRL&DATA 2X20 35
+  JP102_moni ? EXT_CTRL&DATA 2X20 37
+  JP102_moni ? EXT_CTRL&DATA 2X20 39
+  JP102_moni ? EXT_CTRL&DATA 2X20 5
+  JP102_moni ? EXT_CTRL&DATA 2X20 7
+  JP102_moni ? EXT_CTRL&DATA 2X20 9
+  JP103_moni ? CPU_CTRL&ADDR 2X20 1
+  JP103_moni ? CPU_CTRL&ADDR 2X20 11
+  JP103_moni ? CPU_CTRL&ADDR 2X20 13
+  JP103_moni ? CPU_CTRL&ADDR 2X20 15
+  JP103_moni ? CPU_CTRL&ADDR 2X20 17
+  JP103_moni ? CPU_CTRL&ADDR 2X20 19
+  JP103_moni ? CPU_CTRL&ADDR 2X20 21
+  JP103_moni ? CPU_CTRL&ADDR 2X20 23
+  JP103_moni ? CPU_CTRL&ADDR 2X20 25
+  JP103_moni ? CPU_CTRL&ADDR 2X20 27
+  JP103_moni ? CPU_CTRL&ADDR 2X20 29
+  JP103_moni ? CPU_CTRL&ADDR 2X20 3
+  JP103_moni ? CPU_CTRL&ADDR 2X20 31
+  JP103_moni ? CPU_CTRL&ADDR 2X20 33
+  JP103_moni ? CPU_CTRL&ADDR 2X20 35
+  JP103_moni ? CPU_CTRL&ADDR 2X20 37
+  JP103_moni ? CPU_CTRL&ADDR 2X20 39
+  JP103_moni ? CPU_CTRL&ADDR 2X20 5
+  JP103_moni ? CPU_CTRL&ADDR 2X20 7
+  JP103_moni ? CPU_CTRL&ADDR 2X20 9
+  JP104_moni ? EXT_CTRL&ADDR 2X20 1
+  JP104_moni ? EXT_CTRL&ADDR 2X20 11
+  JP104_moni ? EXT_CTRL&ADDR 2X20 13
+  JP104_moni ? EXT_CTRL&ADDR 2X20 15
+  JP104_moni ? EXT_CTRL&ADDR 2X20 17
+  JP104_moni ? EXT_CTRL&ADDR 2X20 19
+  JP104_moni ? EXT_CTRL&ADDR 2X20 21
+  JP104_moni ? EXT_CTRL&ADDR 2X20 23
+  JP104_moni ? EXT_CTRL&ADDR 2X20 25
+  JP104_moni ? EXT_CTRL&ADDR 2X20 27
+  JP104_moni ? EXT_CTRL&ADDR 2X20 29
+  JP104_moni ? EXT_CTRL&ADDR 2X20 3
+  JP104_moni ? EXT_CTRL&ADDR 2X20 31
+  JP104_moni ? EXT_CTRL&ADDR 2X20 33
+  JP104_moni ? EXT_CTRL&ADDR 2X20 35
+  JP104_moni ? EXT_CTRL&ADDR 2X20 37
+  JP104_moni ? EXT_CTRL&ADDR 2X20 39
+  JP104_moni ? EXT_CTRL&ADDR 2X20 5
+  JP104_moni ? EXT_CTRL&ADDR 2X20 7
+  JP104_moni ? EXT_CTRL&ADDR 2X20 9
+  JP105_moni ? JTAG 2X05 2
+  JP105_moni ? JTAG 2X05 4
+  JP105_moni ? JTAG 2X05 6
+  JP105_moni ? JTAG 2X05 8
+  JP601_moni ? PIO_DBG 2X20 11
+  JP601_moni ? PIO_DBG 2X20 13
+  JP601_moni ? PIO_DBG 2X20 15
+  JP601_moni ? PIO_DBG 2X20 17
+  JP601_moni ? PIO_DBG 2X20 19
+  JP601_moni ? PIO_DBG 2X20 21
+  JP601_moni ? PIO_DBG 2X20 23
+  JP601_moni ? PIO_DBG 2X20 25
+  JP601_moni ? PIO_DBG 2X20 27
+  JP601_moni ? PIO_DBG 2X20 29
+  JP601_moni ? PIO_DBG 2X20 31
+  JP601_moni ? PIO_DBG 2X20 33
+  JP601_moni ? PIO_DBG 2X20 35
+  JP601_moni ? PIO_DBG 2X20 37
+  JP601_moni ? PIO_DBG 2X20 39
+  JP601_moni ? PIO_DBG 2X20 9
+  R103_moni ? 300 0207/10 2
+  R104_moni ? 300 0207/10 2
+  RN403_moni ? 10k SIL9 1
+  RN503_moni ? 10k SIL9 1
+  S601_moni ? S1 B3F-10XX 1
+  S601_moni ? S1 B3F-10XX 2
+  S602_moni ? S4 DIP08YL 10
+  S602_moni ? S4 DIP08YL 11
+  S602_moni ? S4 DIP08YL 12
+  S602_moni ? S4 DIP08YL 13
+  S602_moni ? S4 DIP08YL 14
+  S602_moni ? S4 DIP08YL 15
+  S602_moni ? S4 DIP08YL 16
+  S602_moni ? S4 DIP08YL 9
+  S603_moni ? S2 B3F-10XX 1
+  S603_moni ? S2 B3F-10XX 2
+  S604_moni ? S3 B3F-10XX 1
+  S604_moni ? S3 B3F-10XX 2
+  T405_moni ? BC548C TO92-CBE E
+  T406_moni ? BC548C TO92-CBE E
+  T407_moni ? BC548C TO92-CBE E
+  T408_moni ? BC548C TO92-CBE E
+  T412_moni ? BC548C TO92-CBE E
+  T413_moni ? BC548C TO92-CBE E
+  T414_moni ? BC548C TO92-CBE E
+  T504_moni ? BD139 TO126AV E
+  T505_moni ? BD139 TO126AV E
+  T506_moni ? BD139 TO126AV E
+  T510_moni ? BD139 TO126AV E
+  T511_moni ? BD139 TO126AV E
+  T512_moni ? BD139 TO126AV E
+  X101_moni ? PWR W237-4 3
+  X101_moni ? PWR W237-4 4
+ EndSubSection
+
+ SubSection N$1_moni class NA
+  DIS301_moni ? VQEXX VQE_2DIGIT 9
+  P302_moni ? PAD pads P$1
+ EndSubSection
+
+ SubSection N$2_moni class NA
+  DIS301_moni ? VQEXX VQE_2DIGIT 18
+  P301_moni ? PAD pads P$1
+ EndSubSection
+
+ SubSection N$3_moni class NA
+  DIS302_moni ? VQEXX VQE_2DIGIT 9
+  P304_moni ? PAD pads P$1
+ EndSubSection
+
+ SubSection N$4_moni class NA
+  DIS302_moni ? VQEXX VQE_2DIGIT 18
+  P303_moni ? PAD pads P$1
+ EndSubSection
+
+ SubSection N$5_moni class NA
+  DIS303_moni ? VQEXX VQE_2DIGIT 9
+  P306_moni ? PAD pads P$1
+ EndSubSection
+
+ SubSection N$6_moni class NA
+  DIS303_moni ? VQEXX VQE_2DIGIT 18
+  P305_moni ? PAD pads P$1
+ EndSubSection
+
+ SubSection N$78_moni class NA
+  C602_moni ? 4n7 C050-025X075 1
+  IC601_moni ? 4093N DIL14 5
+  IC601_moni ? 4093N DIL14 6
+  R601_moni ? 10k 0207/10 2
+ EndSubSection
+
+ SubSection RST_LED_C_moni class NA
+  D316_moni ? bl LED3MM K
+  R323_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection RSV_100_moni class NA
+  JP601_moni ? PIO_DBG 2X20 38
+  P601_moni ? PAD pads P$1
+  R322_moni ? 160 0207/10 2
+  RN601_moni ? 10k SIL9 7
+ EndSubSection
+
+ SubSection RSV_100_LED_moni class NA
+  D315_moni ? bl LED3MM K
+  R322_moni ? 160 0207/10 1
+ EndSubSection
+
+ SubSection SEG0_B_moni class NA
+  RN401_moni ? 10k SIL9 2
+  RN402_moni ? 1k SIL8 2
+  RN403_moni ? 10k SIL9 2
+  T401_moni ? BC327 TO92-CBE B
+  T405_moni ? BC548C TO92-CBE B
+ EndSubSection
+
+ SubSection SEG1_B_moni class NA
+  RN401_moni ? 10k SIL9 3
+  RN402_moni ? 1k SIL8 4
+  RN403_moni ? 10k SIL9 3
+  T402_moni ? BC327 TO92-CBE B
+  T406_moni ? BC548C TO92-CBE B
+ EndSubSection
+
+ SubSection SEG2_B_moni class NA
+  RN401_moni ? 10k SIL9 4
+  RN402_moni ? 1k SIL8 6
+  RN403_moni ? 10k SIL9 4
+  T403_moni ? BC327 TO92-CBE B
+  T407_moni ? BC548C TO92-CBE B
+ EndSubSection
+
+ SubSection SEG3_B_moni class NA
+  RN401_moni ? 10k SIL9 5
+  RN402_moni ? 1k SIL8 8
+  RN403_moni ? 10k SIL9 5
+  T404_moni ? BC327 TO92-CBE B
+  T408_moni ? BC548C TO92-CBE B
+ EndSubSection
+
+ SubSection SEG4_B_moni class NA
+  RN401_moni ? 10k SIL9 6
+  RN403_moni ? 10k SIL9 6
+  RN404_moni ? 1k SIL8 2
+  T409_moni ? BC327 TO92-CBE B
+  T412_moni ? BC548C TO92-CBE B
+ EndSubSection
+
+ SubSection SEG5_B_moni class NA
+  RN401_moni ? 10k SIL9 7
+  RN403_moni ? 10k SIL9 7
+  RN404_moni ? 1k SIL8 4
+  T410_moni ? BC327 TO92-CBE B
+  T413_moni ? BC548C TO92-CBE B
+ EndSubSection
+
+ SubSection SEG6_B_moni class NA
+  RN401_moni ? 10k SIL9 8
+  RN403_moni ? 10k SIL9 8
+  RN404_moni ? 1k SIL8 6
+  T411_moni ? BC327 TO92-CBE B
+  T414_moni ? BC548C TO92-CBE B
+ EndSubSection
+
+ SubSection SEG_DR0_moni class NA
+  R301_moni ? 100 0207/10 2
+  T401_moni ? BC327 TO92-CBE C
+  T405_moni ? BC548C TO92-CBE C
+ EndSubSection
+
+ SubSection SEG_DR1_moni class NA
+  R302_moni ? 100 0207/10 2
+  T402_moni ? BC327 TO92-CBE C
+  T406_moni ? BC548C TO92-CBE C
+ EndSubSection
+
+ SubSection SEG_DR2_moni class NA
+  R303_moni ? 100 0207/10 2
+  T403_moni ? BC327 TO92-CBE C
+  T407_moni ? BC548C TO92-CBE C
+ EndSubSection
+
+ SubSection SEG_DR3_moni class NA
+  R304_moni ? 100 0207/10 2
+  T404_moni ? BC327 TO92-CBE C
+  T408_moni ? BC548C TO92-CBE C
+ EndSubSection
+
+ SubSection SEG_DR4_moni class NA
+  R305_moni ? 100 0207/10 2
+  T409_moni ? BC327 TO92-CBE C
+  T412_moni ? BC548C TO92-CBE C
+ EndSubSection
+
+ SubSection SEG_DR5_moni class NA
+  R306_moni ? 100 0207/10 2
+  T410_moni ? BC327 TO92-CBE C
+  T413_moni ? BC548C TO92-CBE C
+ EndSubSection
+
+ SubSection SEG_DR6_moni class NA
+  R307_moni ? 100 0207/10 2
+  T411_moni ? BC327 TO92-CBE C
+  T414_moni ? BC548C TO92-CBE C
+ EndSubSection
+
+ SubSection SEG_R0_moni class NA
+  DIS301_moni ? VQEXX VQE_2DIGIT 11
+  DIS301_moni ? VQEXX VQE_2DIGIT 16
+  DIS302_moni ? VQEXX VQE_2DIGIT 11
+  DIS302_moni ? VQEXX VQE_2DIGIT 16
+  DIS303_moni ? VQEXX VQE_2DIGIT 11
+  DIS303_moni ? VQEXX VQE_2DIGIT 16
+  R301_moni ? 100 0207/10 1
+ EndSubSection
+
+ SubSection SEG_R1_moni class NA
+  DIS301_moni ? VQEXX VQE_2DIGIT 13
+  DIS301_moni ? VQEXX VQE_2DIGIT 14
+  DIS302_moni ? VQEXX VQE_2DIGIT 13
+  DIS302_moni ? VQEXX VQE_2DIGIT 14
+  DIS303_moni ? VQEXX VQE_2DIGIT 13
+  DIS303_moni ? VQEXX VQE_2DIGIT 14
+  R302_moni ? 100 0207/10 1
+ EndSubSection
+
+ SubSection SEG_R2_moni class NA
+  DIS301_moni ? VQEXX VQE_2DIGIT 1
+  DIS301_moni ? VQEXX VQE_2DIGIT 8
+  DIS302_moni ? VQEXX VQE_2DIGIT 1
+  DIS302_moni ? VQEXX VQE_2DIGIT 8
+  DIS303_moni ? VQEXX VQE_2DIGIT 1
+  DIS303_moni ? VQEXX VQE_2DIGIT 8
+  R303_moni ? 100 0207/10 1
+ EndSubSection
+
+ SubSection SEG_R3_moni class NA
+  DIS301_moni ? VQEXX VQE_2DIGIT 3
+  DIS301_moni ? VQEXX VQE_2DIGIT 6
+  DIS302_moni ? VQEXX VQE_2DIGIT 3
+  DIS302_moni ? VQEXX VQE_2DIGIT 6
+  DIS303_moni ? VQEXX VQE_2DIGIT 3
+  DIS303_moni ? VQEXX VQE_2DIGIT 6
+  R304_moni ? 100 0207/10 1
+ EndSubSection
+
+ SubSection SEG_R4_moni class NA
+  DIS301_moni ? VQEXX VQE_2DIGIT 2
+  DIS301_moni ? VQEXX VQE_2DIGIT 7
+  DIS302_moni ? VQEXX VQE_2DIGIT 2
+  DIS302_moni ? VQEXX VQE_2DIGIT 7
+  DIS303_moni ? VQEXX VQE_2DIGIT 2
+  DIS303_moni ? VQEXX VQE_2DIGIT 7
+  R305_moni ? 100 0207/10 1
+ EndSubSection
+
+ SubSection SEG_R5_moni class NA
+  DIS301_moni ? VQEXX VQE_2DIGIT 12
+  DIS301_moni ? VQEXX VQE_2DIGIT 15
+  DIS302_moni ? VQEXX VQE_2DIGIT 12
+  DIS302_moni ? VQEXX VQE_2DIGIT 15
+  DIS303_moni ? VQEXX VQE_2DIGIT 12
+  DIS303_moni ? VQEXX VQE_2DIGIT 15
+  R306_moni ? 100 0207/10 1
+ EndSubSection
+
+ SubSection SEG_R6_moni class NA
+  DIS301_moni ? VQEXX VQE_2DIGIT 10
+  DIS301_moni ? VQEXX VQE_2DIGIT 17
+  DIS302_moni ? VQEXX VQE_2DIGIT 10
+  DIS302_moni ? VQEXX VQE_2DIGIT 17
+  DIS303_moni ? VQEXX VQE_2DIGIT 10
+  DIS303_moni ? VQEXX VQE_2DIGIT 17
+  R307_moni ? 100 0207/10 1
+ EndSubSection
+
+ SubSection ST_IN0_moni class NA
+  IC601_moni ? 4093N DIL14 8
+  IC601_moni ? 4093N DIL14 9
+  JP601_moni ? PIO_DBG 2X20 20
+  P603_moni ? PAD pads P$1
+  RN601_moni ? 10k SIL9 8
+ EndSubSection
+
+ SubSection ST_IN1_moni class NA
+  IC601_moni ? 4093N DIL14 12
+  IC601_moni ? 4093N DIL14 13
+  JP601_moni ? PIO_DBG 2X20 22
+  P605_moni ? PAD pads P$1
+  RN601_moni ? 10k SIL9 9
+ EndSubSection
+
+ SubSection ST_OUT0_moni class NA
+  IC601_moni ? 4093N DIL14 10
+  JP601_moni ? PIO_DBG 2X20 32
+  P602_moni ? PAD pads P$1
+ EndSubSection
+
+ SubSection ST_OUT1_moni class NA
+  IC601_moni ? 4093N DIL14 11
+  JP601_moni ? PIO_DBG 2X20 34
+  P604_moni ? PAD pads P$1
+ EndSubSection
+
+ SubSection TCK_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 67 tck
+  JP105_moni ? JTAG 2X05 1
+  P101_moni ? PAD 11-07-12 P$1
+  R103_moni ? 300 0207/10 1
+ EndSubSection
+
+ SubSection TDI_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 63 tdi
+  JP105_moni ? JTAG 2X05 7
+  P104_moni ? PAD 11-07-12 P$1
+  R102_moni ? 8x10k SIL9 3
+ EndSubSection
+
+ SubSection TDO_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 122 tdo
+  JP105_moni ? JTAG 2X05 5
+  P103_moni ? PAD 11-07-12 P$1
+  R102_moni ? 8x10k SIL9 4
+ EndSubSection
+
+ SubSection TMS_moni class NA
+  IC201_moni ? XC95288XL_TQ144 TQ144 65 tms
+  JP105_moni ? JTAG 2X05 3
+  P102_moni ? PAD 11-07-12 P$1
+  R104_moni ? 300 0207/10 1
+ EndSubSection
+
+ SubSection VREF_JTAG_moni class NA
+  JP105_moni ? JTAG 2X05 10
+  JP106_moni ? 1X02 pinhead 2
+  R102_moni ? 8x10k SIL9 1
+ EndSubSection
+
+
+
+
+
+
+
+ SubSection !AIO1_REL_trc class NA
+  IC200_trc ? ULN2003AD SO16 13
+  K105_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+ EndSubSection
+
+ SubSection !AIO2_REL_trc class NA
+  IC201_trc ? ULN2003AD SO16 13
+  K205_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+ EndSubSection
+
+ SubSection !DIO1_REL_trc class NA
+  IC200_trc ? ULN2003AD SO16 14
+  K104_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+ EndSubSection
+
+ SubSection !DIO2_REL_trc class NA
+  IC201_trc ? ULN2003AD SO16 14
+  K204_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+ EndSubSection
+
+ SubSection !GND1_REL_trc class NA
+  IC200_trc ? ULN2003AD SO16 16
+  K100_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+ EndSubSection
+
+ SubSection !GND2_REL_trc class NA
+  IC201_trc ? ULN2003AD SO16 16
+  K200_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+ EndSubSection
+
+ SubSection !I2C_EN_trc class NA
+  IC300_trc ? ULN2003AD SO16 16
+  IC301_trc ? HC4051 SO16 6
+  IC302_trc ? HC4051 SO16 6
+  R301_trc ? 8x10k SIL9 2
+ EndSubSection
+
+ SubSection !TAP1_REL_trc class NA
+  IC200_trc ? ULN2003AD SO16 15
+  K101_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+  K102_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+  K103_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+ EndSubSection
+
+ SubSection !TAP2_REL_trc class NA
+  IC201_trc ? ULN2003AD SO16 15
+  K201_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+  K202_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+  K203_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+ EndSubSection
+
+ SubSection !TRM_DIO1_REL_trc class NA
+  IC200_trc ? ULN2003AD SO16 11
+  K107_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+ EndSubSection
+
+ SubSection !TRM_DIO2_REL_trc class NA
+  IC201_trc ? ULN2003AD SO16 12
+  K207_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+ EndSubSection
+
+ SubSection !TRM_TDI_REL_trc class NA
+  IC200_trc ? ULN2003AD SO16 12
+  K106_trc ? DIP05-2A72-21D DIPXX-2A72-21X 6
+ EndSubSection
+
+ SubSection !TRST1_UUT_trc class NA
+  K103_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  X200_trc ? UUT1 2X13 9
+ EndSubSection
+
+ SubSection !TRST2_UUT_trc class NA
+  K203_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  X201_trc ? UUT2 2X13 9
+ EndSubSection
+
+ SubSection !TRST_LOCAL_trc class NA
+  JP4_trc ? JTAG 2X05 9
+  P58_trc ? PAD 11-07-12 P$1
+  R3_trc ? 8x10k SIL9 2
+ EndSubSection
+
+ SubSection +1V8_trc class NA
+  C20_trc ? 100n C0805K 1
+  C21_trc ? 100n C0805K 1
+  C22_trc ? 100n C0805K 1
+  C505_trc ? 1�/16V E2,5-6E +
+  IC1_trc ? XC2C384_TQ144 TQ144 1 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 37 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 84 pwr
+  IC501_trc ? LM317 317TS 2
+  P500_trc ? PAD 11-07-12 P$1
+  R506_trc ? 240 0207/10 2
+ EndSubSection
+
+ SubSection +3V3_trc class NA
+  C101_trc ? 100n C0805K 2
+  C30_trc ? 100n C0805K 1
+  C31_trc ? 100n C0805K 1
+  C32_trc ? 100n C0805K 1
+  C33_trc ? 100n C0805K 1
+  C503_trc ? 1�/16V E2,5-6E +
+  D100_trc ? BAT48 DO35-10 C
+  D102_trc ? BAT48 DO35-10 C
+  D104_trc ? 3V3 DO41Z10 C
+  IC1_trc ? XC2C384_TQ144 TQ144 141 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 27 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 55 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 8 pwr
+  IC100_trc ? MAX519SO SO16 13
+  IC100_trc ? MAX519SO SO16 15
+  IC101_trc ? MAX962 SO08 8
+  IC110_trc ? MAX517SO SO08 8
+  IC111_trc ? MAX517SO SO08 8
+  IC500_trc ? LM317 317TS 2
+  IC620_trc ? MAX519SO SO16 13
+  IC620_trc ? MAX519SO SO16 15
+  IC621_trc ? MAX517SO SO08 8
+  IC622_trc ? MAX517SO SO08 8
+  JP2_trc ? LED_PANEL_FRONT 2X05 1
+  JP2_trc ? LED_PANEL_FRONT 2X05 3
+  JP5_trc ? 1X02 pinhead 1
+  P501_trc ? PAD 11-07-12 P$1
+  R302_trc ? 8x10k SIL9 1
+  R303_trc ? 8x10k SIL9 1
+  R40_trc ? 100 0207/10 1
+  R403_trc ? 8x10k SIL9 1
+  R41_trc ? 100 0207/10 1
+  R42_trc ? 100 0207/10 1
+  R502_trc ? 240 0207/10 2
+  R503_trc ? 100 0207/10 2
+ EndSubSection
+
+ SubSection +5V_trc class NA
+  C100_trc ? 100n C0805K 1
+  C110_trc ? 100n C0805K 1
+  C111_trc ? 100n C0805K 1
+  C301_trc ? 100n C0805K 1
+  C302_trc ? 100n C0805K 1
+  C500_trc ? 100�/25V E2,5-7 +
+  C510_trc ? 100�/25V E2,5-7 +
+  C620_trc ? 100n C0805K 1
+  C621_trc ? 100n C0805K 1
+  C622_trc ? 100n C0805K 1
+  IC100_trc ? MAX519SO SO16 12
+  IC110_trc ? MAX517SO SO08 7
+  IC111_trc ? MAX517SO SO08 6
+  IC111_trc ? MAX517SO SO08 7
+  IC200_trc ? ULN2003AD SO16 9
+  IC201_trc ? ULN2003AD SO16 9
+  IC301_trc ? HC4051 SO16 16
+  IC302_trc ? HC4051 SO16 16
+  IC620_trc ? MAX519SO SO16 11
+  IC620_trc ? MAX519SO SO16 12
+  IC621_trc ? MAX517SO SO08 5
+  IC621_trc ? MAX517SO SO08 7
+  IC622_trc ? MAX517SO SO08 5
+  IC622_trc ? MAX517SO SO08 6
+  IC622_trc ? MAX517SO SO08 7
+  JP2_trc ? LED_PANEL_FRONT 2X05 10
+  JP2_trc ? LED_PANEL_FRONT 2X05 8
+  K100_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K101_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K102_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K103_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K104_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K105_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K106_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K107_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K200_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K201_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K202_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K203_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K204_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K205_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  K207_trc ? DIP05-2A72-21D DIPXX-2A72-21X 2
+  R301_trc ? 8x10k SIL9 1
+  R504_trc ? 160 0207/10 2
+  X500_trc ? PWR_IN W237-4 4
+ EndSubSection
+
+ SubSection +12V_trc class NA
+  C501_trc ? 100�/25V E2,5-7 +
+  C502_trc ? 100n C0805K 1
+  C504_trc ? 100n C0805K 1
+  C600_trc ? 100n C0805K 1
+  C610_trc ? 100n C0805K 1
+  D600_trc ? BAT48 C1702-05 C
+  D610_trc ? BAT48 C1702-05 C
+  IC500_trc ? LM317 317TS 3
+  IC501_trc ? LM317 317TS 3
+  IC600_trc ? L165ST CB360 5
+  IC610_trc ? L165ST CB360 5
+  R500_trc ? 680 0207/10 2
+  X500_trc ? PWR_IN W237-4 3
+ EndSubSection
+
+ SubSection +VCCIO_1_trc class NA
+  C40_trc ? 100n C0805K 1
+  C41_trc ? 100n C0805K 1
+  C603_trc ? 10u/16V E2,5-6E +
+  D600_trc ? BAT48 C1702-05 A
+  D601_trc ? 3V3 DO41Z10 C
+  IC1_trc ? XC2C384_TQ144 TQ144 109 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 127 pwr
+  IC600_trc ? L165ST CB360 2
+  IC600_trc ? L165ST CB360 4
+  R601_trc ? 1 0207/10 2
+ EndSubSection
+
+ SubSection +VCCIO_2_trc class NA
+  C50_trc ? 100n C0805K 1
+  C51_trc ? 100n C0805K 1
+  C613_trc ? 10u/16V E2,5-6E +
+  D610_trc ? BAT48 C1702-05 A
+  D611_trc ? 3V3 DO41Z10 C
+  IC1_trc ? XC2C384_TQ144 TQ144 73 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 93 pwr
+  IC610_trc ? L165ST CB360 2
+  IC610_trc ? L165ST CB360 4
+  R611_trc ? 1 0207/10 2
+ EndSubSection
+
+ SubSection -4V_trc class NA
+  C801_trc ? 1�/16V E2,5-6E -
+  IC301_trc ? HC4051 SO16 7
+  IC302_trc ? HC4051 SO16 7
+  IC800_trc ? LM337 337TS 3
+  P2_trc ? PAD pads P$1
+  P502_trc ? PAD 11-07-12 P$1
+  R802_trc ? 240 0207/10 2
+  R803_trc ? 160 0207/10 2
+ EndSubSection
+
+ SubSection -12V_trc class NA
+  C506_trc ? 100�/25V E2,5-7 -
+  C601_trc ? 100n C0805K 1
+  C611_trc ? 100n C0805K 1
+  C800_trc ? 100n C0805K 1
+  IC600_trc ? L165ST CB360 3
+  IC610_trc ? L165ST CB360 3
+  IC800_trc ? LM337 337TS 2
+  R800_trc ? 680 0207/10 2
+  X500_trc ? PWR_IN W237-4 1
+ EndSubSection
+
+ SubSection ADJ_+1V8_trc class NA
+  IC501_trc ? LM317 317TS 1
+  R505_trc ? 105 0207/10 2
+  R506_trc ? 240 0207/10 1
+ EndSubSection
+
+ SubSection ADJ_+3V3_trc class NA
+  IC500_trc ? LM317 317TS 1
+  R501_trc ? 390 0207/10 2
+  R502_trc ? 240 0207/10 1
+ EndSubSection
+
+ SubSection ADJ_-4V_trc class NA
+  IC800_trc ? LM337 337TS 1
+  R801_trc ? 536 0207/10 2
+  R802_trc ? 240 0207/10 1
+ EndSubSection
+
+ SubSection ADJ_VCC_IO1_trc class NA
+  IC600_trc ? L165ST CB360 1
+  IC620_trc ? MAX519SO SO16 1
+  IC621_trc ? MAX517SO SO08 1
+  R600_trc ? 10k 0207/10 2
+ EndSubSection
+
+ SubSection ADJ_VCC_IO2_trc class NA
+  IC610_trc ? L165ST CB360 1
+  IC620_trc ? MAX519SO SO16 16
+  IC622_trc ? MAX517SO SO08 1
+  R610_trc ? 10k 0207/10 2
+ EndSubSection
+
+ SubSection AIO11_DRV_trc class NA
+  JP1_trc ? PWR_CTRL_AIO 2X20 26
+  K105_trc ? DIP05-2A72-21D DIPXX-2A72-21X 14
+ EndSubSection
+
+ SubSection AIO11_UUT_trc class NA
+  K105_trc ? DIP05-2A72-21D DIPXX-2A72-21X 8
+  X200_trc ? UUT1 2X13 19
+ EndSubSection
+
+ SubSection AIO12_DRV_trc class NA
+  JP1_trc ? PWR_CTRL_AIO 2X20 28
+  K105_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+ EndSubSection
+
+ SubSection AIO12_UUT_trc class NA
+  K105_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  X200_trc ? UUT1 2X13 21
+ EndSubSection
+
+ SubSection AIO21_DRV_trc class NA
+  JP1_trc ? PWR_CTRL_AIO 2X20 30
+  K205_trc ? DIP05-2A72-21D DIPXX-2A72-21X 14
+ EndSubSection
+
+ SubSection AIO21_UUT_trc class NA
+  K205_trc ? DIP05-2A72-21D DIPXX-2A72-21X 8
+  X201_trc ? UUT2 2X13 19
+ EndSubSection
+
+ SubSection AIO22_DRV_trc class NA
+  JP1_trc ? PWR_CTRL_AIO 2X20 32
+  K205_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+ EndSubSection
+
+ SubSection AIO22_UUT_trc class NA
+  K205_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  X201_trc ? UUT2 2X13 21
+ EndSubSection
+
+ SubSection BO_1_trc class NA
+  C602_trc ? 220n C0805K 1
+  R601_trc ? 1 0207/10 1
+ EndSubSection
+
+ SubSection BO_2_trc class NA
+  C612_trc ? 220n C0805K 1
+  R611_trc ? 1 0207/10 1
+ EndSubSection
+
+ SubSection D40_A_trc class NA
+  D40_trc ? green LED3MM A
+  R40_trc ? 100 0207/10 2
+ EndSubSection
+
+ SubSection D41_A_trc class NA
+  D41_trc ? yellow LED3MM A
+  R41_trc ? 100 0207/10 2
+ EndSubSection
+
+ SubSection D42_A_trc class NA
+  D42_trc ? red LED3MM A
+  R42_trc ? 100 0207/10 2
+ EndSubSection
+
+ SubSection D500_A_trc class NA
+  D500_trc ? green LED3MM A
+  R500_trc ? 680 0207/10 1
+ EndSubSection
+
+ SubSection D501_A_trc class NA
+  D501_trc ? green LED3MM A
+  R503_trc ? 100 0207/10 1
+ EndSubSection
+
+ SubSection D502_A_trc class NA
+  D502_trc ? green LED3MM A
+  R504_trc ? 160 0207/10 1
+ EndSubSection
+
+ SubSection D800_A_trc class NA
+  D800_trc ? green LED3MM K
+  R800_trc ? 680 0207/10 1
+ EndSubSection
+
+ SubSection D801_C_trc class NA
+  D801_trc ? green LED3MM K
+  R803_trc ? 160 0207/10 1
+ EndSubSection
+
+ SubSection DIO11_DRV_TERM_trc class NA
+  K107_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  R22_trc ? 300 0207/10 2
+ EndSubSection
+
+ SubSection DIO11_UUT_trc class NA
+  K104_trc ? DIP05-2A72-21D DIPXX-2A72-21X 8
+  X200_trc ? UUT1 2X13 11
+ EndSubSection
+
+ SubSection DIO12_DRV_TERM_trc class NA
+  K107_trc ? DIP05-2A72-21D DIPXX-2A72-21X 8
+  R23_trc ? 300 0207/10 2
+ EndSubSection
+
+ SubSection DIO12_UUT_trc class NA
+  K104_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  X200_trc ? UUT1 2X13 13
+ EndSubSection
+
+ SubSection DIO21_DRV_TERM_trc class NA
+  K207_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  R24_trc ? 300 0207/10 2
+ EndSubSection
+
+ SubSection DIO21_UUT_trc class NA
+  K204_trc ? DIP05-2A72-21D DIPXX-2A72-21X 8
+  X201_trc ? UUT2 2X13 11
+ EndSubSection
+
+ SubSection DIO22_DRV_TERM_trc class NA
+  K207_trc ? DIP05-2A72-21D DIPXX-2A72-21X 8
+  R25_trc ? 300 0207/10 2
+ EndSubSection
+
+ SubSection DIO22_UUT_trc class NA
+  K204_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  X201_trc ? UUT2 2X13 13
+ EndSubSection
+
+ SubSection GND_trc class NA
+  C10_trc ? 4n7 C050-025X075 2
+  C100_trc ? 100n C0805K 2
+  C101_trc ? 100n C0805K 1
+  C110_trc ? 100n C0805K 2
+  C111_trc ? 100n C0805K 2
+  C20_trc ? 100n C0805K 2
+  C21_trc ? 100n C0805K 2
+  C22_trc ? 100n C0805K 2
+  C30_trc ? 100n C0805K 2
+  C301_trc ? 100n C0805K 2
+  C302_trc ? 100n C0805K 2
+  C31_trc ? 100n C0805K 2
+  C32_trc ? 100n C0805K 2
+  C33_trc ? 100n C0805K 2
+  C40_trc ? 100n C0805K 2
+  C41_trc ? 100n C0805K 2
+  C50_trc ? 100n C0805K 2
+  C500_trc ? 100�/25V E2,5-7 -
+  C501_trc ? 100�/25V E2,5-7 -
+  C502_trc ? 100n C0805K 2
+  C503_trc ? 1�/16V E2,5-6E -
+  C504_trc ? 100n C0805K 2
+  C505_trc ? 1�/16V E2,5-6E -
+  C506_trc ? 100�/25V E2,5-7 +
+  C51_trc ? 100n C0805K 2
+  C510_trc ? 100�/25V E2,5-7 -
+  C600_trc ? 100n C0805K 2
+  C601_trc ? 100n C0805K 2
+  C602_trc ? 220n C0805K 2
+  C603_trc ? 10u/16V E2,5-6E -
+  C610_trc ? 100n C0805K 2
+  C611_trc ? 100n C0805K 2
+  C612_trc ? 220n C0805K 2
+  C613_trc ? 10u/16V E2,5-6E -
+  C620_trc ? 100n C0805K 2
+  C621_trc ? 100n C0805K 2
+  C622_trc ? 100n C0805K 2
+  C800_trc ? 100n C0805K 2
+  C801_trc ? 1�/16V E2,5-6E +
+  D101_trc ? BAT48 DO35-10 A
+  D103_trc ? BAT48 DO35-10 A
+  D104_trc ? 3V3 DO41Z10 A
+  D500_trc ? green LED3MM K
+  D501_trc ? green LED3MM K
+  D502_trc ? green LED3MM K
+  D601_trc ? 3V3 DO41Z10 A
+  D611_trc ? 3V3 DO41Z10 A
+  D800_trc ? green LED3MM A
+  D801_trc ? green LED3MM A
+  H1_trc ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1
+  H2_trc ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1
+  H3_trc ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1
+  H4_trc ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1
+  IC1_trc ? XC2C384_TQ144 TQ144 108 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 123 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 144 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 29 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 36 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 47 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 62 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 72 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 89 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 90 pwr
+  IC1_trc ? XC2C384_TQ144 TQ144 99 pwr
+  IC100_trc ? MAX519SO SO16 10
+  IC100_trc ? MAX519SO SO16 11
+  IC100_trc ? MAX519SO SO16 4
+  IC100_trc ? MAX519SO SO16 5
+  IC100_trc ? MAX519SO SO16 9
+  IC101_trc ? MAX962 SO08 5
+  IC110_trc ? MAX517SO SO08 2
+  IC110_trc ? MAX517SO SO08 5
+  IC110_trc ? MAX517SO SO08 6
+  IC111_trc ? MAX517SO SO08 2
+  IC111_trc ? MAX517SO SO08 5
+  IC200_trc ? ULN2003AD SO16 8
+  IC201_trc ? ULN2003AD SO16 8
+  IC300_trc ? ULN2003AD SO16 8
+  IC301_trc ? HC4051 SO16 8
+  IC302_trc ? HC4051 SO16 8
+  IC620_trc ? MAX519SO SO16 10
+  IC620_trc ? MAX519SO SO16 4
+  IC620_trc ? MAX519SO SO16 5
+  IC620_trc ? MAX519SO SO16 9
+  IC621_trc ? MAX517SO SO08 2
+  IC621_trc ? MAX517SO SO08 6
+  IC622_trc ? MAX517SO SO08 2
+  JP1_trc ? PWR_CTRL_AIO 2X20 1
+  JP1_trc ? PWR_CTRL_AIO 2X20 11
+  JP1_trc ? PWR_CTRL_AIO 2X20 13
+  JP1_trc ? PWR_CTRL_AIO 2X20 15
+  JP1_trc ? PWR_CTRL_AIO 2X20 17
+  JP1_trc ? PWR_CTRL_AIO 2X20 19
+  JP1_trc ? PWR_CTRL_AIO 2X20 21
+  JP1_trc ? PWR_CTRL_AIO 2X20 23
+  JP1_trc ? PWR_CTRL_AIO 2X20 25
+  JP1_trc ? PWR_CTRL_AIO 2X20 27
+  JP1_trc ? PWR_CTRL_AIO 2X20 29
+  JP1_trc ? PWR_CTRL_AIO 2X20 3
+  JP1_trc ? PWR_CTRL_AIO 2X20 31
+  JP1_trc ? PWR_CTRL_AIO 2X20 33
+  JP1_trc ? PWR_CTRL_AIO 2X20 35
+  JP1_trc ? PWR_CTRL_AIO 2X20 37
+  JP1_trc ? PWR_CTRL_AIO 2X20 39
+  JP1_trc ? PWR_CTRL_AIO 2X20 5
+  JP1_trc ? PWR_CTRL_AIO 2X20 7
+  JP1_trc ? PWR_CTRL_AIO 2X20 9
+  JP2_trc ? LED_PANEL_FRONT 2X05 2
+  JP2_trc ? LED_PANEL_FRONT 2X05 4
+  JP2_trc ? LED_PANEL_FRONT 2X05 6
+  JP2_trc ? LED_PANEL_FRONT 2X05 9
+  JP3_trc ? VEC_EX 2X20 1
+  JP3_trc ? VEC_EX 2X20 11
+  JP3_trc ? VEC_EX 2X20 13
+  JP3_trc ? VEC_EX 2X20 15
+  JP3_trc ? VEC_EX 2X20 17
+  JP3_trc ? VEC_EX 2X20 19
+  JP3_trc ? VEC_EX 2X20 21
+  JP3_trc ? VEC_EX 2X20 23
+  JP3_trc ? VEC_EX 2X20 25
+  JP3_trc ? VEC_EX 2X20 27
+  JP3_trc ? VEC_EX 2X20 29
+  JP3_trc ? VEC_EX 2X20 3
+  JP3_trc ? VEC_EX 2X20 31
+  JP3_trc ? VEC_EX 2X20 33
+  JP3_trc ? VEC_EX 2X20 35
+  JP3_trc ? VEC_EX 2X20 37
+  JP3_trc ? VEC_EX 2X20 5
+  JP3_trc ? VEC_EX 2X20 7
+  JP3_trc ? VEC_EX 2X20 9
+  JP4_trc ? JTAG 2X05 2
+  JP4_trc ? JTAG 2X05 4
+  JP4_trc ? JTAG 2X05 6
+  JP4_trc ? JTAG 2X05 8
+  K100_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+  K100_trc ? DIP05-2A72-21D DIPXX-2A72-21X 14
+  K200_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+  K200_trc ? DIP05-2A72-21D DIPXX-2A72-21X 14
+  P37_trc ? PAD 11-07-12 P$1
+  P38_trc ? PAD 11-07-12 P$1
+  P49_trc ? PAD 11-07-12 P$1
+  P50_trc ? PAD 11-07-12 P$1
+  P51_trc ? PAD 11-07-12 P$1
+  P62_trc ? PAD 11-07-12 P$1
+  R1_trc ? 300 0207/10 2
+  R2_trc ? 300 0207/10 2
+  R20_trc ? 300 0207/10 1
+  R200_trc ? 8x1k SIL9 1
+  R201_trc ? 8x1k SIL9 1
+  R21_trc ? 300 0207/10 1
+  R22_trc ? 300 0207/10 1
+  R23_trc ? 300 0207/10 1
+  R24_trc ? 300 0207/10 1
+  R25_trc ? 300 0207/10 1
+  R300_trc ? 1k 0207/10 2
+  R501_trc ? 390 0207/10 1
+  R505_trc ? 105 0207/10 1
+  R600_trc ? 10k 0207/10 1
+  R610_trc ? 10k 0207/10 1
+  R801_trc ? 536 0207/10 1
+  X500_trc ? PWR_IN W237-4 2
+ EndSubSection
+
+ SubSection GND1_UUT_trc class NA
+  K100_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  K100_trc ? DIP05-2A72-21D DIPXX-2A72-21X 8
+  X200_trc ? UUT1 2X13 10
+  X200_trc ? UUT1 2X13 12
+  X200_trc ? UUT1 2X13 14
+  X200_trc ? UUT1 2X13 16
+  X200_trc ? UUT1 2X13 18
+  X200_trc ? UUT1 2X13 2
+  X200_trc ? UUT1 2X13 20
+  X200_trc ? UUT1 2X13 22
+  X200_trc ? UUT1 2X13 24
+  X200_trc ? UUT1 2X13 26
+  X200_trc ? UUT1 2X13 4
+  X200_trc ? UUT1 2X13 6
+  X200_trc ? UUT1 2X13 8
+ EndSubSection
+
+ SubSection GND2_UUT_trc class NA
+  K200_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  K200_trc ? DIP05-2A72-21D DIPXX-2A72-21X 8
+  X201_trc ? UUT2 2X13 10
+  X201_trc ? UUT2 2X13 12
+  X201_trc ? UUT2 2X13 14
+  X201_trc ? UUT2 2X13 16
+  X201_trc ? UUT2 2X13 18
+  X201_trc ? UUT2 2X13 2
+  X201_trc ? UUT2 2X13 20
+  X201_trc ? UUT2 2X13 22
+  X201_trc ? UUT2 2X13 24
+  X201_trc ? UUT2 2X13 26
+  X201_trc ? UUT2 2X13 4
+  X201_trc ? UUT2 2X13 6
+  X201_trc ? UUT2 2X13 8
+ EndSubSection
+
+ SubSection I2C_SEL_0_trc class NA
+  IC300_trc ? ULN2003AD SO16 15
+  IC301_trc ? HC4051 SO16 11
+  IC302_trc ? HC4051 SO16 11
+  R301_trc ? 8x10k SIL9 3
+ EndSubSection
+
+ SubSection I2C_SEL_1_trc class NA
+  IC300_trc ? ULN2003AD SO16 14
+  IC301_trc ? HC4051 SO16 10
+  IC302_trc ? HC4051 SO16 10
+  R301_trc ? 8x10k SIL9 4
+ EndSubSection
+
+ SubSection I2C_SEL_2_trc class NA
+  IC300_trc ? ULN2003AD SO16 13
+  IC301_trc ? HC4051 SO16 9
+  IC302_trc ? HC4051 SO16 9
+  R301_trc ? 8x10k SIL9 5
+ EndSubSection
+
+ SubSection RSV40_trc class NA
+  IC200_trc ? ULN2003AD SO16 7
+  R201_trc ? 8x1k SIL9 4
+ EndSubSection
+
+ SubSection RSV41_trc class NA
+  IC201_trc ? ULN2003AD SO16 6
+  R200_trc ? 8x1k SIL9 2
+ EndSubSection
+
+ SubSection RSV42_trc class NA
+  IC201_trc ? ULN2003AD SO16 7
+  R201_trc ? 8x1k SIL9 2
+ EndSubSection
+
+ SubSection RSV44_trc class NA
+  P52_trc ? PAD 11-07-12 P$1
+  R301_trc ? 8x10k SIL9 6
+ EndSubSection
+
+ SubSection RSV45_trc class NA
+  P53_trc ? PAD 11-07-12 P$1
+  R301_trc ? 8x10k SIL9 7
+ EndSubSection
+
+ SubSection RSV46_trc class NA
+  P54_trc ? PAD 11-07-12 P$1
+  R301_trc ? 8x10k SIL9 8
+ EndSubSection
+
+ SubSection RSV47_trc class NA
+  P55_trc ? PAD 11-07-12 P$1
+  R301_trc ? 8x10k SIL9 9
+ EndSubSection
+
+ SubSection SCL5_trc class NA
+  IC302_trc ? HC4051 SO16 1
+  R303_trc ? 8x10k SIL9 3
+ EndSubSection
+
+ SubSection SCL6_trc class NA
+  IC302_trc ? HC4051 SO16 5
+  R303_trc ? 8x10k SIL9 8
+ EndSubSection
+
+ SubSection SCL7_trc class NA
+  IC302_trc ? HC4051 SO16 2
+  R303_trc ? 8x10k SIL9 2
+ EndSubSection
+
+ SubSection SCL8_trc class NA
+  IC302_trc ? HC4051 SO16 4
+  R303_trc ? 8x10k SIL9 6
+ EndSubSection
+
+ SubSection SDA5_trc class NA
+  IC301_trc ? HC4051 SO16 1
+  R302_trc ? 8x10k SIL9 5
+ EndSubSection
+
+ SubSection SDA6_trc class NA
+  IC301_trc ? HC4051 SO16 5
+  R302_trc ? 8x10k SIL9 7
+ EndSubSection
+
+ SubSection SDA7_trc class NA
+  IC301_trc ? HC4051 SO16 2
+  R302_trc ? 8x10k SIL9 8
+ EndSubSection
+
+ SubSection SDA8_trc class NA
+  IC301_trc ? HC4051 SO16 4
+  R302_trc ? 8x10k SIL9 9
+ EndSubSection
+
+ SubSection TCK1_UUT_trc class NA
+  K101_trc ? DIP05-2A72-21D DIPXX-2A72-21X 8
+  X200_trc ? UUT1 2X13 1
+ EndSubSection
+
+ SubSection TCK2_UUT_trc class NA
+  K201_trc ? DIP05-2A72-21D DIPXX-2A72-21X 8
+  X201_trc ? UUT2 2X13 1
+ EndSubSection
+
+ SubSection TCK_LOCAL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 67 tck
+  JP4_trc ? JTAG 2X05 1
+  P59_trc ? PAD 11-07-12 P$1
+  R1_trc ? 300 0207/10 1
+ EndSubSection
+
+ SubSection TDI1_RCV_trc class NA
+  D100_trc ? BAT48 DO35-10 A
+  D101_trc ? BAT48 DO35-10 C
+  IC101_trc ? MAX962 SO08 1
+  K102_trc ? DIP05-2A72-21D DIPXX-2A72-21X 14
+  K106_trc ? DIP05-2A72-21D DIPXX-2A72-21X 14
+  P100_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection TDI1_RCV_TERM_trc class NA
+  K106_trc ? DIP05-2A72-21D DIPXX-2A72-21X 8
+  R20_trc ? 300 0207/10 2
+ EndSubSection
+
+ SubSection TDI1_UUT_trc class NA
+  K102_trc ? DIP05-2A72-21D DIPXX-2A72-21X 8
+  X200_trc ? UUT1 2X13 5
+ EndSubSection
+
+ SubSection TDI2_RCV_trc class NA
+  D102_trc ? BAT48 DO35-10 A
+  D103_trc ? BAT48 DO35-10 C
+  IC101_trc ? MAX962 SO08 3
+  K106_trc ? DIP05-2A72-21D DIPXX-2A72-21X 1
+  K202_trc ? DIP05-2A72-21D DIPXX-2A72-21X 14
+  P110_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection TDI2_RCV_TERM_trc class NA
+  K106_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  R21_trc ? 300 0207/10 2
+ EndSubSection
+
+ SubSection TDI2_UUT_trc class NA
+  K202_trc ? DIP05-2A72-21D DIPXX-2A72-21X 8
+  X201_trc ? UUT2 2X13 5
+ EndSubSection
+
+ SubSection TDI_LOCAL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 63 tdi
+  JP4_trc ? JTAG 2X05 7
+  P56_trc ? PAD 11-07-12 P$1
+  R3_trc ? 8x10k SIL9 3
+ EndSubSection
+
+ SubSection TDO1_UUT_trc class NA
+  K102_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  X200_trc ? UUT1 2X13 7
+ EndSubSection
+
+ SubSection TDO2_UUT_trc class NA
+  K202_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  X201_trc ? UUT2 2X13 7
+ EndSubSection
+
+ SubSection TDO_LOCAL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 122 tdo
+  JP4_trc ? JTAG 2X05 5
+  P57_trc ? PAD 11-07-12 P$1
+  R3_trc ? 8x10k SIL9 4
+ EndSubSection
+
+ SubSection TMS1_UUT_trc class NA
+  K101_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  X200_trc ? UUT1 2X13 3
+ EndSubSection
+
+ SubSection TMS2_UUT_trc class NA
+  K201_trc ? DIP05-2A72-21D DIPXX-2A72-21X 7
+  X201_trc ? UUT2 2X13 3
+ EndSubSection
+
+ SubSection TMS_LOCAL_trc class NA
+  IC1_trc ? XC2C384_TQ144 TQ144 65 tms
+  JP4_trc ? JTAG 2X05 3
+  P60_trc ? PAD 11-07-12 P$1
+  R2_trc ? 300 0207/10 1
+ EndSubSection
+
+ SubSection VREF1_trc class NA
+  IC100_trc ? MAX519SO SO16 1
+  IC101_trc ? MAX962 SO08 2
+  IC110_trc ? MAX517SO SO08 1
+  P102_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection VREF2_trc class NA
+  IC100_trc ? MAX519SO SO16 16
+  IC101_trc ? MAX962 SO08 4
+  IC111_trc ? MAX517SO SO08 1
+  P112_trc ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection VREF_JTAG_trc class NA
+  JP4_trc ? JTAG 2X05 10
+  JP5_trc ? 1X02 pinhead 2
+  R3_trc ? 8x10k SIL9 1
+ EndSubSection
+
+
+
+
+
+
+
+ SubSection +1V8_pwr class NA
+  C20_pwr ? 100n C0805K 1
+  C21_pwr ? 100n C0805K 1
+  C22_pwr ? 100n C0805K 1
+  C507_pwr ? 1�/16V E2,5-6E +
+  IC5_pwr ? XC2C384_TQ144 TQ144 1 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 37 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 84 pwr
+  IC501_pwr ? LM317 317TS 2
+  P500_pwr ? PAD 11-07-12 P$1
+  R506_pwr ? 240 0207/10 2
+ EndSubSection
+
+ SubSection +2V5_pwr class NA
+  P36A_pwr ? PAD 11-07-12 P$1
+  P501_pwr ? PAD 11-07-12 P$1
+  R504A_pwr ? 100 0207/10 1
+  R504B_pwr ? 100 0207/10 2
+  R701_pwr ? 680 0207/10 1
+  R801_pwr ? 680 0207/10 1
+  R901_pwr ? 680 0207/10 1
+ EndSubSection
+
+ SubSection +3V3_pwr class NA
+  C30_pwr ? 100n C0805K 1
+  C31_pwr ? 100n C0805K 1
+  C32_pwr ? 100n C0805K 1
+  C33_pwr ? 100n C0805K 1
+  C40_pwr ? 100n C0805K 1
+  C41_pwr ? 100n C0805K 1
+  C50_pwr ? 100n C0805K 1
+  C505_pwr ? 100�/25V E2,5-5 +
+  C51_pwr ? 100n C0805K 1
+  D1_pwr ? red LED3MM A
+  D2_pwr ? green LED3MM A
+  D3_pwr ? yellow LED3MM A
+  IC5_pwr ? XC2C384_TQ144 TQ144 109 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 127 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 141 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 27 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 55 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 73 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 8 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 93 pwr
+  JP5_pwr ? PINHD-1X2 pinhead 1
+  P37_pwr ? PAD 11-07-12 P$1
+  P38_pwr ? PAD 11-07-12 P$1
+  P39_pwr ? PAD 11-07-12 P$1
+  P40_pwr ? PAD 11-07-12 P$1
+  P41_pwr ? PAD 11-07-12 P$1
+  P42_pwr ? PAD 11-07-12 P$1
+  P43_pwr ? PAD 11-07-12 P$1
+  P44_pwr ? PAD 11-07-12 P$1
+  P45_pwr ? PAD 11-07-12 P$1
+  R13_pwr ? 8x1k8 SIL9 1
+  R503_pwr ? 100 0207/10 2
+  R710_pwr ? 8x1k8 SIL9 1
+  X501_pwr ? W237-4 con-wago-500 2
+ EndSubSection
+
+ SubSection +3V3_A_pwr class NA
+  D503_pwr ? green LED3MM A
+  R503_pwr ? 100 0207/10 1
+ EndSubSection
+
+ SubSection +5V_pwr class NA
+  C1_pwr ? 100n C0805K 1
+  C100_pwr ? 100n C0805K 1
+  C2_pwr ? 100n C0805K 1
+  C200_pwr ? 100n C0805K 1
+  C3_pwr ? 100n C0805K 1
+  C300_pwr ? 100n C0805K 1
+  C504_pwr ? 100�/25V E2,5-5 +
+  IC1_pwr ? MAX517SO SO08 7
+  IC100_pwr ? ACS756SCA-050B-PFF-T CB-PFF 1
+  IC2_pwr ? MAX517SO SO08 6
+  IC2_pwr ? MAX517SO SO08 7
+  IC200_pwr ? ACS756SCA-050B-PFF-T CB-PFF 1
+  IC3_pwr ? MAX517SO SO08 5
+  IC3_pwr ? MAX517SO SO08 7
+  IC300_pwr ? ACS756SCA-050B-PFF-T CB-PFF 1
+  P49_pwr ? PAD 11-07-12 P$1
+  P50_pwr ? PAD 11-07-12 P$1
+  P51_pwr ? PAD 11-07-12 P$1
+  P52_pwr ? PAD 11-07-12 P$1
+  P53_pwr ? PAD 11-07-12 P$1
+  P54_pwr ? PAD 11-07-12 P$1
+  P55_pwr ? PAD 11-07-12 P$1
+  P56_pwr ? PAD 11-07-12 P$1
+  P57_pwr ? PAD 11-07-12 P$1
+  P600A_pwr ? PAD pads 1
+  R502_pwr ? 160 0207/10 2
+  R504A_pwr ? 100 0207/10 2
+  R600_pwr ? 68 0207/10 2
+  X500_pwr ? PWR_IN W237-4 1
+ EndSubSection
+
+ SubSection +5V_A_pwr class NA
+  D502_pwr ? green LED3MM A
+  R502_pwr ? 160 0207/10 1
+ EndSubSection
+
+ SubSection +12V_pwr class NA
+  C501_pwr ? 100�/25V E2,5-5 +
+  C506_pwr ? 100n C0805K 1
+  C701_pwr ? 100n C0805K 2
+  C702_pwr ? 100n C0805K 1
+  C801_pwr ? 100n C0805K 2
+  C901_pwr ? 100n C0805K 2
+  IC400_pwr ? ULN2003AD SO16 9
+  IC401_pwr ? ULN2003AD SO16 9
+  IC501_pwr ? LM317 317TS 3
+  IC700_pwr ? LM324D SO14 4
+  IC701_pwr ? LM311D SO08 8
+  IC800_pwr ? LM311D SO08 8
+  IC900_pwr ? LM311D SO08 8
+  K100_pwr ? FINDER 12V 1
+  K200_pwr ? FINDER 12V 1
+  K300_pwr ? FINDER 12V 1
+  K400_pwr ? FINDER 12V 1
+  P61_pwr ? PAD 11-07-12 P$1
+  P62_pwr ? PAD 11-07-12 P$1
+  P63_pwr ? PAD 11-07-12 P$1
+  P64_pwr ? PAD 11-07-12 P$1
+  P65_pwr ? PAD 11-07-12 P$1
+  R500_pwr ? 680 0207/10 2
+  X300_pwr ? W237-4 con-wago-500 4
+  X500_pwr ? PWR_IN W237-4 3
+ EndSubSection
+
+ SubSection -12V_pwr class NA
+  C500_pwr ? 100�/25V E2,5-5 -
+  C700_pwr ? 100n C0805K 2
+  C703_pwr ? 100n C0805K 1
+  C800_pwr ? 100n C0805K 2
+  C900_pwr ? 100n C0805K 2
+  IC700_pwr ? LM324D SO14 11
+  IC701_pwr ? LM311D SO08 4
+  IC800_pwr ? LM311D SO08 4
+  IC900_pwr ? LM311D SO08 4
+  P67_pwr ? PAD 11-07-12 P$1
+  P68_pwr ? PAD 11-07-12 P$1
+  P69_pwr ? PAD 11-07-12 P$1
+  P70_pwr ? PAD 11-07-12 P$1
+  P71_pwr ? PAD 11-07-12 P$1
+  R501_pwr ? 680 0207/10 2
+  X501_pwr ? W237-4 con-wago-500 4
+ EndSubSection
+
+ SubSection -12V_C_pwr class NA
+  D501_pwr ? green LED3MM K
+  R501_pwr ? 680 0207/10 1
+ EndSubSection
+
+ SubSection ADJ_+1V8_pwr class NA
+  IC501_pwr ? LM317 317TS 1
+  R505_pwr ? 105 0207/10 2
+  R506_pwr ? 240 0207/10 1
+ EndSubSection
+
+ SubSection AMP_OUT_1_pwr class NA
+  IC700_pwr ? LM324D SO14 7
+  P703A_pwr ? PAD pads 1
+  R700_pwr ? 6k8 0207/10 1
+ EndSubSection
+
+ SubSection AMP_OUT_2_pwr class NA
+  IC700_pwr ? LM324D SO14 1
+  P803A_pwr ? PAD pads 1
+  R800_pwr ? 6k8 0207/10 1
+ EndSubSection
+
+ SubSection AMP_OUT_3_pwr class NA
+  IC700_pwr ? LM324D SO14 14
+  P903A_pwr ? PAD pads 1
+  R900_pwr ? 6k8 0207/10 1
+ EndSubSection
+
+ SubSection BAL_1_pwr class NA
+  IC701_pwr ? LM311D SO08 5
+  P705_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection BAL_2_pwr class NA
+  IC800_pwr ? LM311D SO08 5
+  P805_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection BAL_3_pwr class NA
+  IC900_pwr ? LM311D SO08 5
+  P905_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection COIL1_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 16
+  K100_pwr ? FINDER 12V 2
+ EndSubSection
+
+ SubSection COIL2_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 15
+  K200_pwr ? FINDER 12V 2
+ EndSubSection
+
+ SubSection COIL3_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 14
+  K300_pwr ? FINDER 12V 2
+ EndSubSection
+
+ SubSection COIL4_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 13
+  K400_pwr ? FINDER 12V 2
+ EndSubSection
+
+ SubSection COMP_IN_1_pwr class NA
+  IC701_pwr ? LM311D SO08 3
+  P703B_pwr ? PAD pads 1
+ EndSubSection
+
+ SubSection COMP_IN_2_pwr class NA
+  IC800_pwr ? LM311D SO08 3
+  P803B_pwr ? PAD pads 1
+ EndSubSection
+
+ SubSection COMP_IN_3_pwr class NA
+  IC900_pwr ? LM311D SO08 3
+  P903B_pwr ? PAD pads 1
+ EndSubSection
+
+ SubSection CS_1_pwr class NA
+  IC100_pwr ? ACS756SCA-050B-PFF-T CB-PFF 3
+  R100_pwr ? 100 0207/10 2
+ EndSubSection
+
+ SubSection CS_1_OUT_pwr class NA
+  C101_pwr ? 100n C0805K 2
+  IC700_pwr ? LM324D SO14 5
+  P700_pwr ? PAD PAD P$1
+  R100_pwr ? 100 0207/10 1
+ EndSubSection
+
+ SubSection CS_2_pwr class NA
+  IC200_pwr ? ACS756SCA-050B-PFF-T CB-PFF 3
+  R200_pwr ? 100 0207/10 2
+ EndSubSection
+
+ SubSection CS_2_OUT_pwr class NA
+  C201_pwr ? 100n C0805K 2
+  IC700_pwr ? LM324D SO14 3
+  P800_pwr ? PAD 11-07-12 P$1
+  R200_pwr ? 100 0207/10 1
+ EndSubSection
+
+ SubSection CS_3_pwr class NA
+  IC300_pwr ? ACS756SCA-050B-PFF-T CB-PFF 3
+  R300_pwr ? 100 0207/10 2
+ EndSubSection
+
+ SubSection CS_3_OUT_pwr class NA
+  C301_pwr ? 100n C0805K 2
+  IC700_pwr ? LM324D SO14 12
+  P900_pwr ? PAD 11-07-12 P$1
+  R300_pwr ? 100 0207/10 1
+ EndSubSection
+
+ SubSection D7_A_pwr class NA
+  D500_pwr ? green LED3MM A
+  R500_pwr ? 680 0207/10 1
+ EndSubSection
+
+ SubSection DBG_0_C_pwr class NA
+  D1_pwr ? red LED3MM K
+  R9_pwr ? 160 0207/10 2
+ EndSubSection
+
+ SubSection DBG_1_C_pwr class NA
+  D2_pwr ? green LED3MM K
+  R11_pwr ? 160 0207/10 2
+ EndSubSection
+
+ SubSection DBG_2_C_pwr class NA
+  D3_pwr ? yellow LED3MM K
+  R12_pwr ? 160 0207/10 2
+ EndSubSection
+
+ SubSection DRV_IN_RSV0_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 5
+  R401_pwr ? 8x1k8 SIL9 4
+ EndSubSection
+
+ SubSection DRV_IN_RSV1_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 6
+  R401_pwr ? 8x1k8 SIL9 3
+ EndSubSection
+
+ SubSection DRV_IN_RSV2_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 7
+  R401_pwr ? 8x1k8 SIL9 2
+ EndSubSection
+
+ SubSection DRV_IN_RSV3_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 5
+  R400_pwr ? 8x1k8 SIL9 7
+ EndSubSection
+
+ SubSection DRV_IN_RSV4_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 6
+  R400_pwr ? 8x1k8 SIL9 8
+ EndSubSection
+
+ SubSection DRV_IN_RSV5_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 7
+  R400_pwr ? 8x1k8 SIL9 9
+ EndSubSection
+
+ SubSection DRV_OUT_RSV0_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 12
+  P109_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection DRV_OUT_RSV1_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 11
+  P110_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection DRV_OUT_RSV2_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 10
+  P111_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection DRV_OUT_RSV3_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 12
+  P112_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection DRV_OUT_RSV4_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 11
+  P113_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection DRV_OUT_RSV5_pwr class NA
+  IC400_pwr ? ULN2003AD SO16 10
+  P114_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection GND_pwr class NA
+  C1_pwr ? 100n C0805K 2
+  C10_pwr ? 4n7 C050-025X075 2
+  C100_pwr ? 100n C0805K 2
+  C101_pwr ? 100n C0805K 1
+  C2_pwr ? 100n C0805K 2
+  C20_pwr ? 100n C0805K 2
+  C200_pwr ? 100n C0805K 2
+  C201_pwr ? 100n C0805K 1
+  C21_pwr ? 100n C0805K 2
+  C22_pwr ? 100n C0805K 2
+  C3_pwr ? 100n C0805K 2
+  C30_pwr ? 100n C0805K 2
+  C300_pwr ? 100n C0805K 2
+  C301_pwr ? 100n C0805K 1
+  C31_pwr ? 100n C0805K 2
+  C32_pwr ? 100n C0805K 2
+  C33_pwr ? 100n C0805K 2
+  C40_pwr ? 100n C0805K 2
+  C41_pwr ? 100n C0805K 2
+  C50_pwr ? 100n C0805K 2
+  C500_pwr ? 100�/25V E2,5-5 +
+  C501_pwr ? 100�/25V E2,5-5 -
+  C504_pwr ? 100�/25V E2,5-5 -
+  C505_pwr ? 100�/25V E2,5-5 -
+  C506_pwr ? 100n C0805K 2
+  C507_pwr ? 1�/16V E2,5-6E -
+  C51_pwr ? 100n C0805K 2
+  C600_pwr ? 10�/25V E2,5-6E -
+  C700_pwr ? 100n C0805K 1
+  C701_pwr ? 100n C0805K 1
+  C702_pwr ? 100n C0805K 2
+  C703_pwr ? 100n C0805K 2
+  C800_pwr ? 100n C0805K 1
+  C801_pwr ? 100n C0805K 1
+  C900_pwr ? 100n C0805K 1
+  C901_pwr ? 100n C0805K 1
+  D500_pwr ? green LED3MM K
+  D501_pwr ? green LED3MM A
+  D502_pwr ? green LED3MM K
+  D503_pwr ? green LED3MM K
+  H1_pwr ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1
+  H2_pwr ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1
+  IC1_pwr ? MAX517SO SO08 2
+  IC1_pwr ? MAX517SO SO08 5
+  IC1_pwr ? MAX517SO SO08 6
+  IC100_pwr ? ACS756SCA-050B-PFF-T CB-PFF 2
+  IC2_pwr ? MAX517SO SO08 2
+  IC2_pwr ? MAX517SO SO08 5
+  IC200_pwr ? ACS756SCA-050B-PFF-T CB-PFF 2
+  IC3_pwr ? MAX517SO SO08 2
+  IC3_pwr ? MAX517SO SO08 6
+  IC300_pwr ? ACS756SCA-050B-PFF-T CB-PFF 2
+  IC400_pwr ? ULN2003AD SO16 8
+  IC401_pwr ? ULN2003AD SO16 8
+  IC5_pwr ? XC2C384_TQ144 TQ144 108 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 123 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 144 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 29 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 36 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 47 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 62 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 72 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 89 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 90 pwr
+  IC5_pwr ? XC2C384_TQ144 TQ144 99 pwr
+  IC700_pwr ? LM324D SO14 10
+  IC700_pwr ? LM324D SO14 9
+  IC701_pwr ? LM311D SO08 1
+  IC800_pwr ? LM311D SO08 1
+  IC900_pwr ? LM311D SO08 1
+  JP1_pwr ? PWR_CTRL_AIO 2X20 1
+  JP1_pwr ? PWR_CTRL_AIO 2X20 11
+  JP1_pwr ? PWR_CTRL_AIO 2X20 13
+  JP1_pwr ? PWR_CTRL_AIO 2X20 15
+  JP1_pwr ? PWR_CTRL_AIO 2X20 17
+  JP1_pwr ? PWR_CTRL_AIO 2X20 19
+  JP1_pwr ? PWR_CTRL_AIO 2X20 21
+  JP1_pwr ? PWR_CTRL_AIO 2X20 23
+  JP1_pwr ? PWR_CTRL_AIO 2X20 25
+  JP1_pwr ? PWR_CTRL_AIO 2X20 27
+  JP1_pwr ? PWR_CTRL_AIO 2X20 29
+  JP1_pwr ? PWR_CTRL_AIO 2X20 3
+  JP1_pwr ? PWR_CTRL_AIO 2X20 31
+  JP1_pwr ? PWR_CTRL_AIO 2X20 33
+  JP1_pwr ? PWR_CTRL_AIO 2X20 35
+  JP1_pwr ? PWR_CTRL_AIO 2X20 37
+  JP1_pwr ? PWR_CTRL_AIO 2X20 39
+  JP1_pwr ? PWR_CTRL_AIO 2X20 5
+  JP1_pwr ? PWR_CTRL_AIO 2X20 7
+  JP1_pwr ? PWR_CTRL_AIO 2X20 9
+  JP4_pwr ? JTAG 2X05 2
+  JP4_pwr ? JTAG 2X05 4
+  JP4_pwr ? JTAG 2X05 6
+  JP4_pwr ? JTAG 2X05 8
+  P107_pwr ? PAD 11-07-12 P$1
+  P108_pwr ? PAD 11-07-12 P$1
+  P24_pwr ? PAD 11-07-12 P$1
+  P25_pwr ? PAD 11-07-12 P$1
+  P26_pwr ? PAD 11-07-12 P$1
+  P27_pwr ? PAD 11-07-12 P$1
+  P28_pwr ? PAD 11-07-12 P$1
+  P29_pwr ? PAD 11-07-12 P$1
+  P30_pwr ? PAD 11-07-12 P$1
+  P31_pwr ? PAD 11-07-12 P$1
+  P32_pwr ? PAD 11-07-12 P$1
+  P33_pwr ? PAD 11-07-12 P$1
+  P34_pwr ? PAD 11-07-12 P$1
+  P35_pwr ? PAD 11-07-12 P$1
+  P36B_pwr ? PAD 11-07-12 P$1
+  R14_pwr ? 300 0207/10 2
+  R15_pwr ? 300 0207/10 2
+  R400_pwr ? 8x1k8 SIL9 1
+  R401_pwr ? 8x1k8 SIL9 1
+  R504B_pwr ? 100 0207/10 1
+  R505_pwr ? 105 0207/10 1
+  X301_pwr ? PWR_LED W237-4 1
+  X301_pwr ? PWR_LED W237-4 2
+  X500_pwr ? PWR_IN W237-4 2
+  X500_pwr ? PWR_IN W237-4 4
+  X501_pwr ? W237-4 con-wago-500 1
+  X501_pwr ? W237-4 con-wago-500 3
+ EndSubSection
+
+ SubSection IMAX_REF_1_pwr class NA
+  IC1_pwr ? MAX517SO SO08 1
+  IC701_pwr ? LM311D SO08 2
+  P704_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection IMAX_REF_2_pwr class NA
+  IC2_pwr ? MAX517SO SO08 1
+  IC800_pwr ? LM311D SO08 2
+  P804_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection IMAX_REF_3_pwr class NA
+  IC3_pwr ? MAX517SO SO08 1
+  IC900_pwr ? LM311D SO08 2
+  P904_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection INV_CS1_pwr class NA
+  IC700_pwr ? LM324D SO14 6
+  P702_pwr ? PAD 11-07-12 P$1
+  R700_pwr ? 6k8 0207/10 2
+  R701_pwr ? 680 0207/10 2
+ EndSubSection
+
+ SubSection INV_CS2_pwr class NA
+  IC700_pwr ? LM324D SO14 2
+  P802_pwr ? PAD 11-07-12 P$1
+  R800_pwr ? 6k8 0207/10 2
+  R801_pwr ? 680 0207/10 2
+ EndSubSection
+
+ SubSection INV_CS3_pwr class NA
+  IC700_pwr ? LM324D SO14 13
+  P902_pwr ? PAD 11-07-12 P$1
+  R900_pwr ? 6k8 0207/10 2
+  R901_pwr ? 680 0207/10 2
+ EndSubSection
+
+ SubSection LED_PWR_C_1_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 16
+  X300_pwr ? W237-4 con-wago-500 3
+ EndSubSection
+
+ SubSection LED_PWR_C_2_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 15
+  X300_pwr ? W237-4 con-wago-500 2
+ EndSubSection
+
+ SubSection LED_PWR_C_3_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 14
+  X300_pwr ? W237-4 con-wago-500 1
+ EndSubSection
+
+ SubSection LED_PWR_C_GND_pwr class NA
+  IC401_pwr ? ULN2003AD SO16 13
+  X301_pwr ? PWR_LED W237-4 4
+ EndSubSection
+
+ SubSection RSV_OUT_pwr class NA
+  IC700_pwr ? LM324D SO14 8
+  P106_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection STRB_1_pwr class NA
+  IC701_pwr ? LM311D SO08 6
+  P706_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection STRB_2_pwr class NA
+  IC800_pwr ? LM311D SO08 6
+  P806_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection STRB_3_pwr class NA
+  IC900_pwr ? LM311D SO08 6
+  P906_pwr ? PAD 11-07-12 P$1
+ EndSubSection
+
+ SubSection TCK_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 67 tck
+  JP4_pwr ? JTAG 2X05 1
+  P92_pwr ? PAD 11-07-12 P$1
+  R14_pwr ? 300 0207/10 1
+ EndSubSection
+
+ SubSection TDI_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 63 tdi
+  JP4_pwr ? JTAG 2X05 7
+  P89_pwr ? PAD 11-07-12 P$1
+  R16_pwr ? 8x10k SIL9 3
+ EndSubSection
+
+ SubSection TDO_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 122 tdo
+  JP4_pwr ? JTAG 2X05 5
+  P90_pwr ? PAD 11-07-12 P$1
+  R16_pwr ? 8x10k SIL9 4
+ EndSubSection
+
+ SubSection TMS_pwr class NA
+  IC5_pwr ? XC2C384_TQ144 TQ144 65 tms
+  JP4_pwr ? JTAG 2X05 3
+  P93_pwr ? PAD 11-07-12 P$1
+  R15_pwr ? 300 0207/10 1
+ EndSubSection
+
+ SubSection UUT_GND_F_pwr class NA
+  F4_pwr ? SH22,5 11-07-12 1
+  K400_pwr ? FINDER 12V S1
+  K400_pwr ? FINDER 12V S2
+  P4GA_pwr ? PAD2 pads 1
+ EndSubSection
+
+ SubSection UUT_GND_IN_pwr class NA
+  F4_pwr ? SH22,5 11-07-12 2
+  P4GB_pwr ? PAD2 pads 1
+  X200_pwr ? W237-4 con-wago-500 1
+ EndSubSection
+
+ SubSection UUT_GND_OUT_pwr class NA
+  K400_pwr ? FINDER 12V P1
+  K400_pwr ? FINDER 12V P2
+  X200_pwr ? W237-4 con-wago-500 2
+ EndSubSection
+
+ SubSection UUT_PWR_IN_1_pwr class NA
+  F1_pwr ? SH22,5 11-07-12 2
+  P1B_pwr ? PAD2 pads 1
+  X100_pwr ? PWR W237-4 1
+ EndSubSection
+
+ SubSection UUT_PWR_IN_1F_pwr class NA
+  F1_pwr ? SH22,5 11-07-12 1
+  IC100_pwr ? ACS756SCA-050B-PFF-T CB-PFF 4
+  IC100_pwr ? ACS756SCA-050B-PFF-T CB-PFF IP+1
+  P1A_pwr ? PAD2 pads 1
+ EndSubSection
+
+ SubSection UUT_PWR_IN_2_pwr class NA
+  F2_pwr ? SH22,5 11-07-12 2
+  P2B_pwr ? PAD2 pads 1
+  X100_pwr ? PWR W237-4 3
+ EndSubSection
+
+ SubSection UUT_PWR_IN_2F_pwr class NA
+  F2_pwr ? SH22,5 11-07-12 1
+  IC200_pwr ? ACS756SCA-050B-PFF-T CB-PFF 4
+  IC200_pwr ? ACS756SCA-050B-PFF-T CB-PFF IP+1
+  P2A_pwr ? PAD2 pads 1
+ EndSubSection
+
+ SubSection UUT_PWR_IN_3_pwr class NA
+  F3_pwr ? SH22,5 11-07-12 2
+  P3B_pwr ? PAD2 pads 1
+  X200_pwr ? W237-4 con-wago-500 3
+ EndSubSection
+
+ SubSection UUT_PWR_IN_3F_pwr class NA
+  F3_pwr ? SH22,5 11-07-12 1
+  IC300_pwr ? ACS756SCA-050B-PFF-T CB-PFF 4
+  IC300_pwr ? ACS756SCA-050B-PFF-T CB-PFF IP+1
+  P3A_pwr ? PAD2 pads 1
+ EndSubSection
+
+ SubSection UUT_PWR_OUT_1_pwr class NA
+  K100_pwr ? FINDER 12V S1
+  K100_pwr ? FINDER 12V S2
+  X100_pwr ? PWR W237-4 2
+ EndSubSection
+
+ SubSection UUT_PWR_OUT_2_pwr class NA
+  K200_pwr ? FINDER 12V S1
+  K200_pwr ? FINDER 12V S2
+  X100_pwr ? PWR W237-4 4
+ EndSubSection
+
+ SubSection UUT_PWR_OUT_3_pwr class NA
+  K300_pwr ? FINDER 12V S1
+  K300_pwr ? FINDER 12V S2
+  X200_pwr ? W237-4 con-wago-500 4
+ EndSubSection
+
+ SubSection UUT_PWR_SW_1_pwr class NA
+  IC100_pwr ? ACS756SCA-050B-PFF-T CB-PFF 5
+  IC100_pwr ? ACS756SCA-050B-PFF-T CB-PFF IP-1
+  K100_pwr ? FINDER 12V P1
+  K100_pwr ? FINDER 12V P2
+ EndSubSection
+
+ SubSection UUT_PWR_SW_2_pwr class NA
+  IC200_pwr ? ACS756SCA-050B-PFF-T CB-PFF 5
+  IC200_pwr ? ACS756SCA-050B-PFF-T CB-PFF IP-1
+  K200_pwr ? FINDER 12V P1
+  K200_pwr ? FINDER 12V P2
+ EndSubSection
+
+ SubSection UUT_PWR_SW_3_pwr class NA
+  IC300_pwr ? ACS756SCA-050B-PFF-T CB-PFF 5
+  IC300_pwr ? ACS756SCA-050B-PFF-T CB-PFF IP-1
+  K300_pwr ? FINDER 12V P1
+  K300_pwr ? FINDER 12V P2
+ EndSubSection
+
+ SubSection VREF_DAC_PWR_pwr class NA
+  C600_pwr ? 10�/25V E2,5-6E +
+  IC1_pwr ? MAX517SO SO08 8
+  IC2_pwr ? MAX517SO SO08 8
+  IC3_pwr ? MAX517SO SO08 8
+  P600B_pwr ? PAD pads 1
+  R600_pwr ? 68 0207/10 1
+ EndSubSection
+
+ SubSection VREF_JTAG_pwr class NA
+  JP4_pwr ? JTAG 2X05 10
+  JP5_pwr ? PINHD-1X2 pinhead 2
+  R16_pwr ? 8x10k SIL9 1
+ EndSubSection
+EndSection

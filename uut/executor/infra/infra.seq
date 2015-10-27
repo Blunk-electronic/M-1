@@ -1,0 +1,144 @@
+Section info
+ created by infra structure test generator version 3.8
+ date      : Mon May 11 15:35:08 CEST 2015
+ database  : executor.udb
+ algorithm : standard
+EndSection
+
+Section options
+ on_fail hstrst
+ frequency 1
+ trailer_ir 11001010
+ trailer_dr 11001010
+ voltage_out_port_1 2.5
+ voltage_out_port_2 1.8
+ tck_driver_port_1 push-pull
+ tms_driver_port_1 push-pull
+ tdo_driver_port_1 push-pull
+ trst_driver_port_1 push-pull
+ tck_driver_port_2 push-pull
+ tms_driver_port_2 push-pull
+ tdo_driver_port_2 push-pull
+ trst_driver_port_2 push-pull
+ threshold_tdi_port_1 0.8
+ threshold_tdi_port_2 0.8
+EndSection
+
+Section sequence 1
+
+-- delay 0.2
+-- power up gnd       -- connects supply GND with UUT. NOTE: similar commands: power up/down gnd,1,2,3,all
+-- delay 0.2
+-- imax 1 0.5 timeout 2 -- set maximum current of power channel 1 to 1 A , timeout to shutdown is 2 sec 
+-- imax 2 0.5 timeout 2 -- NOTE: max. current range: 0.1 to 5 Amps | timeout range: 0.02 to 5 sec
+-- imax 3 0.5 timeout 2
+-- power up 1
+-- power up 2
+-- power up 3
+-- delay 1            -- wait for UUT power to settle down -- unit is seconds, max. 25sec allowed
+ connect port 1     -- connect TAP 1 signals with UUT. NOTE: similar commands: (dis)connect port 1,2
+ delay 0.1
+ -- test begin
+
+ trst -- hard+soft scanpath reset. NOTE: similar commands: strst,htrst (for soft/hard scanpath reset)
+ -- check bypass registers
+ set IC2 drv ir 5 downto 0 = 111111 bypass
+ set IC2 exp ir 5 downto 0 = xxxx01
+ set IC1 drv ir 7 downto 0 = 11111111 bypass
+ set IC1 exp ir 7 downto 0 = xxxxx001
+ sir id 1
+ set IC2 drv bypass 1=1
+ set IC2 exp bypass 1=0
+ set IC1 drv bypass 1=1
+ set IC1 exp bypass 1=0
+ sdr id 2
+
+ -- check id codes
+ set IC2 drv ir 5 downto 0 = 001001 idcode
+ sir id 3
+ set IC2 drv idcode 31 downto 0 = 0
+ set IC2 exp idcode 31 downto 0 = xxxx0001010000011100000010010011
+ sdr id 4
+
+ set IC2 drv ir 5 downto 0 = 111111 bypass
+ set IC1 drv ir 7 downto 0 = 11111110 idcode
+ sir id 5
+ set IC2 drv bypass 1=1
+ set IC2 exp bypass 1=0
+ set IC1 drv idcode 31 downto 0 = 0
+ set IC1 exp idcode 31 downto 0 = xxxx0101000001000110000010010011
+ sdr id 6
+
+
+ -- check bypass registers
+ set IC2 drv ir 5 downto 0 = 111111 bypass
+ set IC2 exp ir 5 downto 0 = xxxx01
+ set IC1 drv ir 7 downto 0 = 11111111 bypass
+ set IC1 exp ir 7 downto 0 = xxxxx001
+ sir id 7
+ set IC2 drv bypass 1=1
+ set IC2 exp bypass 1=0
+ set IC1 drv bypass 1=1
+ set IC1 exp bypass 1=0
+ sdr id 8
+
+ -- check user codes
+ set IC2 drv ir 5 downto 0 = 001000 usercode
+ sir id 9
+ set IC2 drv usercode 31 downto 0 = 0
+ set IC2 exp usercode 31 downto 0 = xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ sdr id 10
+
+ set IC2 drv ir 5 downto 0 = 111111 bypass
+ set IC1 drv ir 7 downto 0 = 11111101 usercode
+ sir id 11
+ set IC2 drv bypass 1=1
+ set IC2 exp bypass 1=0
+ set IC1 drv usercode 31 downto 0 = 0
+ set IC1 exp usercode 31 downto 0 = xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ sdr id 12
+
+
+ -- check bypass registers
+ set IC2 drv ir 5 downto 0 = 111111 bypass
+ set IC2 exp ir 5 downto 0 = xxxx01
+ set IC1 drv ir 7 downto 0 = 11111111 bypass
+ set IC1 exp ir 7 downto 0 = xxxxx001
+ sir id 13
+ set IC2 drv bypass 1=1
+ set IC2 exp bypass 1=0
+ set IC1 drv bypass 1=1
+ set IC1 exp bypass 1=0
+ sdr id 14
+
+ -- check boundary registers
+ set IC2 drv ir 5 downto 0 = 000001 sample
+ sir id 15
+ set IC2 drv boundary 814 downto 0 = xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xxxxx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx11xxx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1
+ set IC2 exp boundary 814 downto 0 = x
+ sdr id 16
+
+ set IC2 drv ir 5 downto 0 = 111111 bypass
+ set IC1 drv ir 7 downto 0 = 00000001 sample
+ sir id 17
+ set IC2 drv bypass 1=1
+ set IC2 exp bypass 1=0
+ set IC1 drv boundary 24 downto 0 = x0x0xx0x0xx0x0x0x0x0x0x0x
+ set IC1 exp boundary 24 downto 0 = x
+ sdr id 18
+
+
+ -- check bypass registers
+ set IC2 drv ir 5 downto 0 = 111111 bypass
+ set IC2 exp ir 5 downto 0 = xxxx01
+ set IC1 drv ir 7 downto 0 = 11111111 bypass
+ set IC1 exp ir 7 downto 0 = xxxxx001
+ sir id 19
+ set IC2 drv bypass 1=1
+ set IC2 exp bypass 1=0
+ set IC1 drv bypass 1=1
+ set IC1 exp bypass 1=0
+ sdr id 20
+
+ trst
+EndSection

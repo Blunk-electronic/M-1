@@ -1,0 +1,53 @@
+Section scanpath_configuration
+
+-- recommended version 1.0
+
+ SubSection options
+  --on_fail hstrst -- default is power_down. NOTE: similar commands: hstrst (hard+soft scanpath reset)
+  --frequency 1 -- unit is Mhz, use integers 1,2,3,4 only ! Comment this option out for lowest frequency of 33kHz !
+  trailer_ir 0101010 -- 8 bit binary value
+  trailer_dr 1100101
+  voltage_out_port_1  2.5  -- min value +1.8V, max value +3.3V
+  voltage_out_port_2  1.8
+
+  tck_driver_port_1 push-pull  -- NOTE: similar commands: weak1, weak0, tie_high, tie_low, high-z
+  tms_driver_port_1 push-pull
+  tdo_driver_port_1 push-pull
+  trst_driver_port_1 push-pull 
+  tck_driver_port_2 push-pull
+  tms_driver_port_2 push-pull
+  tdo_driver_port_2 push-pull
+  trst_driver_port_2 push-pull 
+
+  threshold_tdi_port_1 0.8  -- range: 0 ... +3.3V
+  threshold_tdi_port_2 0.8
+ EndSubSection
+
+ SubSection chain 1
+ 	--UUT_TDI_1 / BSC_TDO_1
+	--device, package, path to bsdl model, options -- NOTE: use lower case letters for package name !
+
+	-- A
+	IC2_sub pq208 models/xc3s400_pq208.bsd option remove_pin_prefix p
+	IC1_sub vo20 models/xcf04s_vo20.bsd
+
+	-- B
+	IC5_pwr tq144 models/xc2c384_tq144.bsd
+
+	-- C
+	IC1_trc tq144 models/xc2c384_tq144.bsd
+
+	-- D
+	IC201_moni tq144 models/xc95288xl_tq144.bsd
+
+
+
+	--IC301 pc44 models/xc9536_pc44.bsd
+	--IC300 pc44 models/xc9536_pc44.bsd
+	--IC303 dw models/sctm001.bsm
+
+	--IC301 pc44 models/BSDL/xc9536_pc44.bsd 
+	--UUT_TDO_1 / BSC_TDI_1
+ EndSubSection
+
+EndSection

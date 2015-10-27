@@ -1,0 +1,1351 @@
+Section info
+ -- netlist skeleton submodule
+ -- created by impeagle6x version 3.0
+ -- Thu Dec 13 11:52:19 CET 2012
+-----------------------------------------------------------------------------------
+ -- Netlist cad/z80_monitor_V10.net
+ -- Exported from z80_monitor_v10.brd at 11/27/12 2:06 PM
+ -- EAGLE Version 6.2.0 Copyright (c) 1988-2012 CadSoft
+
+ -- NOTE    : It appears the netlist has been exported from a board.
+ -- 187 nets imported
+ -- Please verify net count against CAD tool !
+-----------------------------------------------------------------------------------
+ -- Partlist cad/z80_monitor_V10.part
+ -- Exported from z80_monitor_v10.brd at 11/27/12 2:07 PM
+ -- EAGLE Version 6.2.0 Copyright (c) 1988-2012 CadSoft
+
+ -- NOTE    : Assembly variant:
+ -- NOTE    : Default assembly variant found.
+ -- NOTE    : It appears the partlist has been exported from a board.
+ -- WARNING ! Bad parameter count in part: JP106, please check partlist
+ -- WARNING ! Bad parameter count in part: P1, please check partlist
+ -- WARNING ! Bad parameter count in part: P101, please check partlist
+ -- WARNING ! Bad parameter count in part: P102, please check partlist
+ -- WARNING ! Bad parameter count in part: P103, please check partlist
+ -- WARNING ! Bad parameter count in part: P104, please check partlist
+ -- WARNING ! Bad parameter count in part: P301, please check partlist
+ -- WARNING ! Bad parameter count in part: P302, please check partlist
+ -- WARNING ! Bad parameter count in part: P303, please check partlist
+ -- WARNING ! Bad parameter count in part: P304, please check partlist
+ -- WARNING ! Bad parameter count in part: P305, please check partlist
+ -- WARNING ! Bad parameter count in part: P306, please check partlist
+ -- WARNING ! Bad parameter count in part: P601, please check partlist
+ -- WARNING ! Bad parameter count in part: P602, please check partlist
+ -- WARNING ! Bad parameter count in part: P603, please check partlist
+ -- WARNING ! Bad parameter count in part: P604, please check partlist
+ -- WARNING ! Bad parameter count in part: P605, please check partlist
+ -- WARNING ! Bad parameter count in part: P606, please check partlist
+ -- 130 parts imported
+ -- please verify part count against CAD tool !
+EndSection
+
+Section netlist_skeleton
+
+ SubSection !CPU_BUSACK class NA
+  IC201 ? XC95288XL_TQ144 TQ144 45 
+  JP101 ? CPU_CTRL&DATA 2X20 38 
+ EndSubSection
+
+ SubSection !CPU_BUSREQ class NA
+  IC201 ? XC95288XL_TQ144 TQ144 43 
+  JP101 ? CPU_CTRL&DATA 2X20 36 
+ EndSubSection
+
+ SubSection !CPU_HALT class NA
+  IC201 ? XC95288XL_TQ144 TQ144 40 
+  JP101 ? CPU_CTRL&DATA 2X20 32 
+ EndSubSection
+
+ SubSection !CPU_INT class NA
+  IC201 ? XC95288XL_TQ144 TQ144 44 
+  JP103 ? CPU_CTRL&ADDR 2X20 36 
+ EndSubSection
+
+ SubSection !CPU_IOREQ class NA
+  IC201 ? XC95288XL_TQ144 TQ144 35 
+  JP101 ? CPU_CTRL&DATA 2X20 24 
+ EndSubSection
+
+ SubSection !CPU_M1 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 28 
+  JP101 ? CPU_CTRL&DATA 2X20 20 
+ EndSubSection
+
+ SubSection !CPU_MREQ class NA
+  IC201 ? XC95288XL_TQ144 TQ144 31 
+  JP101 ? CPU_CTRL&DATA 2X20 22 
+ EndSubSection
+
+ SubSection !CPU_NMI class NA
+  IC201 ? XC95288XL_TQ144 TQ144 48 
+  JP103 ? CPU_CTRL&ADDR 2X20 38 
+ EndSubSection
+
+ SubSection !CPU_RD class NA
+  IC201 ? XC95288XL_TQ144 TQ144 33 
+  JP101 ? CPU_CTRL&DATA 2X20 26 
+ EndSubSection
+
+ SubSection !CPU_RESET class NA
+  IC201 ? XC95288XL_TQ144 TQ144 143 
+  JP103 ? CPU_CTRL&ADDR 2X20 40 
+  JP601 ? PIO_DBG 2X20 40 
+  R323 ? 160 0207/10 2 
+ EndSubSection
+
+ SubSection !CPU_RFSH class NA
+  IC201 ? XC95288XL_TQ144 TQ144 39 
+  JP101 ? CPU_CTRL&DATA 2X20 30 
+ EndSubSection
+
+ SubSection !CPU_WAIT class NA
+  IC201 ? XC95288XL_TQ144 TQ144 41 
+  JP101 ? CPU_CTRL&DATA 2X20 34 
+ EndSubSection
+
+ SubSection !CPU_WR class NA
+  IC201 ? XC95288XL_TQ144 TQ144 34 
+  JP101 ? CPU_CTRL&DATA 2X20 28 
+ EndSubSection
+
+ SubSection !EX_BUSAK class NA
+  IC201 ? XC95288XL_TQ144 TQ144 98 
+  JP102 ? EXT_CTRL&DATA 2X20 38 
+ EndSubSection
+
+ SubSection !EX_BUSREQ class NA
+  IC201 ? XC95288XL_TQ144 TQ144 100 
+  JP102 ? EXT_CTRL&DATA 2X20 36 
+ EndSubSection
+
+ SubSection !EX_HALT class NA
+  IC201 ? XC95288XL_TQ144 TQ144 102 
+  JP102 ? EXT_CTRL&DATA 2X20 32 
+ EndSubSection
+
+ SubSection !EX_INT class NA
+  IC201 ? XC95288XL_TQ144 TQ144 112 
+  JP104 ? EXT_CTRL&ADDR 2X20 36 
+ EndSubSection
+
+ SubSection !EX_IOREQ class NA
+  IC201 ? XC95288XL_TQ144 TQ144 106 
+  JP102 ? EXT_CTRL&DATA 2X20 24 
+ EndSubSection
+
+ SubSection !EX_M1 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 96 
+  JP102 ? EXT_CTRL&DATA 2X20 20 
+ EndSubSection
+
+ SubSection !EX_MREQ class NA
+  IC201 ? XC95288XL_TQ144 TQ144 107 
+  JP102 ? EXT_CTRL&DATA 2X20 22 
+ EndSubSection
+
+ SubSection !EX_NMI class NA
+  IC201 ? XC95288XL_TQ144 TQ144 111 
+  JP104 ? EXT_CTRL&ADDR 2X20 38 
+ EndSubSection
+
+ SubSection !EX_RD class NA
+  IC201 ? XC95288XL_TQ144 TQ144 105 
+  JP102 ? EXT_CTRL&DATA 2X20 26 
+ EndSubSection
+
+ SubSection !EX_RESET class NA
+  IC201 ? XC95288XL_TQ144 TQ144 110 
+  JP104 ? EXT_CTRL&ADDR 2X20 40 
+ EndSubSection
+
+ SubSection !EX_RFSH class NA
+  IC201 ? XC95288XL_TQ144 TQ144 103 
+  JP102 ? EXT_CTRL&DATA 2X20 30 
+ EndSubSection
+
+ SubSection !EX_WAIT class NA
+  IC201 ? XC95288XL_TQ144 TQ144 101 
+  JP102 ? EXT_CTRL&DATA 2X20 34 
+ EndSubSection
+
+ SubSection !EX_WR class NA
+  IC201 ? XC95288XL_TQ144 TQ144 104 
+  JP102 ? EXT_CTRL&DATA 2X20 28 
+ EndSubSection
+
+ SubSection +3V3 class NA
+  C101 ? 100�/25V E2,5-7 + 
+  C201 ? 100n C0805 1 
+  C202 ? 100n C0805 1 
+  C203 ? 100n C0805 1 
+  C204 ? 100n C0805 1 
+  C205 ? 100n C0805 1 
+  C206 ? 100n C0805 1 
+  C207 ? 100n C0805 1 
+  C208 ? 100n C0805 1 
+  C209 ? 100n C0805 1 
+  C210 ? 100n C0805 1 
+  C601 ? 100n C0805 1 
+  D301 ? bl LED3MM A 
+  D302 ? bl LED3MM A 
+  D303 ? bl LED3MM A 
+  D304 ? bl LED3MM A 
+  D305 ? bl LED3MM A 
+  D306 ? bl LED3MM A 
+  D307 ? bl LED3MM A 
+  D308 ? bl LED3MM A 
+  D309 ? bl LED3MM A 
+  D310 ? bl LED3MM A 
+  D311 ? bl LED3MM A 
+  D312 ? bl LED3MM A 
+  D315 ? bl LED3MM A 
+  D316 ? bl LED3MM A 
+  IC201 ? XC95288XL_TQ144 TQ144 1 
+  IC201 ? XC95288XL_TQ144 TQ144 109 
+  IC201 ? XC95288XL_TQ144 TQ144 127 
+  IC201 ? XC95288XL_TQ144 TQ144 141 
+  IC201 ? XC95288XL_TQ144 TQ144 37 
+  IC201 ? XC95288XL_TQ144 TQ144 42 
+  IC201 ? XC95288XL_TQ144 TQ144 55 
+  IC201 ? XC95288XL_TQ144 TQ144 73 
+  IC201 ? XC95288XL_TQ144 TQ144 8 
+  IC201 ? XC95288XL_TQ144 TQ144 84 
+  IC601 ? 4093N DIL14 14 
+  JP106 ? 1X02 pinhead 1 
+  JP601 ? PIO_DBG 2X20 1 
+  JP601 ? PIO_DBG 2X20 3 
+  JP601 ? PIO_DBG 2X20 5 
+  R101 ? 160 0207/10 2 
+  RN401 ? 10k SIL9 1 
+  RN501 ? 10k SIL9 1 
+  RN601 ? 10k SIL9 1 
+  RN602 ? 10k SIL9 1 
+  RN603 ? 10k SIL9 1 
+  T401 ? BC327 TO92-CBE E 
+  T402 ? BC327 TO92-CBE E 
+  T403 ? BC327 TO92-CBE E 
+  T404 ? BC327 TO92-CBE E 
+  T409 ? BC327 TO92-CBE E 
+  T410 ? BC327 TO92-CBE E 
+  T411 ? BC327 TO92-CBE E 
+  T501 ? BD140 TO126AV E 
+  T502 ? BD140 TO126AV E 
+  T503 ? BD140 TO126AV E 
+  T507 ? BD140 TO126AV E 
+  T508 ? BD140 TO126AV E 
+  T509 ? BD140 TO126AV E 
+  X101 ? PWR W237-4 1 
+ EndSubSection
+
+ SubSection +5V class NA
+  C102 ? 100�/25V E2,5-7 + 
+  X101 ? PWR W237-4 2 
+ EndSubSection
+
+ SubSection 3V3_LED_A class NA
+  D101 ? green LED3MM A 
+  R101 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection A0 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 19 
+  JP103 ? CPU_CTRL&ADDR 2X20 2 
+ EndSubSection
+
+ SubSection A1 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 17 
+  JP103 ? CPU_CTRL&ADDR 2X20 4 
+ EndSubSection
+
+ SubSection A2 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 16 
+  JP103 ? CPU_CTRL&ADDR 2X20 6 
+ EndSubSection
+
+ SubSection A3 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 15 
+  JP103 ? CPU_CTRL&ADDR 2X20 8 
+ EndSubSection
+
+ SubSection A4 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 14 
+  JP103 ? CPU_CTRL&ADDR 2X20 10 
+ EndSubSection
+
+ SubSection A5 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 13 
+  JP103 ? CPU_CTRL&ADDR 2X20 12 
+ EndSubSection
+
+ SubSection A6 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 12 
+  JP103 ? CPU_CTRL&ADDR 2X20 14 
+ EndSubSection
+
+ SubSection A7 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 11 
+  JP103 ? CPU_CTRL&ADDR 2X20 16 
+ EndSubSection
+
+ SubSection A8 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 10 
+  JP103 ? CPU_CTRL&ADDR 2X20 18 
+ EndSubSection
+
+ SubSection A9 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 9 
+  JP103 ? CPU_CTRL&ADDR 2X20 20 
+ EndSubSection
+
+ SubSection A10 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 7 
+  JP103 ? CPU_CTRL&ADDR 2X20 22 
+ EndSubSection
+
+ SubSection A11 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 6 
+  JP103 ? CPU_CTRL&ADDR 2X20 24 
+ EndSubSection
+
+ SubSection A12 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 5 
+  JP103 ? CPU_CTRL&ADDR 2X20 26 
+ EndSubSection
+
+ SubSection A13 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 4 
+  JP103 ? CPU_CTRL&ADDR 2X20 28 
+ EndSubSection
+
+ SubSection A14 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 3 
+  JP103 ? CPU_CTRL&ADDR 2X20 30 
+ EndSubSection
+
+ SubSection A15 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 2 
+  JP103 ? CPU_CTRL&ADDR 2X20 32 
+ EndSubSection
+
+ SubSection AC_SEL0 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 94 
+  RN502 ? 1k SIL8 1 
+ EndSubSection
+
+ SubSection AC_SEL0_DRV class NA
+  DIS303 ? VQEXX VQE_2DIGIT 5 
+  T501 ? BD140 TO126AV C 
+  T504 ? BD139 TO126AV C 
+ EndSubSection
+
+ SubSection AC_SEL1 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 92 
+  RN502 ? 1k SIL8 3 
+ EndSubSection
+
+ SubSection AC_SEL1_DRV class NA
+  DIS303 ? VQEXX VQE_2DIGIT 4 
+  T502 ? BD140 TO126AV C 
+  T505 ? BD139 TO126AV C 
+ EndSubSection
+
+ SubSection AC_SEL2 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 91 
+  RN502 ? 1k SIL8 5 
+ EndSubSection
+
+ SubSection AC_SEL2_DRV class NA
+  DIS302 ? VQEXX VQE_2DIGIT 5 
+  T503 ? BD140 TO126AV C 
+  T506 ? BD139 TO126AV C 
+ EndSubSection
+
+ SubSection AC_SEL3 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 88 
+  RN502 ? 1k SIL8 7 
+ EndSubSection
+
+ SubSection AC_SEL3_DRV class NA
+  DIS302 ? VQEXX VQE_2DIGIT 4 
+  T507 ? BD140 TO126AV C 
+  T510 ? BD139 TO126AV C 
+ EndSubSection
+
+ SubSection AC_SEL4 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 95 
+  RN504 ? 1k SIL8 1 
+ EndSubSection
+
+ SubSection AC_SEL4_DRV class NA
+  DIS301 ? VQEXX VQE_2DIGIT 5 
+  T508 ? BD140 TO126AV C 
+  T511 ? BD139 TO126AV C 
+ EndSubSection
+
+ SubSection AC_SEL5 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 93 
+  RN504 ? 1k SIL8 3 
+ EndSubSection
+
+ SubSection AC_SEL5_DRV class NA
+  DIS301 ? VQEXX VQE_2DIGIT 4 
+  T509 ? BD140 TO126AV C 
+  T512 ? BD139 TO126AV C 
+ EndSubSection
+
+ SubSection AC_SEL_B0 class NA
+  RN501 ? 10k SIL9 2 
+  RN502 ? 1k SIL8 2 
+  RN503 ? 10k SIL9 2 
+  T501 ? BD140 TO126AV B 
+  T504 ? BD139 TO126AV B 
+ EndSubSection
+
+ SubSection AC_SEL_B1 class NA
+  RN501 ? 10k SIL9 3 
+  RN502 ? 1k SIL8 4 
+  RN503 ? 10k SIL9 3 
+  T502 ? BD140 TO126AV B 
+  T505 ? BD139 TO126AV B 
+ EndSubSection
+
+ SubSection AC_SEL_B2 class NA
+  RN501 ? 10k SIL9 4 
+  RN502 ? 1k SIL8 6 
+  RN503 ? 10k SIL9 4 
+  T503 ? BD140 TO126AV B 
+  T506 ? BD139 TO126AV B 
+ EndSubSection
+
+ SubSection AC_SEL_B3 class NA
+  RN501 ? 10k SIL9 5 
+  RN502 ? 1k SIL8 8 
+  RN503 ? 10k SIL9 5 
+  T507 ? BD140 TO126AV B 
+  T510 ? BD139 TO126AV B 
+ EndSubSection
+
+ SubSection AC_SEL_B4 class NA
+  RN501 ? 10k SIL9 6 
+  RN503 ? 10k SIL9 6 
+  RN504 ? 1k SIL8 2 
+  T508 ? BD140 TO126AV B 
+  T511 ? BD139 TO126AV B 
+ EndSubSection
+
+ SubSection AC_SEL_B5 class NA
+  RN501 ? 10k SIL9 7 
+  RN503 ? 10k SIL9 7 
+  RN504 ? 1k SIL8 4 
+  T509 ? BD140 TO126AV B 
+  T512 ? BD139 TO126AV B 
+ EndSubSection
+
+ SubSection A_EX0 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 142 
+  JP104 ? EXT_CTRL&ADDR 2X20 2 
+ EndSubSection
+
+ SubSection A_EX1 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 140 
+  JP104 ? EXT_CTRL&ADDR 2X20 4 
+ EndSubSection
+
+ SubSection A_EX2 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 139 
+  JP104 ? EXT_CTRL&ADDR 2X20 6 
+ EndSubSection
+
+ SubSection A_EX3 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 138 
+  JP104 ? EXT_CTRL&ADDR 2X20 8 
+ EndSubSection
+
+ SubSection A_EX4 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 137 
+  JP104 ? EXT_CTRL&ADDR 2X20 10 
+ EndSubSection
+
+ SubSection A_EX5 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 136 
+  JP104 ? EXT_CTRL&ADDR 2X20 12 
+ EndSubSection
+
+ SubSection A_EX6 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 135 
+  JP104 ? EXT_CTRL&ADDR 2X20 14 
+ EndSubSection
+
+ SubSection A_EX7 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 134 
+  JP104 ? EXT_CTRL&ADDR 2X20 16 
+ EndSubSection
+
+ SubSection A_EX8 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 133 
+  JP104 ? EXT_CTRL&ADDR 2X20 18 
+ EndSubSection
+
+ SubSection A_EX9 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 132 
+  JP104 ? EXT_CTRL&ADDR 2X20 20 
+ EndSubSection
+
+ SubSection A_EX10 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 131 
+  JP104 ? EXT_CTRL&ADDR 2X20 22 
+ EndSubSection
+
+ SubSection A_EX11 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 130 
+  JP104 ? EXT_CTRL&ADDR 2X20 24 
+ EndSubSection
+
+ SubSection A_EX12 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 129 
+  JP104 ? EXT_CTRL&ADDR 2X20 26 
+ EndSubSection
+
+ SubSection A_EX13 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 128 
+  JP104 ? EXT_CTRL&ADDR 2X20 28 
+ EndSubSection
+
+ SubSection A_EX14 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 126 
+  JP104 ? EXT_CTRL&ADDR 2X20 30 
+ EndSubSection
+
+ SubSection A_EX15 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 125 
+  JP104 ? EXT_CTRL&ADDR 2X20 32 
+ EndSubSection
+
+ SubSection CLK_OSC class NA
+  IC201 ? XC95288XL_TQ144 TQ144 30 
+  IC601 ? 4093N DIL14 3 
+  P606 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection CLK_SLOW class NA
+  IC601 ? 4093N DIL14 1 
+  IC601 ? 4093N DIL14 2 
+  IC601 ? 4093N DIL14 4 
+  R601 ? 10k 0207/10 1 
+ EndSubSection
+
+ SubSection CPU_CLK class NA
+  IC201 ? XC95288XL_TQ144 TQ144 38 
+  JP101 ? CPU_CTRL&DATA 2X20 40 
+ EndSubSection
+
+ SubSection CPU_RSV0 class NA
+  JP101 ? CPU_CTRL&DATA 2X20 18 
+ EndSubSection
+
+ SubSection D0 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 27 
+  JP101 ? CPU_CTRL&DATA 2X20 2 
+ EndSubSection
+
+ SubSection D1 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 26 
+  JP101 ? CPU_CTRL&DATA 2X20 4 
+ EndSubSection
+
+ SubSection D2 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 25 
+  JP101 ? CPU_CTRL&DATA 2X20 6 
+ EndSubSection
+
+ SubSection D3 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 24 
+  JP101 ? CPU_CTRL&DATA 2X20 8 
+ EndSubSection
+
+ SubSection D4 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 23 
+  JP101 ? CPU_CTRL&DATA 2X20 10 
+ EndSubSection
+
+ SubSection D5 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 22 
+  JP101 ? CPU_CTRL&DATA 2X20 12 
+ EndSubSection
+
+ SubSection D6 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 21 
+  JP101 ? CPU_CTRL&DATA 2X20 14 
+ EndSubSection
+
+ SubSection D7 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 20 
+  JP101 ? CPU_CTRL&DATA 2X20 16 
+ EndSubSection
+
+ SubSection DEBUG0 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 79 
+  JP601 ? PIO_DBG 2X20 18 
+  R308 ? 160 0207/10 2 
+  RN603 ? 10k SIL9 2 
+  S602 ? S4 DIP08YL 4 
+ EndSubSection
+
+ SubSection DEBUG0_LED class NA
+  D301 ? bl LED3MM K 
+  R308 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DEBUG1 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 78 
+  JP601 ? PIO_DBG 2X20 24 
+  R309 ? 160 0207/10 2 
+  RN603 ? 10k SIL9 3 
+  S602 ? S4 DIP08YL 5 
+ EndSubSection
+
+ SubSection DEBUG1_LED class NA
+  D302 ? bl LED3MM K 
+  R309 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DEBUG2 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 77 
+  JP601 ? PIO_DBG 2X20 26 
+  R310 ? 160 0207/10 2 
+  RN603 ? 10k SIL9 4 
+  S602 ? S4 DIP08YL 6 
+ EndSubSection
+
+ SubSection DEBUG2_LED class NA
+  D303 ? bl LED3MM K 
+  R310 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DEBUG3 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 76 
+  JP601 ? PIO_DBG 2X20 28 
+  R311 ? 160 0207/10 2 
+  RN603 ? 10k SIL9 5 
+ EndSubSection
+
+ SubSection DEBUG3_LED class NA
+  D304 ? bl LED3MM K 
+  R311 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DEBUG4 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 75 
+  JP601 ? PIO_DBG 2X20 30 
+  R312 ? 160 0207/10 2 
+  RN603 ? 10k SIL9 6 
+ EndSubSection
+
+ SubSection DEBUG4_LED class NA
+  D305 ? bl LED3MM K 
+  R312 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DEBUG5 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 74 
+  JP601 ? PIO_DBG 2X20 36 
+  R313 ? 160 0207/10 2 
+  RN603 ? 10k SIL9 7 
+ EndSubSection
+
+ SubSection DEBUG5_LED class NA
+  D306 ? bl LED3MM K 
+  R313 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DEBUG6 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 58 
+  R314 ? 160 0207/10 2 
+  RN603 ? 10k SIL9 8 
+ EndSubSection
+
+ SubSection DEBUG6_LED class NA
+  D307 ? bl LED3MM K 
+  R314 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DEBUG7 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 59 
+  R315 ? 160 0207/10 2 
+  RN603 ? 10k SIL9 9 
+ EndSubSection
+
+ SubSection DEBUG7_LED class NA
+  D308 ? bl LED3MM K 
+  R315 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DEBUG8 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 60 
+  R316 ? 160 0207/10 2 
+ EndSubSection
+
+ SubSection DEBUG8_LED class NA
+  D309 ? bl LED3MM K 
+  R316 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DEBUG9 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 61 
+  R317 ? 160 0207/10 2 
+ EndSubSection
+
+ SubSection DEBUG9_LED class NA
+  D310 ? bl LED3MM K 
+  R317 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DEBUG10 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 64 
+  R318 ? 160 0207/10 2 
+ EndSubSection
+
+ SubSection DEBUG10_LED class NA
+  D311 ? bl LED3MM K 
+  R318 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DEBUG11 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 71 
+  R319 ? 160 0207/10 2 
+ EndSubSection
+
+ SubSection DEBUG11_LED class NA
+  D312 ? bl LED3MM K 
+  R319 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection D_EX0 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 124 
+  JP102 ? EXT_CTRL&DATA 2X20 2 
+ EndSubSection
+
+ SubSection D_EX1 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 121 
+  JP102 ? EXT_CTRL&DATA 2X20 4 
+ EndSubSection
+
+ SubSection D_EX2 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 120 
+  JP102 ? EXT_CTRL&DATA 2X20 6 
+ EndSubSection
+
+ SubSection D_EX3 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 119 
+  JP102 ? EXT_CTRL&DATA 2X20 8 
+ EndSubSection
+
+ SubSection D_EX4 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 118 
+  JP102 ? EXT_CTRL&DATA 2X20 10 
+ EndSubSection
+
+ SubSection D_EX5 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 117 
+  JP102 ? EXT_CTRL&DATA 2X20 12 
+ EndSubSection
+
+ SubSection D_EX6 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 116 
+  JP102 ? EXT_CTRL&DATA 2X20 14 
+ EndSubSection
+
+ SubSection D_EX7 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 115 
+  JP102 ? EXT_CTRL&DATA 2X20 16 
+ EndSubSection
+
+ SubSection EXT_IEI class NA
+  IC201 ? XC95288XL_TQ144 TQ144 113 
+  JP104 ? EXT_CTRL&ADDR 2X20 34 
+ EndSubSection
+
+ SubSection EX_CLK class NA
+  IC201 ? XC95288XL_TQ144 TQ144 97 
+  JP102 ? EXT_CTRL&DATA 2X20 40 
+ EndSubSection
+
+ SubSection GND class NA
+  C101 ? 100�/25V E2,5-7 - 
+  C102 ? 100�/25V E2,5-7 - 
+  C201 ? 100n C0805 2 
+  C202 ? 100n C0805 2 
+  C203 ? 100n C0805 2 
+  C204 ? 100n C0805 2 
+  C205 ? 100n C0805 2 
+  C206 ? 100n C0805 2 
+  C207 ? 100n C0805 2 
+  C208 ? 100n C0805 2 
+  C209 ? 100n C0805 2 
+  C210 ? 100n C0805 2 
+  C601 ? 100n C0805 2 
+  C602 ? 4n7 C050-025X075 2 
+  D101 ? green LED3MM K 
+  H101 ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1 
+  H102 ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1 
+  H103 ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1 
+  H104 ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1 
+  IC201 ? XC95288XL_TQ144 TQ144 108 
+  IC201 ? XC95288XL_TQ144 TQ144 114 
+  IC201 ? XC95288XL_TQ144 TQ144 123 
+  IC201 ? XC95288XL_TQ144 TQ144 144 
+  IC201 ? XC95288XL_TQ144 TQ144 18 
+  IC201 ? XC95288XL_TQ144 TQ144 29 
+  IC201 ? XC95288XL_TQ144 TQ144 36 
+  IC201 ? XC95288XL_TQ144 TQ144 47 
+  IC201 ? XC95288XL_TQ144 TQ144 62 
+  IC201 ? XC95288XL_TQ144 TQ144 72 
+  IC201 ? XC95288XL_TQ144 TQ144 89 
+  IC201 ? XC95288XL_TQ144 TQ144 90 
+  IC201 ? XC95288XL_TQ144 TQ144 99 
+  IC601 ? 4093N DIL14 7 
+  JP101 ? CPU_CTRL&DATA 2X20 1 
+  JP101 ? CPU_CTRL&DATA 2X20 11 
+  JP101 ? CPU_CTRL&DATA 2X20 13 
+  JP101 ? CPU_CTRL&DATA 2X20 15 
+  JP101 ? CPU_CTRL&DATA 2X20 17 
+  JP101 ? CPU_CTRL&DATA 2X20 19 
+  JP101 ? CPU_CTRL&DATA 2X20 21 
+  JP101 ? CPU_CTRL&DATA 2X20 23 
+  JP101 ? CPU_CTRL&DATA 2X20 25 
+  JP101 ? CPU_CTRL&DATA 2X20 27 
+  JP101 ? CPU_CTRL&DATA 2X20 29 
+  JP101 ? CPU_CTRL&DATA 2X20 3 
+  JP101 ? CPU_CTRL&DATA 2X20 31 
+  JP101 ? CPU_CTRL&DATA 2X20 33 
+  JP101 ? CPU_CTRL&DATA 2X20 35 
+  JP101 ? CPU_CTRL&DATA 2X20 37 
+  JP101 ? CPU_CTRL&DATA 2X20 39 
+  JP101 ? CPU_CTRL&DATA 2X20 5 
+  JP101 ? CPU_CTRL&DATA 2X20 7 
+  JP101 ? CPU_CTRL&DATA 2X20 9 
+  JP102 ? EXT_CTRL&DATA 2X20 1 
+  JP102 ? EXT_CTRL&DATA 2X20 11 
+  JP102 ? EXT_CTRL&DATA 2X20 13 
+  JP102 ? EXT_CTRL&DATA 2X20 15 
+  JP102 ? EXT_CTRL&DATA 2X20 17 
+  JP102 ? EXT_CTRL&DATA 2X20 19 
+  JP102 ? EXT_CTRL&DATA 2X20 21 
+  JP102 ? EXT_CTRL&DATA 2X20 23 
+  JP102 ? EXT_CTRL&DATA 2X20 25 
+  JP102 ? EXT_CTRL&DATA 2X20 27 
+  JP102 ? EXT_CTRL&DATA 2X20 29 
+  JP102 ? EXT_CTRL&DATA 2X20 3 
+  JP102 ? EXT_CTRL&DATA 2X20 31 
+  JP102 ? EXT_CTRL&DATA 2X20 33 
+  JP102 ? EXT_CTRL&DATA 2X20 35 
+  JP102 ? EXT_CTRL&DATA 2X20 37 
+  JP102 ? EXT_CTRL&DATA 2X20 39 
+  JP102 ? EXT_CTRL&DATA 2X20 5 
+  JP102 ? EXT_CTRL&DATA 2X20 7 
+  JP102 ? EXT_CTRL&DATA 2X20 9 
+  JP103 ? CPU_CTRL&ADDR 2X20 1 
+  JP103 ? CPU_CTRL&ADDR 2X20 11 
+  JP103 ? CPU_CTRL&ADDR 2X20 13 
+  JP103 ? CPU_CTRL&ADDR 2X20 15 
+  JP103 ? CPU_CTRL&ADDR 2X20 17 
+  JP103 ? CPU_CTRL&ADDR 2X20 19 
+  JP103 ? CPU_CTRL&ADDR 2X20 21 
+  JP103 ? CPU_CTRL&ADDR 2X20 23 
+  JP103 ? CPU_CTRL&ADDR 2X20 25 
+  JP103 ? CPU_CTRL&ADDR 2X20 27 
+  JP103 ? CPU_CTRL&ADDR 2X20 29 
+  JP103 ? CPU_CTRL&ADDR 2X20 3 
+  JP103 ? CPU_CTRL&ADDR 2X20 31 
+  JP103 ? CPU_CTRL&ADDR 2X20 33 
+  JP103 ? CPU_CTRL&ADDR 2X20 35 
+  JP103 ? CPU_CTRL&ADDR 2X20 37 
+  JP103 ? CPU_CTRL&ADDR 2X20 39 
+  JP103 ? CPU_CTRL&ADDR 2X20 5 
+  JP103 ? CPU_CTRL&ADDR 2X20 7 
+  JP103 ? CPU_CTRL&ADDR 2X20 9 
+  JP104 ? EXT_CTRL&ADDR 2X20 1 
+  JP104 ? EXT_CTRL&ADDR 2X20 11 
+  JP104 ? EXT_CTRL&ADDR 2X20 13 
+  JP104 ? EXT_CTRL&ADDR 2X20 15 
+  JP104 ? EXT_CTRL&ADDR 2X20 17 
+  JP104 ? EXT_CTRL&ADDR 2X20 19 
+  JP104 ? EXT_CTRL&ADDR 2X20 21 
+  JP104 ? EXT_CTRL&ADDR 2X20 23 
+  JP104 ? EXT_CTRL&ADDR 2X20 25 
+  JP104 ? EXT_CTRL&ADDR 2X20 27 
+  JP104 ? EXT_CTRL&ADDR 2X20 29 
+  JP104 ? EXT_CTRL&ADDR 2X20 3 
+  JP104 ? EXT_CTRL&ADDR 2X20 31 
+  JP104 ? EXT_CTRL&ADDR 2X20 33 
+  JP104 ? EXT_CTRL&ADDR 2X20 35 
+  JP104 ? EXT_CTRL&ADDR 2X20 37 
+  JP104 ? EXT_CTRL&ADDR 2X20 39 
+  JP104 ? EXT_CTRL&ADDR 2X20 5 
+  JP104 ? EXT_CTRL&ADDR 2X20 7 
+  JP104 ? EXT_CTRL&ADDR 2X20 9 
+  JP105 ? JTAG 2X05 2 
+  JP105 ? JTAG 2X05 4 
+  JP105 ? JTAG 2X05 6 
+  JP105 ? JTAG 2X05 8 
+  JP601 ? PIO_DBG 2X20 11 
+  JP601 ? PIO_DBG 2X20 13 
+  JP601 ? PIO_DBG 2X20 15 
+  JP601 ? PIO_DBG 2X20 17 
+  JP601 ? PIO_DBG 2X20 19 
+  JP601 ? PIO_DBG 2X20 21 
+  JP601 ? PIO_DBG 2X20 23 
+  JP601 ? PIO_DBG 2X20 25 
+  JP601 ? PIO_DBG 2X20 27 
+  JP601 ? PIO_DBG 2X20 29 
+  JP601 ? PIO_DBG 2X20 31 
+  JP601 ? PIO_DBG 2X20 33 
+  JP601 ? PIO_DBG 2X20 35 
+  JP601 ? PIO_DBG 2X20 37 
+  JP601 ? PIO_DBG 2X20 39 
+  JP601 ? PIO_DBG 2X20 9 
+  R103 ? 300 0207/10 2 
+  R104 ? 300 0207/10 2 
+  RN403 ? 10k SIL9 1 
+  RN503 ? 10k SIL9 1 
+  S601 ? S1 B3F-10XX 1 
+  S601 ? S1 B3F-10XX 2 
+  S602 ? S4 DIP08YL 10 
+  S602 ? S4 DIP08YL 11 
+  S602 ? S4 DIP08YL 12 
+  S602 ? S4 DIP08YL 13 
+  S602 ? S4 DIP08YL 14 
+  S602 ? S4 DIP08YL 15 
+  S602 ? S4 DIP08YL 16 
+  S602 ? S4 DIP08YL 9 
+  S603 ? S2 B3F-10XX 1 
+  S603 ? S2 B3F-10XX 2 
+  S604 ? S3 B3F-10XX 1 
+  S604 ? S3 B3F-10XX 2 
+  T405 ? BC548C TO92-CBE E 
+  T406 ? BC548C TO92-CBE E 
+  T407 ? BC548C TO92-CBE E 
+  T408 ? BC548C TO92-CBE E 
+  T412 ? BC548C TO92-CBE E 
+  T413 ? BC548C TO92-CBE E 
+  T414 ? BC548C TO92-CBE E 
+  T504 ? BD139 TO126AV E 
+  T505 ? BD139 TO126AV E 
+  T506 ? BD139 TO126AV E 
+  T510 ? BD139 TO126AV E 
+  T511 ? BD139 TO126AV E 
+  T512 ? BD139 TO126AV E 
+  X101 ? PWR W237-4 3 
+  X101 ? PWR W237-4 4 
+ EndSubSection
+
+ SubSection IEI class NA
+  IC201 ? XC95288XL_TQ144 TQ144 46 
+  JP103 ? CPU_CTRL&ADDR 2X20 34 
+ EndSubSection
+
+ SubSection N$1 class NA
+  DIS301 ? VQEXX VQE_2DIGIT 9 
+  P302 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection N$2 class NA
+  DIS301 ? VQEXX VQE_2DIGIT 18 
+  P301 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection N$3 class NA
+  DIS302 ? VQEXX VQE_2DIGIT 9 
+  P304 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection N$4 class NA
+  DIS302 ? VQEXX VQE_2DIGIT 18 
+  P303 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection N$5 class NA
+  DIS303 ? VQEXX VQE_2DIGIT 9 
+  P306 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection N$6 class NA
+  DIS303 ? VQEXX VQE_2DIGIT 18 
+  P305 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection N$78 class NA
+  C602 ? 4n7 C050-025X075 1 
+  IC601 ? 4093N DIL14 5 
+  IC601 ? 4093N DIL14 6 
+  R601 ? 10k 0207/10 2 
+ EndSubSection
+
+ SubSection PIO0 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 49 
+  JP601 ? PIO_DBG 2X20 2 
+  RN602 ? 10k SIL9 6 
+ EndSubSection
+
+ SubSection PIO1 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 50 
+  JP601 ? PIO_DBG 2X20 4 
+  RN602 ? 10k SIL9 5 
+ EndSubSection
+
+ SubSection PIO2 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 51 
+  JP601 ? PIO_DBG 2X20 6 
+  RN602 ? 10k SIL9 2 
+ EndSubSection
+
+ SubSection PIO3 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 52 
+  JP601 ? PIO_DBG 2X20 8 
+  RN602 ? 10k SIL9 3 
+ EndSubSection
+
+ SubSection PIO4 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 53 
+  JP601 ? PIO_DBG 2X20 10 
+  RN602 ? 10k SIL9 4 
+ EndSubSection
+
+ SubSection PIO5 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 54 
+  JP601 ? PIO_DBG 2X20 12 
+  RN602 ? 10k SIL9 7 
+ EndSubSection
+
+ SubSection PIO6 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 56 
+  JP601 ? PIO_DBG 2X20 14 
+  RN602 ? 10k SIL9 8 
+ EndSubSection
+
+ SubSection PIO7 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 57 
+  JP601 ? PIO_DBG 2X20 16 
+  RN602 ? 10k SIL9 9 
+ EndSubSection
+
+ SubSection RST_LED_C class NA
+  D316 ? bl LED3MM K 
+  R323 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection RSV_100 class NA
+  JP601 ? PIO_DBG 2X20 38 
+  P601 ? PAD pads P$1 
+  R322 ? 160 0207/10 2 
+  RN601 ? 10k SIL9 7 
+ EndSubSection
+
+ SubSection RSV_100_LED class NA
+  D315 ? bl LED3MM K 
+  R322 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection RSV_300 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 66 
+  RN601 ? 10k SIL9 6 
+  S602 ? S4 DIP08YL 7 
+ EndSubSection
+
+ SubSection RSV_GCK2 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 32 
+  P1 ? PAD pads P$1 
+  RN601 ? 10k SIL9 5 
+  S602 ? S4 DIP08YL 8 
+ EndSubSection
+
+ SubSection SEG0 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 87 
+  RN402 ? 1k SIL8 1 
+ EndSubSection
+
+ SubSection SEG0_B class NA
+  RN401 ? 10k SIL9 2 
+  RN402 ? 1k SIL8 2 
+  RN403 ? 10k SIL9 2 
+  T401 ? BC327 TO92-CBE B 
+  T405 ? BC548C TO92-CBE B 
+ EndSubSection
+
+ SubSection SEG1 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 86 
+  RN402 ? 1k SIL8 3 
+ EndSubSection
+
+ SubSection SEG1_B class NA
+  RN401 ? 10k SIL9 3 
+  RN402 ? 1k SIL8 4 
+  RN403 ? 10k SIL9 3 
+  T402 ? BC327 TO92-CBE B 
+  T406 ? BC548C TO92-CBE B 
+ EndSubSection
+
+ SubSection SEG2 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 85 
+  RN402 ? 1k SIL8 5 
+ EndSubSection
+
+ SubSection SEG2_B class NA
+  RN401 ? 10k SIL9 4 
+  RN402 ? 1k SIL8 6 
+  RN403 ? 10k SIL9 4 
+  T403 ? BC327 TO92-CBE B 
+  T407 ? BC548C TO92-CBE B 
+ EndSubSection
+
+ SubSection SEG3 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 83 
+  RN402 ? 1k SIL8 7 
+ EndSubSection
+
+ SubSection SEG3_B class NA
+  RN401 ? 10k SIL9 5 
+  RN402 ? 1k SIL8 8 
+  RN403 ? 10k SIL9 5 
+  T404 ? BC327 TO92-CBE B 
+  T408 ? BC548C TO92-CBE B 
+ EndSubSection
+
+ SubSection SEG4 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 82 
+  RN404 ? 1k SIL8 1 
+ EndSubSection
+
+ SubSection SEG4_B class NA
+  RN401 ? 10k SIL9 6 
+  RN403 ? 10k SIL9 6 
+  RN404 ? 1k SIL8 2 
+  T409 ? BC327 TO92-CBE B 
+  T412 ? BC548C TO92-CBE B 
+ EndSubSection
+
+ SubSection SEG5 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 81 
+  RN404 ? 1k SIL8 3 
+ EndSubSection
+
+ SubSection SEG5_B class NA
+  RN401 ? 10k SIL9 7 
+  RN403 ? 10k SIL9 7 
+  RN404 ? 1k SIL8 4 
+  T410 ? BC327 TO92-CBE B 
+  T413 ? BC548C TO92-CBE B 
+ EndSubSection
+
+ SubSection SEG6 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 80 
+  RN404 ? 1k SIL8 5 
+ EndSubSection
+
+ SubSection SEG6_B class NA
+  RN401 ? 10k SIL9 8 
+  RN403 ? 10k SIL9 8 
+  RN404 ? 1k SIL8 6 
+  T411 ? BC327 TO92-CBE B 
+  T414 ? BC548C TO92-CBE B 
+ EndSubSection
+
+ SubSection SEG_DR0 class NA
+  R301 ? 100 0207/10 2 
+  T401 ? BC327 TO92-CBE C 
+  T405 ? BC548C TO92-CBE C 
+ EndSubSection
+
+ SubSection SEG_DR1 class NA
+  R302 ? 100 0207/10 2 
+  T402 ? BC327 TO92-CBE C 
+  T406 ? BC548C TO92-CBE C 
+ EndSubSection
+
+ SubSection SEG_DR2 class NA
+  R303 ? 100 0207/10 2 
+  T403 ? BC327 TO92-CBE C 
+  T407 ? BC548C TO92-CBE C 
+ EndSubSection
+
+ SubSection SEG_DR3 class NA
+  R304 ? 100 0207/10 2 
+  T404 ? BC327 TO92-CBE C 
+  T408 ? BC548C TO92-CBE C 
+ EndSubSection
+
+ SubSection SEG_DR4 class NA
+  R305 ? 100 0207/10 2 
+  T409 ? BC327 TO92-CBE C 
+  T412 ? BC548C TO92-CBE C 
+ EndSubSection
+
+ SubSection SEG_DR5 class NA
+  R306 ? 100 0207/10 2 
+  T410 ? BC327 TO92-CBE C 
+  T413 ? BC548C TO92-CBE C 
+ EndSubSection
+
+ SubSection SEG_DR6 class NA
+  R307 ? 100 0207/10 2 
+  T411 ? BC327 TO92-CBE C 
+  T414 ? BC548C TO92-CBE C 
+ EndSubSection
+
+ SubSection SEG_R0 class NA
+  DIS301 ? VQEXX VQE_2DIGIT 11 
+  DIS301 ? VQEXX VQE_2DIGIT 16 
+  DIS302 ? VQEXX VQE_2DIGIT 11 
+  DIS302 ? VQEXX VQE_2DIGIT 16 
+  DIS303 ? VQEXX VQE_2DIGIT 11 
+  DIS303 ? VQEXX VQE_2DIGIT 16 
+  R301 ? 100 0207/10 1 
+ EndSubSection
+
+ SubSection SEG_R1 class NA
+  DIS301 ? VQEXX VQE_2DIGIT 13 
+  DIS301 ? VQEXX VQE_2DIGIT 14 
+  DIS302 ? VQEXX VQE_2DIGIT 13 
+  DIS302 ? VQEXX VQE_2DIGIT 14 
+  DIS303 ? VQEXX VQE_2DIGIT 13 
+  DIS303 ? VQEXX VQE_2DIGIT 14 
+  R302 ? 100 0207/10 1 
+ EndSubSection
+
+ SubSection SEG_R2 class NA
+  DIS301 ? VQEXX VQE_2DIGIT 1 
+  DIS301 ? VQEXX VQE_2DIGIT 8 
+  DIS302 ? VQEXX VQE_2DIGIT 1 
+  DIS302 ? VQEXX VQE_2DIGIT 8 
+  DIS303 ? VQEXX VQE_2DIGIT 1 
+  DIS303 ? VQEXX VQE_2DIGIT 8 
+  R303 ? 100 0207/10 1 
+ EndSubSection
+
+ SubSection SEG_R3 class NA
+  DIS301 ? VQEXX VQE_2DIGIT 3 
+  DIS301 ? VQEXX VQE_2DIGIT 6 
+  DIS302 ? VQEXX VQE_2DIGIT 3 
+  DIS302 ? VQEXX VQE_2DIGIT 6 
+  DIS303 ? VQEXX VQE_2DIGIT 3 
+  DIS303 ? VQEXX VQE_2DIGIT 6 
+  R304 ? 100 0207/10 1 
+ EndSubSection
+
+ SubSection SEG_R4 class NA
+  DIS301 ? VQEXX VQE_2DIGIT 2 
+  DIS301 ? VQEXX VQE_2DIGIT 7 
+  DIS302 ? VQEXX VQE_2DIGIT 2 
+  DIS302 ? VQEXX VQE_2DIGIT 7 
+  DIS303 ? VQEXX VQE_2DIGIT 2 
+  DIS303 ? VQEXX VQE_2DIGIT 7 
+  R305 ? 100 0207/10 1 
+ EndSubSection
+
+ SubSection SEG_R5 class NA
+  DIS301 ? VQEXX VQE_2DIGIT 12 
+  DIS301 ? VQEXX VQE_2DIGIT 15 
+  DIS302 ? VQEXX VQE_2DIGIT 12 
+  DIS302 ? VQEXX VQE_2DIGIT 15 
+  DIS303 ? VQEXX VQE_2DIGIT 12 
+  DIS303 ? VQEXX VQE_2DIGIT 15 
+  R306 ? 100 0207/10 1 
+ EndSubSection
+
+ SubSection SEG_R6 class NA
+  DIS301 ? VQEXX VQE_2DIGIT 10 
+  DIS301 ? VQEXX VQE_2DIGIT 17 
+  DIS302 ? VQEXX VQE_2DIGIT 10 
+  DIS302 ? VQEXX VQE_2DIGIT 17 
+  DIS303 ? VQEXX VQE_2DIGIT 10 
+  DIS303 ? VQEXX VQE_2DIGIT 17 
+  R307 ? 100 0207/10 1 
+ EndSubSection
+
+ SubSection ST_IN0 class NA
+  IC601 ? 4093N DIL14 8 
+  IC601 ? 4093N DIL14 9 
+  JP601 ? PIO_DBG 2X20 20 
+  P603 ? PAD pads P$1 
+  RN601 ? 10k SIL9 8 
+ EndSubSection
+
+ SubSection ST_IN1 class NA
+  IC601 ? 4093N DIL14 12 
+  IC601 ? 4093N DIL14 13 
+  JP601 ? PIO_DBG 2X20 22 
+  P605 ? PAD pads P$1 
+  RN601 ? 10k SIL9 9 
+ EndSubSection
+
+ SubSection ST_OUT0 class NA
+  IC601 ? 4093N DIL14 10 
+  JP601 ? PIO_DBG 2X20 32 
+  P602 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection ST_OUT1 class NA
+  IC601 ? 4093N DIL14 11 
+  JP601 ? PIO_DBG 2X20 34 
+  P604 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection SWITCH0 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 70 
+  RN601 ? 10k SIL9 2 
+  S602 ? S4 DIP08YL 1 
+  S604 ? S3 B3F-10XX 3 
+  S604 ? S3 B3F-10XX 4 
+ EndSubSection
+
+ SubSection SWITCH1 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 69 
+  RN601 ? 10k SIL9 3 
+  S602 ? S4 DIP08YL 2 
+  S603 ? S2 B3F-10XX 3 
+  S603 ? S2 B3F-10XX 4 
+ EndSubSection
+
+ SubSection SWITCH2 class NA
+  IC201 ? XC95288XL_TQ144 TQ144 68 
+  RN601 ? 10k SIL9 4 
+  S601 ? S1 B3F-10XX 3 
+  S601 ? S1 B3F-10XX 4 
+  S602 ? S4 DIP08YL 3 
+ EndSubSection
+
+ SubSection TCK class NA
+  IC201 ? XC95288XL_TQ144 TQ144 67 
+  JP105 ? JTAG 2X05 1 
+  P101 ? PAD 11-07-12 P$1 
+  R103 ? 300 0207/10 1 
+ EndSubSection
+
+ SubSection TDI class NA
+  IC201 ? XC95288XL_TQ144 TQ144 63 
+  JP105 ? JTAG 2X05 7 
+  P104 ? PAD 11-07-12 P$1 
+  R102 ? 8x10k SIL9 3 
+ EndSubSection
+
+ SubSection TDO class NA
+  IC201 ? XC95288XL_TQ144 TQ144 122 
+  JP105 ? JTAG 2X05 5 
+  P103 ? PAD 11-07-12 P$1 
+  R102 ? 8x10k SIL9 4 
+ EndSubSection
+
+ SubSection TMS class NA
+  IC201 ? XC95288XL_TQ144 TQ144 65 
+  JP105 ? JTAG 2X05 3 
+  P102 ? PAD 11-07-12 P$1 
+  R104 ? 300 0207/10 1 
+ EndSubSection
+
+ SubSection VREF_JTAG class NA
+  JP105 ? JTAG 2X05 10 
+  JP106 ? 1X02 pinhead 2 
+  R102 ? 8x10k SIL9 1 
+ EndSubSection
+EndSection

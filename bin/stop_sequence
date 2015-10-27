@@ -1,0 +1,83 @@
+#! /bin/sh
+
+	#version=1.1
+	#interface=/dev/ttyS0
+	echo "killing process " $1
+	pid_of_sequence=$(pidof -x $1)
+	#echo $pid_of_sequence
+
+	[ "$?" -ne 0 ] &&
+		{
+		echo "process not running"
+		exit 1
+		}
+
+#	killed=no
+
+#	while [ "$killed" = "no" ]
+#		do
+
+			#killall $1
+	#pkill -P $(pgrep $1)
+			kill -2 $pid_of_sequence
+	#pkill -P $(pgrep test.sh)
+#			[ "$?" -eq 0 ] && killed=yes
+#			sleep 0.2
+#		done
+
+	#while [ $bsc_killed = "no" ]
+	#do
+	#	echo -n .
+	#    echo bsc_killed $bsc_killed
+	    
+	#    pid_of_bsc=$(pidof -x bsc)
+	#    pidof -x bsc
+	#    echo $?
+	    
+
+	#	[ "$?" -eq 0 ] && bsc_killed=yes
+	#	echo $pid_of_bsc
+		
+	#    done
+
+	#echo waiting
+	sleep 1    #CS: use while-do-loop instead
+	#echo "done"
+
+#	bsm --stop
+#	[ "$?" -ne 0 ] && exit 1
+	
+	
+	exit 0
+
+#!/bin/bash
+
+ids[0]="$1"
+
+index=0
+quit=0
+
+while [ $quit -eq 0 ]
+do
+    ((index++))
+
+    # get all child processes spawned by this/these ppid/s
+    ids[$index]=$(ps -o pid --ppid ${ids[$index-1]} | \
+      pcregrep '\d+' | tr \\n ' ')
+
+    # if no child processes found
+    if [ ! "${ids[$index]}" ]
+    then
+        # quit
+        ((quit++))
+    fi
+done
+
+# kill process from parent to all child processes
+for i in $(seq 0 ${#ids[@]})
+do
+    if [ "${ids[$i]}" ]
+    then
+        kill ${ids[$i]}
+    fi
+done

@@ -1,0 +1,941 @@
+Netlist
+
+Exported from z80_monitor_v10.brd at 11/27/12 2:06 PM
+
+EAGLE Version 6.2.0 Copyright (c) 1988-2012 CadSoft
+
+Net      Part     Pad
+
+!CPU_BUSACK IC201    45
+         JP101    38
+
+!CPU_BUSREQ IC201    43
+         JP101    36
+
+!CPU_HALT IC201    40
+         JP101    32
+
+!CPU_INT IC201    44
+         JP103    36
+
+!CPU_IOREQ IC201    35
+         JP101    24
+
+!CPU_M1  IC201    28
+         JP101    20
+
+!CPU_MREQ IC201    31
+         JP101    22
+
+!CPU_NMI IC201    48
+         JP103    38
+
+!CPU_RD  IC201    33
+         JP101    26
+
+!CPU_RESET IC201    143
+         JP103    40
+         JP601    40
+         R323     2
+
+!CPU_RFSH IC201    39
+         JP101    30
+
+!CPU_WAIT IC201    41
+         JP101    34
+
+!CPU_WR  IC201    34
+         JP101    28
+
+!EX_BUSAK IC201    98
+         JP102    38
+
+!EX_BUSREQ IC201    100
+         JP102    36
+
+!EX_HALT IC201    102
+         JP102    32
+
+!EX_INT  IC201    112
+         JP104    36
+
+!EX_IOREQ IC201    106
+         JP102    24
+
+!EX_M1   IC201    96
+         JP102    20
+
+!EX_MREQ IC201    107
+         JP102    22
+
+!EX_NMI  IC201    111
+         JP104    38
+
+!EX_RD   IC201    105
+         JP102    26
+
+!EX_RESET IC201    110
+         JP104    40
+
+!EX_RFSH IC201    103
+         JP102    30
+
+!EX_WAIT IC201    101
+         JP102    34
+
+!EX_WR   IC201    104
+         JP102    28
+
++3V3     C101     +
+         C201     1
+         C202     1
+         C203     1
+         C204     1
+         C205     1
+         C206     1
+         C207     1
+         C208     1
+         C209     1
+         C210     1
+         C601     1
+         D301     A
+         D302     A
+         D303     A
+         D304     A
+         D305     A
+         D306     A
+         D307     A
+         D308     A
+         D309     A
+         D310     A
+         D311     A
+         D312     A
+         D315     A
+         D316     A
+         IC201    1
+         IC201    109
+         IC201    127
+         IC201    141
+         IC201    37
+         IC201    42
+         IC201    55
+         IC201    73
+         IC201    8
+         IC201    84
+         IC601    14
+         JP106    1
+         JP601    1
+         JP601    3
+         JP601    5
+         R101     2
+         RN401    1
+         RN501    1
+         RN601    1
+         RN602    1
+         RN603    1
+         T401     E
+         T402     E
+         T403     E
+         T404     E
+         T409     E
+         T410     E
+         T411     E
+         T501     E
+         T502     E
+         T503     E
+         T507     E
+         T508     E
+         T509     E
+         X101     1
+
++5V      C102     +
+         X101     2
+
+3V3_LED_A D101     A
+         R101     1
+
+A0       IC201    19
+         JP103    2
+
+A1       IC201    17
+         JP103    4
+
+A2       IC201    16
+         JP103    6
+
+A3       IC201    15
+         JP103    8
+
+A4       IC201    14
+         JP103    10
+
+A5       IC201    13
+         JP103    12
+
+A6       IC201    12
+         JP103    14
+
+A7       IC201    11
+         JP103    16
+
+A8       IC201    10
+         JP103    18
+
+A9       IC201    9
+         JP103    20
+
+A10      IC201    7
+         JP103    22
+
+A11      IC201    6
+         JP103    24
+
+A12      IC201    5
+         JP103    26
+
+A13      IC201    4
+         JP103    28
+
+A14      IC201    3
+         JP103    30
+
+A15      IC201    2
+         JP103    32
+
+AC_SEL0  IC201    94
+         RN502    1
+
+AC_SEL0_DRV DIS303   5
+         T501     C
+         T504     C
+
+AC_SEL1  IC201    92
+         RN502    3
+
+AC_SEL1_DRV DIS303   4
+         T502     C
+         T505     C
+
+AC_SEL2  IC201    91
+         RN502    5
+
+AC_SEL2_DRV DIS302   5
+         T503     C
+         T506     C
+
+AC_SEL3  IC201    88
+         RN502    7
+
+AC_SEL3_DRV DIS302   4
+         T507     C
+         T510     C
+
+AC_SEL4  IC201    95
+         RN504    1
+
+AC_SEL4_DRV DIS301   5
+         T508     C
+         T511     C
+
+AC_SEL5  IC201    93
+         RN504    3
+
+AC_SEL5_DRV DIS301   4
+         T509     C
+         T512     C
+
+AC_SEL_B0 RN501    2
+         RN502    2
+         RN503    2
+         T501     B
+         T504     B
+
+AC_SEL_B1 RN501    3
+         RN502    4
+         RN503    3
+         T502     B
+         T505     B
+
+AC_SEL_B2 RN501    4
+         RN502    6
+         RN503    4
+         T503     B
+         T506     B
+
+AC_SEL_B3 RN501    5
+         RN502    8
+         RN503    5
+         T507     B
+         T510     B
+
+AC_SEL_B4 RN501    6
+         RN503    6
+         RN504    2
+         T508     B
+         T511     B
+
+AC_SEL_B5 RN501    7
+         RN503    7
+         RN504    4
+         T509     B
+         T512     B
+
+A_EX0    IC201    142
+         JP104    2
+
+A_EX1    IC201    140
+         JP104    4
+
+A_EX2    IC201    139
+         JP104    6
+
+A_EX3    IC201    138
+         JP104    8
+
+A_EX4    IC201    137
+         JP104    10
+
+A_EX5    IC201    136
+         JP104    12
+
+A_EX6    IC201    135
+         JP104    14
+
+A_EX7    IC201    134
+         JP104    16
+
+A_EX8    IC201    133
+         JP104    18
+
+A_EX9    IC201    132
+         JP104    20
+
+A_EX10   IC201    131
+         JP104    22
+
+A_EX11   IC201    130
+         JP104    24
+
+A_EX12   IC201    129
+         JP104    26
+
+A_EX13   IC201    128
+         JP104    28
+
+A_EX14   IC201    126
+         JP104    30
+
+A_EX15   IC201    125
+         JP104    32
+
+CLK_OSC  IC201    30
+         IC601    3
+         P606     P$1
+
+CLK_SLOW IC601    1
+         IC601    2
+         IC601    4
+         R601     1
+
+CPU_CLK  IC201    38
+         JP101    40
+
+CPU_RSV0 JP101    18
+
+D0       IC201    27
+         JP101    2
+
+D1       IC201    26
+         JP101    4
+
+D2       IC201    25
+         JP101    6
+
+D3       IC201    24
+         JP101    8
+
+D4       IC201    23
+         JP101    10
+
+D5       IC201    22
+         JP101    12
+
+D6       IC201    21
+         JP101    14
+
+D7       IC201    20
+         JP101    16
+
+DEBUG0   IC201    79
+         JP601    18
+         R308     2
+         RN603    2
+         S602     4
+
+DEBUG0_LED D301     K
+         R308     1
+
+DEBUG1   IC201    78
+         JP601    24
+         R309     2
+         RN603    3
+         S602     5
+
+DEBUG1_LED D302     K
+         R309     1
+
+DEBUG2   IC201    77
+         JP601    26
+         R310     2
+         RN603    4
+         S602     6
+
+DEBUG2_LED D303     K
+         R310     1
+
+DEBUG3   IC201    76
+         JP601    28
+         R311     2
+         RN603    5
+
+DEBUG3_LED D304     K
+         R311     1
+
+DEBUG4   IC201    75
+         JP601    30
+         R312     2
+         RN603    6
+
+DEBUG4_LED D305     K
+         R312     1
+
+DEBUG5   IC201    74
+         JP601    36
+         R313     2
+         RN603    7
+
+DEBUG5_LED D306     K
+         R313     1
+
+DEBUG6   IC201    58
+         R314     2
+         RN603    8
+
+DEBUG6_LED D307     K
+         R314     1
+
+DEBUG7   IC201    59
+         R315     2
+         RN603    9
+
+DEBUG7_LED D308     K
+         R315     1
+
+DEBUG8   IC201    60
+         R316     2
+
+DEBUG8_LED D309     K
+         R316     1
+
+DEBUG9   IC201    61
+         R317     2
+
+DEBUG9_LED D310     K
+         R317     1
+
+DEBUG10  IC201    64
+         R318     2
+
+DEBUG10_LED D311     K
+         R318     1
+
+DEBUG11  IC201    71
+         R319     2
+
+DEBUG11_LED D312     K
+         R319     1
+
+D_EX0    IC201    124
+         JP102    2
+
+D_EX1    IC201    121
+         JP102    4
+
+D_EX2    IC201    120
+         JP102    6
+
+D_EX3    IC201    119
+         JP102    8
+
+D_EX4    IC201    118
+         JP102    10
+
+D_EX5    IC201    117
+         JP102    12
+
+D_EX6    IC201    116
+         JP102    14
+
+D_EX7    IC201    115
+         JP102    16
+
+EXT_IEI  IC201    113
+         JP104    34
+
+EX_CLK   IC201    97
+         JP102    40
+
+GND      C101     -
+         C102     -
+         C201     2
+         C202     2
+         C203     2
+         C204     2
+         C205     2
+         C206     2
+         C207     2
+         C208     2
+         C209     2
+         C210     2
+         C601     2
+         C602     2
+         D101     K
+         H101     B4,1
+         H102     B4,1
+         H103     B4,1
+         H104     B4,1
+         IC201    108
+         IC201    114
+         IC201    123
+         IC201    144
+         IC201    18
+         IC201    29
+         IC201    36
+         IC201    47
+         IC201    62
+         IC201    72
+         IC201    89
+         IC201    90
+         IC201    99
+         IC601    7
+         JP101    1
+         JP101    11
+         JP101    13
+         JP101    15
+         JP101    17
+         JP101    19
+         JP101    21
+         JP101    23
+         JP101    25
+         JP101    27
+         JP101    29
+         JP101    3
+         JP101    31
+         JP101    33
+         JP101    35
+         JP101    37
+         JP101    39
+         JP101    5
+         JP101    7
+         JP101    9
+         JP102    1
+         JP102    11
+         JP102    13
+         JP102    15
+         JP102    17
+         JP102    19
+         JP102    21
+         JP102    23
+         JP102    25
+         JP102    27
+         JP102    29
+         JP102    3
+         JP102    31
+         JP102    33
+         JP102    35
+         JP102    37
+         JP102    39
+         JP102    5
+         JP102    7
+         JP102    9
+         JP103    1
+         JP103    11
+         JP103    13
+         JP103    15
+         JP103    17
+         JP103    19
+         JP103    21
+         JP103    23
+         JP103    25
+         JP103    27
+         JP103    29
+         JP103    3
+         JP103    31
+         JP103    33
+         JP103    35
+         JP103    37
+         JP103    39
+         JP103    5
+         JP103    7
+         JP103    9
+         JP104    1
+         JP104    11
+         JP104    13
+         JP104    15
+         JP104    17
+         JP104    19
+         JP104    21
+         JP104    23
+         JP104    25
+         JP104    27
+         JP104    29
+         JP104    3
+         JP104    31
+         JP104    33
+         JP104    35
+         JP104    37
+         JP104    39
+         JP104    5
+         JP104    7
+         JP104    9
+         JP105    2
+         JP105    4
+         JP105    6
+         JP105    8
+         JP601    11
+         JP601    13
+         JP601    15
+         JP601    17
+         JP601    19
+         JP601    21
+         JP601    23
+         JP601    25
+         JP601    27
+         JP601    29
+         JP601    31
+         JP601    33
+         JP601    35
+         JP601    37
+         JP601    39
+         JP601    9
+         R103     2
+         R104     2
+         RN403    1
+         RN503    1
+         S601     1
+         S601     2
+         S602     10
+         S602     11
+         S602     12
+         S602     13
+         S602     14
+         S602     15
+         S602     16
+         S602     9
+         S603     1
+         S603     2
+         S604     1
+         S604     2
+         T405     E
+         T406     E
+         T407     E
+         T408     E
+         T412     E
+         T413     E
+         T414     E
+         T504     E
+         T505     E
+         T506     E
+         T510     E
+         T511     E
+         T512     E
+         X101     3
+         X101     4
+
+IEI      IC201    46
+         JP103    34
+
+N$1      DIS301   9
+         P302     P$1
+
+N$2      DIS301   18
+         P301     P$1
+
+N$3      DIS302   9
+         P304     P$1
+
+N$4      DIS302   18
+         P303     P$1
+
+N$5      DIS303   9
+         P306     P$1
+
+N$6      DIS303   18
+         P305     P$1
+
+N$78     C602     1
+         IC601    5
+         IC601    6
+         R601     2
+
+PIO0     IC201    49
+         JP601    2
+         RN602    6
+
+PIO1     IC201    50
+         JP601    4
+         RN602    5
+
+PIO2     IC201    51
+         JP601    6
+         RN602    2
+
+PIO3     IC201    52
+         JP601    8
+         RN602    3
+
+PIO4     IC201    53
+         JP601    10
+         RN602    4
+
+PIO5     IC201    54
+         JP601    12
+         RN602    7
+
+PIO6     IC201    56
+         JP601    14
+         RN602    8
+
+PIO7     IC201    57
+         JP601    16
+         RN602    9
+
+RST_LED_C D316     K
+         R323     1
+
+RSV_100  JP601    38
+         P601     P$1
+         R322     2
+         RN601    7
+
+RSV_100_LED D315     K
+         R322     1
+
+RSV_300  IC201    66
+         RN601    6
+         S602     7
+
+RSV_GCK2 IC201    32
+         P1       P$1
+         RN601    5
+         S602     8
+
+SEG0     IC201    87
+         RN402    1
+
+SEG0_B   RN401    2
+         RN402    2
+         RN403    2
+         T401     B
+         T405     B
+
+SEG1     IC201    86
+         RN402    3
+
+SEG1_B   RN401    3
+         RN402    4
+         RN403    3
+         T402     B
+         T406     B
+
+SEG2     IC201    85
+         RN402    5
+
+SEG2_B   RN401    4
+         RN402    6
+         RN403    4
+         T403     B
+         T407     B
+
+SEG3     IC201    83
+         RN402    7
+
+SEG3_B   RN401    5
+         RN402    8
+         RN403    5
+         T404     B
+         T408     B
+
+SEG4     IC201    82
+         RN404    1
+
+SEG4_B   RN401    6
+         RN403    6
+         RN404    2
+         T409     B
+         T412     B
+
+SEG5     IC201    81
+         RN404    3
+
+SEG5_B   RN401    7
+         RN403    7
+         RN404    4
+         T410     B
+         T413     B
+
+SEG6     IC201    80
+         RN404    5
+
+SEG6_B   RN401    8
+         RN403    8
+         RN404    6
+         T411     B
+         T414     B
+
+SEG_DR0  R301     2
+         T401     C
+         T405     C
+
+SEG_DR1  R302     2
+         T402     C
+         T406     C
+
+SEG_DR2  R303     2
+         T403     C
+         T407     C
+
+SEG_DR3  R304     2
+         T404     C
+         T408     C
+
+SEG_DR4  R305     2
+         T409     C
+         T412     C
+
+SEG_DR5  R306     2
+         T410     C
+         T413     C
+
+SEG_DR6  R307     2
+         T411     C
+         T414     C
+
+SEG_R0   DIS301   11
+         DIS301   16
+         DIS302   11
+         DIS302   16
+         DIS303   11
+         DIS303   16
+         R301     1
+
+SEG_R1   DIS301   13
+         DIS301   14
+         DIS302   13
+         DIS302   14
+         DIS303   13
+         DIS303   14
+         R302     1
+
+SEG_R2   DIS301   1
+         DIS301   8
+         DIS302   1
+         DIS302   8
+         DIS303   1
+         DIS303   8
+         R303     1
+
+SEG_R3   DIS301   3
+         DIS301   6
+         DIS302   3
+         DIS302   6
+         DIS303   3
+         DIS303   6
+         R304     1
+
+SEG_R4   DIS301   2
+         DIS301   7
+         DIS302   2
+         DIS302   7
+         DIS303   2
+         DIS303   7
+         R305     1
+
+SEG_R5   DIS301   12
+         DIS301   15
+         DIS302   12
+         DIS302   15
+         DIS303   12
+         DIS303   15
+         R306     1
+
+SEG_R6   DIS301   10
+         DIS301   17
+         DIS302   10
+         DIS302   17
+         DIS303   10
+         DIS303   17
+         R307     1
+
+ST_IN0   IC601    8
+         IC601    9
+         JP601    20
+         P603     P$1
+         RN601    8
+
+ST_IN1   IC601    12
+         IC601    13
+         JP601    22
+         P605     P$1
+         RN601    9
+
+ST_OUT0  IC601    10
+         JP601    32
+         P602     P$1
+
+ST_OUT1  IC601    11
+         JP601    34
+         P604     P$1
+
+SWITCH0  IC201    70
+         RN601    2
+         S602     1
+         S604     3
+         S604     4
+
+SWITCH1  IC201    69
+         RN601    3
+         S602     2
+         S603     3
+         S603     4
+
+SWITCH2  IC201    68
+         RN601    4
+         S601     3
+         S601     4
+         S602     3
+
+TCK      IC201    67
+         JP105    1
+         P101     P$1
+         R103     1
+
+TDI      IC201    63
+         JP105    7
+         P104     P$1
+         R102     3
+
+TDO      IC201    122
+         JP105    5
+         P103     P$1
+         R102     4
+
+TMS      IC201    65
+         JP105    3
+         P102     P$1
+         R104     1
+
+VREF_JTAG JP105    10
+         JP106    2
+         R102     1
+

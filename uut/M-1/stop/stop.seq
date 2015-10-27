@@ -1,0 +1,174 @@
+Section info
+ created by pin toggle generator version 1.0
+ date          : 2012-12-20 14:54:31
+ UTC_Offset    : 1 hours
+ database      : M-1.udb
+ target net    : !STOP_sub
+ cycle count   : 5
+ low time      :  1.0 sec
+ high time     :  1.0 sec
+ frequency     :  0.50 Hz
+EndSection
+
+Section options
+   trailer_ir 11001010 
+   trailer_dr 11001010
+   voltage_out_port_1  2.5  
+   voltage_out_port_2  1.8
+   tck_driver_port_1 push-pull  
+   tms_driver_port_1 push-pull
+   tdo_driver_port_1 push-pull
+   trst_driver_port_1 push-pull 
+   tck_driver_port_2 push-pull
+   tms_driver_port_2 push-pull
+   tdo_driver_port_2 push-pull
+   trst_driver_port_2 push-pull 
+   threshold_tdi_port_1 0.8  
+   threshold_tdi_port_2 0.8
+EndSection
+
+Section sequence 1
+
+-- delay 0.2
+ power up gnd       -- connects supply GND with UUT. NOTE: similar commands: power up/down gnd,1,2,3,all
+-- delay 0.2
+ imax 1 0.5 timeout 2 -- set maximum current of power channel 1 to 1 A , timeout to shutdown is 2 sec 
+ imax 2 0.5 timeout 2 -- NOTE: max. current range: 0.1 to 5 Amps | timeout range: 0.02 to 5 sec
+ imax 3 0.5 timeout 2
+-- power up 1
+-- power up 2
+-- power up 3
+ delay 1            -- wait for UUT power to settle down -- unit is seconds, max. 25sec allowed
+ connect port 1     -- connect TAP 1 signals with UUT. NOTE: similar commands: (dis)connect port 1,2
+ delay 0.2
+ -- test begin
+
+ trst -- hard+soft scanpath reset. NOTE: similar commands: strst,htrst (for soft/hard scanpath reset)
+
+ -- set devices in sample/preload mode
+ set IC2_sub drv ir 5 downto 0 = 000001 sample
+ set IC1_sub drv ir 7 downto 0 = 00000001 sample
+ set IC5_pwr drv ir 7 downto 0 = 00000011 sample
+ set IC1_trc drv ir 7 downto 0 = 00000011 sample
+ set IC201_moni drv ir 7 downto 0 = 00000001 sample
+
+ -- expect capture ir values
+ set IC2_sub exp ir 5 downto 0 = xxxx01 instruction_capture
+ set IC1_sub exp ir 7 downto 0 = xxxxx001 instruction_capture
+ set IC5_pwr exp ir 7 downto 0 = xxxxxx01 instruction_capture
+ set IC1_trc exp ir 7 downto 0 = xxxxxx01 instruction_capture
+ set IC201_moni exp ir 7 downto 0 = 000xxx01 instruction_capture
+ sir id 1
+
+ -- safebits loading
+ set IC2_sub drv boundary 814 downto 0 = xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xxxxx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx11xxx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1xx1 safebits
+ set IC1_sub drv boundary 24 downto 0 = x0x0xx0x0xx0x0x0x0x0x0x0x safebits
+ set IC5_pwr drv boundary 719 downto 0 = xxxxxxxx0xx0xxxxx0xx0xxxxxxxxxxxxxxxxx0xx0xx0xx0xxxxxxxxxxx0xxxxx0xx0xxxxxxxxxxx0xxxxx0xx0xx0xxxxx0xx0xx0xxxxxxxxxxx0xx0xx0xx0xx0xx0xxxxxxxxxxxxxxxxxxxxxxx0xx0xx0xxxxxxxx0xx0xxxxx0xx0xxxxxxxx0xx0xx0xxxxx0xx0xxxxxxxx0xxxxxxxxxxxxxxxxxxxx0xx0xx0xx0xx0xx0xx0xx0xxxxxxxxxxxxxxxxx0xxxxxxxx0xxxxx0xx0xx0xx0xx0xx0xxxxx0xxxxxxxxxxx0xx0xx0xx0xx0xx0xxxxx0xxxxxxxxxxxxxxxxxxxxxxx0xx0xxxxx0xx0xxxxxxxxxxxxxx0xxxxxxxx0xxxxx0xxxxx0xx0xxxxx0xxxxxxxxxxx0xx0xx0xxxxx0xx0xx0xx0xx0xx0xxxxx0xxxxxxxxxxx0xxxxx0xxxxxxxxxxxxxx0xxxxx0xxxxxxxx0xx0xx0xx0xx0xxxxxxxxxxxxxxxxx0xx0xx0xx0xx0xx0xxxxxxxx0xxxxx0xxxxxxxx0xxxxxxxx0xxxxxxxxxxx0xx0xx0xx0xx0xx0xxxxxxxx0xx0xx0xx0xx0xxxxx0xxxxxxxxxxxxxx0xxxxxxxxxxx0xxxxx0xxxxxxxxxxx0xxxxxxxxxxx0xxxxx0xxxxxx safebits
+ set IC1_trc drv boundary 719 downto 0 = xxxxxxxx0xx0xxxxx0xx0xxxxxxxxxxxxxxxxx0xx0xx0xx0xxxxxxxxxxx0xxxxx0xx0xxxxxxxxxxx0xxxxx0xx0xx0xxxxx0xx0xx0xxxxxxxxxxx0xx0xx0xx0xx0xx0xxxxxxxxxxxxxxxxxxxxxxx0xx0xx0xxxxxxxx0xx0xxxxx0xx0xxxxxxxx0xx0xx0xxxxx0xx0xxxxxxxx0xxxxxxxxxxxxxxxxxxxx0xx0xx0xx0xx0xx0xx0xx0xxxxxxxxxxxxxxxxx0xxxxxxxx0xxxxx0xx0xx0xx0xx0xx0xxxxx0xxxxxxxxxxx0xx0xx0xx0xx0xx0xxxxx0xxxxxxxxxxxxxxxxxxxxxxx0xx0xxxxx0xx0xxxxxxxxxxxxxx0xxxxxxxx0xxxxx0xxxxx0xx0xxxxx0xxxxxxxxxxx0xx0xx0xxxxx0xx0xx0xx0xx0xx0xxxxx0xxxxxxxxxxx0xxxxx0xxxxxxxxxxxxxx0xxxxx0xxxxxxxx0xx0xx0xx0xx0xxxxxxxxxxxxxxxxx0xx0xx0xx0xx0xx0xxxxxxxx0xxxxx0xxxxxxxx0xxxxxxxx0xxxxxxxxxxx0xx0xx0xx0xx0xx0xxxxxxxx0xx0xx0xx0xx0xxxxx0xxxxxxxxxxxxxx0xxxxxxxxxxx0xxxxx0xxxxxxxxxxx0xxxxxxxxxxx0xxxxx0xxxxxx safebits
+ set IC201_moni drv boundary 863 downto 0 = xxxxxxxxxxxxxx0xx0xxxxx0xxxxx0xxxxx0xxxxx0xx0xxxxx0xxxxxxxx0xx0xxxxx0xx0xxxxx0xxxxx0xxxxx0xxxxx0xx0xxxxx0xxxxxxxx0xxxxxxxxxxxxxxxxxxxxxxx0xxxxx0xxxxx0xx0xxxxxxxxxxxxxx0xxxxxxxx0xx0xxxxx0xxxxxxxxxxx0xxxxx0xxxxxxxxxxxxxxxxx0xxxxxxxx0xxxxxxxx0xxxxx0xxxxx0xxxxx0xx0xxxxx0xxxxxxxx0xx0xxxxx0xx0xxxxx0xxxxx0xxxxxxxxxxx0xx0xxxxxxxxxxxxxxxxx0xxxxx0xxxxxxxxxxxxxxxxxxxx0xxxxxxxx0xxxxxxxxxxxxxx0xx0xxxxx0xxxxxxxx0xxxxx0xxxxxxxxxxxxxxxxxxxxxxxxxxxxx0xx0xxxxx0xx0xxxxx0xxxxxxxx0xx0xxxxx0xxxxxxxx0xxxxxxxx0xx0xxxxx0xx0xxxxx0xxxxx0xx0xx0xxxxx0xxxxxxxx0xxxxxxxxxxx0xxxxx0xxxxxxxxxxxxxx0xx0xx0xxxxx0xxxxxxxx0xxxxxxxx0xx0xxxxx0xxxxxxxx0xxxxx0xxxxx0xxxxxxxxxxxxxxxxxxxxxxx0xxxxxxxxxxxxxxxxx0xxxxxxxx0xxxxxxxx0xx0xxxxx0xxxxxxxxxxx0xxxxx0xx0xxxxx0xxxxx0xx0xxxxxxxx0xx0xxxxxxxxxxxxxx0xx0xxxxxxxxxxxxxx0xxxxx0xx0xx0xxxxx0xx0xxxxx0xxxxxxxx0xx0xxxxx0xx0xxxxx0xxxxx0xx0xx0xxxxxxxxxxxxxxxxxx safebits
+ -- nothing meaningful to expect here
+ set IC2_sub exp boundary 814 downto 0 = x
+ set IC1_sub exp boundary 24 downto 0 = x
+ set IC5_pwr exp boundary 719 downto 0 = x
+ set IC1_trc exp boundary 719 downto 0 = x
+ set IC201_moni exp boundary 863 downto 0 = x
+ sdr id 2
+
+ -- set devices in extest mode
+ set IC2_sub drv ir 5 downto 0 = 000000 extest
+ set IC1_sub drv ir 7 downto 0 = 00000000 extest
+ set IC5_pwr drv ir 7 downto 0 = 00000000 extest
+ set IC1_trc drv ir 7 downto 0 = 00000000 extest
+ set IC201_moni drv ir 7 downto 0 = 00000000 extest
+ sir id 3
+
+ -- load static drive values
+ set IC2_sub drv boundary 620=1 99=1 551=1 617=1 518=1 521=1 515=1 102=1 665=1 671=1 674=1 677=1 680=1 707=1 710=1 713=1 716=1 719=1 722=1 725=1 728=1 755=1 758=1 761=1 764=1 767=1 770=1 773=1 96=1 147=1 428=1 317=1 368=1 365=1 569=1 359=1 356=1 353=1 623=1 626=1 641=1 644=1 647=1 650=1 653=1 656=1 410=1 464=1 431=1 407=1 299=1 296=1 791=1 812=1 809=1 302=1 108=1 105=1 114=1 123=1 90=1 111=1 93=1 141=1 69=1 120=1 117=1 87=1 314=1 311=1 470=1 467=1 308=1 150=1 153=1 162=1 201=1 204=1 207=1 212=1 215=1 224=1 227=1 236=1 239=1 242=1 245=1 248=1 251=1 0=1 3=1 21=1 24=1 57=1 60=1 63=1 66=1 144=1 371=1 374=1 377=1 380=1 398=1 401=1 350=1 503=1 506=1 509=1 494=1 476=1 473=1 500=1 497=1 776=0 779=0 782=0 785=0 788=0 257=0 254=0 263=0 260=0 269=0 266=0 305=0 524=0 362=0 614=0 512=0 548=0 530=0 527=0 611=0 608=0 554=0 560=0 557=0 575=0 662=0 659=0 668=0 347=0 344=0 663=1 660=1
+ set IC1_sub drv boundary 3=0 18=0 21=0
+ set IC5_pwr drv boundary 300=0 303=0 309=0 513=0 474=0 477=0 549=0 588=0 561=0 594=0 558=0 591=0 564=0 597=0 537=0 522=1 444=1 711=1 615=1 603=1 504=1 708=1 654=1 699=1 681=1 678=1 675=1 672=1 660=1 429=1 426=1 423=1 420=1 417=1 414=1 408=1 468=1 471=1 172=0 169=0 166=0 163=0 160=0 157=0 148=0 142=0 262=1 259=1 256=1 250=1 88=1 85=1 82=1 79=1 505=0
+ set IC1_trc drv boundary 258=0 108=0 231=0 255=0 105=0 111=0 513=0 309=0 315=0 324=0 339=0 342=0 348=0 264=0 132=0 141=0 147=0 159=0 162=0 168=0 171=0 210=0 201=0 198=0 6=0 12=0 24=0 36=0 78=0 81=0 249=0 96=0 678=0 681=0 261=0 102=0 237=0 99=0 462=0 465=0 468=0 471=0 522=0 516=0 597=0 564=0 546=0 540=0 591=0 558=0 594=0 561=0 435=1 444=1 528=1 525=1 711=1 504=1 708=1 651=1 654=1 639=1 660=1 600=1 603=1 588=1 549=1 622=1 619=1 616=1 397=1 409=1 424=0 427=0 430=0 391=1 394=1 382=1 376=1 628=1 388=1 385=1 421=1 418=1 415=1 538=0 505=0
+ set IC201_moni drv boundary 531=0 603=0 612=0 597=0 633=0 750=0 720=0 504=0 711=0 618=0 606=0 642=0 759=0 765=0 768=0 774=0 780=0 786=0 792=0 795=0 801=0 804=0 660=0 666=0 678=0 684=0 687=0 696=0 726=0 624=0 813=0 819=0 822=0 828=0 834=0 840=0 846=0 849=0 525=0 552=0 564=0 570=0 576=0 579=0 585=0 588=0 456=0 462=0 471=0 477=0 480=0 327=0 336=0 342=0 345=0 21=0 348=0 354=0 360=0 363=0 369=0 372=0 234=0 240=0 246=0 264=0 549=1 18=1 153=1 144=1 255=1 120=1 24=1 117=1 261=1 129=1 138=1 147=1 132=1 37=0 46=0 49=0 58=0 31=0 40=0 103=0 166=0 172=0 175=0 184=0 193=0 391=0 382=0 316=0 310=0 295=0 211=0 496=0 427=0 424=0 418=0 415=0 409=0 400=0 397=0 292=0 715=0 64=1 67=1 73=1 76=1 79=1 85=1 100=1 274=0 283=0 289=0 550=0
+ sdr id 4
+
+ -- expect static values
+ set IC2_sub exp boundary 664=1 661=1
+
+ set IC5_pwr exp boundary 302=0 305=0 311=0 506=0 515=0
+ set IC1_trc exp boundary 506=0 515=0
+ set IC201_moni exp boundary 533=1 605=1 614=1 599=1 635=1 752=1 722=1 506=1 713=1 551=0 620=1 608=1 644=1 761=1 767=1 770=1 776=1 782=1 788=1 794=1 797=1 803=1 806=1 662=1 668=1 680=1 686=1 689=1 698=1 815=1 821=1 824=1 830=1 836=1 842=1 848=1 851=1 527=1
+ sdr id 5
+
+ -- toggle  class NR primary_net !STOP_sub device IC2_sub pin 34 output_cell 345
+ -- 5 cycles of LH follow ...
+ ----------------------------------------------------------------------------------------- 
+
+ -- cycle  1
+
+ -- toggle L
+ set IC2_sub drv boundary 345=0
+ sdr id 6
+ delay  1.0
+
+ -- toggle H
+ set IC2_sub drv boundary 345=1
+ sdr id 7
+ delay  1.0
+
+ ----------------------------- 
+ -- cycle  2
+
+ -- toggle L
+ set IC2_sub drv boundary 345=0
+ sdr id 8
+ delay  1.0
+
+ -- toggle H
+ set IC2_sub drv boundary 345=1
+ sdr id 9
+ delay  1.0
+
+ ----------------------------- 
+ -- cycle  3
+
+ -- toggle L
+ set IC2_sub drv boundary 345=0
+ sdr id 10
+ delay  1.0
+
+ -- toggle H
+ set IC2_sub drv boundary 345=1
+ sdr id 11
+ delay  1.0
+
+ ----------------------------- 
+ -- cycle  4
+
+ -- toggle L
+ set IC2_sub drv boundary 345=0
+ sdr id 12
+ delay  1.0
+
+ -- toggle H
+ set IC2_sub drv boundary 345=1
+ sdr id 13
+ delay  1.0
+
+ ----------------------------- 
+ -- cycle  5
+
+ -- toggle L
+ set IC2_sub drv boundary 345=0
+ sdr id 14
+ delay  1.0
+
+ -- toggle H
+ set IC2_sub drv boundary 345=1
+ sdr id 15
+ delay  1.0
+
+ ----------------------------- 
+
+ trst  -- comment out this line if necessary 
+
+EndSection
+

@@ -1,0 +1,4 @@
+./z80asm -fh -l $1.asm
+[ $? -ne 0 ] && exit
+mv $1.bin $1.hex
+./hex2bin -p 00 $1.hex

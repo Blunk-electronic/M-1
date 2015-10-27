@@ -1,0 +1,117 @@
+Partlist
+
+Exported from vec_ex_v22.brd at 11/27/12 2:03 PM
+
+EAGLE Version 6.2.0 Copyright (c) 1988-2012 CadSoft
+
+Assembly variant: 
+
+Part     Value               Package        Library                            Position (mm)         Orientation
+
+C2       4u7                 E2,5-6E        rcl                                (119.38 64.77)        R180
+C80      100uF/25V           E2,5-6E        rcl                                (106.9975 45.72)      R180
+C81      100n                C050-025X075   rcl                                (114.3 41.5925)       R0
+C500     100µ/25V            E2,5-7         rcl                                (120.65 15.5575)      R270
+C501     100µ/25V            E2,5-7         rcl                                (113.03 15.5575)      R90
+C502     100n                C050-025X075   rcl                                (95.25 12.7)          R90
+C503     1µ                  E2,5-6E        rcl                                (100.33 13.97)        R90
+C504     100n                C050-025X075   rcl                                (76.2 12.7)           R90
+C505     1µ                  E2,5-6E        rcl                                (81.915 13.97)        R90
+C506     100µ/25V            E2,5-7         rcl                                (107.95 20.955)       R90
+C600     100n                C0805          rcl                                (72.39 76.835)        MR0
+C601     100n                C0805          rcl                                (102.87 73.66)        MR270
+D80      BAT48               DO35-10        diode                              (105.41 69.5325)      R270
+D200     1N4728/3V3          DO41Z10        diode                              (27.305 66.04)        R90
+D201     1N4728/3V3          DO41Z10        diode                              (13.97 66.04)         R90
+D500     green               LED3MM         led                                (19.05 8.89)          R270
+D501     green               LED3MM         led                                (19.05 3.81)          R270
+D502     green               LED3MM         led                                (13.97 3.81)          R270
+D600     red                 LED3MM         led                                (3.81 15.24)          R270
+D601     yellow              LED3MM         led                                (8.89 15.24)          R270
+D602     blue                LED3MM         led                                (13.97 15.24)         R270
+H1       MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE holes                              (5 5)                 R0
+H2       MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE holes                              (5 95)                R0
+H3       MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE holes                              (155 5)               R0
+H4       MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE holes                              (155 95)              R0
+H5       MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE 11-07-12                           (68.58 5.08)          R0
+H6       MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE 11-07-12                           (113.3 5.08)          R0
+H7       MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE 11-07-12                           (46 25)               R0
+H8       MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE 11-07-12                           (46 94)               R0
+H9       MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE 11-07-12                           (122 94)              R0
+H10      MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE 11-07-12                           (122 25)              R0
+IC80     4093N               DIL14          40xx                               (115.57 52.3875)      R90
+IC500    LM317               317TS          v-reg                              (97.79 2.54)          R180
+IC501    LM317               317TS          v-reg                              (78.74 2.54)          R180
+IC600    BS62LV4006          DIL32          HITACHI_SRAM_HM628512A-Series_rev1 (91.44 58.42)         R270
+IC601    BS62LV4006          DIL32          HITACHI_SRAM_HM628512A-Series_rev1 (68.58 58.42)         R270
+JP1                          1X02           pinhead                            (26.67 81.28)         R90
+JP2      DBG                 2X20           pinhead                            (153.67 60.96)        R270
+JP100    EXT_CTRL&DATA       2X20           pinhead                            (19.685 46.99)        R90
+JP101    EXT_CTRL&ADDR       2X20           pinhead                            (6.35 46.99)          R90
+JP200    Tranceiver          2X20           pinhead                            (139.7 60.96)         R270
+JP400    JTAG                2X05           pinhead                            (18.56 91.59)         R90
+P1                           PAD            pads                               (146.05 90.17)        R90
+P2                           PAD            pads                               (143.51 90.17)        R90
+P3                           PAD            pads                               (140.97 90.17)        R90
+P4                           PAD            pads                               (138.43 90.17)        R90
+P5                           PAD            pads                               (146.05 92.71)        R90
+P6                           PAD            pads                               (143.51 92.71)        R90
+P7                           PAD            pads                               (140.97 92.71)        R90
+P8                           PAD            pads                               (138.43 92.71)        R90
+P9                           PAD            pads                               (129.54 33.02)        R0
+P10                          PAD            11-07-12                           (27.305 87.63)        R90
+P11                          PAD            11-07-12                           (24.765 87.63)        R90
+P12                          PAD            pads                               (53.975 36.195)       R0
+P13                          PAD            11-07-12                           (24.905 92.92)        R90
+P14                          PAD            11-07-12                           (32.7025 79.0575)     R90
+P15                          PAD            11-07-12                           (22.86 80.01)         R90
+P16                          PAD            11-07-12                           (23.555 95.46)        R90
+P17                          PAD            pads                               (95.25 85.09)         R0
+P18                          PAD            pads                               (92.71 85.09)         R0
+P19                          PAD            11-07-12                           (26.65 95.46)         R90
+P20                          PAD            11-07-12                           (148.59 50.8)         R0
+P21                          PAD            11-07-12                           (148.59 48.26)        R0
+P22                          PAD            pads                               (114.3 64.135)        R0
+P80                          PAD            pads                               (129.54 30.48)        R0
+P500                         PAD            11-07-12                           (106.68 2.54)         R90
+P501                         PAD            11-07-12                           (155.575 17.78)       R90
+P502                         PAD            11-07-12                           (86.36 2.54)          R90
+PLD_1                        2X20           pinhead                            (38 60)               R90
+PLD_2                        2X25           pinhead                            (85 92)               R180
+PLD_3                        2X20           pinhead                            (48 60)               R90
+PLD_4                        2X20           pinhead                            (85 30)               R0
+R1       8x10k               SIL9           resistor-sil                       (146.685 68.58)       R270
+R4       1M                  0207/10        rcl                                (122.8725 56.8325)    R90
+R80      680                 0207/10        rcl                                (108.585 69.215)      R90
+R81      33k                 0207/10        rcl                                (112.0775 69.215)     R90
+R82      15k                 0207/10        rcl                                (108.2675 54.9275)    R90
+R83      2k7                 0207/10        rcl                                (102.5525 54.9275)    R90
+R84      2k7                 0207/10        rcl                                (125 44)              R90
+R85      10k                 0207/10        rcl                                (105.41 54.9275)      R270
+R100     160                 0207/10        rcl                                (36.83 17.145)        R180
+R101     160                 0207/10        rcl                                (23.495 17.145)       R180
+R102     2k7                 0207/10        rcl                                (67.945 20.32)        R180
+R103     2k7                 0207/10        rcl                                (67.945 17.145)       R180
+R202     0                   0207/10        rcl                                (24.765 66.04)        R270
+R203     0                   0207/10        rcl                                (11.43 66.04)         R270
+R400     300                 0207/10        rcl                                (8.19 82.74)          R180
+R401     300                 0207/10        rcl                                (8.19 85.915)         R180
+R402     8x10k               SIL9           resistor-sil                       (64.97 96.925)        R0
+R500     680                 0207/10        rcl                                (67.945 13.97)        R0
+R501     240                 0207/10        rcl                                (107.95 10.16)        R270
+R502     240                 0207/10        rcl                                (105.0925 10.16)      R90
+R503     100                 0207/10        rcl                                (50.165 13.97)        R0
+R505     100                 0207/10        rcl                                (67.945 23.495)       R0
+R506     240                 0207/10        rcl                                (86.36 10.16)         R90
+R510     33                  KH208-8        11-07-12                           (141.605 14.9225)     R0
+R600     160                 0207/10        rcl                                (23.495 13.97)        R0
+R601     160                 0207/10        rcl                                (36.83 13.97)         R0
+R602     300                 0207/10        rcl                                (50.165 17.145)       R0
+T80      BC548C              TO92           transistor-npn                     (106.9975 40.005)     R0
+T81      BC548C              TO92           transistor-npn                     (133 37)              R0
+T100     BC548C              TO92-EBC       transistor-npn                     (58.42 22.86)         R0
+T101     BC548C              TO92-EBC       transistor-npn                     (58.42 15.24)         R90
+X100     FRONT_PANEL         W237-4         con-wago-500                       (53.086 7.62)         R0
+X101     FRONT_PANEL         W237-4         con-wago-500                       (33.02 7.62)          R0
+X500     BSC_PWR_IN          W237-4         con-wago-500                       (137.16 7.62)         R0
+X501                         W237-102       con-wago-500                       (122.2375 7.62)       R0

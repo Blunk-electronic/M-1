@@ -1,0 +1,279 @@
+--$ XILINX$RCSfile: xc9536_pc44.bsd,v $
+--$ XILINX$Header: /tools/xicad/bsdl/master/xc9k/RCS/xc9536_pc44.bsd,v 1.2 2002-01-29 10:07:01-08 terry ADVANCED $
+--$ XILINX$Revision: 1.2 $
+--
+-- BSDL file for device XC9536, package PC44
+-- Xilinx, Inc. $State: ADVANCED $ $Date: 2002-01-29 10:07:01-08 $
+--
+-- For technical support, contact Xilinx as follows: 
+-- North America 1-800-255-7778 hotline@xilinx.com 
+-- United Kingdom +44 870 7350 610 eurosupport@xilinx.com
+-- France  (33) 1 3463 0100 eurosupport@xilinx.com
+-- Germany  (49) 89 991 54930 eurosupport@xilinx.com
+-- Japan  (81) 3-3297-9163 jhotline@xilinx.com
+--
+--
+--   BSDL File created/edited by AT&T BSD Editor
+--
+--BSDE:Description: Xilinx 36 macrocell FastFLASH ISP CPLD
+--
+entity xc9536_pc44 is
+
+generic (PHYSICAL_PIN_MAP : string := "pc44" );
+
+port (
+    PB00_00: inout bit;
+    PB00_01: inout bit;
+    PB00_02: inout bit;
+    PB00_03: inout bit;
+    PB00_04: inout bit;
+    PB00_05: inout bit;
+    PB00_06: inout bit;
+    PB00_07: inout bit;
+    PB00_08: inout bit;
+    PB00_09: inout bit;
+    PB00_10: inout bit;
+    PB00_11: inout bit;
+    PB00_12: inout bit;
+    PB00_13: inout bit;
+    PB00_14: inout bit;
+    PB00_15: inout bit;
+    PB00_16: inout bit;
+    PB01_00: inout bit;
+    PB01_01: inout bit;
+    PB01_02: inout bit;
+    PB01_03: inout bit;
+    PB01_04: inout bit;
+    PB01_05: inout bit;
+    PB01_06: inout bit;
+    PB01_07: inout bit;
+    PB01_08: inout bit;
+    PB01_09: inout bit;
+    PB01_10: inout bit;
+    PB01_11: inout bit;
+    PB01_12: inout bit;
+    PB01_13: inout bit;
+    PB01_14: inout bit;
+    PB01_15: inout bit;
+    PB01_16: inout bit;
+    TCK: in bit;
+    TDI: in bit;
+    TDO: out bit;
+    TMS: in bit;
+    VCCINT_1: linkage bit;
+    VCCINT_VPP: linkage bit;
+    VCCIO_1: linkage bit;
+    VSSINT_1: linkage bit;
+    VSSIO_1: linkage bit;
+    VSSIO_2: linkage bit
+);
+
+use STD_1149_1_1990.all;
+
+attribute PIN_MAP of xc9536_pc44 : entity is PHYSICAL_PIN_MAP;
+
+constant pc44: PIN_MAP_STRING:=
+    "PB00_00:2," &
+    "PB00_01:3," &
+    "PB00_02:5," &
+    "PB00_03:4," &
+    "PB00_04:6," &
+    "PB00_05:8," &
+    "PB00_06:7," &
+    "PB00_07:9," &
+    "PB00_08:11," &
+    "PB00_09:12," &
+    "PB00_10:13," &
+    "PB00_11:14," &
+    "PB00_12:18," &
+    "PB00_13:19," &
+    "PB00_14:20," &
+    "PB00_15:22," &
+    "PB00_16:24," &
+    "PB01_00:1," &
+    "PB01_01:44," &
+    "PB01_02:42," &
+    "PB01_03:43," &
+    "PB01_04:40," &
+    "PB01_05:39," &
+    "PB01_06:38," &
+    "PB01_07:37," &
+    "PB01_08:36," &
+    "PB01_09:35," &
+    "PB01_10:34," &
+    "PB01_11:33," &
+    "PB01_12:29," &
+    "PB01_13:28," &
+    "PB01_14:27," &
+    "PB01_15:26," &
+    "PB01_16:25," &
+    "TCK:17," &
+    "TDI:15," &
+    "TDO:30," &
+    "TMS:16," &
+    "VCCINT_1:21," &
+    "VCCINT_VPP:41," &
+    "VCCIO_1:32," &
+    "VSSINT_1:23," &
+    "VSSIO_1:10," &
+    "VSSIO_2:31";
+
+attribute TAP_SCAN_IN    of TDI : signal is true;
+attribute TAP_SCAN_OUT   of TDO : signal is true;
+attribute TAP_SCAN_MODE  of TMS : signal is true;
+attribute TAP_SCAN_CLOCK of TCK : signal is (1.00e+07, BOTH);
+attribute INSTRUCTION_LENGTH of xc9536_pc44 : entity is 8;
+
+attribute INSTRUCTION_OPCODE of xc9536_pc44 : entity is
+    "BYPASS ( 11111111)," &
+    "ISPEX ( 11110000)," &
+    "EXTEST ( 00000000)," &
+    "FERASE ( 11101100)," &
+    "FPGM ( 11101010)," &
+    "FVFY ( 11101110)," &
+    "FBULK ( 11101101)," &
+    "FPGMI ( 11101011)," &
+    "FVFYI ( 11101111)," &
+    "HIGHZ ( 11111100)," &
+    "IDCODE ( 11111110)," &
+    "INTEST ( 00000010)," &
+    "ISPEN ( 11101000)," &
+    "SAMPLE ( 00000001)," &
+    "USERCODE ( 11111101)" ;
+
+attribute INSTRUCTION_CAPTURE of xc9536_pc44 : entity is "000XXX01";
+
+attribute INSTRUCTION_DISABLE of xc9536_pc44 : entity is "HIGHZ";
+
+attribute IDCODE_REGISTER of xc9536_pc44 : entity is
+    "XXXX" &        -- version
+    "1001010100000010" &    -- part number
+    "00001001001" &     -- manufacturer's id
+    "1";            -- required by standard
+
+attribute USERCODE_REGISTER of xc9536_pc44 : entity is
+    "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+
+attribute REGISTER_ACCESS of xc9536_pc44 : entity is
+    "BYPASS ( ISPEX, HIGHZ )," &
+    "ISPENABLE[6] ( ISPEN )," &
+    "ISPDATA[10] ( FPGMI, FVFYI )," &
+    "ISPCONFIGURATION[27] ( FERASE, FBULK, FPGM, FVFY )";
+
+attribute BOUNDARY_CELLS of xc9536_pc44 : entity is
+    " BC_1";
+
+attribute BOUNDARY_LENGTH of xc9536_pc44 : entity is 108;
+
+attribute BOUNDARY_REGISTER of xc9536_pc44 : entity is
+    "   2 (BC_1, *, internal, X)," &
+    "   1 (BC_1, *, internal, X)," &
+    "   0 (BC_1, *, internal, X)," &
+    "   5 (BC_1, PB01_16, input, X)," &
+    "   4 (BC_1, PB01_16, output3, X, 3, 0, Z)," &
+    "   3 (BC_1, *, controlr, 0)," &
+    "   8 (BC_1, PB01_15, input, X)," &
+    "   7 (BC_1, PB01_15, output3, X, 6, 0, Z)," &
+    "   6 (BC_1, *, controlr, 0)," &
+    "  11 (BC_1, PB01_14, input, X)," &
+    "  10 (BC_1, PB01_14, output3, X, 9, 0, Z)," &
+    "   9 (BC_1, *, controlr, 0)," &
+    "  14 (BC_1, PB01_13, input, X)," &
+    "  13 (BC_1, PB01_13, output3, X, 12, 0, Z)," &
+    "  12 (BC_1, *, controlr, 0)," &
+    "  17 (BC_1, PB01_12, input, X)," &
+    "  16 (BC_1, PB01_12, output3, X, 15, 0, Z)," &
+    "  15 (BC_1, *, controlr, 0)," &
+    "  20 (BC_1, PB01_11, input, X)," &
+    "  19 (BC_1, PB01_11, output3, X, 18, 0, Z)," &
+    "  18 (BC_1, *, controlr, 0)," &
+    "  23 (BC_1, PB01_10, input, X)," &
+    "  22 (BC_1, PB01_10, output3, X, 21, 0, Z)," &
+    "  21 (BC_1, *, controlr, 0)," &
+    "  26 (BC_1, PB01_09, input, X)," &
+    "  25 (BC_1, PB01_09, output3, X, 24, 0, Z)," &
+    "  24 (BC_1, *, controlr, 0)," &
+    "  29 (BC_1, PB01_08, input, X)," &
+    "  28 (BC_1, PB01_08, output3, X, 27, 0, Z)," &
+    "  27 (BC_1, *, controlr, 0)," &
+    "  32 (BC_1, PB01_07, input, X)," &
+    "  31 (BC_1, PB01_07, output3, X, 30, 0, Z)," &
+    "  30 (BC_1, *, controlr, 0)," &
+    "  35 (BC_1, PB01_06, input, X)," &
+    "  34 (BC_1, PB01_06, output3, X, 33, 0, Z)," &
+    "  33 (BC_1, *, controlr, 0)," &
+    "  38 (BC_1, PB01_05, input, X)," &
+    "  37 (BC_1, PB01_05, output3, X, 36, 0, Z)," &
+    "  36 (BC_1, *, controlr, 0)," &
+    "  41 (BC_1, PB01_04, input, X)," &
+    "  40 (BC_1, PB01_04, output3, X, 39, 0, Z)," &
+    "  39 (BC_1, *, controlr, 0)," &
+    "  44 (BC_1, PB01_03, input, X)," &
+    "  43 (BC_1, PB01_03, output3, X, 42, 0, Z)," &
+    "  42 (BC_1, *, controlr, 0)," &
+    "  47 (BC_1, PB01_02, input, X)," &
+    "  46 (BC_1, PB01_02, output3, X, 45, 0, Z)," &
+    "  45 (BC_1, *, controlr, 0)," &
+    "  50 (BC_1, PB01_01, input, X)," &
+    "  49 (BC_1, PB01_01, output3, X, 48, 0, Z)," &
+    "  48 (BC_1, *, controlr, 0)," &
+    "  53 (BC_1, PB01_00, input, X)," &
+    "  52 (BC_1, PB01_00, output3, X, 51, 0, Z)," &
+    "  51 (BC_1, *, controlr, 0)," &
+    "  56 (BC_1, *, internal, X)," &
+    "  55 (BC_1, *, internal, X)," &
+    "  54 (BC_1, *, internal, X)," &
+    "  59 (BC_1, PB00_16, input, X)," &
+    "  58 (BC_1, PB00_16, output3, X, 57, 0, Z)," &
+    "  57 (BC_1, *, controlr, 0)," &
+    "  62 (BC_1, PB00_15, input, X)," &
+    "  61 (BC_1, PB00_15, output3, X, 60, 0, Z)," &
+    "  60 (BC_1, *, controlr, 0)," &
+    "  65 (BC_1, PB00_14, input, X)," &
+    "  64 (BC_1, PB00_14, output3, X, 63, 0, Z)," &
+    "  63 (BC_1, *, controlr, 0)," &
+    "  68 (BC_1, PB00_13, input, X)," &
+    "  67 (BC_1, PB00_13, output3, X, 66, 0, Z)," &
+    "  66 (BC_1, *, controlr, 0)," &
+    "  71 (BC_1, PB00_12, input, X)," &
+    "  70 (BC_1, PB00_12, output3, X, 69, 0, Z)," &
+    "  69 (BC_1, *, controlr, 0)," &
+    "  74 (BC_1, PB00_11, input, X)," &
+    "  73 (BC_1, PB00_11, output3, X, 72, 0, Z)," &
+    "  72 (BC_1, *, controlr, 0)," &
+    "  77 (BC_1, PB00_10, input, X)," &
+    "  76 (BC_1, PB00_10, output3, X, 75, 0, Z)," &
+    "  75 (BC_1, *, controlr, 0)," &
+    "  80 (BC_1, PB00_09, input, X)," &
+    "  79 (BC_1, PB00_09, output3, X, 78, 0, Z)," &
+    "  78 (BC_1, *, controlr, 0)," &
+    "  83 (BC_1, PB00_08, input, X)," &
+    "  82 (BC_1, PB00_08, output3, X, 81, 0, Z)," &
+    "  81 (BC_1, *, controlr, 0)," &
+    "  86 (BC_1, PB00_07, input, X)," &
+    "  85 (BC_1, PB00_07, output3, X, 84, 0, Z)," &
+    "  84 (BC_1, *, controlr, 0)," &
+    "  89 (BC_1, PB00_06, input, X)," &
+    "  88 (BC_1, PB00_06, output3, X, 87, 0, Z)," &
+    "  87 (BC_1, *, controlr, 0)," &
+    "  92 (BC_1, PB00_05, input, X)," &
+    "  91 (BC_1, PB00_05, output3, X, 90, 0, Z)," &
+    "  90 (BC_1, *, controlr, 0)," &
+    "  95 (BC_1, PB00_04, input, X)," &
+    "  94 (BC_1, PB00_04, output3, X, 93, 0, Z)," &
+    "  93 (BC_1, *, controlr, 0)," &
+    "  98 (BC_1, PB00_03, input, X)," &
+    "  97 (BC_1, PB00_03, output3, X, 96, 0, Z)," &
+    "  96 (BC_1, *, controlr, 0)," &
+    " 101 (BC_1, PB00_02, input, X)," &
+    " 100 (BC_1, PB00_02, output3, X, 99, 0, Z)," &
+    "  99 (BC_1, *, controlr, 0)," &
+    " 104 (BC_1, PB00_01, input, X)," &
+    " 103 (BC_1, PB00_01, output3, X, 102, 0, Z)," &
+    " 102 (BC_1, *, controlr, 0)," &
+    " 107 (BC_1, PB00_00, input, X)," &
+    " 106 (BC_1, PB00_00, output3, X, 105, 0, Z)," &
+    " 105 (BC_1, *, controlr, 0)";
+
+end xc9536_pc44;
+

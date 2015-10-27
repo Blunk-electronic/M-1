@@ -1,0 +1,1747 @@
+#! /bin/sh
+
+
+	version=030 #029
+	echo memory connections test/program generator version $version
+
+	# V2.4	- sequence 1 has first commands: delay 0.5 and connect port 1
+	# V2.5	- sequence 1 has additional default commands
+	#		- exe_desc.txt is created in test directory
+	#		- power down all added on end of test
+	#		- disconnect 1/2 added on end of test
+	# V2.6	- test_init snipped used
+	# V2.7	- umask 003 added to allow users rw access to uut data
+	
+###################################
+
+	proc_make_lut()
+		{
+        addr_pin_ct=$1
+		data_pin_ct=$2
+		#algorithm=$3
+
+		echo 'address pin count:' $addr_pin_ct
+		echo 'data    pin count:' $data_pin_ct
+
+		[ "$addr_pin_ct" -gt 32 ] &&
+			{
+			echo 'ERROR  : Address bus size greater than 32 bit not supported !'
+			rm -rf $test_name # clean up after failure #ins v029
+			exit 1
+			}
+
+		[ "$data_pin_ct" -gt 40 ] &&
+			{
+			echo 'ERROR  : Data bus size greater than 40 bit not supported !'
+			rm -rf $test_name # clean up after failure #ins v029
+			exit 1
+			}
+
+		addr_lut=1 #lsb=1 is start address
+		base=2
+		addr_exponent=32 #$addr_pin_ct
+		addr_mask_or=$(( base ** addr_exponent ))  # e.g. 10000
+		addr_mask_and=$[ addr_mask_or-1]      # e.g.  FFFF
+
+		data_lut=1
+		data_exponent=40 #$data_pin_ct
+		data_mask_or=$(( base ** data_exponent ))  # e.g. 10000
+		data_mask_and=$[ data_mask_or-1]      # e.g.  FFFF
+		
+		echo parameters: addr $addr_pin_ct data $data_pin_ct >> tmp/lut.tmp
+		tetrades_addr=$[addr_pin_ct / 4]
+		[ "$[addr_pin_ct % 4]" -ne 0 ] && tetrades_addr=$[tetrades_addr+1]
+		tetrades_addr=$[9-tetrades_addr]
+	                       	
+		tetrades_data=$[data_pin_ct / 4]
+		[ "$[data_pin_ct % 4]" -ne 0 ] && tetrades_data=$[tetrades_data+1]
+		tetrades_data=$[11-tetrades_data]
+
+
+		ct_lut=1
+
+		addr_lut=$(( addr_lut | addr_mask_or ))   #set dummy bit
+	#ins v030 begin
+		echo 'start address    :' $addr_min_hex'h'
+		addr_min=$(echo "obase=10;ibase=16; $addr_min_hex" | bc) #convert minimum address (given as option) to decimal number
+		addr_lut_bak=$addr_lut #backup addr_lut
+		# if addr_lut below minimum address,
+		# modify addr_lut so that the minimum address (given as option) is met
+		#echo $addr_lut $addr_min
+		[ "$((addr_lut & addr_mask_and))" -lt "$addr_min" ] && 
+			{
+			addr_lut=$(( addr_lut | addr_min ))
+			}
+
+	#ins v030 end
+		addr_lut_hex=$(echo "obase=16;ibase=10; $addr_lut" | bc)
+
+		data_lut=$(( data_lut | data_mask_or ))   #set dummy bit
+		data_lut_hex=$(echo "obase=16;ibase=10; $data_lut" | bc)
+
+		echo step $ct_lut ${addr_lut_hex:$tetrades_addr} ${data_lut_hex:$tetrades_data} >> tmp/lut.tmp
+		ct_lut=$[ct_lut+1]
+
+
+		while [ "$ct_lut" -le "$addr_pin_ct" ]
+			do 
+				addr_lut=$addr_lut_bak # ins v030, restore addr_lut
+				addr_lut=$(( addr_lut & addr_mask_and ))  #clear dummy bit
+				addr_lut=$[addr_lut * 2]             #shift left             #CS: lsb address bit not tested -> fix it !
+				addr_lut=$(( addr_lut | addr_mask_or ))   #set dummy bit
+
+				#ins v030 begin
+				#addr_min=$(echo "obase=10;ibase=16; $addr_min_hex" | bc)
+				addr_lut_bak=$addr_lut #backup addr_lut
+				# if addr_lut below minimum address,
+				# modify addr_lut so that the minimum address (given as option) is met
+				#echo $addr_lut $((addr_lut & addr_mask_and)) $addr_min
+				[ "$((addr_lut & addr_mask_and))" -lt "$addr_min" ] && addr_lut=$(( addr_lut | addr_min ))
+				#ins v030 end
+
+				addr_lut_hex=$(echo "obase=16;ibase=10; $addr_lut" | bc)
+
+				data_lut=$(( data_lut & data_mask_and ))  #clear dummy bit
+				data_lut=$[data_lut + 1]             #increment data word
+				data_lut=$(( data_lut | data_mask_or ))   #set dummy bit
+				data_lut_hex=$(echo "obase=16;ibase=10; $data_lut" | bc)
+
+				echo step $ct_lut ${addr_lut_hex:$tetrades_addr} ${data_lut_hex:$tetrades_data} >> tmp/lut.tmp
+				ct_lut=$[ct_lut+1]
+			done
+
+		}
+
+    #proc_make_lut 15 8
+	#exit
+
+	proc_prepare_unlocking_input_cells()
+		{
+		count_members=0
+		while IFS=" " read -a v
+			do
+				device[count_members]=${v[0]};
+				exp_line[count_members]=unused	#set default "unused" for expect_line
+				count_members=$[count_members+1]; # increment array index on each chain member
+			done < tmp/members.tmp
+        }
+
+
+	proc_write_exp_seq_lines_unlock()
+		{
+		#write seq lines in $test_name/$test_name.seq
+		echo " -- unlocking input cells of DH and DL nets" >> $test_name/$test_name.seq
+		vector_ct=$[vector_ct+1]; # increment vecor counter on each sir or sdr
+		echo ' sdr id '$vector_ct >> $test_name/$test_name.seq
+
+		count_members=0
+		m=()
+		while IFS=" " read -a m
+			do
+				device[count_members]=${m[0]};
+                #if device used, write exp_line in sequence file
+				[ "${exp_line[count_members]}" != "unused" ] && echo '  '${exp_line[count_members]} >> $test_name/$test_name.seq
+				count_members=$[count_members+1]; # prepare next device to be processed
+			done < tmp/members.tmp
+
+		echo >> $test_name/$test_name.seq
+        }
+
+
+	proc_unlock_inputs_of_DH_DL_nets()
+		{
+		net_name_primary=$1
+
+		#process devices to find input cells
+		count_members2=0
+		while IFS=" " read -a mi
+			do
+				device2[count_members2]=${mi[0]};	#set device to be processed for primary net input search
+				line_of_static_expect=();
+				while read -a line_of_static_expect
+					do
+						#if primary-net (field 2) and net-name match (field 3) and device match (field 5)
+						[ "${line_of_static_expect[2]}" = "primary_net" -a "${line_of_static_expect[3]}" = "$net_name_primary" -a "${line_of_static_expect[5]}" = "${device2[count_members2]}" ] &&
+							{
+							[ "${line_of_static_expect[1]}" = "DH" -o "${line_of_static_expect[1]}" = "DL" ] &&
+								{
+								#check if member already used for expect line, if not, make seq-line header:
+								[ "${exp_line[count_members2]}" = "unused" ] && exp_line[count_members2]='set '${device2[count_members2]}' exp boundary'   
+								#append input cell and expect value x primary-net input pin to expect values line
+								exp_line[count_members2]="${exp_line[count_members2]} ${line_of_static_expect[9]}=x"
+								#echo prim ${exp_line[count_members2]}
+								proc_find_sec_inputs $net_name_primary
+								}
+							}
+					done < tmp/cells_static_expect.tmp
+				count_members2=$[count_members2+1]; # prepare next device (for primary input cell search) to be processed
+			done < tmp/members.tmp
+		}
+
+
+	proc_find_sec_inputs()
+		{
+		net_name_primary=$1
+		#find input cells in secondary nets
+		count_members_sec=0
+		while IFS=" " read -a w_sec
+			do
+				device_sec[count_members_sec]=${w_sec[0]};	#set device to be processed for secondary net input search	
+				line_of_static_expect_sec=();
+				while read -a line_of_static_expect_sec
+					do
+				       	[ "${line_of_static_expect_sec[2]}" = "secondary_net" -a "${line_of_static_expect_sec[13]}" = "$net_name_primary" -a "${line_of_static_expect_sec[5]}" = "${device_sec[count_members_sec]}" ] &&
+							{
+							[ "${exp_line[count_members_sec]}" = "unused" ] && exp_line[count_members_sec]='set '${device_sec[count_members_sec]}' exp boundary'   
+							#append input cell and expect value x primary-net input pin to expect values line
+							exp_line[count_members_sec]="${exp_line[count_members_sec]} ${line_of_static_expect_sec[9]}=x"
+							#echo sec ${exp_line[count_members_sec]}
+            	       		}
+					done < tmp/cells_static_expect.tmp
+                count_members_sec=$[count_members_sec+1]; # prepare next device (for secondary input cell search) to be processed
+			done < tmp/members.tmp
+		}
+
+
+	proc_extract_test_steps_from_model()
+		{
+		prog_section=$1
+		atg_addr=$2
+		atg_data=$3
+		echo >> $test_name/$test_name.seq
+		echo ' -- MEM '$prog_section >> $test_name/$test_name.seq
+		while IFS=" " read -a step
+			do	
+				[ "${step[0]}" = "step" -a "${step[2]}" = "delay" ] && 
+					{
+					echo ' -- model : '${step[*]} >> $test_name/$test_name.seq
+					echo -n '.'
+					echo ' delay '${step[3]} >> $test_name/$test_name.seq
+					echo >> $test_name/$test_name.seq
+					}
+
+				[ "${step[0]}" = "step" -a "${step[2]}" = "ADDR" ] && 
+					{
+					#read addr, data, control values from step-line
+					echo '  -- model : '${step[*]} >> $test_name/$test_name.seq
+					echo -n '.'
+					val_hex_addr=${step[4]} 
+					val_hex_data=${step[8]} 
+					val_bin_ctrl=${step[12]} 
+	
+					##### ADDRESS #########################################
+
+					#check if address driver is to be disabled (high-z)
+					address_driver_z=no
+					[ "$val_hex_addr" = "Z" ] && 
+						{
+						echo ERROR  : High-Z assignment for address port not supported !	#CS
+						rm -rf $test_name # clean up after failure #ins v029
+						exit 1
+						}
+
+					#if ATG placeholder found, replace address by ATG value
+					[ "$val_hex_addr" = "ATG" ] && 
+						{
+						val_hex_addr=$atg_addr
+						echo '  -- addr_drive ATG (hex):' $val_hex_addr >> $test_name/$test_name.seq
+						}
+
+					[ "$val_hex_addr" != "ATG" ] && 
+						{
+						#val_hex_addr=$atg_addr
+						echo '  -- addr_drive MOD (hex):' $val_hex_addr >> $test_name/$test_name.seq
+						}
+					
+
+					#format val_hex_addr according to given size
+					proc_format_hex_number $val_hex_addr $address_size	#returns $val_bin
+					val_bin_addr=$val_bin
+				
+
+					###### DATA #####################################
+
+					atg_expect=no
+
+					#check if data driver is to be disabled
+					data_driver_z=no
+					[ "$val_hex_data" = "Z" ] && data_driver_z=yes
+
+					[ "${step[7]}" = "drive" ] && 
+						{
+						[ "$val_hex_data" != "ATG" -a "$val_hex_data" != "Z" ] && 
+							{
+							echo '  -- data_drive MOD (hex):' $val_hex_data >> $test_name/$test_name.seq
+							}
+						
+						[ "$val_hex_data" = "Z" ] && 
+							{
+							data_driver_z=yes
+							echo '  -- data_drive MOD      : HIGH-Z' >> $test_name/$test_name.seq
+							}
+
+						#if drive ATG placeholder found, replace data by ATG data drive value
+						[ "$val_hex_data" = "ATG" ] && 
+							{
+							val_hex_data=$atg_data
+							echo '  -- data_drive ATG (hex):' $val_hex_data >> $test_name/$test_name.seq
+							}
+                    	}
+
+					#if data is to be expected
+					[ "${step[7]}" = "expect" ] &&
+						{
+						#if expect ATG placeholder found, replace data by ATG data expect value
+						[ "$val_hex_data" = "ATG" ] && 
+							{
+							val_hex_data=$atg_data
+							atg_expect=yes
+							echo '  -- data_exp ATG (hex)  :' $val_hex_data >> $test_name/$test_name.seq
+							}
+                        #if a user given expect value found
+						[ "$val_hex_data" != "ATG" ] && 
+							{
+							#val_hex_data=$atg_data
+							atg_expect=yes
+							echo '  -- data_exp MOD (hex)  :' $val_hex_data >> $test_name/$test_name.seq
+							}
+                        }
+
+					#format val_hex_data according to given size
+					proc_format_hex_number $val_hex_data $data_size
+					val_bin_data=$val_bin
+				
+	
+					##### CONTROL ####################################
+
+					#CS: check if Z-bits defined -> error and exit
+	
+					#check number of bits defined in control pattern
+					[ "${#val_bin_ctrl}" -ne "$control_size" ] &&
+						{
+						echo ERROR  : Control bit pattern length mismatch. Required $control_size. Found ${#val_bin_ctrl} !
+						rm -rf $test_name # clean up after failure #ins v029
+						exit 1
+						}
+
+					echo '  -- ctrl_drive MOD (bin):' $val_bin_ctrl >> $test_name/$test_name.seq	
+                    ###################################################
+
+
+					#write seq lines
+					#echo ' -- 'addr_drive: $val_hex_addr data_drive: $val_hex_data ctrl_drive: $val_bin_ctrl >> $test_name/$test_name.seq				
+					proc_make_seq_drv_line $val_bin_addr $address_size $address_driver_z $val_bin_data $data_size $data_driver_z $val_bin_ctrl $control_size $atg_expect
+
+					vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+					vector_ct_hex=$(echo "obase=16;ibase=10; $vector_ct" | bc)
+					echo ' sdr id '$vector_ct' / '$vector_ct_hex'h' >> $test_name/$test_name.seq
+					
+					proc_make_seq_exp_line $val_bin_data $data_size $data_driver_z
+
+					}
+			done < tmp/memory_prog_$prog_section.tmp
+        }
+
+
+	proc_make_seq_exp_line()
+		{
+		val_bin_data=$1
+		data_size=$2
+		data_driver_z=$3
+
+		proc_prepare_unlocking_input_cells # (re)sets all chain member exp_lines to status "unused"
+
+		#make data
+		count_members=0
+		m=()
+		while IFS=" " read -a m
+		do
+			device[count_members]=${m[0]};	#set device to be searched for in data expect group
+			pin_ptr=0
+			while [ "$pin_ptr" -lt "$data_size" ]
+				do
+					[ "${data_receive_group_dev[pin_ptr]}" = "${device[count_members]}" ] &&
+						{
+						#if member found in receive group, write exp_line header only once
+						[ "${exp_line[count_members]}" = "unused" ] && exp_line[count_members]='set '${device[count_members]}' exp boundary'   
+						
+						#append input cell numbers and bit values to exp_line
+						[ "$data_driver_z" = "no" ] && data_bit=${val_bin_data:$[pin_ptr]:1}
+						
+						#if data_driver is disabled (high-z), data expect value is don't care (x)
+						[ "$data_driver_z" = "yes" ] && data_bit=x
+						exp_line[count_members]=${exp_line[count_members]}' '${data_receive_group_ic[pin_ptr]}'='$data_bit
+						#echo ${exp_line[count_members]}
+						}
+					#echo ${device[count_members]}
+					pin_ptr=$[pin_ptr+1]
+				done
+				count_members=$[count_members+1]; # prepare next device to be processed
+		done < tmp/members.tmp
+
+		#write seq lines in $test_name/$test_name.seq
+		count_members=0
+		m=()
+		while IFS=" " read -a m
+			do
+				device[count_members]=${m[0]};
+                #if device used, write exp_line in sequence file
+				[ "${exp_line[count_members]}" != "unused" ] && 
+					{
+					echo '  '${exp_line[count_members]} >> $test_name/$test_name.seq
+					echo >> $test_name/$test_name.seq
+					} 
+				count_members=$[count_members+1]; # prepare next device to be processed
+			done < tmp/members.tmp
+
+		}
+
+	proc_make_seq_drv_line()
+		{
+		val_bin_addr=$1
+		address_size=$2
+		address_driver_z=$3
+		val_bin_data=$4
+		data_size=$5
+		data_driver_z=$6
+		val_bin_control=$7
+    	control_size=$8
+		atg_expect=$9
+
+		#make address
+		count_members=0
+		m=()
+		while IFS=" " read -a m
+		do
+			device[count_members]=${m[0]};	#set device to be searched for in address drive group
+			pin_ptr=0
+			drv_line[count_members]=unused
+			while [ "$pin_ptr" -lt "$address_size" ]
+				do
+					[ "${address_drive_group_dev[pin_ptr]}" = "${device[count_members]}" ] &&
+						{
+						#if member found in drive group, write drive_line header only once
+						[ "${drv_line[count_members]}" = "unused" ] && drv_line[count_members]='set '${device[count_members]}' drv boundary'   
+		
+						#check if inversion is required
+						[ "${address_drive_group_inv[pin_ptr]}" = "yes" -a "${val_bin_addr:$[pin_ptr]:1}" = "1" ] && address_bit=0
+						[ "${address_drive_group_inv[pin_ptr]}" = "yes" -a "${val_bin_addr:$[pin_ptr]:1}" = "0" ] && address_bit=1
+                        [ "${address_drive_group_inv[pin_ptr]}" = "no" ] && address_bit=${val_bin_addr:$[pin_ptr]:1}
+
+						#append driver cell number and bit value to drive_line
+						drv_line[count_members]=${drv_line[count_members]}' '${address_drive_group_oc[pin_ptr]}'='$address_bit
+						}
+					#echo ${device[count_members]}
+					pin_ptr=$[pin_ptr+1]
+				done
+		
+			count_members=$[count_members+1]; # prepare next device to be processed
+		done < tmp/members.tmp
+
+
+
+		#make data
+		count_members=0
+		m=()
+		while IFS=" " read -a m
+		do
+			device[count_members]=${m[0]};	#set device to be searched for in data drive group
+			pin_ptr=0
+			#drv_line[count_members]=unused
+			while [ "$pin_ptr" -lt "$data_size" ]
+				do
+					[ "${data_drive_group_dev[pin_ptr]}" = "${device[count_members]}" ] &&
+						{
+						#if member found in drive group, write drive_line header only once
+						[ "${drv_line[count_members]}" = "unused" ] && drv_line[count_members]='set '${device[count_members]}' drv boundary'   
+						#append driver cell numbers and bit values to drive_line if port is to be activated
+						[ "$data_driver_z" = "no" -a "$atg_expect" = "no" ] && 
+                            {
+							#check if inversion is required
+							[ "${data_drive_group_inv[pin_ptr]}" = "yes" -a "${val_bin_data:$[pin_ptr]:1}" = "1" ] && data_bit=0
+							[ "${data_drive_group_inv[pin_ptr]}" = "yes" -a "${val_bin_data:$[pin_ptr]:1}" = "0" ] && data_bit=1
+							[ "${data_drive_group_inv[pin_ptr]}" = "no" ] && data_bit=${val_bin_data:$[pin_ptr]:1}
+							drv_line[count_members]=${drv_line[count_members]}' '${data_drive_group_oc[pin_ptr]}'='$data_bit
+
+# 							[ "${data_drive_group_dv[pin_ptr]}" = "1"
+# 							drv_line[count_members]=${drv_line[count_members]}' '${data_drive_group_cc[pin_ptr]}'='${data_drive_group_dv[pin_ptr]}
+							}
+						#append control cell numbers and disable values to drive_line if port is to be disabled (high-z)
+						[ "$data_driver_z" = "yes" -o "$atg_expect" = "yes" ] && drv_line[count_members]=${drv_line[count_members]}' '${data_drive_group_cc[pin_ptr]}'='${data_drive_group_dv[pin_ptr]}
+						}
+					#echo ${device[count_members]}
+					pin_ptr=$[pin_ptr+1]
+				done
+	
+			#echo ${drv_line[count_members]}
+						#write device name in sequence file
+						#echo -n ' set '${device[count_members]}' drv boundary' >> tmp/dyn_drv.tmp; #$test_name/$test_name.seq
+	
+			count_members=$[count_members+1]; # prepare next device to be processed
+		done < tmp/members.tmp
+
+
+		#make control
+		count_members=0
+		m=()
+		#echo $val_bin_control
+		while IFS=" " read -a m
+		do
+			device[count_members]=${m[0]};	#set device to be searched for in control drive group
+			pin_ptr=0
+			#drv_line[count_members]=unused
+			while [ "$pin_ptr" -lt "$control_size" ]
+				do
+					[ "${control_drive_group_dev[pin_ptr]}" = "${device[count_members]}" ] &&
+						{
+						#if member found in drive group, write drive_line header only once
+						[ "${drv_line[count_members]}" = "unused" ] && drv_line[count_members]='set '${device[count_members]}' drv boundary'   
+
+						#check if inversion is required
+						[ "${control_drive_group_inv[pin_ptr]}" = "yes" -a "${val_bin_control:$[pin_ptr]:1}" = "1" ] && control_bit=0
+						[ "${control_drive_group_inv[pin_ptr]}" = "yes" -a "${val_bin_control:$[pin_ptr]:1}" = "0" ] && control_bit=1
+						[ "${control_drive_group_inv[pin_ptr]}" = "no" ] && control_bit=${val_bin_control:$[pin_ptr]:1}
+
+						#append driver cell number and bit value to drive_line
+						drv_line[count_members]=${drv_line[count_members]}' '${control_drive_group_oc[pin_ptr]}'='$control_bit
+						}
+					#echo ${device[count_members]}
+					pin_ptr=$[pin_ptr+1]
+				done
+	
+			count_members=$[count_members+1]; # prepare next device to be processed
+		done < tmp/members.tmp
+
+		#seq lines ready
+
+		#write seq lines in $test_name/$test_name.seq
+		count_members=0
+		m=()
+		while IFS=" " read -a m
+			do
+				device[count_members]=${m[0]};
+                #if device used, write drv_line in sequence file
+				[ "${drv_line[count_members]}" != "unused" ] && echo '  '${drv_line[count_members]} >> $test_name/$test_name.seq
+				count_members=$[count_members+1]; # prepare next device to be processed
+			done < tmp/members.tmp
+
+		#vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+		#echo ' sdr id '$vector_ct >> $test_name/$test_name.seq
+		}
+
+
+	proc_format_hex_number()
+		{
+		val_hex=$1
+		#echo $val_hex
+		size_required=$2  #output bin value size
+		#echo $size
+		[ "$val_hex" = "Z" ] && #if port is to be disabled, all oc should drive 1
+			{
+			bit_ct=1
+			val_bin=1
+			while [ "$bit_ct" -lt "$size_required" ]
+				do
+					val_bin=1$val_bin
+					bit_ct=$[bit_ct+1]
+				done
+			}
+
+		[ "$val_hex" != "Z" ] &&
+			{
+			val_hex=1$val_hex #prepend dummy msb
+			#echo $val_hex
+			val_bin=$(echo "obase=2;ibase=16; $val_hex" | bc)
+			#echo $val_bin
+			size_given=${#val_bin}
+			#echo $size_given
+			#echo ${val_bin:$[size_given-data_size]}
+			val_bin=${val_bin:$[size_given-size_required]} #output relevant bits of bin value
+			}
+		}
+
+
+    proc_extract_prog_sequences()
+		{
+		#extract section "prog" from model
+		sed -n "/\<Section prog\>/,/\<EndSection\>/p" tmp/model_no_emptylines.tmp > tmp/memory_prog.tmp
+		size_of_section=$(stat -c %s tmp/memory_prog.tmp)
+		
+			[ "$size_of_section" -eq 0 ] &&
+				{	
+				echo "ERROR  : Section 'prog' not found in model" $ram_model
+				rm -rf $test_name # clean up after failure #ins v029
+				exit 1
+				}	 
+
+		#extract section "init" from section "prog"
+		sed -n "/\<SubSection init\>/,/\<EndSubSection\>/p" tmp/memory_prog.tmp > tmp/memory_prog_init.tmp
+		size_of_section=$(stat -c %s tmp/memory_prog_init.tmp)
+		
+			[ "$size_of_section" -eq 0 ] &&
+				{	
+				echo "ERROR  : Section 'init' not found in model" $ram_model
+				rm -rf $test_name # clean up after failure #ins v029
+				exit 1
+				}	 
+
+		#extract section "write" from section "prog"
+		sed -n "/\<SubSection write\>/,/\<EndSubSection\>/p" tmp/memory_prog.tmp > tmp/memory_prog_write.tmp
+		size_of_section=$(stat -c %s tmp/memory_prog_write.tmp)
+		
+			[ "$size_of_section" -eq 0 ] &&
+				{	
+				echo "ERROR  : Section 'write' not found in model" $ram_model
+				rm -rf $test_name # clean up after failure #ins v029
+				exit 1
+				}	 
+
+		#extract section "read" from section "prog"
+		sed -n "/\<SubSection read\>/,/\<EndSubSection\>/p" tmp/memory_prog.tmp > tmp/memory_prog_read.tmp
+		size_of_section=$(stat -c %s tmp/memory_prog_read.tmp)
+		
+			[ "$size_of_section" -eq 0 ] &&
+				{	
+				echo "ERROR  : Section 'read' not found in model" $ram_model
+				rm -rf $test_name # clean up after failure #ins v029
+				exit 1
+				}	 
+
+		#extract section "disable" from section "prog"
+		sed -n "/\<SubSection disable\>/,/\<EndSubSection\>/p" tmp/memory_prog.tmp > tmp/memory_prog_disable.tmp
+		size_of_section=$(stat -c %s tmp/memory_prog_disable.tmp)
+		
+			[ "$size_of_section" -eq 0 ] &&
+				{	
+				echo "ERROR  : Section 'disable' not found in model" $ram_model
+				rm -rf $test_name # clean up after failure #ins v029
+				exit 1
+				}	 
+       }
+
+
+	proc_show_driver_receiver_cells()
+		{
+		echo data drv:
+		echo ----------
+		echo 'siz: '$data_size
+		echo '     msb ... lsb'
+		echo 'dev: '${data_drive_group_dev[*]}
+		echo 'pin: '${data_drive_group_pin[*]}
+		echo 'oc : '${data_drive_group_oc[*]}
+		echo 'inv: '${data_drive_group_inv[*]}
+		echo 'cc : '${data_drive_group_cc[*]}
+		echo 'dv : '${data_drive_group_dv[*]}
+        echo
+		echo data rcv:
+		echo ----------
+		echo 'dev: '${data_receive_group_dev[*]}
+		echo 'ic : '${data_receive_group_ic[*]}
+
+		echo 
+
+		echo addr drv:
+		echo ----------
+		echo 'siz: '$address_size
+		echo '     msb ... lsb'
+		echo 'dev: '${address_drive_group_dev[*]}
+		echo 'pin: '${address_drive_group_pin[*]}
+		echo 'oc : '${address_drive_group_oc[*]}
+		echo 'inv: '${address_drive_group_inv[*]}
+		#echo 'cc : '${address_drive_group_cc[*]}
+		#echo 'dv : '${address_drive_group_dv[*]}
+        echo
+		echo addr rcv:
+		echo ----------
+		echo 'dev: '${address_receive_group_dev[*]}
+		echo 'ic : '${address_receive_group_ic[*]}
+
+		echo 
+
+		echo ctrl drv:
+		echo ----------
+		echo '     top ... bot'
+		echo 'dev: '${control_drive_group_dev[*]}
+		echo 'pin: '${control_drive_group_pin[*]}
+		echo 'oc : '${control_drive_group_oc[*]}
+		echo 'inv: '${control_drive_group_inv[*]}
+		#echo 'cc : '${control_drive_group_cc[*]}
+		#echo 'dv : '${control_drive_group_dv[*]}
+        echo
+		echo ctrl rcv:
+		echo ----------
+		echo 'dev: '${control_receive_group_dev[*]}
+		echo 'ic : '${control_receive_group_ic[*]}
+        echo
+        }
+
+	proc_process_DX_NR_PX_nets()
+		{
+		net_class=$1
+		net_name=$2
+
+					#is this net a DH or DL net ? if yes unlock output cell
+					[ "$net_class" = "DH" -o "$net_class" = "DL" ] &&
+						{
+						echo "WARNING: Overriding net class "$net_class" of primary net "$net_name" and existing secondary nets ..."
+						ad=()
+						while IFS=" " read -a ad
+							do  #find driver in tmp/atg_dx_drive.tmp
+								[ "${ad[0]}" = "class" -a "${ad[2]}" = "primary_net" -a "${ad[3]}" = "$net_name" ] &&
+									{
+									driver_inverted=no #default !
+									#collect driver pin information:
+									driver_device=${ad[5]}
+									driver_pin=${ad[7]}
+									driver_cell=${ad[9]}
+									drv_net_primary=yes
+									break
+									}							
+							done < tmp/atg_dx_drive.tmp
+
+                        	#find one net receiver pin in static_expect list (search in primary nets only) # CS: search other receiver pins in secondary nets too ?
+							ae=()
+							receiver_in_prim_net=no
+							while IFS=" " read -a ae 
+								do    
+									[ "${ae[0]}" = "class" -a "${ae[2]}" = "primary_net" -a "${ae[3]}" = "$net_name" ] &&
+										{
+										#collect receiver pin data
+										receiver_device=${ae[5]}
+										receiver_pin=${ae[7]}
+										receiver_cell=${ae[9]}
+										receiver_in_prim_net=yes
+										break #if receiver found cancel search
+										}
+							done < tmp/atg_dx_expect.tmp
+						}	
+
+					#is this net a PU, PD or NR net ?
+					[ "$net_class" = "PU" -o "$net_class" = "PD" -o "$net_class" = "NR" ] &&
+                    	{
+						#find net driver in atg_drive list (which holds primary PU, PD and NR nets only)
+						disable_value=none
+						ad=()
+						while IFS=" " read -a ad 
+							do    
+							#if net found here, it is a primary net
+								[ "${ad[0]}" = "class" -a "${ad[2]}" = "primary_net" -a "${ad[3]}" = "$net_name" ] &&
+									{
+									#collect driver pin information:
+									driver_device=${ad[5]}
+									driver_pin=${ad[7]}
+									driver_cell=${ad[9]}
+									driver_inverted=no
+									[ "${ad[8]}" = "control_cell" ] && #in case of merged driver cells
+										{
+										control_cell=$driver_cell
+										driver_inverted=${ad[11]}
+										[ "$net_class" = "PU" -a "$driver_inverted" = "no" ] && disable_value=1
+										[ "$net_class" = "PU" -a "$driver_inverted" = "yes" ] && disable_value=0
+										[ "$net_class" = "PD" -a "$driver_inverted" = "no" ] && disable_value=0
+										[ "$net_class" = "PD" -a "$driver_inverted" = "yes" ] && disable_value=1
+										}
+
+									[ "${ad[8]}" = "output_cell" ] && #in case of separated driver/control cells
+										{
+										while IFS=" " read -a ac 
+											do  
+												#find control cell of driver pin
+                    	   	                 	[ "${ac[5]}" = "$driver_device" -a "${ac[7]}" = "$driver_pin" ] &&
+													{
+													control_cell=${ac[9]}
+													# disable_value=${ac[11]} # rm V2.8
+													
+													[ "${ac[11]}" = "disable_value" ] && disable_value=${ac[12]} # ins V2.8
+													[ "${ac[11]}" = "enable_value" ] && # ins V2.8
+														{
+														[ "${ac[12]}" = "1" ] && disable_value=0 # ins V2.8
+														[ "${ac[12]}" = "0" ] && disable_value=1 # ins V2.8
+														}
+													break # ins V2.8
+													}
+											done < tmp/atg_control.tmp
+										}
+										
+									#if disable value required but none found, exit here
+									[ "$disable_val_required" = "disable_val_required" -a "$disable_value" = "none" ] &&
+										{
+										echo ERROR  : No control cell for driver $driver_device pin $driver_pin found
+										rm -rf $test_name # clean up after failure #ins v029
+										exit 1
+										}
+
+									#echo driver: ${ad[*]}
+									drv_net_primary=yes
+									break #if primary net driver found cancel search
+									}
+							done < tmp/atg_drive.tmp
+
+                        	#find one net receiver pin in atg_expect list (search in primary nets only) # CS: search other receiver pins in secondary nets too ?
+							ae=()
+							receiver_in_prim_net=no
+							while IFS=" " read -a ae 
+								do    
+									[ "${ae[0]}" = "class" -a "${ae[2]}" = "primary_net" -a "${ae[3]}" = "$net_name" ] &&
+										{
+										#collect receiver pin data
+										receiver_device=${ae[5]}
+										receiver_pin=${ae[7]}
+										receiver_cell=${ae[9]}
+										receiver_in_prim_net=yes
+										break #if receiver found cancel search
+										}
+							done < tmp/atg_expect.tmp
+
+			            }
+		}
+
+
+	proc_find_net_in_netlist()
+		{
+        device=$1    #RAM device
+		pin=$2       #RAM pin
+		disable_val_required=$3   #only for data pins important
+		ram_pin_found=no # ins v029
+
+		#find RAM pin and net in netlist and check net class and primary/secondary status
+		while IFS=" " read -a n 
+			do
+				[ "${n[0]}" = "SubSection" -a "${n[1]}" != "secondary_nets_of" ] && # if a primary or secondary net entered
+					{
+					net_name=${n[1]}	# save net name
+					net_class=${n[3]}	# save net class
+					}
+
+				# "$primary_net" = "yes" -a #field 0 of netlist.txt is device_name, field 9 must be "input", field 7 must match bitpos (cell number)
+				[ "${n[0]}" = "$device" -a "${n[4]}" = "$pin" ] && # if ram pin found in net
+					{
+					ram_pin_found=yes # set flag # ins v029
+					#echo net_name: $net_name # ins v029
+
+					#is this net an EH, EL or "?" net ? if yes exit here
+					#[ "$net_class" = "EH" -o "$net_class" = "EL" -o "$net_class" = "?" ] && # rm v029
+					[ "$net_class" = "EH" -o "$net_class" = "EL" -o "$net_class" = "NA" ] && # ins v029
+						{
+						echo "ERROR  : Pin" $pin "is in net "$net_name" that is in class "$net_class" which is not sufficient for interconnect test of "$device !
+						exit 1
+						}	
+
+					drv_net_primary=no
+
+					proc_process_DX_NR_PX_nets $net_class $net_name		
+
+
+					#if net not in atg_drive nor in atg_dx_drive list, then it is a secondary net
+					[ "$drv_net_primary" = "no" ] &&
+						{
+						#echo INFO: Net $net_name is a secondary net ! Searching for its primary net ...
+						while IFS=" " read -a pn 
+							do							
+								# start searching in secondary net sections only
+						    	[ "${pn[0]}" = "SubSection" -a "${pn[1]}" = "secondary_nets_of" ] && prim_net_name=${pn[2]} # secondary net section entered, save possible primary net name
+								[ "${pn[0]}" = "SubSection" -a "${pn[1]}" = "$net_name" ] && # secondary net found
+									{
+									#echo primary net of $net_name is $prim_net_name
+									net_name=$prim_net_name	# save name of parent primary net
+									net_class=${pn[3]}		# save primary net class
+
+									#check net class of secondary net (NOTE: secondary net is of same class as primary net):
+
+									#is this net an EH, EL or "?" net ? if yes exit here
+									#[ "$net_class" = "EH" -o "$net_class" = "EL" -o "$net_class" = "?" ] && # rm v029
+									[ "$net_class" = "EH" -o "$net_class" = "EL" -o "$net_class" = "NA" ] && # ins v029
+										{
+										echo "ERROR  : Net "$net_name" is in class "$net_class" which is not sufficient for interconnect test of "$device !
+										rm -rf $test_name # clean up after failure #ins v029
+										exit 1
+										}
+
+									proc_process_DX_NR_PX_nets $net_class $net_name
+									break
+									}
+							done < $test_name/netlist.txt
+						}
+
+					#if no receiver pin in primary net found, exit here # CS: addr and ctrl nets do not require receiver pins !
+					[ "$receiver_in_prim_net" = "no" ] &&
+						{
+						echo ERROR  : No receiver pin in class $net_class primary net $net_name found !
+						#rm -rf $test_name # clean up after failure #ins v029
+						exit 1
+						}
+
+					proc_unlock_inputs_of_DH_DL_nets $net_name
+
+					break  #if net found cancel search
+					}
+			done < $test_name/netlist.txt
+
+		# ins v029 begin
+		# if target device and pin not found abort here
+		[ "$ram_pin_found" = "no" ] &&
+			{
+			echo "ERROR  : Target '$device' pin '$pin' not found in data base !"
+			echo "recommended steps to solve the problem:"
+			echo "1. Make sure '$device' exists. Consider prefixes. Device names are case sensitive."
+			echo "2. Check device model."
+			echo "3. Check design."
+			rm -rf $test_name # clean up after failure #ins v029
+			exit 1
+			}
+		# ins v029 end
+		}
+
+
+	proc_get_port_vector()
+		{
+		vector=$1
+		vector_bak=$vector
+		pincount=$2
+		vector=${vector//]/} #remove "]" on end of data_vector
+		vector=(${vector//[/ }) #split data vector by "["       #CS: critical ?
+		vector_name=${vector[0]}
+		#echo portname $vector_name
+		vector_range=${vector[1]}
+		vector_range=(${vector_range//:/ }) #split vector range by ":"       #CS: critical ?		
+		msb=${vector_range[0]}
+		lsb=${vector_range[1]}
+		wordsize=$[msb-lsb]
+        wordsize=$[wordsize+1]
+		}
+
+
+	proc_find_ram_driver_receiver_cells()
+		{
+		ram_device=$1
+		ram_model=$2
+		data_base=$3
+		ram_package=$4
+
+		#echo $ram_device $ram_model $data_base $ram_package
+
+		#remove all comments from model file and write to tmp file
+		while read m
+		do
+			echo $m | awk 'BEGIN { FS = "--" } ; { print $1 }' >> tmp/model_no_comments.tmp;
+		done < $ram_model
+
+		#remove empty lines
+		grep -v ^[[:space:]]*\$ tmp/model_no_comments.tmp > tmp/model_no_emptylines.tmp
+
+		#extract port_pin_map
+		sed -n "/\<Section port_pin_map $ram_package\>/,/\<EndSection\>/p" tmp/model_no_emptylines.tmp > tmp/memory_port_pin_map.tmp
+		size_of_port_pin_map=$(stat -c %s tmp/memory_port_pin_map.tmp)
+		
+		[ "$size_of_port_pin_map" -eq 0 ] &&
+			{	
+			echo "ERROR  : package "$ram_package" not found in model" $ram_model
+			rm -rf $test_name # clean up after failure #ins v029
+			exit 1
+			}
+
+
+
+		#extract data pins
+		#echo data nets:
+		sed -n "/\<SubSection data\>/,/\<EndSubSection\>/p" tmp/memory_port_pin_map.tmp > tmp/memory_port_pin_map_data.tmp
+		size_of_port_pin_map_data=$(stat -c %s tmp/memory_port_pin_map_data.tmp)
+		#CS: check size of size_of_port_pin_map_data
+ 
+		data=()
+		while read -a data
+		do
+			[ "${data[0]}" = "vector" ] &&
+				{
+				pincount=${#data[*]}
+				pincount=$[pincount-3] #pincount ready (subtract field "vector", "input", e.g "A[15:0]"
+				proc_get_port_vector ${data[2]} $pincount
+				[ "$pincount" -ne "$wordsize" ] &&
+					{
+						echo "ERROR  : Wrong pin count in port "${data[2]} "!"
+						echo "         Check pin list:         "${data[@]:3}
+						rm -rf $test_name # clean up after failure #ins v029
+						exit 1
+					}
+				
+				#find pin per pin in netlist
+				pin_current=0
+				pinlist=("${data[@]:3}")
+				#echo ${pinlist[*]}
+				#echo ${#pinlist[*]}
+				data_drive_group_dev=()
+				data_drive_group_pin=()
+				data_drive_group_oc=()
+				data_drive_group_inv=()
+				data_drive_group_cc=()
+				data_drive_group_dv=()
+				data_receive_group_dev=()
+				data_receive_group_ic=()  
+				while [ "$pin_current" -lt "$pincount" ]
+					do
+						#find driver pin in netlist
+						proc_find_net_in_netlist $ram_device ${pinlist[$pin_current]} disable_val_required
+						data_drive_group_dev[pin_current]=$driver_device
+						data_drive_group_pin[pin_current]=$driver_pin #${pinlist[$pin_current]}  #CS: make array for ram pins
+						data_drive_group_oc[pin_current]=$driver_cell
+						data_drive_group_inv[pin_current]=$driver_inverted
+						data_drive_group_cc[pin_current]=$control_cell
+						data_drive_group_dv[pin_current]=$disable_value
+						data_receive_group_dev[pin_current]=$receiver_device
+						data_receive_group_ic[pin_current]=$receiver_cell
+
+						#echo "net     : "$net_name
+						#echo "driver  : device" $driver_device pin $driver_pin driver_cell $driver_cell inv $driver_inverted cc $control_cell disable_val $disable_value 
+                        #echo "receiver: device" $receiver_device pin $receiver_pin cell $receiver_cell
+						pin_current=$[pin_current+1]  
+                    done
+
+				#exit
+
+                }
+		done < tmp/memory_port_pin_map_data.tmp
+ 		#cat tmp/memory_port_pin_map.tmp
+
+
+
+
+
+
+		#extract address pins
+		#echo address nets:
+		sed -n "/\<SubSection address\>/,/\<EndSubSection\>/p" tmp/memory_port_pin_map.tmp > tmp/memory_port_pin_map_address.tmp
+		size_of_port_pin_map_address=$(stat -c %s tmp/memory_port_pin_map_address.tmp)
+		#CS: check size of size_of_port_pin_map_address
+
+		# set defaults for non-given options. if particular option is given, the default value will be overwritten
+		addr_min_hex=0 # ins v030
+
+		address=()
+		while read -a address
+		do
+			[ "${address[0]}" = "vector" ] &&
+				{
+				pincount=${#address[*]}
+				pincount=$[pincount-3] #pincount ready (subtract field "vector", "input", e.g "A[15:0]"
+				proc_get_port_vector ${address[2]} $pincount
+				[ "$pincount" -ne "$wordsize" ] &&
+					{
+						echo "ERROR  : Wrong pin count in port "${address[2]} "!"
+						echo "         Check pin list:         "${address[@]:3}
+						rm -rf $test_name # clean up after failure #ins v029
+						exit 1
+					}
+				
+				#find pin per pin in netlist
+				pin_current=0
+				pinlist=("${address[@]:3}")
+				#echo ${pinlist[*]}
+				#echo ${#pinlist[*]}  
+				address_drive_group_dev=()
+				address_drive_group_pin=()
+				address_drive_group_oc=()
+				address_drive_group_inv=()
+				#address_drive_group_cc=()  #CS: may be useful later when disableling of address pins becomes important
+				#address_drive_group_dv=()  #CS: may be useful later when disableling of address pins becomes important
+				address_receive_group_dev=()
+				address_receive_group_ic=()  
+				while [ "$pin_current" -lt "$pincount" ]
+					do
+						#find driver pin in netlist
+						proc_find_net_in_netlist $ram_device ${pinlist[$pin_current]}
+						address_drive_group_dev[pin_current]=$driver_device
+						address_drive_group_pin[pin_current]=$driver_pin #${pinlist[$pin_current]} #CS: make array for ram pins
+						address_drive_group_oc[pin_current]=$driver_cell
+						address_drive_group_inv[pin_current]=$driver_inverted
+						#address_drive_group_cc[pin_current]=$control_cell
+						#address_drive_group_dv[pin_current]=$disable_value
+						address_receive_group_dev[pin_current]=$receiver_device
+						address_receive_group_ic[pin_current]=$receiver_cell
+
+						#echo "net     : "$net_name
+						#echo "driver  : device" $driver_device pin $driver_pin cell $driver_cell inv $driver_inverted
+						#echo "         "cc $control_cell disable_val $disable_value
+                        #echo "receiver: device" $receiver_device pin $receiver_pin cell $receiver_cell
+						pin_current=$[pin_current+1]  
+                    done
+				}
+			# ins v030 begin
+			# check options given
+			[ "${address[0]}" = "option" ] &&
+				{
+				#echo ${address[*]}
+				[ "${address[1]}" = "start_address" ] && 
+					{
+					addr_min_hex=${address[2]}
+					#echo $addr_min_hex
+					}
+				}
+			# ins v030 end
+		done < tmp/memory_port_pin_map_address.tmp
+
+
+
+
+
+
+   		#extract control pins
+		#echo control nets:
+		sed -n "/\<SubSection control\>/,/\<EndSubSection\>/p" tmp/memory_port_pin_map.tmp > tmp/memory_port_pin_map_control.tmp
+		size_of_port_pin_map_control=$(stat -c %s tmp/memory_port_pin_map_control.tmp)
+		#CS: check size of size_of_port_pin_map_control
+
+		control_drive_group_dev=()
+		control_drive_group_pin=()
+		control_drive_group_oc=()
+		control_drive_group_inv=()
+		#control_drive_group_cc=() #CS: may be useful later when disableling of control pins becomes important
+		#control_drive_group_dv=() #CS: may be useful later when disableling of control pins becomes important
+		control_receive_group_dev=()
+		control_receive_group_ic=() 
+	
+		pin_current=0	
+		control=()
+		while read -a control
+		do
+			[ "${control[0]}" = "vector" ] &&
+				{
+				echo ERROR "Vectored control pins not allowed !"
+				rm -rf $test_name # clean up after failure #ins v029
+				exit 1
+				}
+			[ "${control[0]}" = "port" ] &&
+				{
+				port=${control[2]}
+				pin=${control[3]}
+                
+				#find driver pin in netlist
+				proc_find_net_in_netlist $ram_device $pin
+				control_drive_group_dev[pin_current]=$driver_device
+				control_drive_group_pin[pin_current]=$driver_pin #$pin  #CS: make array for ram pins
+				control_drive_group_oc[pin_current]=$driver_cell
+				control_drive_group_inv[pin_current]=$driver_inverted
+				control_receive_group_dev[pin_current]=$receiver_device
+				control_receive_group_ic[pin_current]=$receiver_cell
+
+				pin_current=$[pin_current+1]
+
+				#echo "net     : "$net_name
+				#echo "driver  : device" $driver_device pin $driver_pin cell $driver_cell inv $driver_inverted
+				#echo "         "cc $control_cell disable_val $disable_value
+               # echo "receiver: device" $receiver_device pin $receiver_pin cell $receiver_cell
+						
+				#echo "control pins: "${control[*]}
+				}
+		done < tmp/memory_port_pin_map_control.tmp
+
+		}
+
+
+
+
+	proc_fraction_udb()
+		{
+		#remove all comments from udb and write to tmp file
+			while read v
+				do
+					echo $v | awk 'BEGIN { FS = "--" } ; { print $1 }' >> tmp/udb_no_comments.tmp;
+				done < ${udb}
+		
+		#remove empty lines
+			grep -v ^[[:space:]]*\$ tmp/udb_no_comments.tmp > tmp/udb_no_emptylines.tmp
+		
+		#read SPC section
+			sed -n '/Section scanpath_configuration/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/spc.tmp
+		
+			#read CHAIN section	#CS: How to handle multiple scan paths ?
+				sed -n '/SubSection chain/,/EndSubSection/p' tmp/spc.tmp > tmp/chain.tmp
+		
+			#read chain members
+				cat tmp/chain.tmp | grep -v Section > tmp/members.tmp
+		
+		#read registers section
+			sed -n '/Section registers/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/registers.tmp
+		
+		#read netlist section
+			sed -n '/Section netlist/,/EndSection/p' tmp/udb_no_emptylines.tmp > $test_name/netlist.txt
+			#cp tmp/udb_no_emptylines.tmp $test_name/database_copy.udb		
+		
+		#extract atg_drive list from udb
+			sed -n '/Section atg_drive/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/atg_drive.tmp
+			# ins v029 begin
+			[ "$(stat -c%s "tmp/atg_drive.tmp")" -eq 0 ] && 
+				{
+				echo "ERROR : Section 'atg_drive' not found in data base !";
+				echo "        Run chkpsn before generating test or check design !";
+				rm -rf $test_name # clean up after failure #ins v029
+				exit 1;
+				}
+			# ins v029 end
+
+		
+		#extract atg_expect list from udb
+			sed -n '/Section atg_expect/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/atg_expect.tmp
+		
+		#extract locked_control_cells_in_class_DH_DL_NR_nets from udb
+			sed -n '/Section locked_control_cells_in_class_DH_DL_NR_nets/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/atg_control.tmp
+		
+		#extract locked_output_cells_in_class_DH_DL_nets from udb
+			sed -n '/Section locked_output_cells_in_class_DH_DL_nets/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/atg_dx_drive.tmp
+		
+		#extract static_expect cells from udb
+			sed -n '/Section static_expect/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/atg_dx_expect.tmp
+			
+		}
+
+
+	proc_write_options_section()
+		{
+		#read electrical parameters
+		sed -n '/SubSection options/,/EndSubSection/p' tmp/spc.tmp > tmp/options.tmp
+		while read -a op
+			do
+				[ "${op[0]}" = "SubSection" ] && echo Section options >> $test_name/$test_name.seq
+				[ "${op[0]}" = "on_fail" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "frequency" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "trailer_ir" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "trailer_dr" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "voltage_out_port_1" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "voltage_out_port_2" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "tck_driver_port_1" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "tck_driver_port_2" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "tms_driver_port_1" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "tms_driver_port_2" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "tdo_driver_port_1" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "tdo_driver_port_2" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "trst_driver_port_1" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "trst_driver_port_2" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "threshold_tdi_port_1" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "threshold_tdi_port_2" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "EndSubSection" ] && echo EndSection >> $test_name/$test_name.seq
+			done < tmp/options.tmp
+		echo >> $test_name/$test_name.seq
+		}
+
+
+
+
+
+
+#####	BEGIN MAIN PROGRAM ####################################################################
+
+
+
+#read UUT name and data base name in shell variables
+	dir=`pwd`
+	uut_name=`basename $dir`
+#		echo UUT: $uut_name
+	udb=$1;
+#		echo 'data base   :' $udb
+	test_name=$2
+#		echo 'test name   :' $test_name
+#		echo
+
+	ram_device=$3
+	ram_model=$4
+	ram_package=$5
+	debug=$6
+	echo "device :" $ram_device
+	echo "model  :" $ram_model
+	echo "package:" $ram_package
+
+	umask 003 # ins V2.7
+	
+# clean up tmp directory
+	touch tmp/dummy.tmp	#CS: try more elegant way !
+	rm tmp/*.tmp
+	
+# remove old test directory and create a new one
+	rm -rf $test_name
+	mkdir $test_name
+
+	echo "Test description: write your info here ... " > $test_name/exe_desc.txt
+
+	echo "Section info" >> $test_name/$test_name.seq
+	echo ' created by memory connections test/program generator version' $version >> $test_name/$test_name.seq
+	echo -n ' date                : ' >> $test_name/$test_name.seq
+	date >> $test_name/$test_name.seq
+	echo ' target memory device:' $ram_device >> $test_name/$test_name.seq
+	echo ' device package      :' $ram_package >> $test_name/$test_name.seq
+	echo ' model file          :' $ram_model >> $test_name/$test_name.seq			
+	echo ' database            :' $udb >> $test_name/$test_name.seq
+	echo " algorithm           : standard" >> $test_name/$test_name.seq
+	echo "EndSection" >> $test_name/$test_name.seq
+	echo >> $test_name/$test_name.seq
+
+	proc_fraction_udb
+
+	proc_write_options_section
+
+
+	echo "Section sequence 1" >> $test_name/$test_name.seq
+
+	cat setup/test_init_custom.txt >> $test_name/$test_name.seq # ins V2.6
+
+	echo 'reading database ...'
+
+
+#identify chain members
+	count_members=0
+	while IFS=" " read -a v
+	do
+			device[count_members]=${v[0]};
+			#sed -n "/SubSection ${device[count_members]}/,/EndSubSection ${device[count_members]}/p" tmp/registers.tmp > tmp/${device[count_members]}_registers.tmp
+			#not secure, try this
+			 sed -n "/\<SubSection ${device[count_members]}\>/,/\<EndSubSection ${device[count_members]}\>/p" tmp/registers.tmp > tmp/${device[count_members]}_registers.tmp
+			# "/\<SubSection ${v[0]}\>/,/\<EndSubSection ${v[0]}\>/p"
+			count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+
+
+
+#################################################################################
+
+#preset vector counter
+	vector_ct=0
+
+
+#safebit preloading
+	echo ' -- set devices in sample/preload mode' >> $test_name/$test_name.seq
+#write instructions in seq. file
+	sample_found=no
+	preload_found=no
+	extest_found=no
+	ir_length=0
+	count_members=0
+	while IFS=" " read -a v
+	do
+			device[count_members]=${v[0]};
+
+			#write device name in sequence file
+			echo -n '  set '${device[count_members]}' drv ir ' >> $test_name/$test_name.seq
+
+			while read -a line_of_registers
+			do
+				#echo ${line_of_registers[*]}
+				[ "${line_of_registers[0]}" = "instruction_register_length" ] && 
+					{
+					ir_length=$[line_of_registers[1]-1]
+					echo -n $ir_length 'downto 0 = ' >> $test_name/$test_name.seq
+					break
+					}
+			done < tmp/${device[count_members]}_registers.tmp
+
+			sed -n '/SubSection instruction_opcodes/,/EndSubSection/p' tmp/${device[count_members]}_registers.tmp > tmp/${device[count_members]}_opcodes.tmp
+
+			#search for sample instruction first
+			while read -a line_of_opcodes_section
+			do
+				[ "${line_of_opcodes_section[0]}" = "sample" ] && 
+					{
+					sample_found=yes
+					echo -n ${line_of_opcodes_section[1]} ${line_of_opcodes_section[0]} >> $test_name/$test_name.seq
+					break
+					}
+			done < tmp/${device[count_members]}_opcodes.tmp
+
+			#if no sample instructin found, search for preload instruction instead
+			[ "$sample_found" = "no" ] &&
+				{
+				while read -a line_of_opcodes_section
+				do
+					[ "${line_of_opcodes_section[0]}" = "preload" ] && 
+						{
+						preload_found=yes
+						echo -n ${line_of_opcodes_section[1]} ${line_of_opcodes_section[0]} >> $test_name/$test_name.seq
+						break
+						}
+				done < tmp/${device[count_members]}_opcodes.tmp
+				}
+
+			#if no sample and no preload instructin found, search for extest instruction instead
+			[ "$sample_found" = "no" -a "$preload_found" = "no" ] &&
+				{
+				while read -a line_of_opcodes_section
+				do
+					[ "${line_of_opcodes_section[0]}" = "extest" ] && 
+						{
+						extest_found=yes
+						echo 'WARNING ! Device '${device[count_members]} neither supports SAMPLE nor PRELOAD mode !
+						echo '          Device '${device[count_members]} will be operated in EXTEST mode !
+						echo -n ${line_of_opcodes_section[1]} ${line_of_opcodes_section[0]} >> $test_name/$test_name.seq
+						break
+						}
+				done < tmp/${device[count_members]}_opcodes.tmp
+				}
+
+			[ "$sample_found" = "no" -a "$preload_found" = "no" -a "$extest_found" = "no" ] &&
+				{
+				echo ERROR ! Device ${device[count_members]} neither supports SAMPLE nor PRELOAD nor EXTEST mode !
+				exit
+				}
+
+			echo >> $test_name/$test_name.seq
+
+			count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+
+
+#################################################################################
+
+#write caputure IR values in seq file
+	echo ' -- expect capture ir values' >> $test_name/$test_name.seq
+	count_members=0
+	while IFS=" " read -a v
+	do
+			device[count_members]=${v[0]};
+
+			#write device name in sequence file
+			echo -n '  set '${device[count_members]}' exp ir ' >> $test_name/$test_name.seq
+
+			#write capture ir value in seq file
+			while read -a line_of_registers
+			do
+				[ "${line_of_registers[0]}" = "instruction_capture" ] && 
+					{
+					echo -n $ir_length 'downto 0 = '${line_of_registers[1]} ${line_of_registers[0]} >> $test_name/$test_name.seq
+					break
+					}
+			done < tmp/${device[count_members]}_registers.tmp
+
+			echo >> $test_name/$test_name.seq
+
+			count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+
+	vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+	echo ' sir id '$vector_ct >> $test_name/$test_name.seq
+	echo >> $test_name/$test_name.seq
+
+
+#################################################################################
+
+
+
+
+#safebit preloading
+#write safebits in seq. file
+	echo ' -- safebits loading' >> $test_name/$test_name.seq
+	count_members=0
+	while IFS=" " read -a v
+	do
+			device[count_members]=${v[0]};
+
+			#write device name in sequence file
+			echo -n '  set '${device[count_members]}' drv boundary ' >> $test_name/$test_name.seq
+
+			#write target register in seq file
+			while read -a line_of_registers
+			do
+				[ "${line_of_registers[0]}" = "boundary_register_length" ] && 
+					{
+					echo -n $[line_of_registers[1]-1] 'downto 0 = ' >> $test_name/$test_name.seq
+					break
+					}
+			done < tmp/${device[count_members]}_registers.tmp
+
+			#write safebits in seq file
+			sed -n '/SubSection safebits/,/EndSubSection/p' tmp/${device[count_members]}_registers.tmp > tmp/${device[count_members]}_safebits.tmp
+			while read -a line_of_safebits
+			do
+				[ "${line_of_safebits[0]}" = "safebits" ] && 
+					{
+					echo -n ${line_of_safebits[1]} ${line_of_safebits[0]} >> $test_name/$test_name.seq
+					break
+					}
+			done < tmp/${device[count_members]}_safebits.tmp
+
+
+			echo >> $test_name/$test_name.seq
+
+			count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+
+
+
+
+#write expect values in seq. file
+	echo ' -- nothing meaningful to expect here' >> $test_name/$test_name.seq
+	count_members=0
+	while IFS=" " read -a v
+	do
+			device[count_members]=${v[0]};
+
+			#write device name in sequence file
+			echo -n '  set '${device[count_members]}' exp boundary ' >> $test_name/$test_name.seq
+
+			#write target register in seq file
+			while read -a line_of_registers
+			do
+				[ "${line_of_registers[0]}" = "boundary_register_length" ] && 
+					{
+					echo -n $[line_of_registers[1]-1] 'downto 0 = ' >> $test_name/$test_name.seq
+					break
+					}
+			done < tmp/${device[count_members]}_registers.tmp
+
+			#write safebits in seq file
+			echo -n x >> $test_name/$test_name.seq
+			echo >> $test_name/$test_name.seq
+
+			count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+
+	vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+	echo ' sdr id '$vector_ct >> $test_name/$test_name.seq
+	echo >> $test_name/$test_name.seq
+
+
+#################################################################################
+
+#write extest instructions in seq. file
+	echo ' -- set devices in extest mode' >> $test_name/$test_name.seq
+	ir_length=0
+	count_members=0
+	while IFS=" " read -a v
+	do
+			device[count_members]=${v[0]};
+
+			#write device name in sequence file
+			echo -n '  set '${device[count_members]}' drv ir ' >> $test_name/$test_name.seq
+
+			while read -a line_of_registers
+			do
+				[ "${line_of_registers[0]}" = "instruction_register_length" ] && 
+					{
+					ir_length=$[line_of_registers[1]-1]
+					echo -n $ir_length 'downto 0 = ' >> $test_name/$test_name.seq
+					break
+					}
+			done < tmp/${device[count_members]}_registers.tmp
+
+			sed -n '/SubSection instruction_opcodes/,/EndSubSection/p' tmp/${device[count_members]}_registers.tmp > tmp/${device[count_members]}_opcodes.tmp
+
+			#search for extest instruction
+			while read -a line_of_opcodes_section
+			do
+				[ "${line_of_opcodes_section[0]}" = "extest" ] && 
+					{
+					echo -n ${line_of_opcodes_section[1]} ${line_of_opcodes_section[0]} >> $test_name/$test_name.seq
+					break
+					}
+			done < tmp/${device[count_members]}_opcodes.tmp
+
+			echo >> $test_name/$test_name.seq
+
+			count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+
+	vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+	echo ' sir id '$vector_ct >> $test_name/$test_name.seq
+	echo >> $test_name/$test_name.seq
+
+
+#################################################################################
+
+#write static drive values in seq file
+	echo ' -- load static drive values' >> $test_name/$test_name.seq
+
+	sed -n '/Section locked_control_cells_in_class_EH_EL_?_nets/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/cells1.tmp
+# ins v029 begin
+	[ "$(stat -c%s "tmp/cells1.tmp")" -eq 0 ] && 
+		{
+		echo "WARNING: Section 'locked_control_cells_in_class_EH_EL_?_nets' not found in data base !";
+		}
+# ins v029 end
+
+	sed -n '/Section locked_control_cells_in_class_DH_DL_NR_nets/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/cells2.tmp
+# ins v029 begin
+	[ "$(stat -c%s "tmp/cells2.tmp")" -eq 0 ] && 
+		{
+		echo "WARNING: Section 'locked_control_cells_in_class_DH_DL_NR_nets' not found in data base !";
+		}
+# ins v029 end
+
+	sed -n '/Section locked_control_cells_in_class_PU_PD_nets/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/cells3.tmp
+# ins v029 begin
+	[ "$(stat -c%s "tmp/cells3.tmp")" -eq 0 ] && 
+		{
+		echo "WARNING: Section 'locked_control_cells_in_class_PU_PD_nets' not found in data base !";
+		}
+# ins v029 end
+
+	sed -n '/Section locked_output_cells_in_class_PU_PD_nets/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/cells4.tmp
+# ins v029 begin
+	[ "$(stat -c%s "tmp/cells4.tmp")" -eq 0 ] && 
+		{
+		echo "WARNING: Section 'locked_output_cells_in_class_PU_PD_nets' not found in data base !";
+		}
+# ins v029 end
+
+	sed -n '/Section locked_output_cells_in_class_DH_DL_nets/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/cells5.tmp
+# ins v029 begin
+	[ "$(stat -c%s "tmp/cells5.tmp")" -eq 0 ] && 
+		{
+		echo "WARNING: Section 'locked_output_cells_in_class_DH_DL_nets' not found in data base !";
+		}
+# ins v029 end
+
+	cat tmp/cells5.tmp >> tmp/cells4.tmp
+	cat tmp/cells4.tmp >> tmp/cells3.tmp
+	cat tmp/cells3.tmp >> tmp/cells2.tmp
+	cat tmp/cells2.tmp >> tmp/cells1.tmp
+	mv tmp/cells1.tmp tmp/cells_static_drive.tmp
+
+	count_members=0
+	while IFS=" " read -a v
+	do
+		device[count_members]=${v[0]};
+		
+		#search device in static drive list
+		device_in_static_drive_list=no;
+		while read -a line_of_cells_static_drive
+		do
+			[ "${line_of_cells_static_drive[5]}" = "${device[count_members]}" ] &&
+				{
+				device_in_static_drive_list=yes;
+				}
+		done < tmp/cells_static_drive.tmp
+
+
+		[ "$device_in_static_drive_list" = "yes" ] &&
+			{
+			#write device name in sequence file
+			echo -n '  set '${device[count_members]}' drv boundary' >> $test_name/$test_name.seq
+
+			while read -a line_of_cells_static_drive
+			do
+				[ "${line_of_cells_static_drive[5]}" = "${device[count_members]}" ] &&
+					{
+					echo -n ' '${line_of_cells_static_drive[9]}'='${line_of_cells_static_drive[12]} >> $test_name/$test_name.seq
+					}
+			done < tmp/cells_static_drive.tmp
+			echo >> $test_name/$test_name.seq
+			}
+
+		count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+#	vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+#	echo ' sdr id '$vector_ct >> $test_name/$test_name.seq
+#	echo >> $test_name/$test_name.seq
+
+
+
+#write static expect values in seq file
+	echo ' -- expect static values' >> $test_name/$test_name.seq
+	sed -n '/Section static_expect/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/cells_static_expect.tmp
+	vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+	echo ' sdr id '$vector_ct >> $test_name/$test_name.seq
+	count_members=0
+	while IFS=" " read -a v
+	do
+		device[count_members]=${v[0]};
+
+		#seach device in static_expect list
+		device_in_static_expect_list=no;
+		while read -a line_of_cells_static_expect
+		do
+			[ "${line_of_cells_static_expect[5]}" = "${device[count_members]}" ] &&
+				{
+				device_in_static_expect_list=yes;
+				}
+		done < tmp/cells_static_expect.tmp
+
+
+		[ "$device_in_static_expect_list" = "yes" ] &&
+			{
+			#write device name in sequence file
+			echo -n '  set '${device[count_members]}' exp boundary' >> $test_name/$test_name.seq
+
+			while read -a line_of_cells_static_expect
+			do
+				[ "${line_of_cells_static_expect[5]}" = "${device[count_members]}" ] &&
+					{
+					echo -n ' '${line_of_cells_static_expect[9]}'='${line_of_cells_static_expect[11]} >> $test_name/$test_name.seq
+					}
+			done < tmp/cells_static_expect.tmp
+			echo >> $test_name/$test_name.seq
+			}
+
+		count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+#	vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+#	echo ' sdr id '$vector_ct >> $test_name/$test_name.seq
+	echo >> $test_name/$test_name.seq
+
+
+
+####### ATG ##########################################################################
+
+
+	drv=()
+
+# RAM ATG
+
+
+	#prepare input cell unlocking of DH/DL nets
+	proc_prepare_unlocking_input_cells
+
+	proc_find_ram_driver_receiver_cells $ram_device $ram_model tmp/udb_no_emptylines.tmp $ram_package
+
+    proc_write_exp_seq_lines_unlock
+
+	data_size=${#data_drive_group_dev[*]}
+	address_size=${#address_drive_group_dev[*]}
+	control_size=${#control_drive_group_dev[*]}
+	
+	[ "$debug" = "debug" ] && proc_show_driver_receiver_cells
+
+	proc_make_lut $address_size $data_size
+
+
+	# CS: check size of ${data_drive_group_cc[*]} if less than data size one data pin can't be disabled -> design error
+	# CS: check if receiver pins available for control nets, if missing output warning.
+    proc_extract_prog_sequences
+
+
+
+
+	#extract test init steps from model
+	proc_extract_test_steps_from_model init
+
+	while read -a wr
+		do
+			{
+        	[ "${wr[0]}" = "step" ] && proc_extract_test_steps_from_model write ${wr[2]} ${wr[3]}						
+         	}
+		done < tmp/lut.tmp
+
+	while read -a wr
+		do
+			{
+        	[ "${wr[0]}" = "step" ] && proc_extract_test_steps_from_model read ${wr[2]} ${wr[3]}						
+         	}
+		done < tmp/lut.tmp
+
+
+	#proc_extract_test_steps_from_model read 4466 88
+
+	proc_extract_test_steps_from_model disable
+
+
+    #exit
+
+ 	vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+	echo ' sdr id '$vector_ct >> $test_name/$test_name.seq
+
+	echo >> $test_name/$test_name.seq
+	echo " trst" >> $test_name/$test_name.seq
+
+	echo "-- power down all" >> $test_name/$test_name.seq
+	echo "-- disconnect port 1" >> $test_name/$test_name.seq
+	echo "-- disconnect port 2" >> $test_name/$test_name.seq
+
+	echo "EndSection" >> $test_name/$test_name.seq
+
+	echo
+exit

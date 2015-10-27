@@ -1,0 +1,77 @@
+Partlist
+
+Exported from MMU_V101r4.brd at 11/26/12 10:48 AM
+
+EAGLE Version 6.2.0 Copyright (c) 1988-2012 CadSoft
+
+Assembly variant: 
+
+Part     Value           Package      Library         Position (mm)         Orientation
+
+C100     100n            C050-030X075 rcl             (114.6175 8.5725)     MR180
+C101     100n            C050-030X075 rcl             (113.3475 20.0025)    MR180
+C102     100n            C050-030X075 rcl             (135.89 8.5725)       MR180
+C103     100n            C050-030X075 rcl             (135.89 20.0025)      MR180
+C104     10µ/10V         E2,5-7       rcl             (132.715 31.75)       R0
+C200     100n            C050-030X075 rcl             (20.0025 27.94)       MR180
+C201     100n            C050-030X075 rcl             (75.2475 12.3825)     MR180
+C202     100n            C050-030X075 rcl             (24.4475 9.2075)      MR180
+C302     100n            C050-025X075 rcl             (115.57 80.3275)      MR180
+C303     100n            C050-030X075 rcl             (140.335 46.99)       R270
+C400     100n            C050-030X075 rcl             (151.765 17.78)       MR270
+C401     100µ/10V        E2,5-7       rcl             (154.94 62.23)        R180
+C3001    100n            C050-030X075 rcl             (106.9975 28.2575)    R0
+C3002    100n            C050-030X075 rcl             (90.17 47.625)        R270
+C3003    100n            C050-030X075 rcl             (105.0925 54.9275)    R180
+C3011    100n            C050-030X075 rcl             (96.2025 65.7225)     R0
+C3012    100n            C050-030X075 rcl             (93.6625 96.2025)     R180
+C3013    100n            C050-030X075 rcl             (86.0425 96.2025)     R180
+D400                     LED5MM       led             (154.305 54.61)       R180
+D401                     LED5MM       led             (154.305 47.625)      R180
+D402                     LED5MM       led             (154.305 40.64)       R180
+D403                     LED5MM       led             (154.305 33.655)      R180
+D404                     LED5MM       led             (154.305 26.67)       R180
+IC100    74LS138         DIL16        74ttl-din       (114.6175 8.5725)     R0
+IC101    74LS04          DIL14        74ttl-din       (113.3475 20.0025)    R0
+IC102    74LS10          DIL14        74ttl-din       (135.89 8.5725)       R0
+IC103    74LS00          DIL14        74ttl-din       (135.89 20.0025)      R0
+IC200    AM29F040 AMD    DIL32        am29-memory_MBL (33.02 31.115)        R0
+IC201    AM29F040 AMD    DIL32        am29-memory_MBL (77.7875 12.3825)     R0
+IC202    UM62256_DIP     DIL28-6      memory-UM       (35.56 12.3825)       R0
+IC203    UM62256_DIP     DIL28-6      memory-UM       (80.3275 16.1925)     R0
+IC300    XC9536          PLCC-S44     XILINX          (103.505 41.5925)     R180
+IC301    XC9536          PLCC-S44     XILINX          (92.075 79.0575)      R180
+IC302    74LS193         DIL16        74ttl-din       (115.8875 80.3275)    R0
+IC303    SN74BCT8240ADWR SOIC24       TI_SCOPE        (128.905 46.6725)     MR0
+IC400    24C08P          DIL8         microchip       (151.765 17.78)       R90
+JP200    flash conf.     2X10         pinhead         (4.445 24.4475)       R90
+JP400    JTAG            2X05         pinhead         (140.97 93.345)       R180
+JP401    JTAG conf.      2X06         pinhead         (140.6525 75.2475)    R90
+JP402    MON1            2X20         pinhead         (115.2525 60.96)      MR0
+JP403    MON2            2X20         pinhead         (70.8025 67.31)       MR90
+JP404    EXT_CTRL&DATA   2X20         pinhead         (25.7175 70.485)      R90
+JP405    EXT_CTRL&ADDR   2X20         pinhead         (13.6525 70.485)      R90
+JP406    EXT_CTRL&DATA   2X20         pinhead         (50.165 70.485)       MR90
+JP407    EXT_CTRL&ADDR   2X20         pinhead         (38.4175 70.485)      MR90
+R100     10k             0207/10      rcl             (141.605 33.02)       R90
+R101     2k7             0207/10      rcl             (138.7475 33.02)      R270
+R102     10k             0207/10      rcl             (131.1275 36.5125)    R0
+R400     160             0207/10      rcl             (146.05 51.1175)      R270
+R401     160             0207/10      rcl             (143.1925 51.1175)    R90
+R402     2k7             0207/10      rcl             (111.4425 92.075)     R0
+R404     330             0207/10      rcl             (141.2875 88.265)     R0
+R405     330             0207/10      rcl             (141.2875 85.4075)    R0
+RN200    8x10k           SIL9         resistor-sil    (9.8425 25.7175)      R90
+RN300    8x1k8           SIL9         resistor-sil    (119.0625 88.9)       R180
+RN301    8x220           SIL9         resistor-sil    (119.0625 95.25)      R0
+RN302    2k7             SIL8         resistor-sil    (115.8875 71.4375)    R0
+RN303    2k7             SIL8         resistor-sil    (115.8875 66.9925)    R0
+RN400    8x220           SIL9         resistor-sil    (148.9075 35.8775)    R270
+RN401    8x10k           SIL9         resistor-sil    (58.42 54.9275)       R90
+RN402    8x10k           SIL9         resistor-sil    (55.245 76.835)       R90
+RN403    8x10k           SIL9         resistor-sil    (8.255 56.515)        R90
+RN404    8x10k           SIL9         resistor-sil    (33.3375 74.295)      R90
+RN405    8x4k7           SIL9         resistor-sil    (145.7325 71.4375)    R90
+T100     BC548C          TO92         transistor      (126.0475 31.4325)    R0
+T400     BC548C          TO92         transistor      (100.33 96.2025)      R180
+X400     PWR in          W237-4       con-wago-500    (153.67 76.5175)      R90

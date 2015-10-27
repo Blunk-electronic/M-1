@@ -1,0 +1,413 @@
+#! /bin/sh
+
+	version=3.8
+	echo infra structure test generator version $version
+
+
+	#section "identify chain members" changed
+	# V3.5	- sequence 1 has first commands: delay 0.5 and connect port 1
+	# V3.6	- sequence 1 has additional default commands
+	#		- exe_desc.txt is created in test directory
+	# V3.7	- test_init.txt snippet
+	# V3.8	- umask 003 added to allow all users rw access to uut data
+
+	proc_fraction_udb()
+		{
+		#remove all comments from udb and write to tmp file
+			while read v
+				do
+					echo $v | awk 'BEGIN { FS = "--" } ; { print $1 }' >> tmp/udb_no_comments.tmp;
+				done < ${udb}
+		
+		#remove empty lines
+			grep -v ^[[:space:]]*\$ tmp/udb_no_comments.tmp > tmp/udb_no_emptylines.tmp
+		
+		#read SPC section
+			sed -n '/Section scanpath_configuration/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/spc.tmp
+		
+			#read CHAIN section	#CS: How to handle multiple scan paths ?
+				sed -n '/SubSection chain/,/EndSubSection/p' tmp/spc.tmp > tmp/chain.tmp
+		
+			#read chain members
+				cat tmp/chain.tmp | grep -v Section > tmp/members.tmp
+		
+		#read registers section
+			sed -n '/Section registers/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/registers.tmp
+		
+		#read netlist section
+			sed -n '/Section netlist/,/EndSection/p' tmp/udb_no_emptylines.tmp > $test_name/netlist.txt
+			#cp tmp/udb_no_emptylines.tmp $test_name/database_copy.udb		
+		}
+
+
+
+	proc_write_options_section()
+		{
+		#read electrical parameters
+		sed -n '/SubSection options/,/EndSubSection/p' tmp/spc.tmp > tmp/options.tmp
+		while read -a op
+			do
+				[ "${op[0]}" = "SubSection" ] && echo Section options >> $test_name/$test_name.seq
+				[ "${op[0]}" = "on_fail" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "frequency" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "trailer_ir" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "trailer_dr" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "voltage_out_port_1" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "voltage_out_port_2" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "tck_driver_port_1" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "tck_driver_port_2" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "tms_driver_port_1" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "tms_driver_port_2" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "tdo_driver_port_1" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "tdo_driver_port_2" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "trst_driver_port_1" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "trst_driver_port_2" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "threshold_tdi_port_1" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "threshold_tdi_port_2" ] && echo ' '${op[*]} >> $test_name/$test_name.seq
+				[ "${op[0]}" = "EndSubSection" ] && echo EndSection >> $test_name/$test_name.seq
+			done < tmp/options.tmp
+		echo >> $test_name/$test_name.seq
+		}
+
+
+
+#####	BEGIN MAIN PROGRAM ####################################################################
+
+
+
+#read UUT name and data base name in shell variables
+	dir=`pwd`
+	uut_name=`basename $dir`
+#		echo UUT: $uut_name
+	udb=$1;
+#		echo 'data base   :' $udb
+	test_name=$2
+#		echo 'test name   :' $test_name
+#		echo
+
+	umask 003 	# ins V3.8
+
+# clean up tmp directory
+	touch tmp/dummy.tmp	#CS: try more elegant way !
+	rm tmp/*.tmp
+	
+# remove old test directory and create a new one
+	rm -rf $test_name
+	mkdir $test_name
+	
+	echo "Test description: write your info here ... " > $test_name/exe_desc.txt
+
+	echo "Section info" >> $test_name/$test_name.seq
+	echo ' created by infra structure test generator version' $version >> $test_name/$test_name.seq
+	echo -n ' date      : ' >> $test_name/$test_name.seq
+	date >> $test_name/$test_name.seq
+	echo ' database  : '$udb >> $test_name/$test_name.seq
+	echo " algorithm : standard" >> $test_name/$test_name.seq
+	echo "EndSection" >> $test_name/$test_name.seq
+	echo >> $test_name/$test_name.seq
+
+	proc_fraction_udb
+
+	proc_write_options_section
+
+
+	echo "Section sequence 1" >> $test_name/$test_name.seq
+
+	cat setup/test_init_custom.txt >> $test_name/$test_name.seq # ins V3.7
+
+	echo 'reading database ...'
+
+
+
+
+#identify chain members
+	count_members=0
+	while IFS=" " read -a v
+	do
+			device[count_members]=${v[0]};
+			#sed -n "/SubSection ${device[count_members]}/,/EndSubSection ${device[count_members]}/p" tmp/registers.tmp | sed '/SubSection instruction_opcodes/,/EndSubSection/d' | sed '/SubSection boundary_register/,/EndSubSection/d' | sed '/SubSection port_io_map/,/EndSubSection/d' | sed '/SubSection port_pin_map/,/EndSubSection/d' > tmp/${device[count_members]}_registers_extact.tmp
+			#sed -n "/SubSection ${device[count_members]}/,/EndSubSection ${device[count_members]}/p" tmp/registers.tmp | sed -n '/SubSection instruction_opcodes/,/EndSubSection/p' > tmp/${device[count_members]}_opcodes.tmp
+			#not secure, try this
+			sed -n "/\<SubSection ${device[count_members]}\>/,/\<EndSubSection ${device[count_members]}\>/p" tmp/registers.tmp | sed '/SubSection instruction_opcodes/,/EndSubSection/d' | sed '/SubSection boundary_register/,/EndSubSection/d' | sed '/SubSection port_io_map/,/EndSubSection/d' | sed '/SubSection port_pin_map/,/EndSubSection/d' > tmp/${device[count_members]}_registers_extact.tmp
+			sed -n "/\<SubSection ${device[count_members]}\>/,/\<EndSubSection ${device[count_members]}\>/p" tmp/registers.tmp | sed -n '/SubSection instruction_opcodes/,/EndSubSection/p' > tmp/${device[count_members]}_opcodes.tmp
+			# "/\<SubSection ${v[0]}\>/,/\<EndSubSection ${v[0]}\>/p"
+			count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+
+
+
+#################################################################################
+
+
+	#build database
+	ir_length=()
+	bypass_opcode=()
+	sample_opcode=()
+	idcode_opcode=()
+	usrcode_opcode=()
+	id_capture=()
+	usrcode_capture=()
+	boundary_length=()
+	ir_capture=()
+	trst_pin=()
+	value=()
+	safebits=()
+
+	count_members=0
+	while IFS=" " read -a v
+	do
+			device[count_members]=${v[0]};
+
+			while read -a line_of_registers
+			do
+				[ "${line_of_registers[0]}" = "value" ] && value[count_members]=${line_of_registers[1]}
+				[ "${line_of_registers[0]}" = "instruction_register_length" ] && ir_length[count_members]=${line_of_registers[1]}
+				[ "${line_of_registers[0]}" = "boundary_register_length" ] && boundary_length[count_members]=${line_of_registers[1]}
+				[ "${line_of_registers[0]}" = "instruction_capture" ] && ir_capture[count_members]=${line_of_registers[1]}
+				[ "${line_of_registers[0]}" = "idcode_register" ] && id_capture[count_members]=${line_of_registers[1]}
+				[ "${line_of_registers[0]}" = "usercode_register" ] && usrcode_capture[count_members]=${line_of_registers[1]}
+				[ "${line_of_registers[0]}" = "trst_pin" ] && trst_pin[count_members]=${line_of_registers[1]}
+				[ "${line_of_registers[0]}" = "safebits" ] && safebits[count_members]=${line_of_registers[1]}
+			done < tmp/${device[count_members]}_registers_extact.tmp
+
+			while read -a line_of_opcodes
+			do
+				[ "${line_of_opcodes[0]}" = "bypass" ] && bypass_opcode[count_members]=${line_of_opcodes[1]}
+				[ "${line_of_opcodes[0]}" = "idcode" ] && idcode_opcode[count_members]=${line_of_opcodes[1]}
+				[ "${line_of_opcodes[0]}" = "usercode" ] && usrcode_opcode[count_members]=${line_of_opcodes[1]}
+				[ "${line_of_opcodes[0]}" = "sample" -o "${line_of_opcodes[0]}" = "preload" ] && 
+					{
+					#sample_found=yes
+					sample_opcode[count_members]=${line_of_opcodes[1]}
+					}
+			done < tmp/${device[count_members]}_opcodes.tmp
+
+			[ ! "${sample_opcode[count_members]}" ] &&
+				{
+				echo ERROR ! Device ${device[count_members]} does neither support SAMPLE nor PRELOAD mode !
+				exit
+				}
+			
+			#if no bypass opcode given, use default value specified by std
+			[ ! "${bypass_opcode[count_members]}" ] && bypass_opcode[count_members]=1
+				
+
+			count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+
+
+	proc_bypass_all()
+	{
+	#all devices go bypass
+	echo ' -- check bypass registers' >> $test_name/$test_name.seq
+	count_members=0
+	while IFS=" " read -a v
+	do
+			device[count_members]=${v[0]};
+
+			#write device name in sequence file
+			echo ' set '${device[count_members]}' drv ir '$[ir_length[count_members]-1] 'downto 0 = '${bypass_opcode[count_members]} 'bypass' >> $test_name/$test_name.seq
+			echo ' set '${device[count_members]}' exp ir '$[ir_length[count_members]-1] 'downto 0 = '${ir_capture[count_members]} >> $test_name/$test_name.seq
+
+			count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+
+	vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+	echo ' sir id '$vector_ct >> $test_name/$test_name.seq
+	#echo >> $test_name/$test_name.seq
+
+	#echo ' -- set drive and expect values of bypass data registers' >> $test_name/$test_name.seq
+	count_members=0
+	while IFS=" " read -a v
+	do
+			device[count_members]=${v[0]};
+
+			#write device name in sequence file
+			echo ' set '${device[count_members]}' drv bypass 1=1' >> $test_name/$test_name.seq
+			echo ' set '${device[count_members]}' exp bypass 1=0' >> $test_name/$test_name.seq
+
+			count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+
+	vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+	echo ' sdr id '$vector_ct >> $test_name/$test_name.seq
+	echo >> $test_name/$test_name.seq
+	}
+
+
+
+##########ATG######################################################
+
+	vector_ct=0
+#test bypass registers
+	echo 'generating test vectors for'
+	echo ' bypass registers'
+	proc_bypass_all
+
+#test id codes
+	echo ' id codes'
+	echo ' -- check id codes' >> $test_name/$test_name.seq
+	count_members=0
+	while IFS=" " read -a v
+	do
+			device[count_members]=${v[0]};
+
+			#write instructions in seq file
+			[ "$count_members" -gt 0 ] && # load previous device back to bypass mode
+				{
+				idc_prev=${idcode_opcode[count_members-1]} #do this if previous device has id code
+				[ "$idc_prev" ] &&
+					{
+					#count_previous=$[count_members-1]
+					#ir_length_previous=${ir_length[count_previous]}
+					#ir_length_previous=$[ir_length_previous-1]
+					echo ' set '${device[count_members-1]}' drv ir '$[ir_length[count_members-1]-1] 'downto 0 = '${bypass_opcode[count_members-1]} 'bypass' >> $test_name/$test_name.seq
+					}
+				}
+
+			[ "${idcode_opcode[count_members]}" ] &&	#if device has idcode, write opcode loading in seq file
+				{
+				echo ' set '${device[count_members]}' drv ir '$[ir_length[count_members]-1] 'downto 0 = '${idcode_opcode[count_members]} 'idcode' >> $test_name/$test_name.seq
+				}
+
+			vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+			echo ' sir id '$vector_ct >> $test_name/$test_name.seq
+			#echo >> $test_name/$test_name.seq
+
+
+			#write data scans in seq file
+			[ "$count_members" -gt 0 ] && # load previous device back to bypass mode
+				{
+				[ "$idc_prev" ] &&	#do this only if previous device has id code
+					{
+				#	count_previous=$[count_members-1]
+					echo ' set '${device[count_members-1]}' drv bypass 1=1' >> $test_name/$test_name.seq
+					echo ' set '${device[count_members-1]}' exp bypass 1=0' >> $test_name/$test_name.seq
+					}
+				}
+
+			[ "${idcode_opcode[count_members]}" ] &&	#if device has idcode, write data register values in seq file
+				{
+				echo ' set '${device[count_members]}' drv idcode 31 downto 0 = 0' >> $test_name/$test_name.seq
+				echo ' set '${device[count_members]}' exp idcode 31 downto 0 = '${id_capture[count_members]} >> $test_name/$test_name.seq
+				}
+
+			vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+			echo ' sdr id '$vector_ct >> $test_name/$test_name.seq
+			echo >> $test_name/$test_name.seq
+
+			count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+	echo >> $test_name/$test_name.seq
+
+	#set all devices back to bypass
+	proc_bypass_all
+
+
+
+#test user codes
+	echo ' user codes'
+	echo ' -- check user codes' >> $test_name/$test_name.seq
+	count_members=0
+	while IFS=" " read -a v
+	do
+			device[count_members]=${v[0]};
+
+			#write instructions in seq file
+			[ "$count_members" -gt 0 ] && # load previous device back to bypass mode
+				{
+				usc_prev=${usrcode_opcode[count_members-1]} #do this if previous device has user code
+				[ "$usc_prev" ] &&
+					{
+					echo ' set '${device[count_members-1]}' drv ir '$[ir_length[count_members-1]-1] 'downto 0 = '${bypass_opcode[count_members-1]} 'bypass' >> $test_name/$test_name.seq
+					}
+				}
+
+			[ "${usrcode_opcode[count_members]}" ] &&	#if device has user code, write opcode loading in seq file
+				{
+				echo ' set '${device[count_members]}' drv ir '$[ir_length[count_members]-1] 'downto 0 = '${usrcode_opcode[count_members]} 'usercode' >> $test_name/$test_name.seq
+				}
+
+			vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+			echo ' sir id '$vector_ct >> $test_name/$test_name.seq
+
+
+			#write data scans in seq file
+			[ "$count_members" -gt 0 ] && # load previous device back to bypass mode
+				{
+				[ "$usc_prev" ] &&	#do this only if previous device has user code
+					{
+					echo ' set '${device[count_members-1]}' drv bypass 1=1' >> $test_name/$test_name.seq
+					echo ' set '${device[count_members-1]}' exp bypass 1=0' >> $test_name/$test_name.seq
+					}
+				}
+
+			[ "${usrcode_opcode[count_members]}" ] &&	#if device has user code, write data register values in seq file
+				{
+				echo ' set '${device[count_members]}' drv usercode 31 downto 0 = 0' >> $test_name/$test_name.seq
+				echo ' set '${device[count_members]}' exp usercode 31 downto 0 = '${usrcode_capture[count_members]} >> $test_name/$test_name.seq
+				}
+
+			vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+			echo ' sdr id '$vector_ct >> $test_name/$test_name.seq
+			echo >> $test_name/$test_name.seq
+
+			count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+	echo >> $test_name/$test_name.seq
+
+	#set all devices back to bypass
+	proc_bypass_all
+
+
+
+#test boundary registers
+	echo ' boundary registers'
+	echo ' -- check boundary registers' >> $test_name/$test_name.seq
+	count_members=0
+	while IFS=" " read -a v
+	do
+			device[count_members]=${v[0]};
+
+			#write instructions in seq file
+			[ "$count_members" -gt 0 ] && # load previous device back to bypass mode
+				{
+				echo ' set '${device[count_members-1]}' drv ir '$[ir_length[count_members-1]-1] 'downto 0 = '${bypass_opcode[count_members-1]} 'bypass' >> $test_name/$test_name.seq
+				}
+
+			echo ' set '${device[count_members]}' drv ir '$[ir_length[count_members]-1] 'downto 0 = '${sample_opcode[count_members]} 'sample' >> $test_name/$test_name.seq
+
+			vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+			echo ' sir id '$vector_ct >> $test_name/$test_name.seq
+
+			#write data scans in seq file
+			[ "$count_members" -gt 0 ] && # load previous device back to bypass mode
+				{
+					echo ' set '${device[count_members-1]}' drv bypass 1=1' >> $test_name/$test_name.seq
+					echo ' set '${device[count_members-1]}' exp bypass 1=0' >> $test_name/$test_name.seq
+				}
+
+			echo ' set '${device[count_members]}' drv boundary '$[boundary_length[count_members]-1]' downto 0 = '${safebits[count_members]} >> $test_name/$test_name.seq
+			echo ' set '${device[count_members]}' exp boundary '$[boundary_length[count_members]-1]' downto 0 = x' >> $test_name/$test_name.seq
+
+			vector_ct=$[vector_ct+1]; # increment vecor counter on each sir odr sdr
+			echo ' sdr id '$vector_ct >> $test_name/$test_name.seq
+			echo >> $test_name/$test_name.seq
+
+			count_members=$[count_members+1]; # increment array index on each chain member
+	done < tmp/members.tmp
+	echo >> $test_name/$test_name.seq
+
+	#set all devices back to bypass
+	proc_bypass_all
+
+
+
+
+
+
+	echo " trst" >> $test_name/$test_name.seq
+	echo "EndSection" >> $test_name/$test_name.seq
+
+
+exit

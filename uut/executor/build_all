@@ -1,0 +1,56 @@
+bsmcl chkpsn executor.udb $1
+[ $? -ne 0 ] && exit 1;
+
+bsmcl generate executor.udb infrastructure infra
+[ $? -ne 0 ] && exit 1;
+bsmcl generate executor.udb interconnect intercon
+[ $? -ne 0 ] && exit 1;
+bsmcl generate executor.udb clock clock_1hz IC2 80 10 0.3
+[ $? -ne 0 ] && exit 1;
+bsmcl generate executor.udb clock clock_50mhz IC2 181 10 0.1
+[ $? -ne 0 ] && exit 1;
+bsmcl generate executor.udb memconnect ram_ic600 ex_IC600 models/BS62LV4006.txt NDIP32
+[ $? -ne 0 ] && exit 1;
+bsmcl generate executor.udb memconnect ram_ic601 ex_IC601 models/BS62LV4006.txt NDIP32
+[ $? -ne 0 ] && exit 1;
+
+rm setup/journal.txt
+
+bsmcl compile executor.udb infra
+[ $? -ne 0 ] && exit 1;
+bsmcl compile executor.udb intercon
+[ $? -ne 0 ] && exit 1;
+bsmcl compile executor.udb clock_1hz
+[ $? -ne 0 ] && exit 1;
+bsmcl compile executor.udb clock_50mhz
+[ $? -ne 0 ] && exit 1;
+bsmcl compile executor.udb ram_ic600
+[ $? -ne 0 ] && exit 1;
+bsmcl compile executor.udb ram_ic601
+[ $? -ne 0 ] && exit 1;
+
+bsmcl load infra
+[ $? -ne 0 ] && exit 1;
+bsmcl load intercon
+[ $? -ne 0 ] && exit 1;
+bsmcl load clock_1hz
+[ $? -ne 0 ] && exit 1;
+bsmcl load clock_50mhz
+[ $? -ne 0 ] && exit 1;
+bsmcl load ram_ic600
+[ $? -ne 0 ] && exit 1;
+bsmcl load ram_ic601
+[ $? -ne 0 ] && exit 1;
+
+bsmcl run infra
+[ $? -ne 0 ] && exit 1;
+bsmcl run intercon
+[ $? -ne 0 ] && exit 1;
+bsmcl run clock_1hz
+[ $? -ne 0 ] && exit 1;
+bsmcl run clock_50mhz
+[ $? -ne 0 ] && exit 1;
+bsmcl run ram_ic600
+[ $? -ne 0 ] && exit 1;
+bsmcl run ram_ic601
+[ $? -ne 0 ] && exit 1;

@@ -1,0 +1,11 @@
+
+WARNINGS ISSUED BY CHKPSN
+---------------------------------
+WARNING ! Class DL primary net /CPU_MREQ can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class DH primary net /CPU_RD can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class DL primary net /CT_PL can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class DL primary net RST can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)

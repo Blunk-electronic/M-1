@@ -1,0 +1,180 @@
+Section info
+ created by infra structure test generator version 3.8
+ date      : Tue Jun 30 09:28:05 CEST 2015
+ database  : mmu.udb
+ algorithm : standard
+EndSection
+
+Section options
+ on_fail hstrst
+ trailer_ir 11001010
+ trailer_dr 11001010
+ voltage_out_port_1 3.3
+ voltage_out_port_2 1.8
+ tck_driver_port_1 push-pull
+ tms_driver_port_1 push-pull
+ tdo_driver_port_1 push-pull
+ trst_driver_port_1 push-pull
+ tck_driver_port_2 push-pull
+ tms_driver_port_2 push-pull
+ tdo_driver_port_2 push-pull
+ trst_driver_port_2 push-pull
+ threshold_tdi_port_1 0.8
+ threshold_tdi_port_2 0.8
+EndSection
+
+Section sequence 1
+
+ delay 0.2
+ power up gnd       -- connects supply GND with UUT. NOTE: similar commands: power up/down gnd,1,2,3,all
+ delay 0.2
+ imax 1 0.5 timeout 2 -- set maximum current of power channel 1 to 1 A , timeout to shutdown is 2 sec 
+-- imax 2 0.5 timeout 2 -- NOTE: max. current range: 0.1 to 5 Amps | timeout range: 0.02 to 5 sec
+-- imax 3 0.5 timeout 2
+ power up 1
+-- power up 2
+-- power up 3
+ delay 1            -- wait for UUT power to settle down -- unit is seconds, max. 25sec allowed
+ connect port 1     -- connect TAP 1 signals with UUT. NOTE: similar commands: (dis)connect port 1,2
+ delay 0.2
+ -- test begin
+
+ trst -- hard+soft scanpath reset. NOTE: similar commands: strst,htrst (for soft/hard scanpath reset)
+ -- check bypass registers
+ set IC301 drv ir 7 downto 0 = 11111111 bypass
+ set IC301 exp ir 7 downto 0 = 000xxx01
+ set IC300 drv ir 7 downto 0 = 11111111 bypass
+ set IC300 exp ir 7 downto 0 = 000xxx01
+ set IC303 drv ir 7 downto 0 = 11111111 bypass
+ set IC303 exp ir 7 downto 0 = 10000001
+ sir id 1
+ set IC301 drv bypass 1=1
+ set IC301 exp bypass 1=0
+ set IC300 drv bypass 1=1
+ set IC300 exp bypass 1=0
+ set IC303 drv bypass 1=1
+ set IC303 exp bypass 1=0
+ sdr id 2
+
+ -- check id codes
+ set IC301 drv ir 7 downto 0 = 11111110 idcode
+ sir id 3
+ set IC301 drv idcode 31 downto 0 = 0
+ set IC301 exp idcode 31 downto 0 = xxxx1001010100000010000010010011
+ sdr id 4
+
+ set IC301 drv ir 7 downto 0 = 11111111 bypass
+ set IC300 drv ir 7 downto 0 = 11111110 idcode
+ sir id 5
+ set IC301 drv bypass 1=1
+ set IC301 exp bypass 1=0
+ set IC300 drv idcode 31 downto 0 = 0
+ set IC300 exp idcode 31 downto 0 = xxxx1001010100000010000010010011
+ sdr id 6
+
+ set IC300 drv ir 7 downto 0 = 11111111 bypass
+ sir id 7
+ set IC300 drv bypass 1=1
+ set IC300 exp bypass 1=0
+ sdr id 8
+
+
+ -- check bypass registers
+ set IC301 drv ir 7 downto 0 = 11111111 bypass
+ set IC301 exp ir 7 downto 0 = 000xxx01
+ set IC300 drv ir 7 downto 0 = 11111111 bypass
+ set IC300 exp ir 7 downto 0 = 000xxx01
+ set IC303 drv ir 7 downto 0 = 11111111 bypass
+ set IC303 exp ir 7 downto 0 = 10000001
+ sir id 9
+ set IC301 drv bypass 1=1
+ set IC301 exp bypass 1=0
+ set IC300 drv bypass 1=1
+ set IC300 exp bypass 1=0
+ set IC303 drv bypass 1=1
+ set IC303 exp bypass 1=0
+ sdr id 10
+
+ -- check user codes
+ set IC301 drv ir 7 downto 0 = 11111101 usercode
+ sir id 11
+ set IC301 drv usercode 31 downto 0 = 0
+ set IC301 exp usercode 31 downto 0 = xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ sdr id 12
+
+ set IC301 drv ir 7 downto 0 = 11111111 bypass
+ set IC300 drv ir 7 downto 0 = 11111101 usercode
+ sir id 13
+ set IC301 drv bypass 1=1
+ set IC301 exp bypass 1=0
+ set IC300 drv usercode 31 downto 0 = 0
+ set IC300 exp usercode 31 downto 0 = xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ sdr id 14
+
+ set IC300 drv ir 7 downto 0 = 11111111 bypass
+ sir id 15
+ set IC300 drv bypass 1=1
+ set IC300 exp bypass 1=0
+ sdr id 16
+
+
+ -- check bypass registers
+ set IC301 drv ir 7 downto 0 = 11111111 bypass
+ set IC301 exp ir 7 downto 0 = 000xxx01
+ set IC300 drv ir 7 downto 0 = 11111111 bypass
+ set IC300 exp ir 7 downto 0 = 000xxx01
+ set IC303 drv ir 7 downto 0 = 11111111 bypass
+ set IC303 exp ir 7 downto 0 = 10000001
+ sir id 17
+ set IC301 drv bypass 1=1
+ set IC301 exp bypass 1=0
+ set IC300 drv bypass 1=1
+ set IC300 exp bypass 1=0
+ set IC303 drv bypass 1=1
+ set IC303 exp bypass 1=0
+ sdr id 18
+
+ -- check boundary registers
+ set IC301 drv ir 7 downto 0 = 00000001 sample
+ sir id 19
+ set IC301 drv boundary 107 downto 0 = xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxxxx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxx
+ set IC301 exp boundary 107 downto 0 = x
+ sdr id 20
+
+ set IC301 drv ir 7 downto 0 = 11111111 bypass
+ set IC300 drv ir 7 downto 0 = 00000001 sample
+ sir id 21
+ set IC301 drv bypass 1=1
+ set IC301 exp bypass 1=0
+ set IC300 drv boundary 107 downto 0 = xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxxxx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxx
+ set IC300 exp boundary 107 downto 0 = x
+ sdr id 22
+
+ set IC300 drv ir 7 downto 0 = 11111111 bypass
+ set IC303 drv ir 7 downto 0 = 00000010 sample
+ sir id 23
+ set IC300 drv bypass 1=1
+ set IC300 exp bypass 1=0
+ set IC303 drv boundary 17 downto 0 = x1xxxxxxxxxxxxxxxx
+ set IC303 exp boundary 17 downto 0 = x
+ sdr id 24
+
+
+ -- check bypass registers
+ set IC301 drv ir 7 downto 0 = 11111111 bypass
+ set IC301 exp ir 7 downto 0 = 000xxx01
+ set IC300 drv ir 7 downto 0 = 11111111 bypass
+ set IC300 exp ir 7 downto 0 = 000xxx01
+ set IC303 drv ir 7 downto 0 = 11111111 bypass
+ set IC303 exp ir 7 downto 0 = 10000001
+ sir id 25
+ set IC301 drv bypass 1=1
+ set IC301 exp bypass 1=0
+ set IC300 drv bypass 1=1
+ set IC300 exp bypass 1=0
+ set IC303 drv bypass 1=1
+ set IC303 exp bypass 1=0
+ sdr id 26
+
+ trst
+EndSection

@@ -1,0 +1,2039 @@
+Section scanpath_configuration
+
+-- recommended version 1.1
+
+ SubSection options
+  on_fail hstrst -- power_down -- default is power_down. NOTE: similar commands: hstrst (hard+soft scanpath reset)
+  --frequency 1 -- unit is Mhz, use integers 1,2,3,4 only ! Comment this option out for lowest frequency of 33kHz !
+  trailer_ir 11001010 -- 8 bit binary value
+  trailer_dr 11001010
+  voltage_out_port_1  3.3  -- min value +1.8V, max value +3.3V
+  voltage_out_port_2  1.8
+
+  tck_driver_port_1 push-pull  -- NOTE: similar commands: weak1, weak0, tie_high, tie_low, high-z
+  tms_driver_port_1 push-pull
+  tdo_driver_port_1 push-pull
+  trst_driver_port_1 push-pull 
+  tck_driver_port_2 push-pull
+  tms_driver_port_2 push-pull
+  tdo_driver_port_2 push-pull
+  trst_driver_port_2 push-pull 
+
+  threshold_tdi_port_1 0.8  -- range: 0 ... +3.3V
+  threshold_tdi_port_2 0.8
+ EndSubSection
+
+ SubSection chain 1
+ 	--UUT_TDI_1 / BSC_TDO_1
+	--device, package, path to bsdl model, option [ remove_pin_prefix p ]
+	--NOTE: use lower case letters for package names 
+
+	IC301 pc44 models/BSDL/xc9536_pc44.bsd
+        IC300 pc44 models/BSDL/xc9536_pc44.bsd
+        IC303 dw models/BSDL/sctm001.bsm
+
+	--UUT_TDO_1 / BSC_TDI_1
+ EndSubSection
+
+EndSection
+
+
+---------- REGISTERS -----------------------------------------------------------------------------------------
+
+Section registers
+---------------------------------------------------------------
+-- created by BSDL importer version 034
+-- date       : 2015-06-29 07:27:47
+-- UTC_Offset : 2 hours
+
+ SubSection IC301
+  value xc9536_pc44
+
+  instruction_register_length 8
+  instruction_capture         000xxx01
+  idcode_register             xxxx1001010100000010000010010011
+  usercode_register           xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  boundary_register_length    108
+
+  trst_pin none
+
+  SubSection safebits
+          -- MSB...LSB
+    safebits xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxxxx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxx
+    total    108
+  EndSubSection
+
+  SubSection instruction_opcodes
+  -- instruction opcode [alternative opcode]
+     bypass 11111111
+     ispex 11110000
+     extest 00000000
+     ferase 11101100
+     fpgm 11101010
+     fvfy 11101110
+     fbulk 11101101
+     fpgmi 11101011
+     fvfyi 11101111
+     highz 11111100
+     idcode 11111110
+     intest 00000010
+     ispen 11101000
+     sample 00000001
+     usercode 11111101
+  EndSubSection
+
+  SubSection boundary_register
+  -- num cell port function safe [control_cell disable_value disable_result]
+     2 bc_1 * internal x
+     1 bc_1 * internal x
+     0 bc_1 * internal x
+     5 bc_1 pb01_16 input x
+     4 bc_1 pb01_16 output3 x 3 0 z
+     3 bc_1 * controlr 0
+     8 bc_1 pb01_15 input x
+     7 bc_1 pb01_15 output3 x 6 0 z
+     6 bc_1 * controlr 0
+     11 bc_1 pb01_14 input x
+     10 bc_1 pb01_14 output3 x 9 0 z
+     9 bc_1 * controlr 0
+     14 bc_1 pb01_13 input x
+     13 bc_1 pb01_13 output3 x 12 0 z
+     12 bc_1 * controlr 0
+     17 bc_1 pb01_12 input x
+     16 bc_1 pb01_12 output3 x 15 0 z
+     15 bc_1 * controlr 0
+     20 bc_1 pb01_11 input x
+     19 bc_1 pb01_11 output3 x 18 0 z
+     18 bc_1 * controlr 0
+     23 bc_1 pb01_10 input x
+     22 bc_1 pb01_10 output3 x 21 0 z
+     21 bc_1 * controlr 0
+     26 bc_1 pb01_09 input x
+     25 bc_1 pb01_09 output3 x 24 0 z
+     24 bc_1 * controlr 0
+     29 bc_1 pb01_08 input x
+     28 bc_1 pb01_08 output3 x 27 0 z
+     27 bc_1 * controlr 0
+     32 bc_1 pb01_07 input x
+     31 bc_1 pb01_07 output3 x 30 0 z
+     30 bc_1 * controlr 0
+     35 bc_1 pb01_06 input x
+     34 bc_1 pb01_06 output3 x 33 0 z
+     33 bc_1 * controlr 0
+     38 bc_1 pb01_05 input x
+     37 bc_1 pb01_05 output3 x 36 0 z
+     36 bc_1 * controlr 0
+     41 bc_1 pb01_04 input x
+     40 bc_1 pb01_04 output3 x 39 0 z
+     39 bc_1 * controlr 0
+     44 bc_1 pb01_03 input x
+     43 bc_1 pb01_03 output3 x 42 0 z
+     42 bc_1 * controlr 0
+     47 bc_1 pb01_02 input x
+     46 bc_1 pb01_02 output3 x 45 0 z
+     45 bc_1 * controlr 0
+     50 bc_1 pb01_01 input x
+     49 bc_1 pb01_01 output3 x 48 0 z
+     48 bc_1 * controlr 0
+     53 bc_1 pb01_00 input x
+     52 bc_1 pb01_00 output3 x 51 0 z
+     51 bc_1 * controlr 0
+     56 bc_1 * internal x
+     55 bc_1 * internal x
+     54 bc_1 * internal x
+     59 bc_1 pb00_16 input x
+     58 bc_1 pb00_16 output3 x 57 0 z
+     57 bc_1 * controlr 0
+     62 bc_1 pb00_15 input x
+     61 bc_1 pb00_15 output3 x 60 0 z
+     60 bc_1 * controlr 0
+     65 bc_1 pb00_14 input x
+     64 bc_1 pb00_14 output3 x 63 0 z
+     63 bc_1 * controlr 0
+     68 bc_1 pb00_13 input x
+     67 bc_1 pb00_13 output3 x 66 0 z
+     66 bc_1 * controlr 0
+     71 bc_1 pb00_12 input x
+     70 bc_1 pb00_12 output3 x 69 0 z
+     69 bc_1 * controlr 0
+     74 bc_1 pb00_11 input x
+     73 bc_1 pb00_11 output3 x 72 0 z
+     72 bc_1 * controlr 0
+     77 bc_1 pb00_10 input x
+     76 bc_1 pb00_10 output3 x 75 0 z
+     75 bc_1 * controlr 0
+     80 bc_1 pb00_09 input x
+     79 bc_1 pb00_09 output3 x 78 0 z
+     78 bc_1 * controlr 0
+     83 bc_1 pb00_08 input x
+     82 bc_1 pb00_08 output3 x 81 0 z
+     81 bc_1 * controlr 0
+     86 bc_1 pb00_07 input x
+     85 bc_1 pb00_07 output3 x 84 0 z
+     84 bc_1 * controlr 0
+     89 bc_1 pb00_06 input x
+     88 bc_1 pb00_06 output3 x 87 0 z
+     87 bc_1 * controlr 0
+     92 bc_1 pb00_05 input x
+     91 bc_1 pb00_05 output3 x 90 0 z
+     90 bc_1 * controlr 0
+     95 bc_1 pb00_04 input x
+     94 bc_1 pb00_04 output3 x 93 0 z
+     93 bc_1 * controlr 0
+     98 bc_1 pb00_03 input x
+     97 bc_1 pb00_03 output3 x 96 0 z
+     96 bc_1 * controlr 0
+     101 bc_1 pb00_02 input x
+     100 bc_1 pb00_02 output3 x 99 0 z
+     99 bc_1 * controlr 0
+     104 bc_1 pb00_01 input x
+     103 bc_1 pb00_01 output3 x 102 0 z
+     102 bc_1 * controlr 0
+     107 bc_1 pb00_00 input x
+     106 bc_1 pb00_00 output3 x 105 0 z
+     105 bc_1 * controlr 0
+  EndSubSection
+
+  SubSection port_io_map
+  -- port(s) : direction [up/down vector]
+     pb00_00 : inout 
+     pb00_01 : inout 
+     pb00_02 : inout 
+     pb00_03 : inout 
+     pb00_04 : inout 
+     pb00_05 : inout 
+     pb00_06 : inout 
+     pb00_07 : inout 
+     pb00_08 : inout 
+     pb00_09 : inout 
+     pb00_10 : inout 
+     pb00_11 : inout 
+     pb00_12 : inout 
+     pb00_13 : inout 
+     pb00_14 : inout 
+     pb00_15 : inout 
+     pb00_16 : inout 
+     pb01_00 : inout 
+     pb01_01 : inout 
+     pb01_02 : inout 
+     pb01_03 : inout 
+     pb01_04 : inout 
+     pb01_05 : inout 
+     pb01_06 : inout 
+     pb01_07 : inout 
+     pb01_08 : inout 
+     pb01_09 : inout 
+     pb01_10 : inout 
+     pb01_11 : inout 
+     pb01_12 : inout 
+     pb01_13 : inout 
+     pb01_14 : inout 
+     pb01_15 : inout 
+     pb01_16 : inout 
+     tck : in 
+     tdi : in 
+     tdo : out 
+     tms : in 
+     vccint_1 : linkage 
+     vccint_vpp : linkage 
+     vccio_1 : linkage 
+     vssint_1 : linkage 
+     vssio_1 : linkage 
+     vssio_2 : linkage 
+    
+  EndSubSection
+
+  SubSection port_pin_map -- for package pc44
+  -- port pin(s)
+     pb00_00 2
+     pb00_01 3
+     pb00_02 5
+     pb00_03 4
+     pb00_04 6
+     pb00_05 8
+     pb00_06 7
+     pb00_07 9
+     pb00_08 11
+     pb00_09 12
+     pb00_10 13
+     pb00_11 14
+     pb00_12 18
+     pb00_13 19
+     pb00_14 20
+     pb00_15 22
+     pb00_16 24
+     pb01_00 1
+     pb01_01 44
+     pb01_02 42
+     pb01_03 43
+     pb01_04 40
+     pb01_05 39
+     pb01_06 38
+     pb01_07 37
+     pb01_08 36
+     pb01_09 35
+     pb01_10 34
+     pb01_11 33
+     pb01_12 29
+     pb01_13 28
+     pb01_14 27
+     pb01_15 26
+     pb01_16 25
+     tck 17
+     tdi 15
+     tdo 30
+     tms 16
+     vccint_1 21
+     vccint_vpp 41
+     vccio_1 32
+     vssint_1 23
+     vssio_1 10
+     vssio_2 31
+  EndSubSection
+
+ EndSubSection IC301
+
+ --------------------------------------
+
+ SubSection IC300
+  value xc9536_pc44
+
+  instruction_register_length 8
+  instruction_capture         000xxx01
+  idcode_register             xxxx1001010100000010000010010011
+  usercode_register           xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  boundary_register_length    108
+
+  trst_pin none
+
+  SubSection safebits
+          -- MSB...LSB
+    safebits xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxxxx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxx
+    total    108
+  EndSubSection
+
+  SubSection instruction_opcodes
+  -- instruction opcode [alternative opcode]
+     bypass 11111111
+     ispex 11110000
+     extest 00000000
+     ferase 11101100
+     fpgm 11101010
+     fvfy 11101110
+     fbulk 11101101
+     fpgmi 11101011
+     fvfyi 11101111
+     highz 11111100
+     idcode 11111110
+     intest 00000010
+     ispen 11101000
+     sample 00000001
+     usercode 11111101
+  EndSubSection
+
+  SubSection boundary_register
+  -- num cell port function safe [control_cell disable_value disable_result]
+     2 bc_1 * internal x
+     1 bc_1 * internal x
+     0 bc_1 * internal x
+     5 bc_1 pb01_16 input x
+     4 bc_1 pb01_16 output3 x 3 0 z
+     3 bc_1 * controlr 0
+     8 bc_1 pb01_15 input x
+     7 bc_1 pb01_15 output3 x 6 0 z
+     6 bc_1 * controlr 0
+     11 bc_1 pb01_14 input x
+     10 bc_1 pb01_14 output3 x 9 0 z
+     9 bc_1 * controlr 0
+     14 bc_1 pb01_13 input x
+     13 bc_1 pb01_13 output3 x 12 0 z
+     12 bc_1 * controlr 0
+     17 bc_1 pb01_12 input x
+     16 bc_1 pb01_12 output3 x 15 0 z
+     15 bc_1 * controlr 0
+     20 bc_1 pb01_11 input x
+     19 bc_1 pb01_11 output3 x 18 0 z
+     18 bc_1 * controlr 0
+     23 bc_1 pb01_10 input x
+     22 bc_1 pb01_10 output3 x 21 0 z
+     21 bc_1 * controlr 0
+     26 bc_1 pb01_09 input x
+     25 bc_1 pb01_09 output3 x 24 0 z
+     24 bc_1 * controlr 0
+     29 bc_1 pb01_08 input x
+     28 bc_1 pb01_08 output3 x 27 0 z
+     27 bc_1 * controlr 0
+     32 bc_1 pb01_07 input x
+     31 bc_1 pb01_07 output3 x 30 0 z
+     30 bc_1 * controlr 0
+     35 bc_1 pb01_06 input x
+     34 bc_1 pb01_06 output3 x 33 0 z
+     33 bc_1 * controlr 0
+     38 bc_1 pb01_05 input x
+     37 bc_1 pb01_05 output3 x 36 0 z
+     36 bc_1 * controlr 0
+     41 bc_1 pb01_04 input x
+     40 bc_1 pb01_04 output3 x 39 0 z
+     39 bc_1 * controlr 0
+     44 bc_1 pb01_03 input x
+     43 bc_1 pb01_03 output3 x 42 0 z
+     42 bc_1 * controlr 0
+     47 bc_1 pb01_02 input x
+     46 bc_1 pb01_02 output3 x 45 0 z
+     45 bc_1 * controlr 0
+     50 bc_1 pb01_01 input x
+     49 bc_1 pb01_01 output3 x 48 0 z
+     48 bc_1 * controlr 0
+     53 bc_1 pb01_00 input x
+     52 bc_1 pb01_00 output3 x 51 0 z
+     51 bc_1 * controlr 0
+     56 bc_1 * internal x
+     55 bc_1 * internal x
+     54 bc_1 * internal x
+     59 bc_1 pb00_16 input x
+     58 bc_1 pb00_16 output3 x 57 0 z
+     57 bc_1 * controlr 0
+     62 bc_1 pb00_15 input x
+     61 bc_1 pb00_15 output3 x 60 0 z
+     60 bc_1 * controlr 0
+     65 bc_1 pb00_14 input x
+     64 bc_1 pb00_14 output3 x 63 0 z
+     63 bc_1 * controlr 0
+     68 bc_1 pb00_13 input x
+     67 bc_1 pb00_13 output3 x 66 0 z
+     66 bc_1 * controlr 0
+     71 bc_1 pb00_12 input x
+     70 bc_1 pb00_12 output3 x 69 0 z
+     69 bc_1 * controlr 0
+     74 bc_1 pb00_11 input x
+     73 bc_1 pb00_11 output3 x 72 0 z
+     72 bc_1 * controlr 0
+     77 bc_1 pb00_10 input x
+     76 bc_1 pb00_10 output3 x 75 0 z
+     75 bc_1 * controlr 0
+     80 bc_1 pb00_09 input x
+     79 bc_1 pb00_09 output3 x 78 0 z
+     78 bc_1 * controlr 0
+     83 bc_1 pb00_08 input x
+     82 bc_1 pb00_08 output3 x 81 0 z
+     81 bc_1 * controlr 0
+     86 bc_1 pb00_07 input x
+     85 bc_1 pb00_07 output3 x 84 0 z
+     84 bc_1 * controlr 0
+     89 bc_1 pb00_06 input x
+     88 bc_1 pb00_06 output3 x 87 0 z
+     87 bc_1 * controlr 0
+     92 bc_1 pb00_05 input x
+     91 bc_1 pb00_05 output3 x 90 0 z
+     90 bc_1 * controlr 0
+     95 bc_1 pb00_04 input x
+     94 bc_1 pb00_04 output3 x 93 0 z
+     93 bc_1 * controlr 0
+     98 bc_1 pb00_03 input x
+     97 bc_1 pb00_03 output3 x 96 0 z
+     96 bc_1 * controlr 0
+     101 bc_1 pb00_02 input x
+     100 bc_1 pb00_02 output3 x 99 0 z
+     99 bc_1 * controlr 0
+     104 bc_1 pb00_01 input x
+     103 bc_1 pb00_01 output3 x 102 0 z
+     102 bc_1 * controlr 0
+     107 bc_1 pb00_00 input x
+     106 bc_1 pb00_00 output3 x 105 0 z
+     105 bc_1 * controlr 0
+  EndSubSection
+
+  SubSection port_io_map
+  -- port(s) : direction [up/down vector]
+     pb00_00 : inout 
+     pb00_01 : inout 
+     pb00_02 : inout 
+     pb00_03 : inout 
+     pb00_04 : inout 
+     pb00_05 : inout 
+     pb00_06 : inout 
+     pb00_07 : inout 
+     pb00_08 : inout 
+     pb00_09 : inout 
+     pb00_10 : inout 
+     pb00_11 : inout 
+     pb00_12 : inout 
+     pb00_13 : inout 
+     pb00_14 : inout 
+     pb00_15 : inout 
+     pb00_16 : inout 
+     pb01_00 : inout 
+     pb01_01 : inout 
+     pb01_02 : inout 
+     pb01_03 : inout 
+     pb01_04 : inout 
+     pb01_05 : inout 
+     pb01_06 : inout 
+     pb01_07 : inout 
+     pb01_08 : inout 
+     pb01_09 : inout 
+     pb01_10 : inout 
+     pb01_11 : inout 
+     pb01_12 : inout 
+     pb01_13 : inout 
+     pb01_14 : inout 
+     pb01_15 : inout 
+     pb01_16 : inout 
+     tck : in 
+     tdi : in 
+     tdo : out 
+     tms : in 
+     vccint_1 : linkage 
+     vccint_vpp : linkage 
+     vccio_1 : linkage 
+     vssint_1 : linkage 
+     vssio_1 : linkage 
+     vssio_2 : linkage 
+    
+  EndSubSection
+
+  SubSection port_pin_map -- for package pc44
+  -- port pin(s)
+     pb00_00 2
+     pb00_01 3
+     pb00_02 5
+     pb00_03 4
+     pb00_04 6
+     pb00_05 8
+     pb00_06 7
+     pb00_07 9
+     pb00_08 11
+     pb00_09 12
+     pb00_10 13
+     pb00_11 14
+     pb00_12 18
+     pb00_13 19
+     pb00_14 20
+     pb00_15 22
+     pb00_16 24
+     pb01_00 1
+     pb01_01 44
+     pb01_02 42
+     pb01_03 43
+     pb01_04 40
+     pb01_05 39
+     pb01_06 38
+     pb01_07 37
+     pb01_08 36
+     pb01_09 35
+     pb01_10 34
+     pb01_11 33
+     pb01_12 29
+     pb01_13 28
+     pb01_14 27
+     pb01_15 26
+     pb01_16 25
+     tck 17
+     tdi 15
+     tdo 30
+     tms 16
+     vccint_1 21
+     vccint_vpp 41
+     vccio_1 32
+     vssint_1 23
+     vssio_1 10
+     vssio_2 31
+  EndSubSection
+
+ EndSubSection IC300
+
+ --------------------------------------
+
+ SubSection IC303
+  value sn74bct8240a
+
+  instruction_register_length 8
+  instruction_capture         10000001
+  idcode_register             none
+  usercode_register           none
+  boundary_register_length    18
+
+  trst_pin none
+
+  SubSection safebits
+          -- MSB...LSB
+    safebits x1xxxxxxxxxxxxxxxx
+    total    18
+  EndSubSection
+
+  SubSection instruction_opcodes
+  -- instruction opcode [alternative opcode]
+     extest 00000000 10000000
+     bypass 11111111 10000100 00000101 10001000 00000001
+     sample 00000010 10000010
+     intest 00000011 10000011
+     highz 00000110 10000110
+     clamp 00000111 10000111
+     runt 00001001 10001001
+     readbn 00001010 10001010
+     readbt 00001011 10001011
+     celltst 00001100 10001100
+     tophip 00001101 10001101
+     scancn 00001110 10001110
+     scanct 00001111 10001111
+  EndSubSection
+
+  SubSection boundary_register
+  -- num cell port function safe [control_cell disable_value disable_result]
+     0 bc_1 y2(4) output3 x 16 1 z
+     1 bc_1 y2(3) output3 x 16 1 z
+     2 bc_1 y2(2) output3 x 16 1 z
+     3 bc_1 y2(1) output3 x 16 1 z
+     4 bc_1 y1(4) output3 x 17 1 z
+     5 bc_1 y1(3) output3 x 17 1 z
+     6 bc_1 y1(2) output3 x 17 1 z
+     7 bc_1 y1(1) output3 x 17 1 z
+     8 bc_1 a2(4) input x
+     9 bc_1 a2(3) input x
+     10 bc_1 a2(2) input x
+     11 bc_1 a2(1) input x
+     12 bc_1 a1(4) input x
+     13 bc_1 a1(3) input x
+     14 bc_1 a1(2) input x
+     15 bc_1 a1(1) input x
+     16 bc_1 oe_neg2 input x
+     16 bc_1 * control 1
+     17 bc_1 oe_neg1 input 1
+     17 bc_1 * control x
+  EndSubSection
+
+  SubSection port_io_map
+  -- port(s) : direction [up/down vector]
+     oe_neg1 : in 
+     y1 : out 1 to 4 
+     y2 : out 1 to 4 
+     a1 : in 1 to 4 
+     a2 : in 1 to 4 
+     oe_neg2 : in 
+     gnd vcc : linkage 
+     tdo : out 
+     tdi tms tck : in 
+     nc : linkage 1 to 4 
+    
+  EndSubSection
+
+  SubSection port_pin_map -- for package dw
+  -- port pin(s)
+     oe_neg1 1
+     y1 2 3 4 5
+     y2 7 8 9 10
+     a1 23 22 21 20
+     a2 19 17 16 15
+     oe_neg2 24
+     gnd 6
+     vcc 18
+     tdo 11
+     tdi 14
+     tms 12
+     tck 13
+  EndSubSection
+
+ EndSubSection IC303
+
+ --------------------------------------
+
+EndSection 
+
+
+---------- NETLIST -------------------------------------------------------------------------------------------
+
+Section netlist
+---------------------------------------------------------------
+-- modified by primary/secondary/class builder version 042
+-- date       : 2015-06-30 07:28:00
+-- UTC_Offset : 2 hours
+
+
+ SubSection LED0 class NR
+  D401 ? none LED5MM K 
+  IC303 ? SN74BCT8240ADWR SOIC24 10  y2(4) | 0 bc_1 output3 x 16 1 z
+  JP402 ? MON1 2X20 24 
+  RN302 ? 2k7 SIL8 1 
+ EndSubSection
+
+ SubSection secondary_nets_of LED0
+
+   SubSection LED0_R class NR
+     IC301 ? XC9536 PLCC-S44 2  pb00_00 | 107 bc_1 input x | 106 bc_1 output3 x 105 0 z
+     JP402 ? MON1 2X20 26 
+     RN302 ? 2k7 SIL8 2 
+   EndSubSection
+
+ EndSubSection secondary_nets_of LED0
+---------------------------------------------------------------------------------------------------------
+
+
+ SubSection LED1 class NR
+  D402 ? none LED5MM K 
+  IC303 ? SN74BCT8240ADWR SOIC24 9  y2(3) | 1 bc_1 output3 x 16 1 z
+  JP402 ? MON1 2X20 22 
+  RN302 ? 2k7 SIL8 4 
+ EndSubSection
+
+ SubSection secondary_nets_of LED1
+
+   SubSection LED1_R class NR
+     IC301 ? XC9536 PLCC-S44 3  pb00_01 | 104 bc_1 input x | 103 bc_1 output3 x 102 0 z
+     JP402 ? MON1 2X20 28 
+     RN302 ? 2k7 SIL8 3 
+   EndSubSection
+
+ EndSubSection secondary_nets_of LED1
+---------------------------------------------------------------------------------------------------------
+
+
+ SubSection LED2 class NR
+  D403 ? none LED5MM K 
+  IC303 ? SN74BCT8240ADWR SOIC24 8  y2(2) | 2 bc_1 output3 x 16 1 z
+  JP402 ? MON1 2X20 20 
+  RN302 ? 2k7 SIL8 5 
+ EndSubSection
+
+ SubSection secondary_nets_of LED2
+
+   SubSection LED2_R class NR
+     IC301 ? XC9536 PLCC-S44 4  pb00_03 | 98 bc_1 input x | 97 bc_1 output3 x 96 0 z
+     JP402 ? MON1 2X20 30 
+     RN302 ? 2k7 SIL8 6 
+   EndSubSection
+
+ EndSubSection secondary_nets_of LED2
+---------------------------------------------------------------------------------------------------------
+
+
+ SubSection LED3 class NR
+  D404 ? none LED5MM K 
+  IC303 ? SN74BCT8240ADWR SOIC24 7  y2(1) | 3 bc_1 output3 x 16 1 z
+  JP402 ? MON1 2X20 18 
+  RN302 ? 2k7 SIL8 8 
+ EndSubSection
+
+ SubSection secondary_nets_of LED3
+
+   SubSection LED3_R class NR
+     IC301 ? XC9536 PLCC-S44 8  pb00_05 | 92 bc_1 input x | 91 bc_1 output3 x 90 0 z
+     JP402 ? MON1 2X20 32 
+     RN302 ? 2k7 SIL8 7 
+   EndSubSection
+
+ EndSubSection secondary_nets_of LED3
+---------------------------------------------------------------------------------------------------------
+
+
+ SubSection LED4 class NR
+  IC303 ? SN74BCT8240ADWR SOIC24 5  y1(4) | 4 bc_1 output3 x 17 1 z
+  JP402 ? MON1 2X20 16 
+  RN303 ? 2k7 SIL8 1 
+ EndSubSection
+
+ SubSection secondary_nets_of LED4
+
+   SubSection LED4_R class NR
+     IC301 ? XC9536 PLCC-S44 9  pb00_07 | 86 bc_1 input x | 85 bc_1 output3 x 84 0 z
+     JP402 ? MON1 2X20 34 
+     RN303 ? 2k7 SIL8 2 
+   EndSubSection
+
+ EndSubSection secondary_nets_of LED4
+---------------------------------------------------------------------------------------------------------
+
+
+ SubSection LED5 class NR
+  IC303 ? SN74BCT8240ADWR SOIC24 4  y1(3) | 5 bc_1 output3 x 17 1 z
+  JP402 ? MON1 2X20 14 
+  RN303 ? 2k7 SIL8 4 
+ EndSubSection
+
+ SubSection secondary_nets_of LED5
+
+   SubSection LED5_R class NR
+     IC301 ? XC9536 PLCC-S44 11  pb00_08 | 83 bc_1 input x | 82 bc_1 output3 x 81 0 z
+     JP402 ? MON1 2X20 36 
+     RN303 ? 2k7 SIL8 3 
+   EndSubSection
+
+ EndSubSection secondary_nets_of LED5
+---------------------------------------------------------------------------------------------------------
+
+
+ SubSection LED6 class NR
+  IC303 ? SN74BCT8240ADWR SOIC24 3  y1(2) | 6 bc_1 output3 x 17 1 z
+  JP402 ? MON1 2X20 12 
+  RN303 ? 2k7 SIL8 5 
+ EndSubSection
+
+ SubSection secondary_nets_of LED6
+
+   SubSection LED6_R class NR
+     IC301 ? XC9536 PLCC-S44 12  pb00_09 | 80 bc_1 input x | 79 bc_1 output3 x 78 0 z
+     JP402 ? MON1 2X20 38 
+     RN303 ? 2k7 SIL8 6 
+   EndSubSection
+
+ EndSubSection secondary_nets_of LED6
+---------------------------------------------------------------------------------------------------------
+
+
+ SubSection LED7 class NR
+  IC303 ? SN74BCT8240ADWR SOIC24 2  y1(1) | 7 bc_1 output3 x 17 1 z
+  JP402 ? MON1 2X20 10 
+  RN303 ? 2k7 SIL8 8 
+ EndSubSection
+
+ SubSection secondary_nets_of LED7
+
+   SubSection LED7_R class NR
+     IC301 ? XC9536 PLCC-S44 13  pb00_10 | 77 bc_1 input x | 76 bc_1 output3 x 75 0 z
+     JP402 ? MON1 2X20 40 
+     RN303 ? 2k7 SIL8 7 
+   EndSubSection
+
+ EndSubSection secondary_nets_of LED7
+---------------------------------------------------------------------------------------------------------
+
+
+ SubSection /CPU_MREQ class DL
+  IC101 ? 74LS04 DIL14 11 
+  IC300 ? XC9536 PLCC-S44 28  pb01_13 | 14 bc_1 input x | 13 bc_1 output3 x 12 0 z
+  JP404 ? EXT_CTRL&DATA 2X20 22 
+  JP406 ? EXT_CTRL&DATA 2X20 22 
+  RN402 ? 8x10k SIL9 3 
+ EndSubSection
+
+ SubSection /CPU_RD class DH
+  IC200 ? none AM29F040 24 
+  IC201 ? none AM29F040 24 
+  IC202 ? UM62256_DIP DIL28-6 22 
+  IC203 ? UM62256_DIP DIL28-6 22 
+  IC300 ? XC9536 PLCC-S44 27  pb01_14 | 11 bc_1 input x | 10 bc_1 output3 x 9 0 z
+  JP404 ? EXT_CTRL&DATA 2X20 26 
+  JP406 ? EXT_CTRL&DATA 2X20 26 
+  RN402 ? 8x10k SIL9 5 
+ EndSubSection
+
+ SubSection /CPU_WR class PU
+  IC202 ? UM62256_DIP DIL28-6 27 
+  IC203 ? UM62256_DIP DIL28-6 27 
+  IC300 ? XC9536 PLCC-S44 26  pb01_15 | 8 bc_1 input x | 7 bc_1 output3 x 6 0 z
+  JP200 ? none flash 1 
+  JP200 ? none flash 13 
+  JP200 ? none flash 17 
+  JP404 ? EXT_CTRL&DATA 2X20 28 
+  JP406 ? EXT_CTRL&DATA 2X20 28 
+  RN402 ? 8x10k SIL9 6 
+ EndSubSection
+
+ SubSection /CS_000-800H class NA
+  IC103 ? 74LS00 DIL14 11 
+  IC200 ? none AM29F040 22 
+  IC300 ? XC9536 PLCC-S44 2  pb00_00 | 107 bc_1 input x | 106 bc_1 output3 x 105 0 z
+  JP403 ? MON2 2X20 18 
+ EndSubSection
+
+ SubSection /CS_1000-7000H class NA
+  IC102 ? 74LS10 DIL14 12 
+  IC202 ? UM62256_DIP DIL28-6 20 
+  IC300 ? XC9536 PLCC-S44 3  pb00_01 | 104 bc_1 input x | 103 bc_1 output3 x 102 0 z
+  JP403 ? MON2 2X20 20 
+ EndSubSection
+
+ SubSection /CS_8000H-EOR class NA
+  IC102 ? 74LS10 DIL14 8 
+  IC201 ? none AM29F040 22 
+  IC203 ? UM62256_DIP DIL28-6 20 
+  IC300 ? XC9536 PLCC-S44 4  pb00_03 | 98 bc_1 input x | 97 bc_1 output3 x 96 0 z
+  JP403 ? MON2 2X20 22 
+ EndSubSection
+
+ SubSection /CT_PL class DL
+  IC301 ? XC9536 PLCC-S44 28  pb01_13 | 14 bc_1 input x | 13 bc_1 output3 x 12 0 z
+  IC302 ? 74LS193 DIL16 11 
+  JP403 ? MON2 2X20 10 
+  RN300 ? 8x1k8 SIL9 2 
+ EndSubSection
+
+ SubSection /DRV_EN class PD
+  IC301 ? XC9536 PLCC-S44 27  pb01_14 | 11 bc_1 input x | 10 bc_1 output3 x 9 0 z
+  IC303 ? SN74BCT8240ADWR SOIC24 1  oe_neg1 | 17 bc_1 input 1
+  IC303 ? SN74BCT8240ADWR SOIC24 24  oe_neg2 | 16 bc_1 input x
+  JP403 ? MON2 2X20 12 
+  RN301 ? 8x220 SIL9 3 
+ EndSubSection
+
+ SubSection /OSC_HALT class PU
+  IC103 ? 74LS00 DIL14 2 
+  IC301 ? XC9536 PLCC-S44 26  pb01_15 | 8 bc_1 input x | 7 bc_1 output3 x 6 0 z
+  JP403 ? MON2 2X20 16 
+  RN300 ? 8x1k8 SIL9 6 
+ EndSubSection
+
+ SubSection /SYS_RESET class PU
+  IC300 ? XC9536 PLCC-S44 39  pb01_05 | 38 bc_1 input x | 37 bc_1 output3 x 36 0 z
+  IC301 ? XC9536 PLCC-S44 39  pb01_05 | 38 bc_1 input x | 37 bc_1 output3 x 36 0 z
+  JP405 ? EXT_CTRL&ADDR 2X20 40 
+  JP407 ? EXT_CTRL&ADDR 2X20 40 
+  RN402 ? 8x10k SIL9 2 
+  T400 ? BC548C TO92 3 
+ EndSubSection
+
+ SubSection A0 class PU
+  IC200 ? none AM29F040 12 
+  IC201 ? none AM29F040 12 
+  IC202 ? UM62256_DIP DIL28-6 10 
+  IC203 ? UM62256_DIP DIL28-6 10 
+  IC300 ? XC9536 PLCC-S44 14  pb00_11 | 74 bc_1 input x | 73 bc_1 output3 x 72 0 z
+  IC303 ? SN74BCT8240ADWR SOIC24 20  a1(4) | 12 bc_1 input x
+  JP405 ? EXT_CTRL&ADDR 2X20 2 
+  JP407 ? EXT_CTRL&ADDR 2X20 2 
+  RN403 ? 8x10k SIL9 2 
+ EndSubSection
+
+ SubSection A1 class PU
+  IC200 ? none AM29F040 11 
+  IC201 ? none AM29F040 11 
+  IC202 ? UM62256_DIP DIL28-6 9 
+  IC203 ? UM62256_DIP DIL28-6 9 
+  IC300 ? XC9536 PLCC-S44 18  pb00_12 | 71 bc_1 input x | 70 bc_1 output3 x 69 0 z
+  IC303 ? SN74BCT8240ADWR SOIC24 21  a1(3) | 13 bc_1 input x
+  JP405 ? EXT_CTRL&ADDR 2X20 4 
+  JP407 ? EXT_CTRL&ADDR 2X20 4 
+  RN403 ? 8x10k SIL9 3 
+ EndSubSection
+
+ SubSection A2 class PU
+  IC200 ? none AM29F040 10 
+  IC201 ? none AM29F040 10 
+  IC202 ? UM62256_DIP DIL28-6 8 
+  IC203 ? UM62256_DIP DIL28-6 8 
+  IC300 ? XC9536 PLCC-S44 19  pb00_13 | 68 bc_1 input x | 67 bc_1 output3 x 66 0 z
+  IC303 ? SN74BCT8240ADWR SOIC24 22  a1(2) | 14 bc_1 input x
+  JP405 ? EXT_CTRL&ADDR 2X20 6 
+  JP407 ? EXT_CTRL&ADDR 2X20 6 
+  RN403 ? 8x10k SIL9 4 
+ EndSubSection
+
+ SubSection A3 class PU
+  IC200 ? none AM29F040 9 
+  IC201 ? none AM29F040 9 
+  IC202 ? UM62256_DIP DIL28-6 7 
+  IC203 ? UM62256_DIP DIL28-6 7 
+  IC300 ? XC9536 PLCC-S44 20  pb00_14 | 65 bc_1 input x | 64 bc_1 output3 x 63 0 z
+  IC303 ? SN74BCT8240ADWR SOIC24 23  a1(1) | 15 bc_1 input x
+  JP405 ? EXT_CTRL&ADDR 2X20 8 
+  JP407 ? EXT_CTRL&ADDR 2X20 8 
+  RN403 ? 8x10k SIL9 5 
+ EndSubSection
+
+ SubSection A4 class PU
+  IC200 ? none AM29F040 8 
+  IC201 ? none AM29F040 8 
+  IC202 ? UM62256_DIP DIL28-6 6 
+  IC203 ? UM62256_DIP DIL28-6 6 
+  IC300 ? XC9536 PLCC-S44 22  pb00_15 | 62 bc_1 input x | 61 bc_1 output3 x 60 0 z
+  JP405 ? EXT_CTRL&ADDR 2X20 10 
+  JP407 ? EXT_CTRL&ADDR 2X20 10 
+  RN403 ? 8x10k SIL9 6 
+ EndSubSection
+
+ SubSection A5 class PU
+  IC200 ? none AM29F040 7 
+  IC201 ? none AM29F040 7 
+  IC202 ? UM62256_DIP DIL28-6 5 
+  IC203 ? UM62256_DIP DIL28-6 5 
+  IC300 ? XC9536 PLCC-S44 24  pb00_16 | 59 bc_1 input x | 58 bc_1 output3 x 57 0 z
+  JP405 ? EXT_CTRL&ADDR 2X20 12 
+  JP407 ? EXT_CTRL&ADDR 2X20 12 
+  RN403 ? 8x10k SIL9 7 
+ EndSubSection
+
+ SubSection A6 class PU
+  IC200 ? none AM29F040 6 
+  IC201 ? none AM29F040 6 
+  IC202 ? UM62256_DIP DIL28-6 4 
+  IC203 ? UM62256_DIP DIL28-6 4 
+  IC300 ? XC9536 PLCC-S44 1  pb01_00 | 53 bc_1 input x | 52 bc_1 output3 x 51 0 z
+  JP405 ? EXT_CTRL&ADDR 2X20 14 
+  JP407 ? EXT_CTRL&ADDR 2X20 14 
+  RN403 ? 8x10k SIL9 8 
+ EndSubSection
+
+ SubSection A7 class PU
+  IC200 ? none AM29F040 5 
+  IC201 ? none AM29F040 5 
+  IC202 ? UM62256_DIP DIL28-6 3 
+  IC203 ? UM62256_DIP DIL28-6 3 
+  IC300 ? XC9536 PLCC-S44 44  pb01_01 | 50 bc_1 input x | 49 bc_1 output3 x 48 0 z
+  JP405 ? EXT_CTRL&ADDR 2X20 16 
+  JP407 ? EXT_CTRL&ADDR 2X20 16 
+  RN403 ? 8x10k SIL9 9 
+ EndSubSection
+
+ SubSection A8 class PU
+  IC200 ? none AM29F040 27 
+  IC201 ? none AM29F040 27 
+  IC202 ? UM62256_DIP DIL28-6 25 
+  IC203 ? UM62256_DIP DIL28-6 25 
+  IC300 ? XC9536 PLCC-S44 43  pb01_03 | 44 bc_1 input x | 43 bc_1 output3 x 42 0 z
+  JP405 ? EXT_CTRL&ADDR 2X20 18 
+  JP407 ? EXT_CTRL&ADDR 2X20 18 
+  RN404 ? 8x10k SIL9 2 
+ EndSubSection
+
+ SubSection A9 class PU
+  IC200 ? none AM29F040 26 
+  IC201 ? none AM29F040 26 
+  IC202 ? UM62256_DIP DIL28-6 24 
+  IC203 ? UM62256_DIP DIL28-6 24 
+  IC300 ? XC9536 PLCC-S44 38  pb01_06 | 35 bc_1 input x | 34 bc_1 output3 x 33 0 z
+  JP405 ? EXT_CTRL&ADDR 2X20 20 
+  JP407 ? EXT_CTRL&ADDR 2X20 20 
+  RN404 ? 8x10k SIL9 3 
+ EndSubSection
+
+ SubSection A10 class PU
+  IC200 ? none AM29F040 23 
+  IC201 ? none AM29F040 23 
+  IC202 ? UM62256_DIP DIL28-6 21 
+  IC203 ? UM62256_DIP DIL28-6 21 
+  IC300 ? XC9536 PLCC-S44 37  pb01_07 | 32 bc_1 input x | 31 bc_1 output3 x 30 0 z
+  JP405 ? EXT_CTRL&ADDR 2X20 22 
+  JP407 ? EXT_CTRL&ADDR 2X20 22 
+  RN404 ? 8x10k SIL9 4 
+ EndSubSection
+
+ SubSection A11 class PU
+  IC100 ? 74LS138 DIL16 1 
+  IC200 ? none AM29F040 25 
+  IC201 ? none AM29F040 25 
+  IC202 ? UM62256_DIP DIL28-6 23 
+  IC203 ? UM62256_DIP DIL28-6 23 
+  IC300 ? XC9536 PLCC-S44 36  pb01_08 | 29 bc_1 input x | 28 bc_1 output3 x 27 0 z
+  JP405 ? EXT_CTRL&ADDR 2X20 24 
+  JP407 ? EXT_CTRL&ADDR 2X20 24 
+  RN404 ? 8x10k SIL9 5 
+ EndSubSection
+
+ SubSection A12 class PU
+  IC100 ? 74LS138 DIL16 2 
+  IC101 ? 74LS04 DIL14 1 
+  IC201 ? none AM29F040 4 
+  IC202 ? UM62256_DIP DIL28-6 2 
+  IC203 ? UM62256_DIP DIL28-6 2 
+  IC300 ? XC9536 PLCC-S44 35  pb01_09 | 26 bc_1 input x | 25 bc_1 output3 x 24 0 z
+  JP405 ? EXT_CTRL&ADDR 2X20 26 
+  JP407 ? EXT_CTRL&ADDR 2X20 26 
+  RN404 ? 8x10k SIL9 6 
+ EndSubSection
+
+ SubSection A13 class PU
+  IC100 ? 74LS138 DIL16 3 
+  IC101 ? 74LS04 DIL14 3 
+  IC201 ? none AM29F040 28 
+  IC202 ? UM62256_DIP DIL28-6 26 
+  IC203 ? UM62256_DIP DIL28-6 26 
+  IC300 ? XC9536 PLCC-S44 34  pb01_10 | 23 bc_1 input x | 22 bc_1 output3 x 21 0 z
+  JP405 ? EXT_CTRL&ADDR 2X20 28 
+  JP407 ? EXT_CTRL&ADDR 2X20 28 
+  RN404 ? 8x10k SIL9 7 
+ EndSubSection
+
+ SubSection A14 class PU
+  IC100 ? 74LS138 DIL16 4 
+  IC101 ? 74LS04 DIL14 5 
+  IC201 ? none AM29F040 29 
+  IC202 ? UM62256_DIP DIL28-6 1 
+  IC203 ? UM62256_DIP DIL28-6 1 
+  IC300 ? XC9536 PLCC-S44 33  pb01_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z
+  JP405 ? EXT_CTRL&ADDR 2X20 30 
+  JP407 ? EXT_CTRL&ADDR 2X20 30 
+  RN404 ? 8x10k SIL9 8 
+ EndSubSection
+
+ SubSection A15 class PU
+  IC100 ? 74LS138 DIL16 5 
+  IC101 ? 74LS04 DIL14 9 
+  IC102 ? 74LS10 DIL14 11 
+  IC300 ? XC9536 PLCC-S44 29  pb01_12 | 17 bc_1 input x | 16 bc_1 output3 x 15 0 z
+  JP405 ? EXT_CTRL&ADDR 2X20 32 
+  JP407 ? EXT_CTRL&ADDR 2X20 32 
+  RN404 ? 8x10k SIL9 9 
+ EndSubSection
+
+ SubSection CPU_CLK class PU
+  IC300 ? XC9536 PLCC-S44 5  pb00_02 | 101 bc_1 input x | 100 bc_1 output3 x 99 0 z
+  IC301 ? XC9536 PLCC-S44 5  pb00_02 | 101 bc_1 input x | 100 bc_1 output3 x 99 0 z
+  JP404 ? EXT_CTRL&DATA 2X20 40 
+  JP406 ? EXT_CTRL&DATA 2X20 40 
+  RN402 ? 8x10k SIL9 4 
+ EndSubSection
+
+ SubSection D0 class PU
+  IC200 ? none AM29F040 13 
+  IC201 ? none AM29F040 13 
+  IC202 ? UM62256_DIP DIL28-6 11 
+  IC203 ? UM62256_DIP DIL28-6 11 
+  IC301 ? XC9536 PLCC-S44 1  pb01_00 | 53 bc_1 input x | 52 bc_1 output3 x 51 0 z
+  IC302 ? 74LS193 DIL16 15 
+  JP404 ? EXT_CTRL&DATA 2X20 2 
+  JP406 ? EXT_CTRL&DATA 2X20 2 
+  RN401 ? 8x10k SIL9 2 
+ EndSubSection
+
+ SubSection secondary_nets_of D0
+
+   SubSection CT_D0 class PU
+     IC302 ? 74LS193 DIL16 3 
+     IC303 ? SN74BCT8240ADWR SOIC24 15  a2(4) | 8 bc_1 input x
+     JP402 ? MON1 2X20 2 
+   EndSubSection
+
+ EndSubSection secondary_nets_of D0
+---------------------------------------------------------------------------------------------------------
+
+
+ SubSection D1 class PU
+  IC200 ? none AM29F040 14 
+  IC201 ? none AM29F040 14 
+  IC202 ? UM62256_DIP DIL28-6 12 
+  IC203 ? UM62256_DIP DIL28-6 12 
+  IC301 ? XC9536 PLCC-S44 44  pb01_01 | 50 bc_1 input x | 49 bc_1 output3 x 48 0 z
+  IC302 ? 74LS193 DIL16 1 
+  JP404 ? EXT_CTRL&DATA 2X20 4 
+  JP406 ? EXT_CTRL&DATA 2X20 4 
+  RN401 ? 8x10k SIL9 3 
+ EndSubSection
+
+ SubSection secondary_nets_of D1
+
+   SubSection CT_D1 class PU
+     IC302 ? 74LS193 DIL16 2 
+     IC303 ? SN74BCT8240ADWR SOIC24 16  a2(3) | 9 bc_1 input x
+     JP402 ? MON1 2X20 4 
+   EndSubSection
+
+ EndSubSection secondary_nets_of D1
+---------------------------------------------------------------------------------------------------------
+
+
+ SubSection D2 class PU
+  IC200 ? none AM29F040 15 
+  IC201 ? none AM29F040 15 
+  IC202 ? UM62256_DIP DIL28-6 13 
+  IC203 ? UM62256_DIP DIL28-6 13 
+  IC301 ? XC9536 PLCC-S44 43  pb01_03 | 44 bc_1 input x | 43 bc_1 output3 x 42 0 z
+  IC302 ? 74LS193 DIL16 10 
+  JP404 ? EXT_CTRL&DATA 2X20 6 
+  JP406 ? EXT_CTRL&DATA 2X20 6 
+  RN401 ? 8x10k SIL9 4 
+ EndSubSection
+
+ SubSection secondary_nets_of D2
+
+   SubSection CT_D2 class PU
+     IC302 ? 74LS193 DIL16 6 
+     IC303 ? SN74BCT8240ADWR SOIC24 17  a2(2) | 10 bc_1 input x
+     JP402 ? MON1 2X20 6 
+   EndSubSection
+
+ EndSubSection secondary_nets_of D2
+---------------------------------------------------------------------------------------------------------
+
+
+ SubSection D3 class PU
+  IC200 ? none AM29F040 17 
+  IC201 ? none AM29F040 17 
+  IC202 ? UM62256_DIP DIL28-6 15 
+  IC203 ? UM62256_DIP DIL28-6 15 
+  IC301 ? XC9536 PLCC-S44 38  pb01_06 | 35 bc_1 input x | 34 bc_1 output3 x 33 0 z
+  IC302 ? 74LS193 DIL16 9 
+  JP404 ? EXT_CTRL&DATA 2X20 8 
+  JP406 ? EXT_CTRL&DATA 2X20 8 
+  RN401 ? 8x10k SIL9 5 
+ EndSubSection
+
+ SubSection secondary_nets_of D3
+
+   SubSection CT_D3 class PU
+     IC302 ? 74LS193 DIL16 7 
+     IC303 ? SN74BCT8240ADWR SOIC24 19  a2(1) | 11 bc_1 input x
+     JP402 ? MON1 2X20 8 
+   EndSubSection
+
+ EndSubSection secondary_nets_of D3
+---------------------------------------------------------------------------------------------------------
+
+
+ SubSection D4 class PU
+  IC200 ? none AM29F040 18 
+  IC201 ? none AM29F040 18 
+  IC202 ? UM62256_DIP DIL28-6 16 
+  IC203 ? UM62256_DIP DIL28-6 16 
+  IC301 ? XC9536 PLCC-S44 37  pb01_07 | 32 bc_1 input x | 31 bc_1 output3 x 30 0 z
+  JP404 ? EXT_CTRL&DATA 2X20 10 
+  JP406 ? EXT_CTRL&DATA 2X20 10 
+  RN401 ? 8x10k SIL9 6 
+ EndSubSection
+
+ SubSection D5 class PU
+  IC200 ? none AM29F040 19 
+  IC201 ? none AM29F040 19 
+  IC202 ? UM62256_DIP DIL28-6 17 
+  IC203 ? UM62256_DIP DIL28-6 17 
+  IC301 ? XC9536 PLCC-S44 36  pb01_08 | 29 bc_1 input x | 28 bc_1 output3 x 27 0 z
+  JP404 ? EXT_CTRL&DATA 2X20 12 
+  JP406 ? EXT_CTRL&DATA 2X20 12 
+  RN401 ? 8x10k SIL9 7 
+ EndSubSection
+
+ SubSection D6 class PU
+  IC200 ? none AM29F040 20 
+  IC201 ? none AM29F040 20 
+  IC202 ? UM62256_DIP DIL28-6 18 
+  IC203 ? UM62256_DIP DIL28-6 18 
+  IC301 ? XC9536 PLCC-S44 35  pb01_09 | 26 bc_1 input x | 25 bc_1 output3 x 24 0 z
+  JP404 ? EXT_CTRL&DATA 2X20 14 
+  JP406 ? EXT_CTRL&DATA 2X20 14 
+  RN401 ? 8x10k SIL9 8 
+ EndSubSection
+
+ SubSection D7 class PU
+  IC200 ? none AM29F040 21 
+  IC201 ? none AM29F040 21 
+  IC202 ? UM62256_DIP DIL28-6 19 
+  IC203 ? UM62256_DIP DIL28-6 19 
+  IC301 ? XC9536 PLCC-S44 34  pb01_10 | 23 bc_1 input x | 22 bc_1 output3 x 21 0 z
+  JP404 ? EXT_CTRL&DATA 2X20 16 
+  JP406 ? EXT_CTRL&DATA 2X20 16 
+  RN401 ? 8x10k SIL9 9 
+ EndSubSection
+
+ SubSection OSC_OUT class NA
+  IC103 ? 74LS00 DIL14 6 
+  IC300 ? XC9536 PLCC-S44 6  pb00_04 | 95 bc_1 input x | 94 bc_1 output3 x 93 0 z
+  IC301 ? XC9536 PLCC-S44 6  pb00_04 | 95 bc_1 input x | 94 bc_1 output3 x 93 0 z
+  IC302 ? 74LS193 DIL16 5 
+  JP403 ? MON2 2X20 14 
+  R102 ? 10k 0207/10 2 
+  RN300 ? 8x1k8 SIL9 7 
+ EndSubSection
+
+ SubSection PD1 class PD
+  IC300 ? XC9536 PLCC-S44 7  pb00_06 | 89 bc_1 input x | 88 bc_1 output3 x 87 0 z
+  IC301 ? XC9536 PLCC-S44 7  pb00_06 | 89 bc_1 input x | 88 bc_1 output3 x 87 0 z
+  JP403 ? MON2 2X20 2 
+  RN301 ? 8x220 SIL9 2 
+ EndSubSection
+
+ SubSection PU1 class PU
+  IC300 ? XC9536 PLCC-S44 40  pb01_04 | 41 bc_1 input x | 40 bc_1 output3 x 39 0 z
+  IC300 ? XC9536 PLCC-S44 42  pb01_02 | 47 bc_1 input x | 46 bc_1 output3 x 45 0 z
+  IC301 ? XC9536 PLCC-S44 40  pb01_04 | 41 bc_1 input x | 40 bc_1 output3 x 39 0 z
+  IC301 ? XC9536 PLCC-S44 42  pb01_02 | 47 bc_1 input x | 46 bc_1 output3 x 45 0 z
+  JP403 ? MON2 2X20 4 
+  RN300 ? 8x1k8 SIL9 5 
+ EndSubSection
+
+ SubSection RST class DL
+  IC300 ? XC9536 PLCC-S44 25  pb01_16 | 5 bc_1 input x | 4 bc_1 output3 x 3 0 z
+  JP403 ? MON2 2X20 40 
+  R402 ? 2k7 0207/10 2 
+  RN301 ? 8x220 SIL9 4 
+ EndSubSection
+
+ SubSection SCL class PU
+  IC301 ? XC9536 PLCC-S44 29  pb01_12 | 17 bc_1 input x | 16 bc_1 output3 x 15 0 z
+  JP403 ? MON2 2X20 8 
+  R401 ? 160 0207/10 2 
+  RN300 ? 8x1k8 SIL9 4 
+ EndSubSection
+
+ SubSection SDA class PU
+  IC301 ? XC9536 PLCC-S44 33  pb01_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z
+  JP403 ? MON2 2X20 6 
+  R400 ? 160 0207/10 1 
+  RN300 ? 8x1k8 SIL9 3 
+ EndSubSection
+
+ -- non-optimized nets follow ...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ SubSection +5V class NA
+  C100 ? 100n C050-030X075 1 
+  C101 ? 100n C050-030X075 1 
+  C102 ? 100n C050-030X075 1 
+  C103 ? 100n C050-030X075 1 
+  C200 ? 100n C050-030X075 1 
+  C201 ? 100n C050-030X075 1 
+  C202 ? 100n C050-030X075 1 
+  C3001 ? 100n C050-030X075 1 
+  C3002 ? 100n C050-030X075 1 
+  C3003 ? 100n C050-030X075 1 
+  C3011 ? 100n C050-030X075 1 
+  C3012 ? 100n C050-030X075 1 
+  C3013 ? 100n C050-030X075 1 
+  C302 ? 100n C050-025X075 1 
+  C303 ? 100n C050-030X075 1 
+  C400 ? 100n C050-030X075 1 
+  C401 ? 100�/10V E2,5-7 + 
+  IC100 ? 74LS138 DIL16 16 
+  IC101 ? 74LS04 DIL14 14 
+  IC102 ? 74LS10 DIL14 14 
+  IC103 ? 74LS00 DIL14 14 
+  IC103 ? 74LS00 DIL14 5 
+  IC200 ? none AM29F040 32 
+  IC201 ? none AM29F040 32 
+  IC202 ? UM62256_DIP DIL28-6 28 
+  IC203 ? UM62256_DIP DIL28-6 28 
+  IC300 ? XC9536 PLCC-S44 21  vccint_1
+  IC300 ? XC9536 PLCC-S44 32  vccio_1
+  IC300 ? XC9536 PLCC-S44 41  vccint_vpp
+  IC301 ? XC9536 PLCC-S44 21  vccint_1
+  IC301 ? XC9536 PLCC-S44 32  vccio_1
+  IC301 ? XC9536 PLCC-S44 41  vccint_vpp
+  IC302 ? 74LS193 DIL16 16 
+  IC302 ? 74LS193 DIL16 4 
+  IC303 ? SN74BCT8240ADWR SOIC24 18  vcc
+  IC400 ? 24C08P DIL8 8 
+  JP200 ? none flash 16 
+  JP200 ? none flash 20 
+  R100 ? 10k 0207/10 2 
+  RN200 ? 8x10k SIL9 1 
+  RN300 ? 8x1k8 SIL9 1 
+  RN400 ? 8x220 SIL9 1 
+  RN401 ? 8x10k SIL9 1 
+  RN402 ? 8x10k SIL9 1 
+  RN403 ? 8x10k SIL9 1 
+  RN404 ? 8x10k SIL9 1 
+  RN405 ? 8x4k7 SIL9 1 
+  X400 ? none PWR 1 
+  X400 ? none PWR 3 
+ EndSubSection
+
+ SubSection /A12 class NA
+  IC101 ? 74LS04 DIL14 2 
+  IC102 ? 74LS10 DIL14 3 
+ EndSubSection
+
+ SubSection /A13 class NA
+  IC101 ? 74LS04 DIL14 4 
+  IC102 ? 74LS10 DIL14 4 
+ EndSubSection
+
+ SubSection /A14 class NA
+  IC101 ? 74LS04 DIL14 6 
+  IC102 ? 74LS10 DIL14 5 
+ EndSubSection
+
+ SubSection /A15 class NA
+  IC101 ? 74LS04 DIL14 8 
+  IC102 ? 74LS10 DIL14 2 
+ EndSubSection
+
+ SubSection /CPU_BUSAK class NA
+  JP404 ? EXT_CTRL&DATA 2X20 38 
+  JP406 ? EXT_CTRL&DATA 2X20 38 
+ EndSubSection
+
+ SubSection /CPU_BUSREQ class NA
+  JP404 ? EXT_CTRL&DATA 2X20 36 
+  JP406 ? EXT_CTRL&DATA 2X20 36 
+ EndSubSection
+
+ SubSection /CPU_HALT class NA
+  JP404 ? EXT_CTRL&DATA 2X20 32 
+  JP406 ? EXT_CTRL&DATA 2X20 32 
+ EndSubSection
+
+ SubSection /CPU_INT class NA
+  JP405 ? EXT_CTRL&ADDR 2X20 36 
+  JP407 ? EXT_CTRL&ADDR 2X20 36 
+ EndSubSection
+
+ SubSection /CPU_IOREQ class NA
+  JP404 ? EXT_CTRL&DATA 2X20 24 
+  JP406 ? EXT_CTRL&DATA 2X20 24 
+ EndSubSection
+
+ SubSection /CPU_M1 class NA
+  JP404 ? EXT_CTRL&DATA 2X20 20 
+  JP406 ? EXT_CTRL&DATA 2X20 20 
+ EndSubSection
+
+ SubSection /CPU_NMI class NA
+  JP405 ? EXT_CTRL&ADDR 2X20 38 
+  JP407 ? EXT_CTRL&ADDR 2X20 38 
+ EndSubSection
+
+ SubSection /CPU_RFSH class NA
+  JP404 ? EXT_CTRL&DATA 2X20 30 
+  JP406 ? EXT_CTRL&DATA 2X20 30 
+ EndSubSection
+
+ SubSection /CPU_WAIT class NA
+  JP404 ? EXT_CTRL&DATA 2X20 34 
+  JP406 ? EXT_CTRL&DATA 2X20 34 
+ EndSubSection
+
+ SubSection /CS_000H class NA
+  IC100 ? 74LS138 DIL16 15 
+  IC103 ? 74LS00 DIL14 9 
+ EndSubSection
+
+ SubSection /CS_800H class NA
+  IC100 ? 74LS138 DIL16 14 
+  IC103 ? 74LS00 DIL14 10 
+ EndSubSection
+
+ SubSection /CS_1000H class NA
+  IC100 ? 74LS138 DIL16 13 
+ EndSubSection
+
+ SubSection /CS_1800H class NA
+  IC100 ? 74LS138 DIL16 12 
+ EndSubSection
+
+ SubSection /CS_2000H class NA
+  IC100 ? 74LS138 DIL16 11 
+ EndSubSection
+
+ SubSection /CS_2800H class NA
+  IC100 ? 74LS138 DIL16 10 
+ EndSubSection
+
+ SubSection /CS_3000H class NA
+  IC100 ? 74LS138 DIL16 9 
+ EndSubSection
+
+ SubSection /CS_3800H class NA
+  IC100 ? 74LS138 DIL16 7 
+ EndSubSection
+
+ SubSection /TRST class NA
+  JP400 ? JTAG 2X05 9 
+  JP403 ? MON2 2X20 28 
+  RN405 ? 8x4k7 SIL9 6 
+ EndSubSection
+
+ SubSection /WE0 class NA
+  IC200 ? none AM29F040 31 
+  JP200 ? none flash 14 
+ EndSubSection
+
+ SubSection /WE1 class NA
+  IC201 ? none AM29F040 31 
+  JP200 ? none flash 18 
+ EndSubSection
+
+ SubSection A12ORA13ORA14 class NA
+  IC102 ? 74LS10 DIL14 1 
+  IC102 ? 74LS10 DIL14 6 
+ EndSubSection
+
+ SubSection C14+ class NA
+  C104 ? 10�/10V E2,5-7 + 
+  IC103 ? 74LS00 DIL14 3 
+  IC103 ? 74LS00 DIL14 4 
+ EndSubSection
+
+ SubSection C14- class NA
+  C104 ? 10�/10V E2,5-7 - 
+  R101 ? 2k7 0207/10 1 
+ EndSubSection
+
+ SubSection CS_000-800H class NA
+  IC103 ? 74LS00 DIL14 12 
+  IC103 ? 74LS00 DIL14 13 
+  IC103 ? 74LS00 DIL14 8 
+ EndSubSection
+
+ SubSection D4_A class NA
+  D400 ? none LED5MM A 
+  RN400 ? 8x220 SIL9 6 
+ EndSubSection
+
+ SubSection EXT_IEI class NA
+  JP405 ? EXT_CTRL&ADDR 2X20 34 
+  JP407 ? EXT_CTRL&ADDR 2X20 34 
+ EndSubSection
+
+ SubSection GND class NA
+  C100 ? 100n C050-030X075 2 
+  C101 ? 100n C050-030X075 2 
+  C102 ? 100n C050-030X075 2 
+  C103 ? 100n C050-030X075 2 
+  C200 ? 100n C050-030X075 2 
+  C201 ? 100n C050-030X075 2 
+  C202 ? 100n C050-030X075 2 
+  C3001 ? 100n C050-030X075 2 
+  C3002 ? 100n C050-030X075 2 
+  C3003 ? 100n C050-030X075 2 
+  C3011 ? 100n C050-030X075 2 
+  C3012 ? 100n C050-030X075 2 
+  C3013 ? 100n C050-030X075 2 
+  C302 ? 100n C050-025X075 2 
+  C303 ? 100n C050-030X075 2 
+  C400 ? 100n C050-030X075 2 
+  C401 ? 100�/10V E2,5-7 - 
+  D400 ? none LED5MM K 
+  IC100 ? 74LS138 DIL16 8 
+  IC101 ? 74LS04 DIL14 13 
+  IC101 ? 74LS04 DIL14 7 
+  IC102 ? 74LS10 DIL14 7 
+  IC103 ? 74LS00 DIL14 7 
+  IC200 ? none AM29F040 1 
+  IC200 ? none AM29F040 16 
+  IC200 ? none AM29F040 2 
+  IC200 ? none AM29F040 29 
+  IC200 ? none AM29F040 3 
+  IC200 ? none AM29F040 30 
+  IC201 ? none AM29F040 16 
+  IC201 ? none AM29F040 30 
+  IC202 ? UM62256_DIP DIL28-6 14 
+  IC203 ? UM62256_DIP DIL28-6 14 
+  IC300 ? XC9536 PLCC-S44 10  vssio_1
+  IC300 ? XC9536 PLCC-S44 23  vssint_1
+  IC300 ? XC9536 PLCC-S44 31  vssio_2
+  IC301 ? XC9536 PLCC-S44 10  vssio_1
+  IC301 ? XC9536 PLCC-S44 23  vssint_1
+  IC301 ? XC9536 PLCC-S44 31  vssio_2
+  IC302 ? 74LS193 DIL16 14 
+  IC302 ? 74LS193 DIL16 8 
+  IC303 ? SN74BCT8240ADWR SOIC24 6  gnd
+  IC400 ? 24C08P DIL8 1 
+  IC400 ? 24C08P DIL8 2 
+  IC400 ? 24C08P DIL8 3 
+  IC400 ? 24C08P DIL8 4 
+  IC400 ? 24C08P DIL8 7 
+  JP200 ? none flash 10 
+  JP200 ? none flash 12 
+  JP200 ? none flash 3 
+  JP200 ? none flash 6 
+  JP200 ? none flash 8 
+  JP400 ? JTAG 2X05 2 
+  JP400 ? JTAG 2X05 4 
+  JP400 ? JTAG 2X05 6 
+  JP400 ? JTAG 2X05 8 
+  JP401 ? none JTAG 3 
+  JP401 ? none JTAG 5 
+  JP401 ? none JTAG 7 
+  JP402 ? MON1 2X20 1 
+  JP402 ? MON1 2X20 11 
+  JP402 ? MON1 2X20 13 
+  JP402 ? MON1 2X20 15 
+  JP402 ? MON1 2X20 17 
+  JP402 ? MON1 2X20 19 
+  JP402 ? MON1 2X20 21 
+  JP402 ? MON1 2X20 23 
+  JP402 ? MON1 2X20 25 
+  JP402 ? MON1 2X20 27 
+  JP402 ? MON1 2X20 29 
+  JP402 ? MON1 2X20 3 
+  JP402 ? MON1 2X20 31 
+  JP402 ? MON1 2X20 33 
+  JP402 ? MON1 2X20 35 
+  JP402 ? MON1 2X20 37 
+  JP402 ? MON1 2X20 39 
+  JP402 ? MON1 2X20 5 
+  JP402 ? MON1 2X20 7 
+  JP402 ? MON1 2X20 9 
+  JP403 ? MON2 2X20 1 
+  JP403 ? MON2 2X20 11 
+  JP403 ? MON2 2X20 13 
+  JP403 ? MON2 2X20 15 
+  JP403 ? MON2 2X20 17 
+  JP403 ? MON2 2X20 19 
+  JP403 ? MON2 2X20 21 
+  JP403 ? MON2 2X20 23 
+  JP403 ? MON2 2X20 25 
+  JP403 ? MON2 2X20 27 
+  JP403 ? MON2 2X20 29 
+  JP403 ? MON2 2X20 3 
+  JP403 ? MON2 2X20 31 
+  JP403 ? MON2 2X20 33 
+  JP403 ? MON2 2X20 35 
+  JP403 ? MON2 2X20 37 
+  JP403 ? MON2 2X20 39 
+  JP403 ? MON2 2X20 5 
+  JP403 ? MON2 2X20 7 
+  JP403 ? MON2 2X20 9 
+  JP404 ? EXT_CTRL&DATA 2X20 1 
+  JP404 ? EXT_CTRL&DATA 2X20 11 
+  JP404 ? EXT_CTRL&DATA 2X20 13 
+  JP404 ? EXT_CTRL&DATA 2X20 15 
+  JP404 ? EXT_CTRL&DATA 2X20 17 
+  JP404 ? EXT_CTRL&DATA 2X20 19 
+  JP404 ? EXT_CTRL&DATA 2X20 21 
+  JP404 ? EXT_CTRL&DATA 2X20 23 
+  JP404 ? EXT_CTRL&DATA 2X20 25 
+  JP404 ? EXT_CTRL&DATA 2X20 27 
+  JP404 ? EXT_CTRL&DATA 2X20 29 
+  JP404 ? EXT_CTRL&DATA 2X20 3 
+  JP404 ? EXT_CTRL&DATA 2X20 31 
+  JP404 ? EXT_CTRL&DATA 2X20 33 
+  JP404 ? EXT_CTRL&DATA 2X20 35 
+  JP404 ? EXT_CTRL&DATA 2X20 37 
+  JP404 ? EXT_CTRL&DATA 2X20 39 
+  JP404 ? EXT_CTRL&DATA 2X20 5 
+  JP404 ? EXT_CTRL&DATA 2X20 7 
+  JP404 ? EXT_CTRL&DATA 2X20 9 
+  JP405 ? EXT_CTRL&ADDR 2X20 1 
+  JP405 ? EXT_CTRL&ADDR 2X20 11 
+  JP405 ? EXT_CTRL&ADDR 2X20 13 
+  JP405 ? EXT_CTRL&ADDR 2X20 15 
+  JP405 ? EXT_CTRL&ADDR 2X20 17 
+  JP405 ? EXT_CTRL&ADDR 2X20 19 
+  JP405 ? EXT_CTRL&ADDR 2X20 21 
+  JP405 ? EXT_CTRL&ADDR 2X20 23 
+  JP405 ? EXT_CTRL&ADDR 2X20 25 
+  JP405 ? EXT_CTRL&ADDR 2X20 27 
+  JP405 ? EXT_CTRL&ADDR 2X20 29 
+  JP405 ? EXT_CTRL&ADDR 2X20 3 
+  JP405 ? EXT_CTRL&ADDR 2X20 31 
+  JP405 ? EXT_CTRL&ADDR 2X20 33 
+  JP405 ? EXT_CTRL&ADDR 2X20 35 
+  JP405 ? EXT_CTRL&ADDR 2X20 37 
+  JP405 ? EXT_CTRL&ADDR 2X20 39 
+  JP405 ? EXT_CTRL&ADDR 2X20 5 
+  JP405 ? EXT_CTRL&ADDR 2X20 7 
+  JP405 ? EXT_CTRL&ADDR 2X20 9 
+  JP406 ? EXT_CTRL&DATA 2X20 1 
+  JP406 ? EXT_CTRL&DATA 2X20 11 
+  JP406 ? EXT_CTRL&DATA 2X20 13 
+  JP406 ? EXT_CTRL&DATA 2X20 15 
+  JP406 ? EXT_CTRL&DATA 2X20 17 
+  JP406 ? EXT_CTRL&DATA 2X20 19 
+  JP406 ? EXT_CTRL&DATA 2X20 21 
+  JP406 ? EXT_CTRL&DATA 2X20 23 
+  JP406 ? EXT_CTRL&DATA 2X20 25 
+  JP406 ? EXT_CTRL&DATA 2X20 27 
+  JP406 ? EXT_CTRL&DATA 2X20 29 
+  JP406 ? EXT_CTRL&DATA 2X20 3 
+  JP406 ? EXT_CTRL&DATA 2X20 31 
+  JP406 ? EXT_CTRL&DATA 2X20 33 
+  JP406 ? EXT_CTRL&DATA 2X20 35 
+  JP406 ? EXT_CTRL&DATA 2X20 37 
+  JP406 ? EXT_CTRL&DATA 2X20 39 
+  JP406 ? EXT_CTRL&DATA 2X20 5 
+  JP406 ? EXT_CTRL&DATA 2X20 7 
+  JP406 ? EXT_CTRL&DATA 2X20 9 
+  JP407 ? EXT_CTRL&ADDR 2X20 1 
+  JP407 ? EXT_CTRL&ADDR 2X20 11 
+  JP407 ? EXT_CTRL&ADDR 2X20 13 
+  JP407 ? EXT_CTRL&ADDR 2X20 15 
+  JP407 ? EXT_CTRL&ADDR 2X20 17 
+  JP407 ? EXT_CTRL&ADDR 2X20 19 
+  JP407 ? EXT_CTRL&ADDR 2X20 21 
+  JP407 ? EXT_CTRL&ADDR 2X20 23 
+  JP407 ? EXT_CTRL&ADDR 2X20 25 
+  JP407 ? EXT_CTRL&ADDR 2X20 27 
+  JP407 ? EXT_CTRL&ADDR 2X20 29 
+  JP407 ? EXT_CTRL&ADDR 2X20 3 
+  JP407 ? EXT_CTRL&ADDR 2X20 31 
+  JP407 ? EXT_CTRL&ADDR 2X20 33 
+  JP407 ? EXT_CTRL&ADDR 2X20 35 
+  JP407 ? EXT_CTRL&ADDR 2X20 37 
+  JP407 ? EXT_CTRL&ADDR 2X20 39 
+  JP407 ? EXT_CTRL&ADDR 2X20 5 
+  JP407 ? EXT_CTRL&ADDR 2X20 7 
+  JP407 ? EXT_CTRL&ADDR 2X20 9 
+  R404 ? 330 0207/10 2 
+  R405 ? 330 0207/10 2 
+  RN301 ? 8x220 SIL9 1 
+  T100 ? BC548C TO92 1 
+  T400 ? BC548C TO92 1 
+  X400 ? none PWR 2 
+  X400 ? none PWR 4 
+ EndSubSection
+
+ SubSection LED0_K class NA
+  D401 ? none LED5MM A 
+  RN400 ? 8x220 SIL9 2 
+ EndSubSection
+
+ SubSection LED1_K class NA
+  D402 ? none LED5MM A 
+  RN400 ? 8x220 SIL9 3 
+ EndSubSection
+
+ SubSection LED2_K class NA
+  D403 ? none LED5MM A 
+  RN400 ? 8x220 SIL9 4 
+ EndSubSection
+
+ SubSection LED3_K class NA
+  D404 ? none LED5MM A 
+  RN400 ? 8x220 SIL9 5 
+ EndSubSection
+
+ SubSection MREQ class NA
+  IC100 ? 74LS138 DIL16 6 
+  IC101 ? 74LS04 DIL14 10 
+  IC102 ? 74LS10 DIL14 10 
+  IC102 ? 74LS10 DIL14 13 
+  IC102 ? 74LS10 DIL14 9 
+ EndSubSection
+
+ SubSection RSVD0 class NA
+  JP404 ? EXT_CTRL&DATA 2X20 18 
+  JP406 ? EXT_CTRL&DATA 2X20 18 
+ EndSubSection
+
+ SubSection SCL_R class NA
+  IC400 ? 24C08P DIL8 6 
+  R400 ? 160 0207/10 2 
+ EndSubSection
+
+ SubSection SDA_R class NA
+  IC400 ? 24C08P DIL8 5 
+  R401 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection SEL0 class NA
+  IC200 ? none AM29F040 4 
+  JP200 ? none flash 5 
+  RN200 ? 8x10k SIL9 3 
+ EndSubSection
+
+ SubSection SEL1 class NA
+  IC200 ? none AM29F040 28 
+  JP200 ? none flash 7 
+  RN200 ? 8x10k SIL9 2 
+ EndSubSection
+
+ SubSection SEL10 class NA
+  IC201 ? none AM29F040 3 
+  JP200 ? none flash 9 
+  RN200 ? 8x10k SIL9 5 
+ EndSubSection
+
+ SubSection SEL11 class NA
+  IC201 ? none AM29F040 1 
+  IC201 ? none AM29F040 2 
+  JP200 ? none flash 11 
+  RN200 ? 8x10k SIL9 4 
+ EndSubSection
+
+ SubSection T1_B class NA
+  R101 ? 2k7 0207/10 2 
+  R102 ? 10k 0207/10 1 
+  T100 ? BC548C TO92 2 
+ EndSubSection
+
+ SubSection T1_C class NA
+  IC103 ? 74LS00 DIL14 1 
+  R100 ? 10k 0207/10 1 
+  T100 ? BC548C TO92 3 
+ EndSubSection
+
+ SubSection T2_B class NA
+  R402 ? 2k7 0207/10 1 
+  T400 ? BC548C TO92 2 
+ EndSubSection
+
+ SubSection TCK class NA
+  IC300 ? XC9536 PLCC-S44 17  tck
+  IC301 ? XC9536 PLCC-S44 17  tck
+  IC303 ? SN74BCT8240ADWR SOIC24 13  tck
+  JP400 ? JTAG 2X05 1 
+  JP401 ? none JTAG 1 
+  R405 ? 330 0207/10 1 
+ EndSubSection
+
+ SubSection TDI class NA
+  IC301 ? XC9536 PLCC-S44 15  tdi
+  JP400 ? JTAG 2X05 7 
+  JP401 ? none JTAG 12 
+  JP403 ? MON2 2X20 36 
+  RN405 ? 8x4k7 SIL9 5 
+ EndSubSection
+
+ SubSection TDI_AC class NA
+  IC300 ? XC9536 PLCC-S44 15  tdi
+  IC301 ? XC9536 PLCC-S44 30  tdo
+  JP401 ? none JTAG 11 
+  JP403 ? MON2 2X20 34 
+  RN405 ? 8x4k7 SIL9 4 
+ EndSubSection
+
+ SubSection TDI_DRV class NA
+  IC300 ? XC9536 PLCC-S44 30  tdo
+  IC303 ? SN74BCT8240ADWR SOIC24 14  tdi
+  JP401 ? none JTAG 9 
+  JP403 ? MON2 2X20 32 
+  RN405 ? 8x4k7 SIL9 3 
+ EndSubSection
+
+ SubSection TDO class NA
+  IC303 ? SN74BCT8240ADWR SOIC24 11  tdo
+  JP400 ? JTAG 2X05 5 
+  JP401 ? none JTAG 10 
+  JP403 ? MON2 2X20 30 
+  RN405 ? 8x4k7 SIL9 2 
+ EndSubSection
+
+ SubSection TMS class NA
+  IC300 ? XC9536 PLCC-S44 16  tms
+  IC301 ? XC9536 PLCC-S44 16  tms
+  IC303 ? SN74BCT8240ADWR SOIC24 12  tms
+  JP400 ? JTAG 2X05 3 
+  JP403 ? MON2 2X20 38 
+  R404 ? 330 0207/10 1 
+ EndSubSection
+EndSection
+
+
+---------- CELL LIST -----------------------------------------------------------------------------------------
+
+Section locked_control_cells_in_class_EH_EL_?_nets
+ class NA primary_net /CS_000-800H device IC300 pin 2 control_cell 105 locked_to disable_value 0
+ class NA primary_net /CS_1000-7000H device IC300 pin 3 control_cell 102 locked_to disable_value 0
+ class NA primary_net /CS_8000H-EOR device IC300 pin 4 control_cell 96 locked_to disable_value 0
+ class NA primary_net OSC_OUT device IC300 pin 6 control_cell 93 locked_to disable_value 0
+ class NA primary_net OSC_OUT device IC301 pin 6 control_cell 93 locked_to disable_value 0
+EndSection
+
+Section locked_control_cells_in_class_DH_DL_NR_nets
+ class NR secondary_net LED0_R device IC301 pin 2 control_cell 105 locked_to disable_value 0
+ class NR secondary_net LED1_R device IC301 pin 3 control_cell 102 locked_to disable_value 0
+ class NR secondary_net LED2_R device IC301 pin 4 control_cell 96 locked_to disable_value 0
+ class NR secondary_net LED3_R device IC301 pin 8 control_cell 90 locked_to disable_value 0
+ class NR secondary_net LED4_R device IC301 pin 9 control_cell 84 locked_to disable_value 0
+ class NR secondary_net LED5_R device IC301 pin 11 control_cell 81 locked_to disable_value 0
+ class NR secondary_net LED6_R device IC301 pin 12 control_cell 78 locked_to disable_value 0
+ class NR secondary_net LED7_R device IC301 pin 13 control_cell 75 locked_to disable_value 0
+ class NR primary_net LED0 device IC303 pin 10 control_cell 16 locked_to enable_value 0
+ class NR primary_net LED1 device IC303 pin 9 control_cell 16 locked_to enable_value 0
+ class NR primary_net LED2 device IC303 pin 8 control_cell 16 locked_to enable_value 0
+ class NR primary_net LED3 device IC303 pin 7 control_cell 16 locked_to enable_value 0
+ class NR primary_net LED4 device IC303 pin 5 control_cell 17 locked_to enable_value 0
+ class NR primary_net LED5 device IC303 pin 4 control_cell 17 locked_to enable_value 0
+ class NR primary_net LED6 device IC303 pin 3 control_cell 17 locked_to enable_value 0
+ class NR primary_net LED7 device IC303 pin 2 control_cell 17 locked_to enable_value 0
+ class DL primary_net /CPU_MREQ device IC300 pin 28 control_cell 12 locked_to enable_value 1
+ class DH primary_net /CPU_RD device IC300 pin 27 control_cell 9 locked_to enable_value 1
+ class DL primary_net /CT_PL device IC301 pin 28 control_cell 12 locked_to enable_value 1
+ class DL primary_net RST device IC300 pin 25 control_cell 3 locked_to enable_value 1
+EndSection
+
+Section locked_control_cells_in_class_PU_PD_nets
+ class PU primary_net /SYS_RESET device IC301 pin 39 control_cell 36 locked_to disable_value 0
+ class PU primary_net CPU_CLK device IC301 pin 5 control_cell 99 locked_to disable_value 0
+ class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
+ class PU primary_net PU1 device IC300 pin 42 control_cell 45 locked_to disable_value 0
+ class PU primary_net PU1 device IC301 pin 40 control_cell 39 locked_to disable_value 0
+ class PU primary_net PU1 device IC301 pin 42 control_cell 45 locked_to disable_value 0
+EndSection
+
+Section locked_output_cells_in_class_PU_PD_nets
+ class PU primary_net /CPU_WR device IC300 pin 26 output_cell 7 locked_to drive_value 0
+ class PD primary_net /DRV_EN device IC301 pin 27 output_cell 10 locked_to drive_value 1
+ class PU primary_net /OSC_HALT device IC301 pin 26 output_cell 7 locked_to drive_value 0
+ class PU primary_net /SYS_RESET device IC300 pin 39 output_cell 37 locked_to drive_value 0
+ class PU primary_net A0 device IC300 pin 14 output_cell 73 locked_to drive_value 0
+ class PU primary_net A1 device IC300 pin 18 output_cell 70 locked_to drive_value 0
+ class PU primary_net A2 device IC300 pin 19 output_cell 67 locked_to drive_value 0
+ class PU primary_net A3 device IC300 pin 20 output_cell 64 locked_to drive_value 0
+ class PU primary_net A4 device IC300 pin 22 output_cell 61 locked_to drive_value 0
+ class PU primary_net A5 device IC300 pin 24 output_cell 58 locked_to drive_value 0
+ class PU primary_net A6 device IC300 pin 1 output_cell 52 locked_to drive_value 0
+ class PU primary_net A7 device IC300 pin 44 output_cell 49 locked_to drive_value 0
+ class PU primary_net A8 device IC300 pin 43 output_cell 43 locked_to drive_value 0
+ class PU primary_net A9 device IC300 pin 38 output_cell 34 locked_to drive_value 0
+ class PU primary_net A10 device IC300 pin 37 output_cell 31 locked_to drive_value 0
+ class PU primary_net A11 device IC300 pin 36 output_cell 28 locked_to drive_value 0
+ class PU primary_net A12 device IC300 pin 35 output_cell 25 locked_to drive_value 0
+ class PU primary_net A13 device IC300 pin 34 output_cell 22 locked_to drive_value 0
+ class PU primary_net A14 device IC300 pin 33 output_cell 19 locked_to drive_value 0
+ class PU primary_net A15 device IC300 pin 29 output_cell 16 locked_to drive_value 0
+ class PU primary_net CPU_CLK device IC300 pin 5 output_cell 100 locked_to drive_value 0
+ class PU primary_net D0 device IC301 pin 1 output_cell 52 locked_to drive_value 0
+ class PU primary_net D1 device IC301 pin 44 output_cell 49 locked_to drive_value 0
+ class PU primary_net D2 device IC301 pin 43 output_cell 43 locked_to drive_value 0
+ class PU primary_net D3 device IC301 pin 38 output_cell 34 locked_to drive_value 0
+ class PU primary_net D4 device IC301 pin 37 output_cell 31 locked_to drive_value 0
+ class PU primary_net D5 device IC301 pin 36 output_cell 28 locked_to drive_value 0
+ class PU primary_net D6 device IC301 pin 35 output_cell 25 locked_to drive_value 0
+ class PU primary_net D7 device IC301 pin 34 output_cell 22 locked_to drive_value 0
+ class PD primary_net PD1 device IC300 pin 7 output_cell 88 locked_to drive_value 1
+ class PU primary_net PU1 device IC300 pin 40 output_cell 40 locked_to drive_value 0
+ class PU primary_net SCL device IC301 pin 29 output_cell 16 locked_to drive_value 0
+ class PU primary_net SDA device IC301 pin 33 output_cell 19 locked_to drive_value 0
+EndSection
+
+Section locked_output_cells_in_class_DH_DL_nets
+ class DL primary_net /CPU_MREQ device IC300 pin 28 output_cell 13 locked_to drive_value 0
+ class DH primary_net /CPU_RD device IC300 pin 27 output_cell 10 locked_to drive_value 1
+ class DL primary_net /CT_PL device IC301 pin 28 output_cell 13 locked_to drive_value 0
+ class DL primary_net RST device IC300 pin 25 output_cell 4 locked_to drive_value 0
+EndSection
+
+Section static_expect
+ class DL primary_net /CPU_MREQ device IC300 pin 28 input_cell 14 expect_value 0
+ class DH primary_net /CPU_RD device IC300 pin 27 input_cell 11 expect_value 1
+ class DL primary_net /CT_PL device IC301 pin 28 input_cell 14 expect_value 0
+ class DL primary_net RST device IC300 pin 25 input_cell 5 expect_value 0
+EndSection
+
+Section atg_expect
+ class NR secondary_net LED0_R device IC301 pin 2 input_cell 107 primary_net_is LED0
+ class NR secondary_net LED1_R device IC301 pin 3 input_cell 104 primary_net_is LED1
+ class NR secondary_net LED2_R device IC301 pin 4 input_cell 98 primary_net_is LED2
+ class NR secondary_net LED3_R device IC301 pin 8 input_cell 92 primary_net_is LED3
+ class NR secondary_net LED4_R device IC301 pin 9 input_cell 86 primary_net_is LED4
+ class NR secondary_net LED5_R device IC301 pin 11 input_cell 83 primary_net_is LED5
+ class NR secondary_net LED6_R device IC301 pin 12 input_cell 80 primary_net_is LED6
+ class NR secondary_net LED7_R device IC301 pin 13 input_cell 77 primary_net_is LED7
+ class PU secondary_net CT_D0 device IC303 pin 15 input_cell 8 primary_net_is D0
+ class PU secondary_net CT_D1 device IC303 pin 16 input_cell 9 primary_net_is D1
+ class PU secondary_net CT_D2 device IC303 pin 17 input_cell 10 primary_net_is D2
+ class PU secondary_net CT_D3 device IC303 pin 19 input_cell 11 primary_net_is D3
+ class PU primary_net /CPU_WR device IC300 pin 26 input_cell 8
+ class PD primary_net /DRV_EN device IC301 pin 27 input_cell 11
+ class PD primary_net /DRV_EN device IC303 pin 1 input_cell 17
+ class PD primary_net /DRV_EN device IC303 pin 24 input_cell 16
+ class PU primary_net /OSC_HALT device IC301 pin 26 input_cell 8
+ class PU primary_net /SYS_RESET device IC300 pin 39 input_cell 38
+ class PU primary_net /SYS_RESET device IC301 pin 39 input_cell 38
+ class PU primary_net A0 device IC300 pin 14 input_cell 74
+ class PU primary_net A0 device IC303 pin 20 input_cell 12
+ class PU primary_net A1 device IC300 pin 18 input_cell 71
+ class PU primary_net A1 device IC303 pin 21 input_cell 13
+ class PU primary_net A2 device IC300 pin 19 input_cell 68
+ class PU primary_net A2 device IC303 pin 22 input_cell 14
+ class PU primary_net A3 device IC300 pin 20 input_cell 65
+ class PU primary_net A3 device IC303 pin 23 input_cell 15
+ class PU primary_net A4 device IC300 pin 22 input_cell 62
+ class PU primary_net A5 device IC300 pin 24 input_cell 59
+ class PU primary_net A6 device IC300 pin 1 input_cell 53
+ class PU primary_net A7 device IC300 pin 44 input_cell 50
+ class PU primary_net A8 device IC300 pin 43 input_cell 44
+ class PU primary_net A9 device IC300 pin 38 input_cell 35
+ class PU primary_net A10 device IC300 pin 37 input_cell 32
+ class PU primary_net A11 device IC300 pin 36 input_cell 29
+ class PU primary_net A12 device IC300 pin 35 input_cell 26
+ class PU primary_net A13 device IC300 pin 34 input_cell 23
+ class PU primary_net A14 device IC300 pin 33 input_cell 20
+ class PU primary_net A15 device IC300 pin 29 input_cell 17
+ class PU primary_net CPU_CLK device IC300 pin 5 input_cell 101
+ class PU primary_net CPU_CLK device IC301 pin 5 input_cell 101
+ class PU primary_net D0 device IC301 pin 1 input_cell 53
+ class PU primary_net D1 device IC301 pin 44 input_cell 50
+ class PU primary_net D2 device IC301 pin 43 input_cell 44
+ class PU primary_net D3 device IC301 pin 38 input_cell 35
+ class PU primary_net D4 device IC301 pin 37 input_cell 32
+ class PU primary_net D5 device IC301 pin 36 input_cell 29
+ class PU primary_net D6 device IC301 pin 35 input_cell 26
+ class PU primary_net D7 device IC301 pin 34 input_cell 23
+ class PD primary_net PD1 device IC300 pin 7 input_cell 89
+ class PD primary_net PD1 device IC301 pin 7 input_cell 89
+ class PU primary_net PU1 device IC300 pin 40 input_cell 41
+ class PU primary_net PU1 device IC300 pin 42 input_cell 47
+ class PU primary_net PU1 device IC301 pin 40 input_cell 41
+ class PU primary_net PU1 device IC301 pin 42 input_cell 47
+ class PU primary_net SCL device IC301 pin 29 input_cell 17
+ class PU primary_net SDA device IC301 pin 33 input_cell 20
+EndSection
+
+Section atg_drive
+ class NR primary_net LED0 device IC303 pin 10 output_cell 0
+ class NR primary_net LED1 device IC303 pin 9 output_cell 1
+ class NR primary_net LED2 device IC303 pin 8 output_cell 2
+ class NR primary_net LED3 device IC303 pin 7 output_cell 3
+ class NR primary_net LED4 device IC303 pin 5 output_cell 4
+ class NR primary_net LED5 device IC303 pin 4 output_cell 5
+ class NR primary_net LED6 device IC303 pin 3 output_cell 6
+ class NR primary_net LED7 device IC303 pin 2 output_cell 7
+ class PU primary_net /CPU_WR device IC300 pin 26 control_cell 6 inverted yes
+ class PD primary_net /DRV_EN device IC301 pin 27 control_cell 9 inverted no
+ class PU primary_net /OSC_HALT device IC301 pin 26 control_cell 6 inverted yes
+ class PU primary_net /SYS_RESET device IC300 pin 39 control_cell 36 inverted yes
+ class PU primary_net A0 device IC300 pin 14 control_cell 72 inverted yes
+ class PU primary_net A1 device IC300 pin 18 control_cell 69 inverted yes
+ class PU primary_net A2 device IC300 pin 19 control_cell 66 inverted yes
+ class PU primary_net A3 device IC300 pin 20 control_cell 63 inverted yes
+ class PU primary_net A4 device IC300 pin 22 control_cell 60 inverted yes
+ class PU primary_net A5 device IC300 pin 24 control_cell 57 inverted yes
+ class PU primary_net A6 device IC300 pin 1 control_cell 51 inverted yes
+ class PU primary_net A7 device IC300 pin 44 control_cell 48 inverted yes
+ class PU primary_net A8 device IC300 pin 43 control_cell 42 inverted yes
+ class PU primary_net A9 device IC300 pin 38 control_cell 33 inverted yes
+ class PU primary_net A10 device IC300 pin 37 control_cell 30 inverted yes
+ class PU primary_net A11 device IC300 pin 36 control_cell 27 inverted yes
+ class PU primary_net A12 device IC300 pin 35 control_cell 24 inverted yes
+ class PU primary_net A13 device IC300 pin 34 control_cell 21 inverted yes
+ class PU primary_net A14 device IC300 pin 33 control_cell 18 inverted yes
+ class PU primary_net A15 device IC300 pin 29 control_cell 15 inverted yes
+ class PU primary_net CPU_CLK device IC300 pin 5 control_cell 99 inverted yes
+ class PU primary_net D0 device IC301 pin 1 control_cell 51 inverted yes
+ class PU primary_net D1 device IC301 pin 44 control_cell 48 inverted yes
+ class PU primary_net D2 device IC301 pin 43 control_cell 42 inverted yes
+ class PU primary_net D3 device IC301 pin 38 control_cell 33 inverted yes
+ class PU primary_net D4 device IC301 pin 37 control_cell 30 inverted yes
+ class PU primary_net D5 device IC301 pin 36 control_cell 27 inverted yes
+ class PU primary_net D6 device IC301 pin 35 control_cell 24 inverted yes
+ class PU primary_net D7 device IC301 pin 34 control_cell 21 inverted yes
+ class PD primary_net PD1 device IC300 pin 7 control_cell 87 inverted no
+ class PU primary_net PU1 device IC300 pin 40 control_cell 39 inverted yes
+ class PU primary_net SCL device IC301 pin 29 control_cell 15 inverted yes
+ class PU primary_net SDA device IC301 pin 33 control_cell 18 inverted yes
+EndSection
+
+Section input_cells_in_class_?_nets
+ class NA primary_net /CS_000-800H device IC300 pin 2 input_cell 107
+ class NA primary_net /CS_1000-7000H device IC300 pin 3 input_cell 104
+ class NA primary_net /CS_8000H-EOR device IC300 pin 4 input_cell 98
+ class NA primary_net OSC_OUT device IC300 pin 6 input_cell 95
+ class NA primary_net OSC_OUT device IC301 pin 6 input_cell 95
+EndSection
+
+
+---------- STATISTICS ----------------------------------------------------------------------------------------
+
+Section statistics
+---------------------------------------------------
+ Pull-Up nets        (PU):  31
+ Pull-Down nets      (PD):  2
+ Drive-High nets     (DH):  1
+ Drive-Low nets      (DL):  3
+ Expect-High nets    (EH):  0
+ Expect-Low nets     (EL):  0
+ unrestricted nets   (NR):  8
+ not classified nets (NA):  57
+---------------------------------------------------
+ total                   :  102
+---------------------------------------------------
+ bs-nets static          :  4
+ thereof :
+   bs-nets static L      :  3
+   bs-nets static H      :  1
+ bs-nets dynamic         :  41
+ bs-nets testable        :  45
+EndSection

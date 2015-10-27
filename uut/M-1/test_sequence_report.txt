@@ -1,0 +1,19 @@
+TEST REPORT OF SEQUENCE build_memcon.sh
+----------------------------------------------------------------------------
+
+M-1 Command Line Interface Version 1.3
+--------------------------------------
+
+project        : /home/luno/uut/M-1
+action         : generate
+database       : M-1.udb
+test profile   : memconnect
+test name      : RAM_IC600
+target device  : IC600
+model file     : models/BS62LV4006.txt
+package        : NDIP32
+
+memory connections test/program generator version 2.8
+device : IC600
+model  : models/BS62LV4006.txt
+package: NDIP32

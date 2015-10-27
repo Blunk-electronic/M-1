@@ -1,0 +1,693 @@
+Netlist
+
+Exported from sub_v1.sch at 11/27/12 2:02 PM
+
+EAGLE Version 6.2.0 Copyright (c) 1988-2012 CadSoft
+
+Net      Part     Pad      Pin        Sheet
+
+!CPU_BUSAK IC2      184      IO_L32N_0/GCLK7 2
+         PLD_1    22       22         1
+
+!CPU_BUSREQ IC2      183      IO_L32P_0/GCLK6 2
+         PLD_1    20       20         1
+
+!CPU_HALT IC2      187      IO_L31N_0  2
+         PLD_1    26       26         1
+
+!CPU_INT IC2      191      IO_L30N_0  2
+         PLD_1    32       32         1
+
+!CPU_IOREQ IC2      176      IO_L31P_1  2
+         PLD_1    38       38         1
+
+!CPU_M1  IC2      185      IO_L31P_0/VREF_0 2
+         PLD_1    24       24         1
+
+!CPU_MREQ IC2      178      IO_L31N_1/VREF_1 2
+         PLD_1    37       37         1
+
+!CPU_NMI IC2      194      IO_L27P_0  2
+         PLD_1    34       34         1
+
+!CPU_RD  IC2      172      IO_L28N_1  2
+         PLD_1    40       40         1
+
+!CPU_RFSH IC2      190      IO_L30P_0  2
+         PLD_1    30       30         1
+
+!CPU_WAIT IC2      189      IO         2
+         PLD_1    28       28         1
+
+!CPU_WR  IC2      175      IO         2
+         PLD_1    39       39         1
+
+!CS_RAM_IN IC2      117      IO_L21N_3  2
+         PLD_3    33       33         1
+
+!CS_RAM_OUT IC2      116      IO_L21P_3  2
+         PLD_3    34       34         1
+
+!EMRGCY_PWR_OFF IC2      31       IO_L39P_6  2
+         PLD_2    26       26         1
+
+!OE_RAM  IC2      120      IO_L22N_3  2
+         PLD_3    32       32         1
+
+!RESET_2 IC2      29       IO_L40N_6  2
+         PLD_2    28       28         1
+
+!RESET_CPU_CL IC2      182      IO         2
+         PLD_1    35       35         1
+
+!START   IC2      35       IO_L24N_6/VREF_6 2
+         PLD_2    9        9          1
+
+!STOP    IC2      34       IO_L24P_6  2
+         PLD_2    7        7          1
+
+!TRST_1  IC2      65       IO_L27N_5/VREF_5 2
+         PLD_2    12       12         1
+
+!TRST_2  IC2      64       IO_L27P_5  2
+         PLD_2    20       20         1
+
+!TRST_LOCAL PLD_2    43       43         1
+
+!UUT_PWR_FAIL IC2      28       IO_L40P_6/VREF_6 2
+         PLD_2    30       30         1
+
+!WR_RAM  IC2      119      IO_L22P_3  2
+         PLD_3    31       31         1
+
++1V2     C3       1        1          2
+         C4       +        +          1
+         C5       1        1          2
+         C7       1        1          2
+         C9       1        1          2
+         IC2      174      VCCINT     2
+         IC2      192      VCCINT     2
+         IC2      70       VCCINT     2
+         IC2      88       VCCINT     2
+         PLD_4    18       18         1
+         PLD_4    20       20         1
+         PLD_4    22       22         1
+         PLD_4    24       24         1
+         PLD_4    26       26         1
+
++2V5     C10      1        1          2
+         C11      1        1          3
+         C12      1        1          3
+         C13      1        1          3
+         C14      1        1          3
+         C15      1        1          3
+         C16      1        1          3
+         C17      1        1          3
+         C18      1        1          3
+         C19      1        1          3
+         C6       +        +          1
+         IC1      19       VCCO       3
+         IC1      20       VCCJ       3
+         IC2      121      VCCAUX     3
+         IC2      142      VCCAUX     3
+         IC2      17       VCCAUX     3
+         IC2      173      VCCAUX     3
+         IC2      193      VCCAUX     3
+         IC2      38       VCCAUX     3
+         IC2      69       VCCAUX     3
+         IC2      84       VCCO_4     2
+         IC2      89       VCCAUX     3
+         IC2      98       VCCO_4     2
+         JP1      10       10         3
+         PLD_4    28       28         1
+         PLD_4    30       30         1
+         PLD_4    32       32         1
+         PLD_4    34       34         1
+         PLD_4    36       36         1
+         PLD_4    38       38         1
+         PLD_4    40       40         1
+         R1       2        2          3
+         R2       2        2          3
+         R4       2        2          3
+         R5       2        2          3
+         R6       2        2          3
+
++3V3     C1       1        1          1
+         C2       1        1          3
+         C20      1        1          2
+         C21      1        1          2
+         C22      1        1          2
+         C23      1        1          2
+         C24      1        1          2
+         C25      1        1          2
+         C26      1        1          2
+         C27      1        1          2
+         C28      1        1          2
+         C29      1        1          2
+         C30      1        1          2
+         C31      1        1          2
+         C32      1        1          2
+         C33      1        1          2
+         C34      +        +          1
+         C8       +        +          1
+         IC1      18       VCCINIT    3
+         IC2      110      VCCO_3     2
+         IC2      127      VCCO_3     2
+         IC2      136      VCCO_2     2
+         IC2      153      VCCO_2     2
+         IC2      164      VCCO_1     2
+         IC2      177      VCCO_1     2
+         IC2      188      VCCO_0     2
+         IC2      201      VCCO_0     2
+         IC2      23       VCCO_7     2
+         IC2      32       VCCO_6     2
+         IC2      49       VCCO_6     2
+         IC2      6        VCCO_7     2
+         IC2      60       VCCO_5     2
+         IC2      73       VCCO_5     2
+         OSC1     4        VCC        1
+         OSC2     4        VCC        1
+         PLD_2    49       49         1
+         PLD_2    50       50         1
+         PLD_4    10       10         1
+         PLD_4    12       12         1
+         PLD_4    14       14         1
+         PLD_4    16       16         1
+         PLD_4    4        4          1
+         PLD_4    6        6          1
+         PLD_4    8        8          1
+
+A0       IC2      198      IO_L25P_0  2
+         PLD_1    1        1          1
+
+A1       IC2      199      IO_L25N_0  2
+         PLD_1    3        3          1
+
+A2       IC2      200      IO/VREF_0  2
+         PLD_1    5        5          1
+
+A3       IC2      203      IO_L01P_0/VRN_0 2
+         PLD_1    7        7          1
+
+A4       IC2      204      IO_L01N_0/VRP_0 2
+         PLD_1    9        9          1
+
+A5       IC2      205      IO/VREF_0  2
+         PLD_1    11       11         1
+
+A6       IC2      2        IO_L01P_7/VRN_7 2
+         PLD_1    13       13         1
+
+A7       IC2      3        IO_L01N_7/VRP_7 2
+         PLD_1    15       15         1
+
+A8       IC2      4        IO_L16P_7/VREF_7 2
+         PLD_1    17       17         1
+
+A9       IC2      5        IO_L16N_7  2
+         PLD_1    19       19         1
+
+A10      IC2      7        IO_L19P_7  2
+         PLD_1    21       21         1
+
+A11      IC2      9        IO_L19N_7/VREF_7 2
+         PLD_1    23       23         1
+
+A12      IC2      10       IO_L20P_7  2
+         PLD_1    25       25         1
+
+A13      IC2      11       IO_L20N_7  2
+         PLD_1    27       27         1
+
+A14      IC2      12       IO_L21P_7  2
+         PLD_1    29       29         1
+
+A15      IC2      13       IO_L21N_7  2
+         PLD_1    31       31         1
+
+A_RAM0   IC2      122      IO_L23P_3/VREF_3 2
+         PLD_3    28       28         1
+
+A_RAM1   IC2      123      IO_L23N_3  2
+         PLD_3    27       27         1
+
+A_RAM2   IC2      124      IO_L24P_3  2
+         PLD_3    26       26         1
+
+A_RAM3   IC2      125      IO_L24N_3  2
+         PLD_3    25       25         1
+
+A_RAM4   IC2      126      IO_L39P_3  2
+         PLD_3    24       24         1
+
+A_RAM5   IC2      128      IO_L39N_3  2
+         PLD_3    23       23         1
+
+A_RAM6   IC2      130      IO_L40P_3  2
+         PLD_3    22       22         1
+
+A_RAM7   IC2      131      IO_L40N_3/VREF_3 2
+         PLD_3    21       21         1
+
+A_RAM8   IC2      132      IO_L40P_2/VREF_2 2
+         PLD_3    20       20         1
+
+A_RAM9   IC2      133      IO_L40N_2  2
+         PLD_3    19       19         1
+
+A_RAM10  IC2      135      IO_L39P_2  2
+         PLD_3    17       17         1
+
+A_RAM11  IC2      137      IO_L39N_2  2
+         PLD_3    15       15         1
+
+A_RAM12  IC2      138      IO_L24P_2  2
+         PLD_3    14       14         1
+
+A_RAM13  IC2      139      IO_L24N_2  2
+         PLD_3    13       13         1
+
+A_RAM14  IC2      140      IO_L23P_2  2
+         PLD_3    12       12         1
+
+A_RAM15  IC2      141      IO_L23N_2/VREF_2 2
+         PLD_3    11       11         1
+
+A_RAM16  IC2      143      IO_L22P_2  2
+         PLD_3    10       10         1
+
+A_RAM17  IC2      144      IO_L22N_2  2
+         PLD_3    9        9          1
+
+A_RAM18  IC2      146      IO_L21P_2  2
+         PLD_3    8        8          1
+
+A_RAM19  IC2      147      IO_L21N_2  2
+
+A_RAM20  IC2      148      IO_L20P_2  2
+
+A_RAM21  IC2      149      IO_L20N_2  2
+
+A_RAM22  IC2      150      IO_L19P_2  2
+
+A_RAM23  IC2      152      IO_L19N_2  2
+
+CCLK     IC1      3        CLK        3
+         IC2      104      CCLK       3
+         JP1      13       13         3
+
+CLK_CPU_CL IC2      180      IO_L32P_1/GCLK4 2
+         PLD_1    36       36         1
+
+CLK_SCAN IC2      181      IO_L32N_1/GCLK5 2
+         OSC1     3        FO         1
+         OSC2     3        FO         1
+
+CLK_SCAN_ENABLE JP1      12       12         3
+         OSC1     1        OE         1
+         OSC2     1        OE         1
+         P24      P$1      MP         1
+         R1       1        1          3
+
+CPU_IEO  IC2      197      IO         2
+         PLD_1    18       18         1
+
+D0       IC2      161      IO_L01P_1/VRN_1 2
+         PLD_1    2        2          1
+
+D1       IC2      162      IO_L01N_1/VRP_1 2
+         PLD_1    4        4          1
+
+D2       IC2      165      IO_L10P_1  2
+         PLD_1    6        6          1
+
+D3       IC2      166      IO_L10N_1/VREF_1 2
+         PLD_1    8        8          1
+
+D4       IC2      167      IO         2
+         PLD_1    10       10         1
+
+D5       IC2      168      IO_L27P_1  2
+         PLD_1    12       12         1
+
+D6       IC2      169      IO_L27N_1  2
+         PLD_1    14       14         1
+
+D7       IC2      171      IO_L28P_1  2
+         PLD_1    16       16         1
+
+DBG_0    IC2      61       IO_L10P_5/VRN_5 2
+         PLD_2    19       19         1
+
+DBG_1    IC2      33       IO_L39N_6  2
+         PLD_2    21       21         1
+
+DBG_2    IC2      44       IO_L20P_6  2
+         PLD_2    23       23         1
+
+DBG_3    IC2      43       IO_L21N_6  2
+         PLD_2    25       25         1
+
+DBG_4    IC2      96       IO/VREF_4  2
+         P5       P$1      MP         2
+         PLD_2    27       27         1
+
+DBG_5    IC2      40       IO_L22N_6  2
+         PLD_2    29       29         1
+
+DBG_6    IC2      39       IO_L22P_6  2
+         PLD_2    31       31         1
+
+DBG_7    IC2      37       IO_L23N_6  2
+         PLD_2    33       33         1
+
+DIN      IC1      1        D0         3
+         IC2      92       IO_L27N_4/DIN/D0 2
+         JP1      11       11         3
+
+DONE     IC1      10       !CE        3
+         IC2      103      DONE       3
+         JP1      17       17         3
+         R5       1        1          3
+
+DOUT     IC2      81       IO_L31P_4/DOUT/BUSY 2
+         P15      P$1      MP         2
+
+D_RAM0   IC2      106      IO_L01P_3/VRN_3 2
+         PLD_3    29       29         1
+
+D_RAM1   IC2      107      IO_L01N_3/VRP_3 2
+         PLD_3    30       30         1
+
+D_RAM2   IC2      108      IO_L17P_3/VREF_3 2
+         PLD_3    39       39         1
+
+D_RAM3   IC2      109      IO_L17N_3  2
+         PLD_3    40       40         1
+
+D_RAM4   IC2      111      IO_L19P_3  2
+         PLD_3    37       37         1
+
+D_RAM5   IC2      113      IO_L19N_3  2
+         PLD_3    38       38         1
+
+D_RAM6   IC2      114      IO_L20P_3  2
+         PLD_3    35       35         1
+
+D_RAM7   IC2      115      IO_L20N_3  2
+         PLD_3    36       36         1
+
+EXT_IEI  IC2      196      IO_L27N_0  2
+         PLD_1    33       33         1
+
+FAIL     IC2      58       IO_L01N_5/RDWR_B 2
+         PLD_2    13       13         1
+
+FAIL_1   IC2      63       IO         2
+         PLD_3    18       18         1
+
+FAIL_2   IC2      62       IO_L10N_5/VRP_5 2
+         PLD_3    16       16         1
+
+GND      C1       2        2          1
+         C10      2        2          2
+         C11      2        2          3
+         C12      2        2          3
+         C13      2        2          3
+         C14      2        2          3
+         C15      2        2          3
+         C16      2        2          3
+         C17      2        2          3
+         C18      2        2          3
+         C19      2        2          3
+         C2       2        2          3
+         C20      2        2          2
+         C21      2        2          2
+         C22      2        2          2
+         C23      2        2          2
+         C24      2        2          2
+         C25      2        2          2
+         C26      2        2          2
+         C27      2        2          2
+         C28      2        2          2
+         C29      2        2          2
+         C3       2        2          2
+         C30      2        2          2
+         C31      2        2          2
+         C32      2        2          2
+         C33      2        2          2
+         C34      -        -          1
+         C4       -        -          1
+         C5       2        2          2
+         C6       -        -          1
+         C7       2        2          2
+         C8       -        -          1
+         C9       2        2          2
+         IC1      11       GND        3
+         IC2      1        GND        2
+         IC2      105      GND        2
+         IC2      112      GND        2
+         IC2      118      GND        2
+         IC2      129      GND        2
+         IC2      134      GND        2
+         IC2      14       GND        2
+         IC2      145      GND        2
+         IC2      151      GND        2
+         IC2      157      GND        2
+         IC2      163      GND        2
+         IC2      170      GND        2
+         IC2      179      GND        2
+         IC2      186      GND        2
+         IC2      195      GND        2
+         IC2      202      GND        2
+         IC2      25       GND        2
+         IC2      30       GND        2
+         IC2      41       GND        2
+         IC2      47       GND        2
+         IC2      53       GND        2
+         IC2      59       GND        2
+         IC2      66       GND        2
+         IC2      75       GND        2
+         IC2      8        GND        2
+         IC2      82       GND        2
+         IC2      91       GND        2
+         IC2      99       GND        2
+         JP1      14       14         3
+         JP1      16       16         3
+         JP1      18       18         3
+         JP1      20       20         3
+         JP1      4        4          3
+         JP1      6        6          3
+         JP1      8        8          3
+         OSC1     2        GND        1
+         OSC2     2        GND        1
+         PLD_2    1        1          1
+         PLD_2    2        2          1
+         PLD_2    3        3          1
+         PLD_2    4        4          1
+         PLD_2    45       45         1
+         PLD_2    46       46         1
+         PLD_2    47       47         1
+         PLD_2    48       48         1
+         PLD_3    2        2          1
+         PLD_3    4        4          1
+         PLD_3    6        6          1
+         PLD_4    1        1          1
+         PLD_4    11       11         1
+         PLD_4    13       13         1
+         PLD_4    15       15         1
+         PLD_4    17       17         1
+         PLD_4    19       19         1
+         PLD_4    21       21         1
+         PLD_4    23       23         1
+         PLD_4    25       25         1
+         PLD_4    27       27         1
+         PLD_4    29       29         1
+         PLD_4    3        3          1
+         PLD_4    31       31         1
+         PLD_4    33       33         1
+         PLD_4    35       35         1
+         PLD_4    37       37         1
+         PLD_4    39       39         1
+         PLD_4    5        5          1
+         PLD_4    7        7          1
+         PLD_4    9        9          1
+
+GPIO_0   IC2      45       IO_L20N_6  2
+         PLD_2    34       34         1
+
+GPIO_1   IC2      46       IO_L19P_6  2
+         PLD_2    36       36         1
+
+GPIO_2   IC2      48       IO_L19N_6  2
+         PLD_2    38       38         1
+
+GPIO_3   IC2      50       IO/VREF_6  2
+         PLD_2    40       40         1
+
+HSWAP_EN IC2      206      HSWAP_EN   3
+         JP1      3        3          3
+
+INIT_B   IC1      8        OE/!RES    3
+         IC2      83       IO_L31N_4/INIT_B 2
+         JP1      15       15         3
+         R6       1        1          3
+
+M0       IC2      55       M0         3
+         JP1      5        5          3
+
+M1       IC2      54       M1         3
+         JP1      7        7          3
+
+M2       IC2      56       M2         3
+         JP1      9        9          3
+
+PASS     IC2      57       IO_L01P_5/CS_B 2
+         PLD_2    11       11         1
+
+PROG_B   IC1      7        !CF        3
+         IC2      207      PROG_B     3
+         JP1      19       19         3
+         R4       1        1          3
+
+RSV_0    IC2      16       IO_L22N_7  2
+         P3       P$1      MP         2
+
+RSV_1    IC2      15       IO_L22P_7  2
+         P14      P$1      MP         2
+
+RSV_2    IC2      19       IO_L23N_7  2
+         P20      P$1      MP         2
+
+RSV_3    IC2      18       IO_L23P_7  2
+         P21      P$1      MP         2
+
+RSV_4    IC2      21       IO_L24N_7  2
+         P22      P$1      MP         2
+
+RSV_5    IC2      20       IO_L24P_7  2
+         P23      P$1      MP         2
+
+RSV_6    IC2      24       IO_L39N_7  2
+         P25      P$1      MP         2
+         PLD_2    15       15         1
+
+RSV_7    IC2      22       IO_L39P_7  2
+         P26      P$1      MP         2
+         PLD_2    17       17         1
+
+RSV_8    IC2      27       IO_L40N_7/VREF_7 2
+         P27      P$1      MP         2
+
+RSV_13   IC2      85       IO/VREF_4  2
+         P4       P$1      MP         2
+
+RSV_14   IC2      42       IO_L21P_6  2
+         P2       P$1      MP         2
+
+RSV_15   IC2      102      IO/VREF_4  2
+         P6       P$1      MP         2
+
+RSV_16   IC2      80       IO_L32N_4/GCLK1 2
+         P7       P$1      MP         2
+
+RSV_17   IC2      79       IO_L32P_4/GCLK0 2
+         P8       P$1      MP         2
+
+RSV_18   IC2      90       IO_L27P_4/D1 2
+         P9       P$1      MP         2
+
+RSV_19   IC2      87       IO_L30N_4/D2 2
+         P10      P$1      MP         2
+
+RSV_20   IC2      86       IO_L30P_4/D3 2
+         P11      P$1      MP         2
+
+RSV_30   IC2      101      IO_L01N_4/VRP_4 2
+         P16      P$1      MP         2
+
+RSV_31   IC2      100      IO_L01P_4/VRN_4 2
+         P17      P$1      MP         2
+
+RSV_32   IC2      93       IO         2
+         P18      P$1      MP         2
+
+RSV_33   IC2      95       IO_L25N_4  2
+         P12      P$1      MP         2
+
+RSV_34   IC2      94       IO_L25P_4  2
+         P13      P$1      MP         2
+
+RSV_35   IC2      97       IO         2
+         P19      P$1      MP         2
+
+RSV_100  IC2      154      IO/VREF_2  2
+         PLD_3    1        1          1
+
+RSV_101  IC2      156      IO_L01N_2/VRP_2 2
+         PLD_3    3        3          1
+
+RSV_102  IC2      155      IO_L01P_2/VRN_2 2
+         PLD_3    5        5          1
+
+RSV_200  P1       P$1      MP         1
+         PLD_3    7        7          1
+
+SCL      IC2      51       IO_L01P_6/VRN_6 2
+         PLD_2    44       44         1
+
+SDA      IC2      52       IO_L01N_6/VRP_6 2
+         PLD_2    42       42         1
+
+SPARE_1  IC2      36       IO_L23P_6  2
+         PLD_2    32       32         1
+
+TCK_1    IC2      76       IO_L32P_5/GCLK2 2
+         PLD_2    6        6          1
+
+TCK_2    IC2      77       IO_L32N_5/GCLK3 2
+         PLD_2    14       14         1
+
+TCK_LOCAL IC1      6        TCK        3
+         IC2      159      TCK        3
+         PLD_2    37       37         1
+
+TDI_1    IC2      78       IO/VREF_5  2
+         PLD_2    22       22         1
+
+TDI_2    IC2      71       IO         2
+         PLD_2    24       24         1
+
+TDI_LOCAL IC2      208      TDI        3
+         PLD_2    41       41         1
+
+TDI_PROM IC1      4        TDI        3
+         JP1      2        2          3
+         R2       1        1          3
+
+TDO_1    IC2      68       IO_L28N_5/D6 2
+         PLD_2    10       10         1
+
+TDO_2    IC2      67       IO_L28P_5/D7 2
+         PLD_2    18       18         1
+
+TDO_FPGA IC2      158      TDO        3
+         JP1      1        1          3
+
+TDO_LOCAL IC1      17       TDO        3
+         PLD_2    39       39         1
+
+TMS_1    IC2      74       IO_L31N_5/D4 2
+         PLD_2    8        8          1
+
+TMS_2    IC2      72       IO_L31P_5/D5 2
+         PLD_2    16       16         1
+
+TMS_LOCAL IC1      5        TMS        3
+         IC2      160      TMS        3
+         PLD_2    35       35         1
+
+WDG      IC2      26       IO_L40P_7  2
+         P28      P$1      MP         2
+         PLD_4    2        2          1
+

@@ -1,0 +1,1128 @@
+Section info
+ -- netlist skeleton submodule
+ -- created by impeagle6x version 031
+ -- Fri May  8 08:53:26 CEST 2015
+-----------------------------------------------------------------------------------
+ -- Netlist cad/vec_ex_v22.net
+ -- Exported from vec_ex_v22.brd at 11/27/12 2:03 PM
+ -- EAGLE Version 6.2.0 Copyright (c) 1988-2012 CadSoft
+
+ -- NOTE    : It appears the netlist has been exported from a board.
+ -- 151 nets imported
+ -- Please verify net count against CAD tool !
+-----------------------------------------------------------------------------------
+ -- Partlist cad/vec_ex_v22.part
+ -- Exported from vec_ex_v22.brd at 11/27/12 2:03 PM
+ -- EAGLE Version 6.2.0 Copyright (c) 1988-2012 CadSoft
+
+ -- NOTE    : Assembly variant:
+ -- NOTE    : Default assembly variant found.
+ -- NOTE    : It appears the partlist has been exported from a board.
+ -- WARNING : Bad parameter count in part JP1, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P1, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P2, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P3, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P4, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P5, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P6, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P7, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P8, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P9, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P10, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P11, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P12, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P13, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P14, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P15, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P16, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P17, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P18, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P19, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P20, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P21, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P22, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P80, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P500, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P501, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part P502, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part PLD_1, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part PLD_2, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part PLD_3, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part PLD_4, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- WARNING : Bad parameter count in part X501, please check partlist !
+ --           Missing parameter will be filled with keyword 'none'.
+ -- 107 parts imported
+ -- please verify part count against CAD tool !
+EndSection
+
+Section netlist_skeleton
+
+ SubSection !CPU_BUSAK class NA
+  JP100 ? EXT_CTRL&DATA 2X20 38 
+  PLD_1 ? none 2X20 22 
+ EndSubSection
+
+ SubSection !CPU_BUSREQ class NA
+  JP100 ? EXT_CTRL&DATA 2X20 36 
+  PLD_1 ? none 2X20 20 
+ EndSubSection
+
+ SubSection !CPU_HALT class NA
+  JP100 ? EXT_CTRL&DATA 2X20 32 
+  PLD_1 ? none 2X20 26 
+ EndSubSection
+
+ SubSection !CPU_INT class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 36 
+  PLD_1 ? none 2X20 32 
+ EndSubSection
+
+ SubSection !CPU_IOREQ class NA
+  JP100 ? EXT_CTRL&DATA 2X20 24 
+  PLD_1 ? none 2X20 38 
+ EndSubSection
+
+ SubSection !CPU_M1 class NA
+  JP100 ? EXT_CTRL&DATA 2X20 20 
+  PLD_1 ? none 2X20 24 
+ EndSubSection
+
+ SubSection !CPU_MREQ class NA
+  JP100 ? EXT_CTRL&DATA 2X20 22 
+  PLD_1 ? none 2X20 37 
+ EndSubSection
+
+ SubSection !CPU_NMI class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 38 
+  PLD_1 ? none 2X20 34 
+ EndSubSection
+
+ SubSection !CPU_RD class NA
+  JP100 ? EXT_CTRL&DATA 2X20 26 
+  PLD_1 ? none 2X20 40 
+ EndSubSection
+
+ SubSection !CPU_RFSH class NA
+  JP100 ? EXT_CTRL&DATA 2X20 30 
+  PLD_1 ? none 2X20 30 
+ EndSubSection
+
+ SubSection !CPU_WAIT class NA
+  JP100 ? EXT_CTRL&DATA 2X20 34 
+  PLD_1 ? none 2X20 28 
+ EndSubSection
+
+ SubSection !CPU_WR class NA
+  JP100 ? EXT_CTRL&DATA 2X20 28 
+  PLD_1 ? none 2X20 39 
+ EndSubSection
+
+ SubSection !CS_RAM_IN class NA
+  IC600 ? BS62LV4006 DIL32 22 
+  JP2 ? DBG 2X20 30 
+  PLD_3 ? none 2X20 33 
+ EndSubSection
+
+ SubSection !CS_RAM_OUT class NA
+  IC601 ? BS62LV4006 DIL32 22 
+  JP2 ? DBG 2X20 32 
+  PLD_3 ? none 2X20 34 
+ EndSubSection
+
+ SubSection !EMRGCY_PWR_OFF class NA
+  JP200 ? Tranceiver 2X20 34 
+  PLD_2 ? none 2X25 26 
+ EndSubSection
+
+ SubSection !OE_RAM class NA
+  IC600 ? BS62LV4006 DIL32 24 
+  IC601 ? BS62LV4006 DIL32 24 
+  JP2 ? DBG 2X20 26 
+  PLD_3 ? none 2X20 32 
+ EndSubSection
+
+ SubSection !PWR_GOOD_NAND_WDG class NA
+  IC80 ? 4093N DIL14 11 
+  IC80 ? 4093N DIL14 2 
+ EndSubSection
+
+ SubSection !RESET_2 class NA
+  JP200 ? Tranceiver 2X20 36 
+  PLD_2 ? none 2X25 28 
+ EndSubSection
+
+ SubSection !RESET_CPU_CL class NA
+  D201 ? 1N4728/3V3 DO41Z10 C 
+  P15 ? none PAD P$1 
+  PLD_1 ? none 2X20 35 
+  R203 ? 0 0207/10 2 
+ EndSubSection
+
+ SubSection !START class NA
+  PLD_2 ? none 2X25 9 
+  X100 ? FRONT_PANEL W237-4 2 
+ EndSubSection
+
+ SubSection !STOP class NA
+  PLD_2 ? none 2X25 7 
+  X100 ? FRONT_PANEL W237-4 1 
+ EndSubSection
+
+ SubSection !SYS_RESET class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 40 
+  R203 ? 0 0207/10 1 
+  T80 ? BC548C TO92 3 
+ EndSubSection
+
+ SubSection !TRC_RESET class NA
+  JP200 ? Tranceiver 2X20 39 
+  T81 ? BC548C TO92 3 
+ EndSubSection
+
+ SubSection !TRST_1 class NA
+  JP200 ? Tranceiver 2X20 8 
+  PLD_2 ? none 2X25 12 
+ EndSubSection
+
+ SubSection !TRST_2 class NA
+  JP200 ? Tranceiver 2X20 16 
+  PLD_2 ? none 2X25 20 
+ EndSubSection
+
+ SubSection !TRST_LOCAL class NA
+  JP400 ? JTAG 2X05 9 
+  P19 ? none PAD P$1 
+  PLD_2 ? none 2X25 43 
+  R402 ? 8x10k SIL9 2 
+ EndSubSection
+
+ SubSection !UUT_PWR_FAIL class NA
+  JP200 ? Tranceiver 2X20 38 
+  PLD_2 ? none 2X25 30 
+ EndSubSection
+
+ SubSection !WR_RAM class NA
+  IC600 ? BS62LV4006 DIL32 29 
+  IC601 ? BS62LV4006 DIL32 29 
+  JP2 ? DBG 2X20 28 
+  PLD_3 ? none 2X20 31 
+ EndSubSection
+
+ SubSection +1V2 class NA
+  C505 ? 1µ E2,5-6E + 
+  IC501 ? LM317 317TS 2 
+  P502 ? none PAD P$1 
+  PLD_4 ? none 2X20 18 
+  PLD_4 ? none 2X20 20 
+  PLD_4 ? none 2X20 22 
+  PLD_4 ? none 2X20 24 
+  PLD_4 ? none 2X20 26 
+  R506 ? 240 0207/10 2 
+ EndSubSection
+
+ SubSection +2V5 class NA
+  C503 ? 1µ E2,5-6E + 
+  IC500 ? LM317 317TS 2 
+  JP1 ? none 1X02 1 
+  P500 ? none PAD P$1 
+  PLD_4 ? none 2X20 28 
+  PLD_4 ? none 2X20 30 
+  PLD_4 ? none 2X20 32 
+  PLD_4 ? none 2X20 34 
+  PLD_4 ? none 2X20 36 
+  PLD_4 ? none 2X20 38 
+  PLD_4 ? none 2X20 40 
+  R502 ? 240 0207/10 2 
+  R503 ? 100 0207/10 2 
+ EndSubSection
+
+ SubSection +3V3 class NA
+  C500 ? 100µ/25V E2,5-7 + 
+  C600 ? 100n C0805 1 
+  C601 ? 100n C0805 1 
+  C81 ? 100n C050-025X075 1 
+  D600 ? red LED3MM A 
+  D601 ? yellow LED3MM A 
+  D602 ? blue LED3MM A 
+  D80 ? BAT48 DO35-10 C 
+  IC600 ? BS62LV4006 DIL32 32 
+  IC601 ? BS62LV4006 DIL32 32 
+  IC80 ? 4093N DIL14 14 
+  PLD_2 ? none 2X25 49 
+  PLD_2 ? none 2X25 50 
+  PLD_4 ? none 2X20 10 
+  PLD_4 ? none 2X20 12 
+  PLD_4 ? none 2X20 14 
+  PLD_4 ? none 2X20 16 
+  PLD_4 ? none 2X20 4 
+  PLD_4 ? none 2X20 6 
+  PLD_4 ? none 2X20 8 
+  R1 ? 8x10k SIL9 1 
+  R505 ? 100 0207/10 2 
+  R80 ? 680 0207/10 2 
+  R81 ? 33k 0207/10 2 
+  X101 ? FRONT_PANEL W237-4 4 
+  X500 ? BSC_PWR_IN W237-4 1 
+  X500 ? BSC_PWR_IN W237-4 2 
+ EndSubSection
+
+ SubSection +12V class NA
+  C506 ? 100µ/25V E2,5-7 + 
+  R510 ? 33 KH208-8 2 
+  X101 ? FRONT_PANEL W237-4 3 
+  X500 ? BSC_PWR_IN W237-4 3 
+ EndSubSection
+
+ SubSection +REG_IN class NA
+  C501 ? 100µ/25V E2,5-7 + 
+  C502 ? 100n C050-025X075 1 
+  C504 ? 100n C050-025X075 1 
+  IC500 ? LM317 317TS 3 
+  IC501 ? LM317 317TS 3 
+  P501 ? none PAD P$1 
+  R500 ? 680 0207/10 2 
+  R510 ? 33 KH208-8 1 
+ EndSubSection
+
+ SubSection 2V5_LED_A class NA
+  D501 ? green LED3MM A 
+  R503 ? 100 0207/10 1 
+ EndSubSection
+
+ SubSection 3V3_LED_A class NA
+  D502 ? green LED3MM A 
+  R505 ? 100 0207/10 1 
+ EndSubSection
+
+ SubSection A0 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 2 
+  PLD_1 ? none 2X20 1 
+ EndSubSection
+
+ SubSection A1 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 4 
+  PLD_1 ? none 2X20 3 
+ EndSubSection
+
+ SubSection A2 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 6 
+  PLD_1 ? none 2X20 5 
+ EndSubSection
+
+ SubSection A3 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 8 
+  PLD_1 ? none 2X20 7 
+ EndSubSection
+
+ SubSection A4 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 10 
+  PLD_1 ? none 2X20 9 
+ EndSubSection
+
+ SubSection A5 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 12 
+  PLD_1 ? none 2X20 11 
+ EndSubSection
+
+ SubSection A6 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 14 
+  PLD_1 ? none 2X20 13 
+ EndSubSection
+
+ SubSection A7 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 16 
+  PLD_1 ? none 2X20 15 
+ EndSubSection
+
+ SubSection A8 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 18 
+  PLD_1 ? none 2X20 17 
+ EndSubSection
+
+ SubSection A9 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 20 
+  PLD_1 ? none 2X20 19 
+ EndSubSection
+
+ SubSection A10 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 22 
+  PLD_1 ? none 2X20 21 
+ EndSubSection
+
+ SubSection A11 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 24 
+  PLD_1 ? none 2X20 23 
+ EndSubSection
+
+ SubSection A12 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 26 
+  PLD_1 ? none 2X20 25 
+ EndSubSection
+
+ SubSection A13 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 28 
+  PLD_1 ? none 2X20 27 
+ EndSubSection
+
+ SubSection A14 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 30 
+  PLD_1 ? none 2X20 29 
+ EndSubSection
+
+ SubSection A15 class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 32 
+  PLD_1 ? none 2X20 31 
+ EndSubSection
+
+ SubSection ADJ_+3V3 class NA
+  IC500 ? LM317 317TS 1 
+  R501 ? 240 0207/10 2 
+  R502 ? 240 0207/10 1 
+ EndSubSection
+
+ SubSection A_RAM0 class NA
+  IC600 ? BS62LV4006 DIL32 12 
+  IC601 ? BS62LV4006 DIL32 12 
+  PLD_3 ? none 2X20 28 
+ EndSubSection
+
+ SubSection A_RAM1 class NA
+  IC600 ? BS62LV4006 DIL32 11 
+  IC601 ? BS62LV4006 DIL32 11 
+  PLD_3 ? none 2X20 27 
+ EndSubSection
+
+ SubSection A_RAM2 class NA
+  IC600 ? BS62LV4006 DIL32 10 
+  IC601 ? BS62LV4006 DIL32 10 
+  PLD_3 ? none 2X20 26 
+ EndSubSection
+
+ SubSection A_RAM3 class NA
+  IC600 ? BS62LV4006 DIL32 9 
+  IC601 ? BS62LV4006 DIL32 9 
+  PLD_3 ? none 2X20 25 
+ EndSubSection
+
+ SubSection A_RAM4 class NA
+  IC600 ? BS62LV4006 DIL32 8 
+  IC601 ? BS62LV4006 DIL32 8 
+  PLD_3 ? none 2X20 24 
+ EndSubSection
+
+ SubSection A_RAM5 class NA
+  IC600 ? BS62LV4006 DIL32 7 
+  IC601 ? BS62LV4006 DIL32 7 
+  PLD_3 ? none 2X20 23 
+ EndSubSection
+
+ SubSection A_RAM6 class NA
+  IC600 ? BS62LV4006 DIL32 6 
+  IC601 ? BS62LV4006 DIL32 6 
+  PLD_3 ? none 2X20 22 
+ EndSubSection
+
+ SubSection A_RAM7 class NA
+  IC600 ? BS62LV4006 DIL32 5 
+  IC601 ? BS62LV4006 DIL32 5 
+  PLD_3 ? none 2X20 21 
+ EndSubSection
+
+ SubSection A_RAM8 class NA
+  IC600 ? BS62LV4006 DIL32 27 
+  IC601 ? BS62LV4006 DIL32 27 
+  PLD_3 ? none 2X20 20 
+ EndSubSection
+
+ SubSection A_RAM9 class NA
+  IC600 ? BS62LV4006 DIL32 26 
+  IC601 ? BS62LV4006 DIL32 26 
+  PLD_3 ? none 2X20 19 
+ EndSubSection
+
+ SubSection A_RAM10 class NA
+  IC600 ? BS62LV4006 DIL32 23 
+  IC601 ? BS62LV4006 DIL32 23 
+  PLD_3 ? none 2X20 17 
+ EndSubSection
+
+ SubSection A_RAM11 class NA
+  IC600 ? BS62LV4006 DIL32 25 
+  IC601 ? BS62LV4006 DIL32 25 
+  PLD_3 ? none 2X20 15 
+ EndSubSection
+
+ SubSection A_RAM12 class NA
+  IC600 ? BS62LV4006 DIL32 4 
+  IC601 ? BS62LV4006 DIL32 4 
+  PLD_3 ? none 2X20 14 
+ EndSubSection
+
+ SubSection A_RAM13 class NA
+  IC600 ? BS62LV4006 DIL32 28 
+  IC601 ? BS62LV4006 DIL32 28 
+  PLD_3 ? none 2X20 13 
+ EndSubSection
+
+ SubSection A_RAM14 class NA
+  IC600 ? BS62LV4006 DIL32 3 
+  IC601 ? BS62LV4006 DIL32 3 
+  PLD_3 ? none 2X20 12 
+ EndSubSection
+
+ SubSection A_RAM15 class NA
+  IC600 ? BS62LV4006 DIL32 31 
+  IC601 ? BS62LV4006 DIL32 31 
+  PLD_3 ? none 2X20 11 
+ EndSubSection
+
+ SubSection A_RAM16 class NA
+  IC600 ? BS62LV4006 DIL32 2 
+  IC601 ? BS62LV4006 DIL32 2 
+  PLD_3 ? none 2X20 10 
+ EndSubSection
+
+ SubSection A_RAM17 class NA
+  IC600 ? BS62LV4006 DIL32 30 
+  IC601 ? BS62LV4006 DIL32 30 
+  PLD_3 ? none 2X20 9 
+ EndSubSection
+
+ SubSection A_RAM18 class NA
+  IC600 ? BS62LV4006 DIL32 1 
+  IC601 ? BS62LV4006 DIL32 1 
+  PLD_3 ? none 2X20 8 
+ EndSubSection
+
+ SubSection CLK_CPU_CL class NA
+  D200 ? 1N4728/3V3 DO41Z10 C 
+  P14 ? none PAD P$1 
+  PLD_1 ? none 2X20 36 
+  R202 ? 0 0207/10 2 
+ EndSubSection
+
+ SubSection CLK_SLOW class NA
+  IC80 ? 4093N DIL14 4 
+  P9 ? none PAD P$1 
+  R4 ? 1M 0207/10 1 
+ EndSubSection
+
+ SubSection CPU_CLK class NA
+  JP100 ? EXT_CTRL&DATA 2X20 40 
+  R202 ? 0 0207/10 1 
+ EndSubSection
+
+ SubSection CPU_IEO class NA
+  PLD_1 ? none 2X20 18 
+ EndSubSection
+
+ SubSection CPU_RSV0 class NA
+  JP100 ? EXT_CTRL&DATA 2X20 18 
+ EndSubSection
+
+ SubSection D0 class NA
+  JP100 ? EXT_CTRL&DATA 2X20 2 
+  PLD_1 ? none 2X20 2 
+ EndSubSection
+
+ SubSection D1 class NA
+  JP100 ? EXT_CTRL&DATA 2X20 4 
+  PLD_1 ? none 2X20 4 
+ EndSubSection
+
+ SubSection D2 class NA
+  JP100 ? EXT_CTRL&DATA 2X20 6 
+  PLD_1 ? none 2X20 6 
+ EndSubSection
+
+ SubSection D3 class NA
+  JP100 ? EXT_CTRL&DATA 2X20 8 
+  PLD_1 ? none 2X20 8 
+ EndSubSection
+
+ SubSection D4 class NA
+  JP100 ? EXT_CTRL&DATA 2X20 10 
+  PLD_1 ? none 2X20 10 
+ EndSubSection
+
+ SubSection D5 class NA
+  JP100 ? EXT_CTRL&DATA 2X20 12 
+  PLD_1 ? none 2X20 12 
+ EndSubSection
+
+ SubSection D6 class NA
+  JP100 ? EXT_CTRL&DATA 2X20 14 
+  PLD_1 ? none 2X20 14 
+ EndSubSection
+
+ SubSection D7 class NA
+  JP100 ? EXT_CTRL&DATA 2X20 16 
+  PLD_1 ? none 2X20 16 
+ EndSubSection
+
+ SubSection DBG_0 class NA
+  JP2 ? DBG 2X20 2 
+  P1 ? none PAD P$1 
+  PLD_2 ? none 2X25 19 
+  R600 ? 160 0207/10 2 
+ EndSubSection
+
+ SubSection DBG_0_LED_C class NA
+  D600 ? red LED3MM K 
+  R600 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DBG_1 class NA
+  JP2 ? DBG 2X20 4 
+  P2 ? none PAD P$1 
+  PLD_2 ? none 2X25 21 
+  R601 ? 160 0207/10 2 
+ EndSubSection
+
+ SubSection DBG_1_LED_C class NA
+  D601 ? yellow LED3MM K 
+  R601 ? 160 0207/10 1 
+ EndSubSection
+
+ SubSection DBG_2 class NA
+  JP2 ? DBG 2X20 6 
+  P3 ? none PAD P$1 
+  PLD_2 ? none 2X25 23 
+  R602 ? 300 0207/10 2 
+ EndSubSection
+
+ SubSection DBG_2_LED_C class NA
+  D602 ? blue LED3MM K 
+  R602 ? 300 0207/10 1 
+ EndSubSection
+
+ SubSection DBG_3 class NA
+  JP2 ? DBG 2X20 8 
+  P4 ? none PAD P$1 
+  PLD_2 ? none 2X25 25 
+ EndSubSection
+
+ SubSection DBG_4 class NA
+  JP2 ? DBG 2X20 10 
+  P5 ? none PAD P$1 
+  PLD_2 ? none 2X25 27 
+ EndSubSection
+
+ SubSection DBG_5 class NA
+  JP2 ? DBG 2X20 12 
+  P6 ? none PAD P$1 
+  PLD_2 ? none 2X25 29 
+ EndSubSection
+
+ SubSection DBG_6 class NA
+  JP2 ? DBG 2X20 14 
+  P7 ? none PAD P$1 
+  PLD_2 ? none 2X25 31 
+ EndSubSection
+
+ SubSection DBG_7 class NA
+  JP2 ? DBG 2X20 16 
+  P8 ? none PAD P$1 
+  PLD_2 ? none 2X25 33 
+ EndSubSection
+
+ SubSection D_RAM0 class NA
+  IC601 ? BS62LV4006 DIL32 13 
+  PLD_3 ? none 2X20 29 
+ EndSubSection
+
+ SubSection D_RAM1 class NA
+  IC601 ? BS62LV4006 DIL32 14 
+  PLD_3 ? none 2X20 30 
+ EndSubSection
+
+ SubSection D_RAM2 class NA
+  IC601 ? BS62LV4006 DIL32 15 
+  PLD_3 ? none 2X20 39 
+ EndSubSection
+
+ SubSection D_RAM3 class NA
+  IC601 ? BS62LV4006 DIL32 17 
+  PLD_3 ? none 2X20 40 
+ EndSubSection
+
+ SubSection D_RAM4 class NA
+  IC601 ? BS62LV4006 DIL32 18 
+  PLD_3 ? none 2X20 37 
+ EndSubSection
+
+ SubSection D_RAM5 class NA
+  IC601 ? BS62LV4006 DIL32 19 
+  PLD_3 ? none 2X20 38 
+ EndSubSection
+
+ SubSection D_RAM6 class NA
+  IC601 ? BS62LV4006 DIL32 20 
+  PLD_3 ? none 2X20 35 
+ EndSubSection
+
+ SubSection D_RAM7 class NA
+  IC601 ? BS62LV4006 DIL32 21 
+  PLD_3 ? none 2X20 36 
+ EndSubSection
+
+ SubSection EXT_IEI class NA
+  JP101 ? EXT_CTRL&ADDR 2X20 34 
+  PLD_1 ? none 2X20 33 
+ EndSubSection
+
+ SubSection FAIL class NA
+  PLD_2 ? none 2X25 13 
+  R102 ? 2k7 0207/10 1 
+ EndSubSection
+
+ SubSection FAIL_1 class NA
+  IC600 ? BS62LV4006 DIL32 14 
+  PLD_3 ? none 2X20 18 
+ EndSubSection
+
+ SubSection FAIL_2 class NA
+  IC600 ? BS62LV4006 DIL32 17 
+  PLD_3 ? none 2X20 16 
+ EndSubSection
+
+ SubSection FAIL_B class NA
+  R102 ? 2k7 0207/10 2 
+  T100 ? BC548C TO92-EBC B 
+ EndSubSection
+
+ SubSection FAIL_LED_C class NA
+  R100 ? 160 0207/10 1 
+  T100 ? BC548C TO92-EBC C 
+ EndSubSection
+
+ SubSection FAIL_LED_C_R class NA
+  R100 ? 160 0207/10 2 
+  X101 ? FRONT_PANEL W237-4 2 
+ EndSubSection
+
+ SubSection GND class NA
+  C2 ? 4u7 E2,5-6E - 
+  C500 ? 100µ/25V E2,5-7 - 
+  C501 ? 100µ/25V E2,5-7 - 
+  C502 ? 100n C050-025X075 2 
+  C503 ? 1µ E2,5-6E - 
+  C504 ? 100n C050-025X075 2 
+  C505 ? 1µ E2,5-6E - 
+  C506 ? 100µ/25V E2,5-7 - 
+  C600 ? 100n C0805 2 
+  C601 ? 100n C0805 2 
+  C80 ? 100uF/25V E2,5-6E - 
+  C81 ? 100n C050-025X075 2 
+  D200 ? 1N4728/3V3 DO41Z10 A 
+  D201 ? 1N4728/3V3 DO41Z10 A 
+  D500 ? green LED3MM K 
+  D501 ? green LED3MM K 
+  D502 ? green LED3MM K 
+  H1 ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1 
+  H10 ? MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE B3,2 
+  H2 ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1 
+  H3 ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1 
+  H4 ? MOUNT-PAD-SQUARE4.1 4,1-PAD-SQUARE B4,1 
+  H7 ? MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE B3,2 
+  H8 ? MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE B3,2 
+  H9 ? MOUNT-PAD-SQUARE3.2 3,2-PAD-SQUARE B3,2 
+  IC501 ? LM317 317TS 1 
+  IC600 ? BS62LV4006 DIL32 16 
+  IC601 ? BS62LV4006 DIL32 16 
+  IC80 ? 4093N DIL14 7 
+  JP100 ? EXT_CTRL&DATA 2X20 1 
+  JP100 ? EXT_CTRL&DATA 2X20 11 
+  JP100 ? EXT_CTRL&DATA 2X20 13 
+  JP100 ? EXT_CTRL&DATA 2X20 15 
+  JP100 ? EXT_CTRL&DATA 2X20 17 
+  JP100 ? EXT_CTRL&DATA 2X20 19 
+  JP100 ? EXT_CTRL&DATA 2X20 21 
+  JP100 ? EXT_CTRL&DATA 2X20 23 
+  JP100 ? EXT_CTRL&DATA 2X20 25 
+  JP100 ? EXT_CTRL&DATA 2X20 27 
+  JP100 ? EXT_CTRL&DATA 2X20 29 
+  JP100 ? EXT_CTRL&DATA 2X20 3 
+  JP100 ? EXT_CTRL&DATA 2X20 31 
+  JP100 ? EXT_CTRL&DATA 2X20 33 
+  JP100 ? EXT_CTRL&DATA 2X20 35 
+  JP100 ? EXT_CTRL&DATA 2X20 37 
+  JP100 ? EXT_CTRL&DATA 2X20 39 
+  JP100 ? EXT_CTRL&DATA 2X20 5 
+  JP100 ? EXT_CTRL&DATA 2X20 7 
+  JP100 ? EXT_CTRL&DATA 2X20 9 
+  JP101 ? EXT_CTRL&ADDR 2X20 1 
+  JP101 ? EXT_CTRL&ADDR 2X20 11 
+  JP101 ? EXT_CTRL&ADDR 2X20 13 
+  JP101 ? EXT_CTRL&ADDR 2X20 15 
+  JP101 ? EXT_CTRL&ADDR 2X20 17 
+  JP101 ? EXT_CTRL&ADDR 2X20 19 
+  JP101 ? EXT_CTRL&ADDR 2X20 21 
+  JP101 ? EXT_CTRL&ADDR 2X20 23 
+  JP101 ? EXT_CTRL&ADDR 2X20 25 
+  JP101 ? EXT_CTRL&ADDR 2X20 27 
+  JP101 ? EXT_CTRL&ADDR 2X20 29 
+  JP101 ? EXT_CTRL&ADDR 2X20 3 
+  JP101 ? EXT_CTRL&ADDR 2X20 31 
+  JP101 ? EXT_CTRL&ADDR 2X20 33 
+  JP101 ? EXT_CTRL&ADDR 2X20 35 
+  JP101 ? EXT_CTRL&ADDR 2X20 37 
+  JP101 ? EXT_CTRL&ADDR 2X20 39 
+  JP101 ? EXT_CTRL&ADDR 2X20 5 
+  JP101 ? EXT_CTRL&ADDR 2X20 7 
+  JP101 ? EXT_CTRL&ADDR 2X20 9 
+  JP2 ? DBG 2X20 1 
+  JP2 ? DBG 2X20 11 
+  JP2 ? DBG 2X20 13 
+  JP2 ? DBG 2X20 15 
+  JP2 ? DBG 2X20 17 
+  JP2 ? DBG 2X20 19 
+  JP2 ? DBG 2X20 21 
+  JP2 ? DBG 2X20 23 
+  JP2 ? DBG 2X20 25 
+  JP2 ? DBG 2X20 27 
+  JP2 ? DBG 2X20 29 
+  JP2 ? DBG 2X20 3 
+  JP2 ? DBG 2X20 31 
+  JP2 ? DBG 2X20 35 
+  JP2 ? DBG 2X20 36 
+  JP2 ? DBG 2X20 37 
+  JP2 ? DBG 2X20 38 
+  JP2 ? DBG 2X20 5 
+  JP2 ? DBG 2X20 7 
+  JP2 ? DBG 2X20 9 
+  JP200 ? Tranceiver 2X20 1 
+  JP200 ? Tranceiver 2X20 11 
+  JP200 ? Tranceiver 2X20 13 
+  JP200 ? Tranceiver 2X20 15 
+  JP200 ? Tranceiver 2X20 17 
+  JP200 ? Tranceiver 2X20 19 
+  JP200 ? Tranceiver 2X20 21 
+  JP200 ? Tranceiver 2X20 23 
+  JP200 ? Tranceiver 2X20 25 
+  JP200 ? Tranceiver 2X20 27 
+  JP200 ? Tranceiver 2X20 29 
+  JP200 ? Tranceiver 2X20 3 
+  JP200 ? Tranceiver 2X20 31 
+  JP200 ? Tranceiver 2X20 33 
+  JP200 ? Tranceiver 2X20 35 
+  JP200 ? Tranceiver 2X20 37 
+  JP200 ? Tranceiver 2X20 5 
+  JP200 ? Tranceiver 2X20 7 
+  JP200 ? Tranceiver 2X20 9 
+  JP400 ? JTAG 2X05 2 
+  JP400 ? JTAG 2X05 4 
+  JP400 ? JTAG 2X05 6 
+  JP400 ? JTAG 2X05 8 
+  PLD_2 ? none 2X25 1 
+  PLD_2 ? none 2X25 2 
+  PLD_2 ? none 2X25 3 
+  PLD_2 ? none 2X25 4 
+  PLD_2 ? none 2X25 45 
+  PLD_2 ? none 2X25 46 
+  PLD_2 ? none 2X25 47 
+  PLD_2 ? none 2X25 48 
+  PLD_3 ? none 2X20 2 
+  PLD_3 ? none 2X20 4 
+  PLD_3 ? none 2X20 6 
+  PLD_4 ? none 2X20 1 
+  PLD_4 ? none 2X20 11 
+  PLD_4 ? none 2X20 13 
+  PLD_4 ? none 2X20 15 
+  PLD_4 ? none 2X20 17 
+  PLD_4 ? none 2X20 19 
+  PLD_4 ? none 2X20 21 
+  PLD_4 ? none 2X20 23 
+  PLD_4 ? none 2X20 25 
+  PLD_4 ? none 2X20 27 
+  PLD_4 ? none 2X20 29 
+  PLD_4 ? none 2X20 3 
+  PLD_4 ? none 2X20 31 
+  PLD_4 ? none 2X20 33 
+  PLD_4 ? none 2X20 35 
+  PLD_4 ? none 2X20 37 
+  PLD_4 ? none 2X20 39 
+  PLD_4 ? none 2X20 5 
+  PLD_4 ? none 2X20 7 
+  PLD_4 ? none 2X20 9 
+  R400 ? 300 0207/10 2 
+  R401 ? 300 0207/10 2 
+  R501 ? 240 0207/10 1 
+  R506 ? 240 0207/10 1 
+  R80 ? 680 0207/10 1 
+  R82 ? 15k 0207/10 1 
+  T100 ? BC548C TO92-EBC E 
+  T101 ? BC548C TO92-EBC E 
+  T80 ? BC548C TO92 1 
+  T81 ? BC548C TO92 1 
+  X100 ? FRONT_PANEL W237-4 3 
+  X100 ? FRONT_PANEL W237-4 4 
+  X500 ? BSC_PWR_IN W237-4 4 
+  X501 ? none W237-102 1 
+ EndSubSection
+
+ SubSection GPIO_0 class NA
+  IC600 ? BS62LV4006 DIL32 18 
+  JP200 ? Tranceiver 2X20 22 
+  PLD_2 ? none 2X25 34 
+ EndSubSection
+
+ SubSection GPIO_1 class NA
+  IC600 ? BS62LV4006 DIL32 19 
+  JP200 ? Tranceiver 2X20 24 
+  PLD_2 ? none 2X25 36 
+ EndSubSection
+
+ SubSection GPIO_2 class NA
+  IC600 ? BS62LV4006 DIL32 20 
+  JP200 ? Tranceiver 2X20 26 
+  PLD_2 ? none 2X25 38 
+ EndSubSection
+
+ SubSection GPIO_3 class NA
+  IC600 ? BS62LV4006 DIL32 21 
+  JP200 ? Tranceiver 2X20 28 
+  PLD_2 ? none 2X25 40 
+ EndSubSection
+
+ SubSection N$78 class NA
+  C2 ? 4u7 E2,5-6E + 
+  IC80 ? 4093N DIL14 5 
+  IC80 ? 4093N DIL14 6 
+  R4 ? 1M 0207/10 2 
+ EndSubSection
+
+ SubSection PASS class NA
+  PLD_2 ? none 2X25 11 
+  R103 ? 2k7 0207/10 1 
+ EndSubSection
+
+ SubSection PASS_B class NA
+  R103 ? 2k7 0207/10 2 
+  T101 ? BC548C TO92-EBC B 
+ EndSubSection
+
+ SubSection PASS_LED_C class NA
+  R101 ? 160 0207/10 1 
+  T101 ? BC548C TO92-EBC C 
+ EndSubSection
+
+ SubSection PASS_LED_C_R class NA
+  R101 ? 160 0207/10 2 
+  X101 ? FRONT_PANEL W237-4 1 
+ EndSubSection
+
+ SubSection PWR_GOOD class NA
+  R85 ? 10k 0207/10 2 
+  X501 ? none W237-102 2 
+ EndSubSection
+
+ SubSection PWR_GOOD_DIV class NA
+  IC80 ? 4093N DIL14 8 
+  R82 ? 15k 0207/10 2 
+  R85 ? 10k 0207/10 1 
+ EndSubSection
+
+ SubSection PWR_GOOD_NAND_WDG class NA
+  IC80 ? 4093N DIL14 10 
+  IC80 ? 4093N DIL14 12 
+  IC80 ? 4093N DIL14 13 
+ EndSubSection
+
+ SubSection REG_IN_LED_A class NA
+  D500 ? green LED3MM A 
+  R500 ? 680 0207/10 1 
+ EndSubSection
+
+ SubSection RST_C+ class NA
+  C80 ? 100uF/25V E2,5-6E + 
+  D80 ? BAT48 DO35-10 A 
+  IC80 ? 4093N DIL14 1 
+  P22 ? none PAD P$1 
+  R81 ? 33k 0207/10 1 
+ EndSubSection
+
+ SubSection RSV_6 class NA
+  P17 ? none PAD P$1 
+  PLD_2 ? none 2X25 15 
+ EndSubSection
+
+ SubSection RSV_7 class NA
+  P18 ? none PAD P$1 
+  PLD_2 ? none 2X25 17 
+ EndSubSection
+
+ SubSection RSV_100 class NA
+  JP2 ? DBG 2X20 18 
+  PLD_3 ? none 2X20 1 
+  R1 ? 8x10k SIL9 7 
+ EndSubSection
+
+ SubSection RSV_101 class NA
+  JP2 ? DBG 2X20 20 
+  PLD_3 ? none 2X20 3 
+  R1 ? 8x10k SIL9 8 
+ EndSubSection
+
+ SubSection RSV_102 class NA
+  JP2 ? DBG 2X20 22 
+  PLD_3 ? none 2X20 5 
+  R1 ? 8x10k SIL9 9 
+ EndSubSection
+
+ SubSection RSV_200 class NA
+  JP2 ? DBG 2X20 24 
+  P12 ? none PAD P$1 
+  PLD_3 ? none 2X20 7 
+ EndSubSection
+
+ SubSection SCL class NA
+  JP2 ? DBG 2X20 40 
+  JP200 ? Tranceiver 2X20 32 
+  P21 ? none PAD P$1 
+  PLD_2 ? none 2X25 44 
+  R1 ? 8x10k SIL9 5 
+ EndSubSection
+
+ SubSection SDA class NA
+  JP2 ? DBG 2X20 39 
+  JP200 ? Tranceiver 2X20 30 
+  P20 ? none PAD P$1 
+  PLD_2 ? none 2X25 42 
+  R1 ? 8x10k SIL9 6 
+ EndSubSection
+
+ SubSection SPARE_1 class NA
+  JP200 ? Tranceiver 2X20 40 
+  PLD_2 ? none 2X25 32 
+ EndSubSection
+
+ SubSection SYS_RESET class NA
+  IC80 ? 4093N DIL14 3 
+  R83 ? 2k7 0207/10 2 
+  R84 ? 2k7 0207/10 2 
+ EndSubSection
+
+ SubSection SYS_RESET_B class NA
+  R83 ? 2k7 0207/10 1 
+  T80 ? BC548C TO92 2 
+ EndSubSection
+
+ SubSection SYS_RESET_B1 class NA
+  R84 ? 2k7 0207/10 1 
+  T81 ? BC548C TO92 2 
+ EndSubSection
+
+ SubSection TCK_1 class NA
+  JP200 ? Tranceiver 2X20 2 
+  PLD_2 ? none 2X25 6 
+ EndSubSection
+
+ SubSection TCK_2 class NA
+  JP200 ? Tranceiver 2X20 10 
+  PLD_2 ? none 2X25 14 
+ EndSubSection
+
+ SubSection TCK_LOCAL class NA
+  JP400 ? JTAG 2X05 1 
+  P10 ? none PAD P$1 
+  PLD_2 ? none 2X25 37 
+  R400 ? 300 0207/10 1 
+ EndSubSection
+
+ SubSection TDI_1 class NA
+  IC600 ? BS62LV4006 DIL32 13 
+  JP200 ? Tranceiver 2X20 18 
+  PLD_2 ? none 2X25 22 
+ EndSubSection
+
+ SubSection TDI_2 class NA
+  IC600 ? BS62LV4006 DIL32 15 
+  JP200 ? Tranceiver 2X20 20 
+  PLD_2 ? none 2X25 24 
+ EndSubSection
+
+ SubSection TDI_LOCAL class NA
+  JP400 ? JTAG 2X05 7 
+  P16 ? none PAD P$1 
+  PLD_2 ? none 2X25 41 
+  R402 ? 8x10k SIL9 3 
+ EndSubSection
+
+ SubSection TDO_1 class NA
+  JP200 ? Tranceiver 2X20 6 
+  PLD_2 ? none 2X25 10 
+ EndSubSection
+
+ SubSection TDO_2 class NA
+  JP200 ? Tranceiver 2X20 14 
+  PLD_2 ? none 2X25 18 
+ EndSubSection
+
+ SubSection TDO_LOCAL class NA
+  JP400 ? JTAG 2X05 5 
+  P13 ? none PAD P$1 
+  PLD_2 ? none 2X25 39 
+  R402 ? 8x10k SIL9 4 
+ EndSubSection
+
+ SubSection TMS_1 class NA
+  JP200 ? Tranceiver 2X20 4 
+  PLD_2 ? none 2X25 8 
+ EndSubSection
+
+ SubSection TMS_2 class NA
+  JP200 ? Tranceiver 2X20 12 
+  PLD_2 ? none 2X25 16 
+ EndSubSection
+
+ SubSection TMS_LOCAL class NA
+  JP400 ? JTAG 2X05 3 
+  P11 ? none PAD P$1 
+  PLD_2 ? none 2X25 35 
+  R401 ? 300 0207/10 1 
+ EndSubSection
+
+ SubSection VREF_JTAG class NA
+  JP1 ? none 1X02 2 
+  JP400 ? JTAG 2X05 10 
+  R402 ? 8x10k SIL9 1 
+ EndSubSection
+
+ SubSection WDG class NA
+  IC80 ? 4093N DIL14 9 
+  P80 ? none PAD P$1 
+  PLD_4 ? none 2X20 2 
+ EndSubSection
+EndSection

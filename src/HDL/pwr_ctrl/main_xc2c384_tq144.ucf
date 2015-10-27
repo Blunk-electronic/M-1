@@ -1,0 +1,61 @@
+#V1.0 initial
+#V1.1 - uut_pwr_x signals renamed
+#V1.2 - spare_1 and reset_2 swapped
+
+NET "OSC_RC"         LOC =  "P30";
+NET "OSC_OUT"        LOC =  "P28";
+
+NET "OVERLOAD_1"     LOC =  "P120";
+NET "OVERLOAD_2"     LOC =  "P119";
+NET "OVERLOAD_3"     LOC =  "P118";
+
+NET "RESET"          LOC =  "P35";
+
+NET "SCL1"           LOC =  "P16";
+NET "SDA1"           LOC =  "P15";
+
+NET "SCL2"           LOC =  "P12";
+NET "SDA2"           LOC =  "P11";
+
+NET "SCL3"           LOC =  "P14";
+NET "SDA3"           LOC =  "P13";
+
+NET "SCL4"           LOC =  "P10";
+NET "SDA4"           LOC =  "P9";
+
+#NET "UUT_PWR_ON_1"   LOC =  "P21"; 	# rm V1.1
+#NET "UUT_PWR_ON_2"   LOC =  "P22"; 	# rm V1.1
+#NET "UUT_PWR_FAIL_1"	LOC =	 "P23"; 	# rm V1.1
+#NET "UUT_PWR_FAIL_2"	LOC =	 "P24"; 	# rm V1.1
+
+NET "emrgcy_pwr_off"   	LOC =  "P21";	# ins V1.1
+#NET "spare_1"   			LOC =  "P22";	# ins V1.1 # rm V1.2
+NET "spare_1"   			LOC =  "P24";	# ins V1.1 # ins V1.2
+NET "uut_pwr_fail"		LOC =	 "P23";	# ins V1.1
+#NET "reset_2"				LOC =	 "P24";	# ins V1.1 # rm V1.2
+NET "reset_2"				LOC =	 "P22";	# ins V1.1 # ins V1.2
+
+#from spartan configuration
+#NET "emrgcy_pwr_off" LOC = P31 | IOSTANDARD = LVTTL;
+#NET "spare_1" LOC = P29 | IOSTANDARD = LVTTL;
+#NET "uut_pwr_fail" LOC = P28 | IOSTANDARD = LVTTL;
+#NET "reset_2" LOC = P36 | IOSTANDARD = LVTTL;
+
+NET "LED_P1"         LOC =  "P107";
+NET "LED_P2"         LOC =  "P106";
+NET "LED_P3"         LOC =  "P105";
+NET "LED_PGND"       LOC =  "P104";
+
+NET "DBG0"				LOC =  "P74";
+NET "DBG1"				LOC =  "P75";
+NET "DBG2"				LOC =  "P76";
+NET "DBG3"				LOC =  "P77";
+NET "DBG4"				LOC =  "P78";
+NET "DBG5"				LOC =  "P79";
+NET "DBG6"				LOC =  "P80";
+NET "DBG7"				LOC =  "P81";
+
+NET "PWR_1"          LOC =  "P71";
+NET "PWR_2"          LOC =  "P70";
+NET "PWR_3"          LOC =  "P69";
+NET "PWR_GND"        LOC =  "P68";

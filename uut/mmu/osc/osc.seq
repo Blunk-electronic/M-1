@@ -1,0 +1,72 @@
+Section info
+ created by clock test generator version 1.1
+ date      : Tue Jun 30 09:29:11 CEST 2015
+ database  : mmu.udb
+ algorithm : non-intrusive
+EndSection
+
+Section options
+ on_fail hstrst
+ trailer_ir 11001010
+ trailer_dr 11001010
+ voltage_out_port_1 3.3
+ voltage_out_port_2 1.8
+ tck_driver_port_1 push-pull
+ tms_driver_port_1 push-pull
+ tdo_driver_port_1 push-pull
+ trst_driver_port_1 push-pull
+ tck_driver_port_2 push-pull
+ tms_driver_port_2 push-pull
+ tdo_driver_port_2 push-pull
+ trst_driver_port_2 push-pull
+ threshold_tdi_port_1 0.8
+ threshold_tdi_port_2 0.8
+EndSection
+
+Section sequence 1
+
+ delay 0.2
+ power up gnd       -- connects supply GND with UUT. NOTE: similar commands: power up/down gnd,1,2,3,all
+ delay 0.2
+ imax 1 0.5 timeout 2 -- set maximum current of power channel 1 to 1 A , timeout to shutdown is 2 sec 
+-- imax 2 0.5 timeout 2 -- NOTE: max. current range: 0.1 to 5 Amps | timeout range: 0.02 to 5 sec
+-- imax 3 0.5 timeout 2
+ power up 1
+-- power up 2
+-- power up 3
+ delay 1            -- wait for UUT power to settle down -- unit is seconds, max. 25sec allowed
+ connect port 1     -- connect TAP 1 signals with UUT. NOTE: similar commands: (dis)connect port 1,2
+ delay 0.2
+ -- test begin
+
+ trst -- hard+soft scanpath reset. NOTE: similar commands: strst,htrst (for soft/hard scanpath reset)
+ -- set devices in sample/preload mode
+ set IC301 drv ir 7 downto 0 = 00000001 sample
+ set IC300 drv ir 7 downto 0 = 00000001 sample
+ set IC303 drv ir 7 downto 0 = 00000010 sample
+ -- expect capture ir values
+ set IC301 exp ir 7 downto 0 = 000xxx01 instruction_capture
+ set IC300 exp ir 7 downto 0 = 000xxx01 instruction_capture
+ set IC303 exp ir 7 downto 0 = 10000001 instruction_capture
+ sir id 1
+
+ -- safebits loading
+ set IC301 drv boundary 107 downto 0 = xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxxxx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxx safebits
+ set IC300 drv boundary 107 downto 0 = xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxxxx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxx safebits
+ set IC303 drv boundary 17 downto 0 = x1xxxxxxxxxxxxxxxx safebits
+ -- nothing meaningful to expect here
+ set IC301 exp boundary 107 downto 0 = x
+ set IC300 exp boundary 107 downto 0 = x
+ set IC303 exp boundary 17 downto 0 = x
+ sdr id 2
+
+ -- wait for H on target IC301 pin 6
+ set IC301 exp boundary 95=1
+ sdr id 3 option retry 10 delay 1
+
+ -- wait for L on target IC301 pin 6
+ set IC301 exp boundary 95=0
+ sdr id 4 option retry 10 delay 1
+
+ trst
+EndSection

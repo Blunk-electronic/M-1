@@ -1,0 +1,639 @@
+
+Section scanpath_configuration
+
+-- recommended version 1.1
+
+ SubSection options
+  on_fail hstrst -- power_down -- default is power_down. NOTE: similar commands: hstrst (hard+soft scanpath reset)
+  --frequency 1 -- unit is Mhz, use integers 1,2,3,4 only ! Comment this option out for lowest frequency of 33kHz !
+  trailer_ir 11001010 -- 8 bit binary value
+  trailer_dr 11001010
+  voltage_out_port_1  3.3  -- min value +1.8V, max value +3.3V
+  voltage_out_port_2  1.8
+
+  tck_driver_port_1 push-pull  -- NOTE: similar commands: weak1, weak0, tie_high, tie_low, high-z
+  tms_driver_port_1 push-pull
+  tdo_driver_port_1 push-pull
+  trst_driver_port_1 push-pull 
+  tck_driver_port_2 push-pull
+  tms_driver_port_2 push-pull
+  tdo_driver_port_2 push-pull
+  trst_driver_port_2 push-pull 
+
+  threshold_tdi_port_1 0.8  -- range: 0 ... +3.3V
+  threshold_tdi_port_2 0.8
+ EndSubSection
+
+ SubSection chain 1
+ 	--UUT_TDI_1 / BSC_TDO_1
+	--device, package, path to bsdl model, option [ remove_pin_prefix p ]
+	--NOTE: use lower case letters for package names 
+
+	IC301 pc44 models/BSDL/xc9536_pc44.bsd
+        IC300 pc44 models/BSDL/xc9536_pc44.bsd
+        IC303 dw models/BSDL/sctm001.bsm
+
+	--UUT_TDO_1 / BSC_TDI_1
+ EndSubSection
+
+EndSection
+
+Section registers
+---------------------------------------------------------------
+-- created by BSDL importer version 034
+-- date       : 2015-06-29 07:27:47
+-- UTC_Offset : 2 hours
+
+ SubSection IC301
+  value xc9536_pc44
+
+  instruction_register_length 8
+  instruction_capture         000xxx01
+  idcode_register             xxxx1001010100000010000010010011
+  usercode_register           xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  boundary_register_length    108
+
+  trst_pin none
+
+  SubSection safebits
+          -- MSB...LSB
+    safebits xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxxxx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxx
+    total    108
+  EndSubSection
+
+  SubSection instruction_opcodes
+  -- instruction opcode [alternative opcode]
+     bypass 11111111
+     ispex 11110000
+     extest 00000000
+     ferase 11101100
+     fpgm 11101010
+     fvfy 11101110
+     fbulk 11101101
+     fpgmi 11101011
+     fvfyi 11101111
+     highz 11111100
+     idcode 11111110
+     intest 00000010
+     ispen 11101000
+     sample 00000001
+     usercode 11111101
+  EndSubSection
+
+  SubSection boundary_register
+  -- num cell port function safe [control_cell disable_value disable_result]
+     2 bc_1 * internal x
+     1 bc_1 * internal x
+     0 bc_1 * internal x
+     5 bc_1 pb01_16 input x
+     4 bc_1 pb01_16 output3 x 3 0 z
+     3 bc_1 * controlr 0
+     8 bc_1 pb01_15 input x
+     7 bc_1 pb01_15 output3 x 6 0 z
+     6 bc_1 * controlr 0
+     11 bc_1 pb01_14 input x
+     10 bc_1 pb01_14 output3 x 9 0 z
+     9 bc_1 * controlr 0
+     14 bc_1 pb01_13 input x
+     13 bc_1 pb01_13 output3 x 12 0 z
+     12 bc_1 * controlr 0
+     17 bc_1 pb01_12 input x
+     16 bc_1 pb01_12 output3 x 15 0 z
+     15 bc_1 * controlr 0
+     20 bc_1 pb01_11 input x
+     19 bc_1 pb01_11 output3 x 18 0 z
+     18 bc_1 * controlr 0
+     23 bc_1 pb01_10 input x
+     22 bc_1 pb01_10 output3 x 21 0 z
+     21 bc_1 * controlr 0
+     26 bc_1 pb01_09 input x
+     25 bc_1 pb01_09 output3 x 24 0 z
+     24 bc_1 * controlr 0
+     29 bc_1 pb01_08 input x
+     28 bc_1 pb01_08 output3 x 27 0 z
+     27 bc_1 * controlr 0
+     32 bc_1 pb01_07 input x
+     31 bc_1 pb01_07 output3 x 30 0 z
+     30 bc_1 * controlr 0
+     35 bc_1 pb01_06 input x
+     34 bc_1 pb01_06 output3 x 33 0 z
+     33 bc_1 * controlr 0
+     38 bc_1 pb01_05 input x
+     37 bc_1 pb01_05 output3 x 36 0 z
+     36 bc_1 * controlr 0
+     41 bc_1 pb01_04 input x
+     40 bc_1 pb01_04 output3 x 39 0 z
+     39 bc_1 * controlr 0
+     44 bc_1 pb01_03 input x
+     43 bc_1 pb01_03 output3 x 42 0 z
+     42 bc_1 * controlr 0
+     47 bc_1 pb01_02 input x
+     46 bc_1 pb01_02 output3 x 45 0 z
+     45 bc_1 * controlr 0
+     50 bc_1 pb01_01 input x
+     49 bc_1 pb01_01 output3 x 48 0 z
+     48 bc_1 * controlr 0
+     53 bc_1 pb01_00 input x
+     52 bc_1 pb01_00 output3 x 51 0 z
+     51 bc_1 * controlr 0
+     56 bc_1 * internal x
+     55 bc_1 * internal x
+     54 bc_1 * internal x
+     59 bc_1 pb00_16 input x
+     58 bc_1 pb00_16 output3 x 57 0 z
+     57 bc_1 * controlr 0
+     62 bc_1 pb00_15 input x
+     61 bc_1 pb00_15 output3 x 60 0 z
+     60 bc_1 * controlr 0
+     65 bc_1 pb00_14 input x
+     64 bc_1 pb00_14 output3 x 63 0 z
+     63 bc_1 * controlr 0
+     68 bc_1 pb00_13 input x
+     67 bc_1 pb00_13 output3 x 66 0 z
+     66 bc_1 * controlr 0
+     71 bc_1 pb00_12 input x
+     70 bc_1 pb00_12 output3 x 69 0 z
+     69 bc_1 * controlr 0
+     74 bc_1 pb00_11 input x
+     73 bc_1 pb00_11 output3 x 72 0 z
+     72 bc_1 * controlr 0
+     77 bc_1 pb00_10 input x
+     76 bc_1 pb00_10 output3 x 75 0 z
+     75 bc_1 * controlr 0
+     80 bc_1 pb00_09 input x
+     79 bc_1 pb00_09 output3 x 78 0 z
+     78 bc_1 * controlr 0
+     83 bc_1 pb00_08 input x
+     82 bc_1 pb00_08 output3 x 81 0 z
+     81 bc_1 * controlr 0
+     86 bc_1 pb00_07 input x
+     85 bc_1 pb00_07 output3 x 84 0 z
+     84 bc_1 * controlr 0
+     89 bc_1 pb00_06 input x
+     88 bc_1 pb00_06 output3 x 87 0 z
+     87 bc_1 * controlr 0
+     92 bc_1 pb00_05 input x
+     91 bc_1 pb00_05 output3 x 90 0 z
+     90 bc_1 * controlr 0
+     95 bc_1 pb00_04 input x
+     94 bc_1 pb00_04 output3 x 93 0 z
+     93 bc_1 * controlr 0
+     98 bc_1 pb00_03 input x
+     97 bc_1 pb00_03 output3 x 96 0 z
+     96 bc_1 * controlr 0
+     101 bc_1 pb00_02 input x
+     100 bc_1 pb00_02 output3 x 99 0 z
+     99 bc_1 * controlr 0
+     104 bc_1 pb00_01 input x
+     103 bc_1 pb00_01 output3 x 102 0 z
+     102 bc_1 * controlr 0
+     107 bc_1 pb00_00 input x
+     106 bc_1 pb00_00 output3 x 105 0 z
+     105 bc_1 * controlr 0
+  EndSubSection
+
+  SubSection port_io_map
+  -- port(s) : direction [up/down vector]
+     pb00_00 : inout 
+     pb00_01 : inout 
+     pb00_02 : inout 
+     pb00_03 : inout 
+     pb00_04 : inout 
+     pb00_05 : inout 
+     pb00_06 : inout 
+     pb00_07 : inout 
+     pb00_08 : inout 
+     pb00_09 : inout 
+     pb00_10 : inout 
+     pb00_11 : inout 
+     pb00_12 : inout 
+     pb00_13 : inout 
+     pb00_14 : inout 
+     pb00_15 : inout 
+     pb00_16 : inout 
+     pb01_00 : inout 
+     pb01_01 : inout 
+     pb01_02 : inout 
+     pb01_03 : inout 
+     pb01_04 : inout 
+     pb01_05 : inout 
+     pb01_06 : inout 
+     pb01_07 : inout 
+     pb01_08 : inout 
+     pb01_09 : inout 
+     pb01_10 : inout 
+     pb01_11 : inout 
+     pb01_12 : inout 
+     pb01_13 : inout 
+     pb01_14 : inout 
+     pb01_15 : inout 
+     pb01_16 : inout 
+     tck : in 
+     tdi : in 
+     tdo : out 
+     tms : in 
+     vccint_1 : linkage 
+     vccint_vpp : linkage 
+     vccio_1 : linkage 
+     vssint_1 : linkage 
+     vssio_1 : linkage 
+     vssio_2 : linkage 
+    
+  EndSubSection
+
+  SubSection port_pin_map -- for package pc44
+  -- port pin(s)
+     pb00_00 2
+     pb00_01 3
+     pb00_02 5
+     pb00_03 4
+     pb00_04 6
+     pb00_05 8
+     pb00_06 7
+     pb00_07 9
+     pb00_08 11
+     pb00_09 12
+     pb00_10 13
+     pb00_11 14
+     pb00_12 18
+     pb00_13 19
+     pb00_14 20
+     pb00_15 22
+     pb00_16 24
+     pb01_00 1
+     pb01_01 44
+     pb01_02 42
+     pb01_03 43
+     pb01_04 40
+     pb01_05 39
+     pb01_06 38
+     pb01_07 37
+     pb01_08 36
+     pb01_09 35
+     pb01_10 34
+     pb01_11 33
+     pb01_12 29
+     pb01_13 28
+     pb01_14 27
+     pb01_15 26
+     pb01_16 25
+     tck 17
+     tdi 15
+     tdo 30
+     tms 16
+     vccint_1 21
+     vccint_vpp 41
+     vccio_1 32
+     vssint_1 23
+     vssio_1 10
+     vssio_2 31
+  EndSubSection
+
+ EndSubSection IC301
+
+ --------------------------------------
+
+ SubSection IC300
+  value xc9536_pc44
+
+  instruction_register_length 8
+  instruction_capture         000xxx01
+  idcode_register             xxxx1001010100000010000010010011
+  usercode_register           xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  boundary_register_length    108
+
+  trst_pin none
+
+  SubSection safebits
+          -- MSB...LSB
+    safebits xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxxxx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxx
+    total    108
+  EndSubSection
+
+  SubSection instruction_opcodes
+  -- instruction opcode [alternative opcode]
+     bypass 11111111
+     ispex 11110000
+     extest 00000000
+     ferase 11101100
+     fpgm 11101010
+     fvfy 11101110
+     fbulk 11101101
+     fpgmi 11101011
+     fvfyi 11101111
+     highz 11111100
+     idcode 11111110
+     intest 00000010
+     ispen 11101000
+     sample 00000001
+     usercode 11111101
+  EndSubSection
+
+  SubSection boundary_register
+  -- num cell port function safe [control_cell disable_value disable_result]
+     2 bc_1 * internal x
+     1 bc_1 * internal x
+     0 bc_1 * internal x
+     5 bc_1 pb01_16 input x
+     4 bc_1 pb01_16 output3 x 3 0 z
+     3 bc_1 * controlr 0
+     8 bc_1 pb01_15 input x
+     7 bc_1 pb01_15 output3 x 6 0 z
+     6 bc_1 * controlr 0
+     11 bc_1 pb01_14 input x
+     10 bc_1 pb01_14 output3 x 9 0 z
+     9 bc_1 * controlr 0
+     14 bc_1 pb01_13 input x
+     13 bc_1 pb01_13 output3 x 12 0 z
+     12 bc_1 * controlr 0
+     17 bc_1 pb01_12 input x
+     16 bc_1 pb01_12 output3 x 15 0 z
+     15 bc_1 * controlr 0
+     20 bc_1 pb01_11 input x
+     19 bc_1 pb01_11 output3 x 18 0 z
+     18 bc_1 * controlr 0
+     23 bc_1 pb01_10 input x
+     22 bc_1 pb01_10 output3 x 21 0 z
+     21 bc_1 * controlr 0
+     26 bc_1 pb01_09 input x
+     25 bc_1 pb01_09 output3 x 24 0 z
+     24 bc_1 * controlr 0
+     29 bc_1 pb01_08 input x
+     28 bc_1 pb01_08 output3 x 27 0 z
+     27 bc_1 * controlr 0
+     32 bc_1 pb01_07 input x
+     31 bc_1 pb01_07 output3 x 30 0 z
+     30 bc_1 * controlr 0
+     35 bc_1 pb01_06 input x
+     34 bc_1 pb01_06 output3 x 33 0 z
+     33 bc_1 * controlr 0
+     38 bc_1 pb01_05 input x
+     37 bc_1 pb01_05 output3 x 36 0 z
+     36 bc_1 * controlr 0
+     41 bc_1 pb01_04 input x
+     40 bc_1 pb01_04 output3 x 39 0 z
+     39 bc_1 * controlr 0
+     44 bc_1 pb01_03 input x
+     43 bc_1 pb01_03 output3 x 42 0 z
+     42 bc_1 * controlr 0
+     47 bc_1 pb01_02 input x
+     46 bc_1 pb01_02 output3 x 45 0 z
+     45 bc_1 * controlr 0
+     50 bc_1 pb01_01 input x
+     49 bc_1 pb01_01 output3 x 48 0 z
+     48 bc_1 * controlr 0
+     53 bc_1 pb01_00 input x
+     52 bc_1 pb01_00 output3 x 51 0 z
+     51 bc_1 * controlr 0
+     56 bc_1 * internal x
+     55 bc_1 * internal x
+     54 bc_1 * internal x
+     59 bc_1 pb00_16 input x
+     58 bc_1 pb00_16 output3 x 57 0 z
+     57 bc_1 * controlr 0
+     62 bc_1 pb00_15 input x
+     61 bc_1 pb00_15 output3 x 60 0 z
+     60 bc_1 * controlr 0
+     65 bc_1 pb00_14 input x
+     64 bc_1 pb00_14 output3 x 63 0 z
+     63 bc_1 * controlr 0
+     68 bc_1 pb00_13 input x
+     67 bc_1 pb00_13 output3 x 66 0 z
+     66 bc_1 * controlr 0
+     71 bc_1 pb00_12 input x
+     70 bc_1 pb00_12 output3 x 69 0 z
+     69 bc_1 * controlr 0
+     74 bc_1 pb00_11 input x
+     73 bc_1 pb00_11 output3 x 72 0 z
+     72 bc_1 * controlr 0
+     77 bc_1 pb00_10 input x
+     76 bc_1 pb00_10 output3 x 75 0 z
+     75 bc_1 * controlr 0
+     80 bc_1 pb00_09 input x
+     79 bc_1 pb00_09 output3 x 78 0 z
+     78 bc_1 * controlr 0
+     83 bc_1 pb00_08 input x
+     82 bc_1 pb00_08 output3 x 81 0 z
+     81 bc_1 * controlr 0
+     86 bc_1 pb00_07 input x
+     85 bc_1 pb00_07 output3 x 84 0 z
+     84 bc_1 * controlr 0
+     89 bc_1 pb00_06 input x
+     88 bc_1 pb00_06 output3 x 87 0 z
+     87 bc_1 * controlr 0
+     92 bc_1 pb00_05 input x
+     91 bc_1 pb00_05 output3 x 90 0 z
+     90 bc_1 * controlr 0
+     95 bc_1 pb00_04 input x
+     94 bc_1 pb00_04 output3 x 93 0 z
+     93 bc_1 * controlr 0
+     98 bc_1 pb00_03 input x
+     97 bc_1 pb00_03 output3 x 96 0 z
+     96 bc_1 * controlr 0
+     101 bc_1 pb00_02 input x
+     100 bc_1 pb00_02 output3 x 99 0 z
+     99 bc_1 * controlr 0
+     104 bc_1 pb00_01 input x
+     103 bc_1 pb00_01 output3 x 102 0 z
+     102 bc_1 * controlr 0
+     107 bc_1 pb00_00 input x
+     106 bc_1 pb00_00 output3 x 105 0 z
+     105 bc_1 * controlr 0
+  EndSubSection
+
+  SubSection port_io_map
+  -- port(s) : direction [up/down vector]
+     pb00_00 : inout 
+     pb00_01 : inout 
+     pb00_02 : inout 
+     pb00_03 : inout 
+     pb00_04 : inout 
+     pb00_05 : inout 
+     pb00_06 : inout 
+     pb00_07 : inout 
+     pb00_08 : inout 
+     pb00_09 : inout 
+     pb00_10 : inout 
+     pb00_11 : inout 
+     pb00_12 : inout 
+     pb00_13 : inout 
+     pb00_14 : inout 
+     pb00_15 : inout 
+     pb00_16 : inout 
+     pb01_00 : inout 
+     pb01_01 : inout 
+     pb01_02 : inout 
+     pb01_03 : inout 
+     pb01_04 : inout 
+     pb01_05 : inout 
+     pb01_06 : inout 
+     pb01_07 : inout 
+     pb01_08 : inout 
+     pb01_09 : inout 
+     pb01_10 : inout 
+     pb01_11 : inout 
+     pb01_12 : inout 
+     pb01_13 : inout 
+     pb01_14 : inout 
+     pb01_15 : inout 
+     pb01_16 : inout 
+     tck : in 
+     tdi : in 
+     tdo : out 
+     tms : in 
+     vccint_1 : linkage 
+     vccint_vpp : linkage 
+     vccio_1 : linkage 
+     vssint_1 : linkage 
+     vssio_1 : linkage 
+     vssio_2 : linkage 
+    
+  EndSubSection
+
+  SubSection port_pin_map -- for package pc44
+  -- port pin(s)
+     pb00_00 2
+     pb00_01 3
+     pb00_02 5
+     pb00_03 4
+     pb00_04 6
+     pb00_05 8
+     pb00_06 7
+     pb00_07 9
+     pb00_08 11
+     pb00_09 12
+     pb00_10 13
+     pb00_11 14
+     pb00_12 18
+     pb00_13 19
+     pb00_14 20
+     pb00_15 22
+     pb00_16 24
+     pb01_00 1
+     pb01_01 44
+     pb01_02 42
+     pb01_03 43
+     pb01_04 40
+     pb01_05 39
+     pb01_06 38
+     pb01_07 37
+     pb01_08 36
+     pb01_09 35
+     pb01_10 34
+     pb01_11 33
+     pb01_12 29
+     pb01_13 28
+     pb01_14 27
+     pb01_15 26
+     pb01_16 25
+     tck 17
+     tdi 15
+     tdo 30
+     tms 16
+     vccint_1 21
+     vccint_vpp 41
+     vccio_1 32
+     vssint_1 23
+     vssio_1 10
+     vssio_2 31
+  EndSubSection
+
+ EndSubSection IC300
+
+ --------------------------------------
+
+ SubSection IC303
+  value sn74bct8240a
+
+  instruction_register_length 8
+  instruction_capture         10000001
+  idcode_register             none
+  usercode_register           none
+  boundary_register_length    18
+
+  trst_pin none
+
+  SubSection safebits
+          -- MSB...LSB
+    safebits x1xxxxxxxxxxxxxxxx
+    total    18
+  EndSubSection
+
+  SubSection instruction_opcodes
+  -- instruction opcode [alternative opcode]
+     extest 00000000 10000000
+     bypass 11111111 10000100 00000101 10001000 00000001
+     sample 00000010 10000010
+     intest 00000011 10000011
+     highz 00000110 10000110
+     clamp 00000111 10000111
+     runt 00001001 10001001
+     readbn 00001010 10001010
+     readbt 00001011 10001011
+     celltst 00001100 10001100
+     tophip 00001101 10001101
+     scancn 00001110 10001110
+     scanct 00001111 10001111
+  EndSubSection
+
+  SubSection boundary_register
+  -- num cell port function safe [control_cell disable_value disable_result]
+     0 bc_1 y2(4) output3 x 16 1 z
+     1 bc_1 y2(3) output3 x 16 1 z
+     2 bc_1 y2(2) output3 x 16 1 z
+     3 bc_1 y2(1) output3 x 16 1 z
+     4 bc_1 y1(4) output3 x 17 1 z
+     5 bc_1 y1(3) output3 x 17 1 z
+     6 bc_1 y1(2) output3 x 17 1 z
+     7 bc_1 y1(1) output3 x 17 1 z
+     8 bc_1 a2(4) input x
+     9 bc_1 a2(3) input x
+     10 bc_1 a2(2) input x
+     11 bc_1 a2(1) input x
+     12 bc_1 a1(4) input x
+     13 bc_1 a1(3) input x
+     14 bc_1 a1(2) input x
+     15 bc_1 a1(1) input x
+     16 bc_1 oe_neg2 input x
+     16 bc_1 * control 1
+     17 bc_1 oe_neg1 input 1
+     17 bc_1 * control x
+  EndSubSection
+
+  SubSection port_io_map
+  -- port(s) : direction [up/down vector]
+     oe_neg1 : in 
+     y1 : out 1 to 4 
+     y2 : out 1 to 4 
+     a1 : in 1 to 4 
+     a2 : in 1 to 4 
+     oe_neg2 : in 
+     gnd vcc : linkage 
+     tdo : out 
+     tdi tms tck : in 
+     nc : linkage 1 to 4 
+    
+  EndSubSection
+
+  SubSection port_pin_map -- for package dw
+  -- port pin(s)
+     oe_neg1 1
+     y1 2 3 4 5
+     y2 7 8 9 10
+     a1 23 22 21 20
+     a2 19 17 16 15
+     oe_neg2 24
+     gnd 6
+     vcc 18
+     tdo 11
+     tdi 14
+     tms 12
+     tck 13
+  EndSubSection
+
+ EndSubSection IC303
+
+ --------------------------------------
+
+EndSection 
+

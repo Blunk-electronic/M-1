@@ -1,0 +1,226 @@
+Section info
+ created by pin toggle generator version 002
+ date          : 2015-06-30 07:29:26
+ UTC_Offset    : 2 hours
+ database      : mmu.udb
+ target net    : LED3
+ cycle count   : 10
+ low time      : 5.0 sec
+ high time     : 5.0 sec
+ frequency     : 0.10 Hz
+EndSection
+
+Section options
+   on_fail hstrst 
+   trailer_ir 11001010 
+   trailer_dr 11001010
+   voltage_out_port_1  3.3  
+   voltage_out_port_2  1.8
+   tck_driver_port_1 push-pull  
+   tms_driver_port_1 push-pull
+   tdo_driver_port_1 push-pull
+   trst_driver_port_1 push-pull 
+   tck_driver_port_2 push-pull
+   tms_driver_port_2 push-pull
+   tdo_driver_port_2 push-pull
+   trst_driver_port_2 push-pull 
+   threshold_tdi_port_1 0.8  
+   threshold_tdi_port_2 0.8
+EndSection
+
+Section sequence 1
+
+ delay 0.2
+ power up gnd       -- connects supply GND with UUT. NOTE: similar commands: power up/down gnd,1,2,3,all
+ delay 0.2
+ imax 1 0.5 timeout 2 -- set maximum current of power channel 1 to 1 A , timeout to shutdown is 2 sec 
+-- imax 2 0.5 timeout 2 -- NOTE: max. current range: 0.1 to 5 Amps | timeout range: 0.02 to 5 sec
+-- imax 3 0.5 timeout 2
+ power up 1
+-- power up 2
+-- power up 3
+ delay 1            -- wait for UUT power to settle down -- unit is seconds, max. 25sec allowed
+ connect port 1     -- connect TAP 1 signals with UUT. NOTE: similar commands: (dis)connect port 1,2
+ delay 0.2
+ -- test begin
+
+ trst -- hard+soft scanpath reset. NOTE: similar commands: strst,htrst (for soft/hard scanpath reset)
+
+ -- set devices in sample/preload mode
+ set IC301 drv ir 7 downto 0 = 00000001 sample
+ set IC300 drv ir 7 downto 0 = 00000001 sample
+ set IC303 drv ir 7 downto 0 = 00000010 sample
+
+ -- expect capture ir values
+ set IC301 exp ir 7 downto 0 = 000xxx01 instruction_capture
+ set IC300 exp ir 7 downto 0 = 000xxx01 instruction_capture
+ set IC303 exp ir 7 downto 0 = 10000001 instruction_capture
+ sir id 1
+
+ -- safebits loading
+ set IC301 drv boundary 107 downto 0 = xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxxxx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxx safebits
+ set IC300 drv boundary 107 downto 0 = xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxxxx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xx0xxx safebits
+ set IC303 drv boundary 17 downto 0 = x1xxxxxxxxxxxxxxxx safebits
+ -- nothing meaningful to expect here
+ set IC301 exp boundary 107 downto 0 = x
+ set IC300 exp boundary 107 downto 0 = x
+ set IC303 exp boundary 17 downto 0 = x
+ sdr id 2
+
+ -- set devices in extest mode
+ set IC301 drv ir 7 downto 0 = 00000000 extest
+ set IC300 drv ir 7 downto 0 = 00000000 extest
+ set IC303 drv ir 7 downto 0 = 00000000 extest
+ sir id 3
+
+ -- load static drive values
+ set IC301 drv boundary 93=0 105=0 102=0 96=0 90=0 84=0 81=0 78=0 75=0 12=1 36=0 99=0 87=0 39=0 45=0 10=1 7=0 52=0 49=0 43=0 34=0 31=0 28=0 25=0 22=0 16=0 19=0 13=0
+ set IC300 drv boundary 105=0 102=0 96=0 93=0 12=1 9=1 3=1 45=0 7=0 37=0 73=0 70=0 67=0 64=0 61=0 58=0 52=0 49=0 43=0 34=0 31=0 28=0 25=0 22=0 19=0 16=0 100=0 88=1 40=0 13=0 10=1 4=0
+ set IC303 drv boundary 16=0 16=0 16=0 16=0 17=0 17=0 17=0 17=0
+ sdr id 4
+
+ -- expect static values
+ set IC301 exp boundary 14=0
+ set IC300 exp boundary 14=0 11=1 5=0
+
+ sdr id 5
+
+ -- toggle  class NR primary_net LED3 device IC303 pin 7 output_cell 3
+ -- 10 cycles of LH follow ...
+ ----------------------------------------------------------------------------------------- 
+
+ -- cycle  1
+
+ -- toggle L
+ set IC303 drv boundary 3=0
+ sdr id 6
+ delay  5.0
+
+ -- toggle H
+ set IC303 drv boundary 3=1
+ sdr id 7
+ delay  5.0
+
+ ----------------------------- 
+ -- cycle  2
+
+ -- toggle L
+ set IC303 drv boundary 3=0
+ sdr id 8
+ delay  5.0
+
+ -- toggle H
+ set IC303 drv boundary 3=1
+ sdr id 9
+ delay  5.0
+
+ ----------------------------- 
+ -- cycle  3
+
+ -- toggle L
+ set IC303 drv boundary 3=0
+ sdr id 10
+ delay  5.0
+
+ -- toggle H
+ set IC303 drv boundary 3=1
+ sdr id 11
+ delay  5.0
+
+ ----------------------------- 
+ -- cycle  4
+
+ -- toggle L
+ set IC303 drv boundary 3=0
+ sdr id 12
+ delay  5.0
+
+ -- toggle H
+ set IC303 drv boundary 3=1
+ sdr id 13
+ delay  5.0
+
+ ----------------------------- 
+ -- cycle  5
+
+ -- toggle L
+ set IC303 drv boundary 3=0
+ sdr id 14
+ delay  5.0
+
+ -- toggle H
+ set IC303 drv boundary 3=1
+ sdr id 15
+ delay  5.0
+
+ ----------------------------- 
+ -- cycle  6
+
+ -- toggle L
+ set IC303 drv boundary 3=0
+ sdr id 16
+ delay  5.0
+
+ -- toggle H
+ set IC303 drv boundary 3=1
+ sdr id 17
+ delay  5.0
+
+ ----------------------------- 
+ -- cycle  7
+
+ -- toggle L
+ set IC303 drv boundary 3=0
+ sdr id 18
+ delay  5.0
+
+ -- toggle H
+ set IC303 drv boundary 3=1
+ sdr id 19
+ delay  5.0
+
+ ----------------------------- 
+ -- cycle  8
+
+ -- toggle L
+ set IC303 drv boundary 3=0
+ sdr id 20
+ delay  5.0
+
+ -- toggle H
+ set IC303 drv boundary 3=1
+ sdr id 21
+ delay  5.0
+
+ ----------------------------- 
+ -- cycle  9
+
+ -- toggle L
+ set IC303 drv boundary 3=0
+ sdr id 22
+ delay  5.0
+
+ -- toggle H
+ set IC303 drv boundary 3=1
+ sdr id 23
+ delay  5.0
+
+ ----------------------------- 
+ -- cycle  10
+
+ -- toggle L
+ set IC303 drv boundary 3=0
+ sdr id 24
+ delay  5.0
+
+ -- toggle H
+ set IC303 drv boundary 3=1
+ sdr id 25
+ delay  5.0
+
+ ----------------------------- 
+
+ trst  -- comment out this line if necessary 
+
+EndSection
+

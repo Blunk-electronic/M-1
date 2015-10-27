@@ -1,0 +1,227 @@
+#! /bin/sh
+
+version=1.0
+
+#reads altium netlistt
+#command is:	impaltium netlist.net
+#written by MBL
+
+# to do:
+
+
+##### PROCEDURES #############################################################
+
+	read_value_pack_pin()
+		{
+		device_pin=$1  # holds device-pin like C101-2
+		device=${device_pin//-*} # read dev name (split until first occurence of "-" # CS: need to split until last occurence
+		pin=${device_pin//*-} # read pin (split from last occurence of "-" # >> tmp/nets.tmp
+
+		echo -n "  "$device "? " >> tmp/nets.tmp 
+
+		while read -a part
+		do
+			[ "${part[1]}" = "$device" ] &&
+				{
+				echo ${part[5]} ${part[3]} $pin >> tmp/nets.tmp 
+				}
+
+		done < tmp/parts.tmp
+
+		
+		}
+
+
+
+
+##### MAIN BEGIN #############################################################
+
+	umask 003
+
+	overwrite_main_module=no
+	overwrite_sub_module=no
+	[ -e skeleton.txt ] &&
+		{
+		echo 'WARNING ! CAD data for main module already exists.'
+		echo -n '          Overwrite existing data set ? (y/n/c) '
+		read key
+		[ "$key" != "y" -a "$key" != "n" ] && 
+					{
+					echo 'CAD data import cancelled'
+					exit 1;
+					}
+
+		[ "$key" = "y" ] && 
+			{
+			overwrite_main_module=yes
+			break
+			}
+		[ "$key" = "n" ] && 
+			{
+			overwrite_sub_module=yes
+			#echo $overwrite_sub_module	
+			echo 'Importing CAD data as UUT submodule.'
+			echo -n 'Enter submodule name : '
+			read sub_name;
+			[ -e skeleton_$sub_name.txt ] &&
+				{ 
+				echo 'WARNING ! Cad data for submodule '$sub_name' already exists.'
+				echo -n '          Overwrite existing data set ? (y/n/c) '
+				read key2
+				[ "$key2" != "y" ] && 
+					{
+					echo 'CAD data import cancelled'
+					exit 1;
+					}
+				}
+			}
+		}
+
+
+
+# clean up tmp directory
+	touch tmp/dummy.tmp	#CS: try more elegant way !
+	rm tmp/*.tmp
+
+#read files passed to this script into shell variables
+	netlist=$1
+	#partlist=$2
+
+	echo
+	echo "importing ALTIUM CAD-Data with importer version" $version
+	echo 'netlist        : '$netlist 
+	echo
+
+	echo 'Section info' > tmp/np.tmp
+
+	[ "$overwrite_sub_module" = "yes" ] && echo ' -- netlist skeleton submodule' >> tmp/np.tmp
+	[ "$overwrite_sub_module" = "no" ] && echo ' -- netlist skeleton' >> tmp/np.tmp
+	echo ' -- created by impaltium version' $version >> tmp/np.tmp
+	echo -n ' -- ' >> tmp/np.tmp
+	date >> tmp/np.tmp
+	echo "-----------------------------------------------------------------------------------" >> tmp/np.tmp
+
+
+##############################################
+
+# convert netlist from DOS to UNIX	
+	#echo '- converting ' $netlist 'to UNIX format'
+	cp $netlist tmp/netlist_unix.tmp
+	dos2unix -q tmp/netlist_unix.tmp # suppress messages
+	netlist=tmp/netlist_unix.tmp
+	#echo $netlist
+
+	echo "Section netlist_skeleton" >> tmp/nets.tmp
+	echo >> tmp/nets.tmp
+
+	#cut away header
+	lp=1
+	#net_list_entered="no"
+	#part_list_entered="no"
+	net_entered="no"
+	part_entered="no"
+	part_ct=0
+	net_ct=0
+	line_pt_part=0
+	line_pt_net=0
+
+	while IFS=" " read -a line
+	do
+		#echo $lp ${#line[*]}
+		[ "${line[0]}" = "[" ] && 
+			{
+			#part_list_entered="yes"
+			part_entered="yes"
+			line_pt_part=0 
+			}
+
+		[ "$part_entered" = "yes" ]
+			{
+			[ "$line_pt_part" -eq 1 ] && echo -n "dev" ${line[0]} >> tmp/parts.tmp # read part name
+			[ "$line_pt_part" -eq 2 ] && 
+				{
+				[ ${#line[*]} -gt 0 ] && echo -n " package" ${line[0]} >> tmp/parts.tmp # read package
+				[ ${#line[*]} -eq 0 ] && echo -n " package unknown" >> tmp/parts.tmp # read package
+				}				
+			[ "$line_pt_part" -eq 3 ] && [ ${#line[*]} -gt 0 ] && echo " value" ${line[0]} >> tmp/parts.tmp # read value
+			line_pt_part=$[line_pt_part+1]
+			}
+
+		[ "${line[0]}" = "]" ] && 
+			{
+			#part_list_entered="yes"
+			part_entered="no"
+			part_ct=$[part_ct+1] 
+			}
+
+
+
+		[ "${line[0]}" = "(" ] && 
+			{
+			net_entered="yes"
+			line_pt_net=0 
+			}
+
+		[ "${line[0]}" = ")" ] && 
+			{
+			echo " EndSubSection" >> tmp/nets.tmp # read net name
+			echo >> tmp/nets.tmp
+			net_entered="no"
+			net_ct=$[net_ct+1] 
+			}
+
+		[ "$net_entered" = "yes" ] &&
+			{
+			#echo $line_pt_net >> tmp/nets.tmp
+			[ "$line_pt_net" -eq 1 ] && echo " SubSection" ${line[0]} "class NA" >> tmp/nets.tmp # read net name
+			[ "$line_pt_net" -gt 1 ] && read_value_pack_pin ${line[0]}
+			line_pt_net=$[line_pt_net+1]
+			}
+
+
+# 			#echo ${line[*]}
+ 		
+  
+		#advance line pointer
+		lp=$[lp+1]
+		echo -n -e "\r$lp" # output progress
+	done < $netlist
+	echo 'EndSection' >> tmp/nets.tmp
+
+	echo >> tmp/np.tmp
+	echo " -- "$net_ct "nets imported" >> tmp/np.tmp
+	echo " -- "$part_ct "parts imported" >> tmp/np.tmp
+	echo " -- Please verify net count against CAD tool !" >> tmp/np.tmp
+	#echo >> tmp/np.tmp
+	echo 'EndSection' >> tmp/np.tmp
+	echo >> tmp/np.tmp
+#	exit
+
+
+
+	cat tmp/nets.tmp >> tmp/np.tmp
+	echo
+
+	[ "$overwrite_main_module" = "no" -a "$overwrite_sub_module" = "no" ] && 
+		{
+		cp tmp/np.tmp skeleton.txt
+		echo "NOTE: Please read "skeleton.txt" for warnings !"
+		}
+
+	[ "$overwrite_main_module" = "yes" ] && 
+		{
+		mv tmp/np.tmp skeleton.txt
+		echo "NOTE: Please read "skeleton.txt" for warnings !"
+		}
+	[ "$overwrite_sub_module" = "yes" ] && 
+        {
+		mv tmp/np.tmp skeleton_$sub_name.txt
+		echo "NOTE: Please read "skeleton_$sub_name.txt" for warnings !"
+        }
+
+# np.txt ready
+####################################################
+	echo
+
+exit 0
+

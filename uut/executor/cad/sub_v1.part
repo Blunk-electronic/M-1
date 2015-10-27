@@ -1,0 +1,94 @@
+Partlist
+
+Exported from sub_v1.sch at 11/27/12 2:02 PM
+
+EAGLE Version 6.2.0 Copyright (c) 1988-2012 CadSoft
+
+Assembly variant: 
+
+Part     Value          Device             Package     Library        Sheet
+
+C1       100n           C-EUC0805          C0805       11-07-12       1
+C2       100n           C-EUC0805          C0805       11-07-12       3
+C3       100n           C-EUC0805          C0805       11-07-12       2
+C4       10uF/16V       CPOL-EU153CLV-0405 153CLV-0405 rcl            1
+C5       100n           C-EUC0805          C0805       11-07-12       2
+C6       10uF/16V       CPOL-EU153CLV-0405 153CLV-0405 rcl            1
+C7       100n           C-EUC0805          C0805       11-07-12       2
+C8       10uF/16V       CPOL-EU153CLV-0405 153CLV-0405 rcl            1
+C9       100n           C-EUC0805          C0805       11-07-12       2
+C10      100n           C-EUC0805          C0805       11-07-12       2
+C11      100n           C-EUC0805          C0805       11-07-12       3
+C12      100n           C-EUC0805          C0805       11-07-12       3
+C13      100n           C-EUC0805          C0805       11-07-12       3
+C14      100n           C-EUC0805          C0805       11-07-12       3
+C15      100n           C-EUC0805          C0805       11-07-12       3
+C16      100n           C-EUC0805          C0805       11-07-12       3
+C17      100n           C-EUC0805          C0805       11-07-12       3
+C18      100n           C-EUC0805          C0805       11-07-12       3
+C19      100n           C-EUC0805          C0805       11-07-12       3
+C20      100n           C-EUC0805          C0805       11-07-12       2
+C21      100n           C-EUC0805          C0805       11-07-12       2
+C22      100n           C-EUC0805          C0805       11-07-12       2
+C23      100n           C-EUC0805          C0805       11-07-12       2
+C24      100n           C-EUC0805          C0805       11-07-12       2
+C25      100n           C-EUC0805          C0805       11-07-12       2
+C26      100n           C-EUC0805          C0805       11-07-12       2
+C27      100n           C-EUC0805          C0805       11-07-12       2
+C28      100n           C-EUC0805          C0805       11-07-12       2
+C29      100n           C-EUC0805          C0805       11-07-12       2
+C30      100n           C-EUC0805          C0805       11-07-12       2
+C31      100n           C-EUC0805          C0805       11-07-12       2
+C32      100n           C-EUC0805          C0805       11-07-12       2
+C33      100n           C-EUC0805          C0805       11-07-12       2
+C34      10uF/16V       CPOL-EU153CLV-0405 153CLV-0405 rcl            1
+IC1      XCF04S         XCFXXS             SSOP20      11-07-12       3
+IC2      XC3S400PQ208   XC3S400PQ208       PQ208       xilinx_devices 2
+JP1      conf           PINHD-2X10         2X10        pinhead        3
+OSC1     X091           OSC1X091           X091        euroquartz     1
+OSC2     X053           OSC1X053           X053        euroquartz     1
+P1                      PAD                PAD         pads           1
+P2                      PAD                PAD         pads           2
+P3                      PAD                PAD         pads           2
+P4                      PAD                PAD         pads           2
+P5                      PAD                PAD         pads           2
+P6                      PAD                PAD         pads           2
+P7                      PAD                PAD         pads           2
+P8                      PAD                PAD         pads           2
+P9                      PAD                PAD         pads           2
+P10                     PAD                PAD         pads           2
+P11                     PAD                PAD         pads           2
+P12                     PAD                PAD         pads           2
+P13                     PAD                PAD         pads           2
+P14                     PAD                PAD         pads           2
+P15                     PAD                PAD         pads           2
+P16                     PAD                PAD         pads           2
+P17                     PAD                PAD         pads           2
+P18                     PAD                PAD         pads           2
+P19                     PAD                PAD         pads           2
+P20                     PAD                PAD         pads           2
+P21                     PAD                PAD         pads           2
+P22                     PAD                PAD         pads           2
+P23                     PAD                PAD         pads           2
+P24                     PAD                PAD         pads           1
+P25                     PAD                PAD         pads           2
+P26                     PAD                PAD         pads           2
+P27                     PAD                PAD         pads           2
+P28                     PAD                PAD         pads           2
+P29                     PAD                PAD         pads           1
+P30                     PAD                PAD         pads           1
+P31                     PAD                PAD         pads           1
+P32                     PAD                PAD         pads           1
+P33                     PAD                PAD         pads           1
+P34                     PAD                PAD         pads           1
+P35                     PAD                PAD         pads           1
+P36                     PAD                PAD         pads           1
+PLD_1                   PINHD-2X20         2X20        pinhead        1
+PLD_2                   PINHD-2X25         2X25        pinhead        1
+PLD_3                   PINHD-2X20         2X20        pinhead        1
+PLD_4                   PINHD-2X20         2X20        pinhead        1
+R1       330            R-EU_0207/10       0207/10     rcl            3
+R2       4k7            R-EU_0207/10       0207/10     rcl            3
+R4       4k7            R-EU_0207/10       0207/10     rcl            3
+R5       330            R-EU_0207/10       0207/10     rcl            3
+R6       4k7            R-EU_0207/10       0207/10     rcl            3

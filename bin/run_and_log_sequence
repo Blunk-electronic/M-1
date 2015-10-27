@@ -1,0 +1,27 @@
+#! /bin/sh
+
+#echo $1
+
+# $1 must be an absolute path to the sequence
+
+echo -n "TEST REPORT OF SEQUENCE " > test_sequence_report.txt
+basename $1 >> test_sequence_report.txt
+echo ---------------------------------------------------------------------------- >> test_sequence_report.txt
+#echo hallo
+#sleep 4
+#exit 0
+
+#then launch sequence and copy output to report file
+
+$1 | tee -a test_sequence_report.txt
+
+#echo $?
+
+# check exit code of the batch execution itself
+#[ ${PIPESTATUS[0]} -ne 0 ] && exit 1
+echo ${PIPESTATUS[0]} > tmp/batch_exit_code.tmp
+
+
+#[ $? -ne 0 ] && exit 1
+
+exit 0

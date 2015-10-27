@@ -1,0 +1,167 @@
+
+WARNINGS ISSUED BY CHKPSN
+---------------------------------
+WARNING ! Secondary net ex_!CPU_BUSAK has no input pin to measure state !
+WARNING ! Secondary net ex_!CPU_BUSREQ has no input pin to measure state !
+WARNING ! Secondary net ex_!CPU_HALT has no input pin to measure state !
+WARNING ! Secondary net ex_!CPU_INT has no input pin to measure state !
+WARNING ! Secondary net ex_!CPU_IOREQ has no input pin to measure state !
+WARNING ! Secondary net ex_!CPU_M1 has no input pin to measure state !
+WARNING ! Secondary net ex_!CPU_MREQ has no input pin to measure state !
+WARNING ! Secondary net ex_!CPU_NMI has no input pin to measure state !
+WARNING ! Secondary net ex_!CPU_RD has no input pin to measure state !
+WARNING ! Secondary net ex_!CPU_RFSH has no input pin to measure state !
+WARNING ! Secondary net ex_!CPU_WAIT has no input pin to measure state !
+WARNING ! Secondary net ex_!CPU_WR has no input pin to measure state !
+WARNING ! Secondary net ex_!CS_RAM_IN has no input pin to measure state !
+WARNING ! Secondary net ex_!CS_RAM_OUT has no input pin to measure state !
+WARNING ! Secondary net ex_!EMRGCY_PWR_OFF has no input pin to measure state !
+WARNING ! Secondary net ex_!OE_RAM has no input pin to measure state !
+WARNING ! Secondary net ex_!RESET_2 has no input pin to measure state !
+WARNING ! Secondary net ex_!RESET_CPU_CL has no input pin to measure state !
+WARNING ! Secondary net ex_!START has no input pin to measure state !
+WARNING ! Secondary net ex_!STOP has no input pin to measure state !
+WARNING ! Secondary net ex_!TRST_1 has no input pin to measure state !
+WARNING ! Secondary net ex_!TRST_2 has no input pin to measure state !
+WARNING ! Secondary net ex_!UUT_PWR_FAIL has no input pin to measure state !
+WARNING ! Secondary net ex_!WR_RAM has no input pin to measure state !
+WARNING ! Secondary net ex_A0 has no input pin to measure state !
+WARNING ! Secondary net ex_A1 has no input pin to measure state !
+WARNING ! Secondary net ex_A2 has no input pin to measure state !
+WARNING ! Secondary net ex_A3 has no input pin to measure state !
+WARNING ! Secondary net ex_A4 has no input pin to measure state !
+WARNING ! Secondary net ex_A5 has no input pin to measure state !
+WARNING ! Secondary net ex_A6 has no input pin to measure state !
+WARNING ! Secondary net ex_A7 has no input pin to measure state !
+WARNING ! Secondary net ex_A8 has no input pin to measure state !
+WARNING ! Secondary net ex_A9 has no input pin to measure state !
+WARNING ! Secondary net ex_A10 has no input pin to measure state !
+WARNING ! Secondary net ex_A11 has no input pin to measure state !
+WARNING ! Secondary net ex_A12 has no input pin to measure state !
+WARNING ! Secondary net ex_A13 has no input pin to measure state !
+WARNING ! Secondary net ex_A14 has no input pin to measure state !
+WARNING ! Secondary net ex_A15 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM0 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM1 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM2 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM3 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM4 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM5 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM6 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM7 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM8 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM9 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM10 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM11 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM12 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM13 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM14 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM15 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM16 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM17 has no input pin to measure state !
+WARNING ! Secondary net ex_A_RAM18 has no input pin to measure state !
+WARNING ! Secondary net ex_CLK_CPU_CL has no input pin to measure state !
+WARNING ! Secondary net ex_CPU_IEO has no input pin to measure state !
+WARNING ! Secondary net ex_D0 has no input pin to measure state !
+WARNING ! Secondary net ex_D1 has no input pin to measure state !
+WARNING ! Secondary net ex_D2 has no input pin to measure state !
+WARNING ! Secondary net ex_D3 has no input pin to measure state !
+WARNING ! Secondary net ex_D4 has no input pin to measure state !
+WARNING ! Secondary net ex_D5 has no input pin to measure state !
+WARNING ! Secondary net ex_D6 has no input pin to measure state !
+WARNING ! Secondary net ex_D7 has no input pin to measure state !
+WARNING ! Secondary net ex_DBG_0 has no input pin to measure state !
+WARNING ! Secondary net ex_DBG_1 has no input pin to measure state !
+WARNING ! Secondary net ex_DBG_2 has no input pin to measure state !
+WARNING ! Secondary net ex_DBG_3 has no input pin to measure state !
+WARNING ! Secondary net ex_DBG_4 has no input pin to measure state !
+WARNING ! Secondary net ex_DBG_5 has no input pin to measure state !
+WARNING ! Secondary net ex_DBG_6 has no input pin to measure state !
+WARNING ! Secondary net ex_DBG_7 has no input pin to measure state !
+WARNING ! Secondary net ex_D_RAM0 has no input pin to measure state !
+WARNING ! Secondary net ex_D_RAM1 has no input pin to measure state !
+WARNING ! Secondary net ex_D_RAM2 has no input pin to measure state !
+WARNING ! Secondary net ex_D_RAM3 has no input pin to measure state !
+WARNING ! Secondary net ex_D_RAM4 has no input pin to measure state !
+WARNING ! Secondary net ex_D_RAM5 has no input pin to measure state !
+WARNING ! Secondary net ex_D_RAM6 has no input pin to measure state !
+WARNING ! Secondary net ex_D_RAM7 has no input pin to measure state !
+WARNING ! Secondary net ex_EXT_IEI has no input pin to measure state !
+WARNING ! Secondary net ex_FAIL has no input pin to measure state !
+WARNING ! Secondary net ex_FAIL_1 has no input pin to measure state !
+WARNING ! Secondary net ex_FAIL_2 has no input pin to measure state !
+WARNING ! Secondary net ex_GPIO_0 has no input pin to measure state !
+WARNING ! Secondary net ex_GPIO_1 has no input pin to measure state !
+WARNING ! Secondary net ex_GPIO_2 has no input pin to measure state !
+WARNING ! Secondary net ex_GPIO_3 has no input pin to measure state !
+WARNING ! Secondary net ex_PASS has no input pin to measure state !
+WARNING ! Secondary net ex_RSV_6 has no input pin to measure state !
+WARNING ! Secondary net ex_RSV_7 has no input pin to measure state !
+WARNING ! Secondary net ex_RSV_100 has no input pin to measure state !
+WARNING ! Secondary net ex_RSV_101 has no input pin to measure state !
+WARNING ! Secondary net ex_RSV_102 has no input pin to measure state !
+WARNING ! Secondary net ex_SCL has no input pin to measure state !
+WARNING ! Secondary net ex_SDA has no input pin to measure state !
+WARNING ! Secondary net ex_SPARE_1 has no input pin to measure state !
+WARNING ! Secondary net ex_TCK_1 has no input pin to measure state !
+WARNING ! Secondary net ex_TCK_2 has no input pin to measure state !
+WARNING ! Secondary net ex_TDI_1 has no input pin to measure state !
+WARNING ! Secondary net ex_TDI_2 has no input pin to measure state !
+WARNING ! Secondary net ex_TDO_1 has no input pin to measure state !
+WARNING ! Secondary net ex_TDO_2 has no input pin to measure state !
+WARNING ! Secondary net ex_TMS_1 has no input pin to measure state !
+WARNING ! Secondary net ex_TMS_2 has no input pin to measure state !
+WARNING ! Secondary net ex_WDG has no input pin to measure state !
+WARNING ! Class NR primary net A_RAM19 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net A_RAM20 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net A_RAM21 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net A_RAM22 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net A_RAM23 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net DOUT can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Primary net PROG_B has no input pin to measure state !
+WARNING ! Class NR primary net RSV_0 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_1 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_2 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_3 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_4 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_5 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_8 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_13 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_14 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_15 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_17 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_18 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_19 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_20 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_30 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_31 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_32 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_33 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_34 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)
+WARNING ! Class NR primary net RSV_35 can not be tested for open !
+          There is a single self monitoring driver pin in this net. (SOFT RULE 3.1)

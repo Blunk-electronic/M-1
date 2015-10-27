@@ -1,0 +1,1073 @@
+Section info
+ -- netlist skeleton submodule
+ -- created by impeagle6x version 3.0
+ -- Thu Dec 13 11:54:27 CET 2012
+-----------------------------------------------------------------------------------
+ -- Netlist cad/sub_v1.net
+ -- Exported from sub_v1.sch at 11/27/12 2:02 PM
+ -- EAGLE Version 6.2.0 Copyright (c) 1988-2012 CadSoft
+
+ -- NOTE    : It appears the netlist has been exported from a schematic.
+ -- 161 nets imported
+ -- Please verify net count against CAD tool !
+-----------------------------------------------------------------------------------
+ -- Partlist cad/sub_v1.part
+ -- Exported from sub_v1.sch at 11/27/12 2:02 PM
+ -- EAGLE Version 6.2.0 Copyright (c) 1988-2012 CadSoft
+
+ -- NOTE    : Assembly variant:
+ -- NOTE    : Default assembly variant found.
+ -- NOTE    : It appears the partlist has been exported from a schematic.
+ -- WARNING ! Bad parameter count in part: P1, please check partlist
+ -- WARNING ! Bad parameter count in part: P2, please check partlist
+ -- WARNING ! Bad parameter count in part: P3, please check partlist
+ -- WARNING ! Bad parameter count in part: P4, please check partlist
+ -- WARNING ! Bad parameter count in part: P5, please check partlist
+ -- WARNING ! Bad parameter count in part: P6, please check partlist
+ -- WARNING ! Bad parameter count in part: P7, please check partlist
+ -- WARNING ! Bad parameter count in part: P8, please check partlist
+ -- WARNING ! Bad parameter count in part: P9, please check partlist
+ -- WARNING ! Bad parameter count in part: P10, please check partlist
+ -- WARNING ! Bad parameter count in part: P11, please check partlist
+ -- WARNING ! Bad parameter count in part: P12, please check partlist
+ -- WARNING ! Bad parameter count in part: P13, please check partlist
+ -- WARNING ! Bad parameter count in part: P14, please check partlist
+ -- WARNING ! Bad parameter count in part: P15, please check partlist
+ -- WARNING ! Bad parameter count in part: P16, please check partlist
+ -- WARNING ! Bad parameter count in part: P17, please check partlist
+ -- WARNING ! Bad parameter count in part: P18, please check partlist
+ -- WARNING ! Bad parameter count in part: P19, please check partlist
+ -- WARNING ! Bad parameter count in part: P20, please check partlist
+ -- WARNING ! Bad parameter count in part: P21, please check partlist
+ -- WARNING ! Bad parameter count in part: P22, please check partlist
+ -- WARNING ! Bad parameter count in part: P23, please check partlist
+ -- WARNING ! Bad parameter count in part: P24, please check partlist
+ -- WARNING ! Bad parameter count in part: P25, please check partlist
+ -- WARNING ! Bad parameter count in part: P26, please check partlist
+ -- WARNING ! Bad parameter count in part: P27, please check partlist
+ -- WARNING ! Bad parameter count in part: P28, please check partlist
+ -- WARNING ! Bad parameter count in part: P29, please check partlist
+ -- WARNING ! Bad parameter count in part: P30, please check partlist
+ -- WARNING ! Bad parameter count in part: P31, please check partlist
+ -- WARNING ! Bad parameter count in part: P32, please check partlist
+ -- WARNING ! Bad parameter count in part: P33, please check partlist
+ -- WARNING ! Bad parameter count in part: P34, please check partlist
+ -- WARNING ! Bad parameter count in part: P35, please check partlist
+ -- WARNING ! Bad parameter count in part: P36, please check partlist
+ -- WARNING ! Bad parameter count in part: PLD_1, please check partlist
+ -- WARNING ! Bad parameter count in part: PLD_2, please check partlist
+ -- WARNING ! Bad parameter count in part: PLD_3, please check partlist
+ -- WARNING ! Bad parameter count in part: PLD_4, please check partlist
+ -- 84 parts imported
+ -- please verify part count against CAD tool !
+EndSection
+
+Section netlist_skeleton
+
+ SubSection !CPU_BUSAK class NA
+  IC2 ? XC3S400PQ208 PQ208 184 
+  PLD_1 ? PINHD-2X20 pinhead 22 
+ EndSubSection
+
+ SubSection !CPU_BUSREQ class NA
+  IC2 ? XC3S400PQ208 PQ208 183 
+  PLD_1 ? PINHD-2X20 pinhead 20 
+ EndSubSection
+
+ SubSection !CPU_HALT class NA
+  IC2 ? XC3S400PQ208 PQ208 187 
+  PLD_1 ? PINHD-2X20 pinhead 26 
+ EndSubSection
+
+ SubSection !CPU_INT class NA
+  IC2 ? XC3S400PQ208 PQ208 191 
+  PLD_1 ? PINHD-2X20 pinhead 32 
+ EndSubSection
+
+ SubSection !CPU_IOREQ class NA
+  IC2 ? XC3S400PQ208 PQ208 176 
+  PLD_1 ? PINHD-2X20 pinhead 38 
+ EndSubSection
+
+ SubSection !CPU_M1 class NA
+  IC2 ? XC3S400PQ208 PQ208 185 
+  PLD_1 ? PINHD-2X20 pinhead 24 
+ EndSubSection
+
+ SubSection !CPU_MREQ class NA
+  IC2 ? XC3S400PQ208 PQ208 178 
+  PLD_1 ? PINHD-2X20 pinhead 37 
+ EndSubSection
+
+ SubSection !CPU_NMI class NA
+  IC2 ? XC3S400PQ208 PQ208 194 
+  PLD_1 ? PINHD-2X20 pinhead 34 
+ EndSubSection
+
+ SubSection !CPU_RD class NA
+  IC2 ? XC3S400PQ208 PQ208 172 
+  PLD_1 ? PINHD-2X20 pinhead 40 
+ EndSubSection
+
+ SubSection !CPU_RFSH class NA
+  IC2 ? XC3S400PQ208 PQ208 190 
+  PLD_1 ? PINHD-2X20 pinhead 30 
+ EndSubSection
+
+ SubSection !CPU_WAIT class NA
+  IC2 ? XC3S400PQ208 PQ208 189 
+  PLD_1 ? PINHD-2X20 pinhead 28 
+ EndSubSection
+
+ SubSection !CPU_WR class NA
+  IC2 ? XC3S400PQ208 PQ208 175 
+  PLD_1 ? PINHD-2X20 pinhead 39 
+ EndSubSection
+
+ SubSection !CS_RAM_IN class NA
+  IC2 ? XC3S400PQ208 PQ208 117 
+  PLD_3 ? PINHD-2X20 pinhead 33 
+ EndSubSection
+
+ SubSection !CS_RAM_OUT class NA
+  IC2 ? XC3S400PQ208 PQ208 116 
+  PLD_3 ? PINHD-2X20 pinhead 34 
+ EndSubSection
+
+ SubSection !EMRGCY_PWR_OFF class NA
+  IC2 ? XC3S400PQ208 PQ208 31 
+  PLD_2 ? PINHD-2X25 pinhead 26 
+ EndSubSection
+
+ SubSection !OE_RAM class NA
+  IC2 ? XC3S400PQ208 PQ208 120 
+  PLD_3 ? PINHD-2X20 pinhead 32 
+ EndSubSection
+
+ SubSection !RESET_2 class NA
+  IC2 ? XC3S400PQ208 PQ208 29 
+  PLD_2 ? PINHD-2X25 pinhead 28 
+ EndSubSection
+
+ SubSection !RESET_CPU_CL class NA
+  IC2 ? XC3S400PQ208 PQ208 182 
+  PLD_1 ? PINHD-2X20 pinhead 35 
+ EndSubSection
+
+ SubSection !START class NA
+  IC2 ? XC3S400PQ208 PQ208 35 
+  PLD_2 ? PINHD-2X25 pinhead 9 
+ EndSubSection
+
+ SubSection !STOP class NA
+  IC2 ? XC3S400PQ208 PQ208 34 
+  PLD_2 ? PINHD-2X25 pinhead 7 
+ EndSubSection
+
+ SubSection !TRST_1 class NA
+  IC2 ? XC3S400PQ208 PQ208 65 
+  PLD_2 ? PINHD-2X25 pinhead 12 
+ EndSubSection
+
+ SubSection !TRST_2 class NA
+  IC2 ? XC3S400PQ208 PQ208 64 
+  PLD_2 ? PINHD-2X25 pinhead 20 
+ EndSubSection
+
+ SubSection !TRST_LOCAL class NA
+  PLD_2 ? PINHD-2X25 pinhead 43 
+ EndSubSection
+
+ SubSection !UUT_PWR_FAIL class NA
+  IC2 ? XC3S400PQ208 PQ208 28 
+  PLD_2 ? PINHD-2X25 pinhead 30 
+ EndSubSection
+
+ SubSection !WR_RAM class NA
+  IC2 ? XC3S400PQ208 PQ208 119 
+  PLD_3 ? PINHD-2X20 pinhead 31 
+ EndSubSection
+
+ SubSection +1V2 class NA
+  C3 ? 100n C0805 1 
+  C4 ? 10uF/16V 153CLV-0405 + 
+  C5 ? 100n C0805 1 
+  C7 ? 100n C0805 1 
+  C9 ? 100n C0805 1 
+  IC2 ? XC3S400PQ208 PQ208 174 
+  IC2 ? XC3S400PQ208 PQ208 192 
+  IC2 ? XC3S400PQ208 PQ208 70 
+  IC2 ? XC3S400PQ208 PQ208 88 
+  PLD_4 ? PINHD-2X20 pinhead 18 
+  PLD_4 ? PINHD-2X20 pinhead 20 
+  PLD_4 ? PINHD-2X20 pinhead 22 
+  PLD_4 ? PINHD-2X20 pinhead 24 
+  PLD_4 ? PINHD-2X20 pinhead 26 
+ EndSubSection
+
+ SubSection +2V5 class NA
+  C10 ? 100n C0805 1 
+  C11 ? 100n C0805 1 
+  C12 ? 100n C0805 1 
+  C13 ? 100n C0805 1 
+  C14 ? 100n C0805 1 
+  C15 ? 100n C0805 1 
+  C16 ? 100n C0805 1 
+  C17 ? 100n C0805 1 
+  C18 ? 100n C0805 1 
+  C19 ? 100n C0805 1 
+  C6 ? 10uF/16V 153CLV-0405 + 
+  IC1 ? XCF04S SSOP20 19 
+  IC1 ? XCF04S SSOP20 20 
+  IC2 ? XC3S400PQ208 PQ208 121 
+  IC2 ? XC3S400PQ208 PQ208 142 
+  IC2 ? XC3S400PQ208 PQ208 17 
+  IC2 ? XC3S400PQ208 PQ208 173 
+  IC2 ? XC3S400PQ208 PQ208 193 
+  IC2 ? XC3S400PQ208 PQ208 38 
+  IC2 ? XC3S400PQ208 PQ208 69 
+  IC2 ? XC3S400PQ208 PQ208 84 
+  IC2 ? XC3S400PQ208 PQ208 89 
+  IC2 ? XC3S400PQ208 PQ208 98 
+  JP1 ? conf 2X10 10 
+  PLD_4 ? PINHD-2X20 pinhead 28 
+  PLD_4 ? PINHD-2X20 pinhead 30 
+  PLD_4 ? PINHD-2X20 pinhead 32 
+  PLD_4 ? PINHD-2X20 pinhead 34 
+  PLD_4 ? PINHD-2X20 pinhead 36 
+  PLD_4 ? PINHD-2X20 pinhead 38 
+  PLD_4 ? PINHD-2X20 pinhead 40 
+  R1 ? 330 0207/10 2 
+  R2 ? 4k7 0207/10 2 
+  R4 ? 4k7 0207/10 2 
+  R5 ? 330 0207/10 2 
+  R6 ? 4k7 0207/10 2 
+ EndSubSection
+
+ SubSection +3V3 class NA
+  C1 ? 100n C0805 1 
+  C2 ? 100n C0805 1 
+  C20 ? 100n C0805 1 
+  C21 ? 100n C0805 1 
+  C22 ? 100n C0805 1 
+  C23 ? 100n C0805 1 
+  C24 ? 100n C0805 1 
+  C25 ? 100n C0805 1 
+  C26 ? 100n C0805 1 
+  C27 ? 100n C0805 1 
+  C28 ? 100n C0805 1 
+  C29 ? 100n C0805 1 
+  C30 ? 100n C0805 1 
+  C31 ? 100n C0805 1 
+  C32 ? 100n C0805 1 
+  C33 ? 100n C0805 1 
+  C34 ? 10uF/16V 153CLV-0405 + 
+  C8 ? 10uF/16V 153CLV-0405 + 
+  IC1 ? XCF04S SSOP20 18 
+  IC2 ? XC3S400PQ208 PQ208 110 
+  IC2 ? XC3S400PQ208 PQ208 127 
+  IC2 ? XC3S400PQ208 PQ208 136 
+  IC2 ? XC3S400PQ208 PQ208 153 
+  IC2 ? XC3S400PQ208 PQ208 164 
+  IC2 ? XC3S400PQ208 PQ208 177 
+  IC2 ? XC3S400PQ208 PQ208 188 
+  IC2 ? XC3S400PQ208 PQ208 201 
+  IC2 ? XC3S400PQ208 PQ208 23 
+  IC2 ? XC3S400PQ208 PQ208 32 
+  IC2 ? XC3S400PQ208 PQ208 49 
+  IC2 ? XC3S400PQ208 PQ208 6 
+  IC2 ? XC3S400PQ208 PQ208 60 
+  IC2 ? XC3S400PQ208 PQ208 73 
+  OSC1 ? X091 X091 4 
+  OSC2 ? X053 X053 4 
+  PLD_2 ? PINHD-2X25 pinhead 49 
+  PLD_2 ? PINHD-2X25 pinhead 50 
+  PLD_4 ? PINHD-2X20 pinhead 10 
+  PLD_4 ? PINHD-2X20 pinhead 12 
+  PLD_4 ? PINHD-2X20 pinhead 14 
+  PLD_4 ? PINHD-2X20 pinhead 16 
+  PLD_4 ? PINHD-2X20 pinhead 4 
+  PLD_4 ? PINHD-2X20 pinhead 6 
+  PLD_4 ? PINHD-2X20 pinhead 8 
+ EndSubSection
+
+ SubSection A0 class NA
+  IC2 ? XC3S400PQ208 PQ208 198 
+  PLD_1 ? PINHD-2X20 pinhead 1 
+ EndSubSection
+
+ SubSection A1 class NA
+  IC2 ? XC3S400PQ208 PQ208 199 
+  PLD_1 ? PINHD-2X20 pinhead 3 
+ EndSubSection
+
+ SubSection A2 class NA
+  IC2 ? XC3S400PQ208 PQ208 200 
+  PLD_1 ? PINHD-2X20 pinhead 5 
+ EndSubSection
+
+ SubSection A3 class NA
+  IC2 ? XC3S400PQ208 PQ208 203 
+  PLD_1 ? PINHD-2X20 pinhead 7 
+ EndSubSection
+
+ SubSection A4 class NA
+  IC2 ? XC3S400PQ208 PQ208 204 
+  PLD_1 ? PINHD-2X20 pinhead 9 
+ EndSubSection
+
+ SubSection A5 class NA
+  IC2 ? XC3S400PQ208 PQ208 205 
+  PLD_1 ? PINHD-2X20 pinhead 11 
+ EndSubSection
+
+ SubSection A6 class NA
+  IC2 ? XC3S400PQ208 PQ208 2 
+  PLD_1 ? PINHD-2X20 pinhead 13 
+ EndSubSection
+
+ SubSection A7 class NA
+  IC2 ? XC3S400PQ208 PQ208 3 
+  PLD_1 ? PINHD-2X20 pinhead 15 
+ EndSubSection
+
+ SubSection A8 class NA
+  IC2 ? XC3S400PQ208 PQ208 4 
+  PLD_1 ? PINHD-2X20 pinhead 17 
+ EndSubSection
+
+ SubSection A9 class NA
+  IC2 ? XC3S400PQ208 PQ208 5 
+  PLD_1 ? PINHD-2X20 pinhead 19 
+ EndSubSection
+
+ SubSection A10 class NA
+  IC2 ? XC3S400PQ208 PQ208 7 
+  PLD_1 ? PINHD-2X20 pinhead 21 
+ EndSubSection
+
+ SubSection A11 class NA
+  IC2 ? XC3S400PQ208 PQ208 9 
+  PLD_1 ? PINHD-2X20 pinhead 23 
+ EndSubSection
+
+ SubSection A12 class NA
+  IC2 ? XC3S400PQ208 PQ208 10 
+  PLD_1 ? PINHD-2X20 pinhead 25 
+ EndSubSection
+
+ SubSection A13 class NA
+  IC2 ? XC3S400PQ208 PQ208 11 
+  PLD_1 ? PINHD-2X20 pinhead 27 
+ EndSubSection
+
+ SubSection A14 class NA
+  IC2 ? XC3S400PQ208 PQ208 12 
+  PLD_1 ? PINHD-2X20 pinhead 29 
+ EndSubSection
+
+ SubSection A15 class NA
+  IC2 ? XC3S400PQ208 PQ208 13 
+  PLD_1 ? PINHD-2X20 pinhead 31 
+ EndSubSection
+
+ SubSection A_RAM0 class NA
+  IC2 ? XC3S400PQ208 PQ208 122 
+  PLD_3 ? PINHD-2X20 pinhead 28 
+ EndSubSection
+
+ SubSection A_RAM1 class NA
+  IC2 ? XC3S400PQ208 PQ208 123 
+  PLD_3 ? PINHD-2X20 pinhead 27 
+ EndSubSection
+
+ SubSection A_RAM2 class NA
+  IC2 ? XC3S400PQ208 PQ208 124 
+  PLD_3 ? PINHD-2X20 pinhead 26 
+ EndSubSection
+
+ SubSection A_RAM3 class NA
+  IC2 ? XC3S400PQ208 PQ208 125 
+  PLD_3 ? PINHD-2X20 pinhead 25 
+ EndSubSection
+
+ SubSection A_RAM4 class NA
+  IC2 ? XC3S400PQ208 PQ208 126 
+  PLD_3 ? PINHD-2X20 pinhead 24 
+ EndSubSection
+
+ SubSection A_RAM5 class NA
+  IC2 ? XC3S400PQ208 PQ208 128 
+  PLD_3 ? PINHD-2X20 pinhead 23 
+ EndSubSection
+
+ SubSection A_RAM6 class NA
+  IC2 ? XC3S400PQ208 PQ208 130 
+  PLD_3 ? PINHD-2X20 pinhead 22 
+ EndSubSection
+
+ SubSection A_RAM7 class NA
+  IC2 ? XC3S400PQ208 PQ208 131 
+  PLD_3 ? PINHD-2X20 pinhead 21 
+ EndSubSection
+
+ SubSection A_RAM8 class NA
+  IC2 ? XC3S400PQ208 PQ208 132 
+  PLD_3 ? PINHD-2X20 pinhead 20 
+ EndSubSection
+
+ SubSection A_RAM9 class NA
+  IC2 ? XC3S400PQ208 PQ208 133 
+  PLD_3 ? PINHD-2X20 pinhead 19 
+ EndSubSection
+
+ SubSection A_RAM10 class NA
+  IC2 ? XC3S400PQ208 PQ208 135 
+  PLD_3 ? PINHD-2X20 pinhead 17 
+ EndSubSection
+
+ SubSection A_RAM11 class NA
+  IC2 ? XC3S400PQ208 PQ208 137 
+  PLD_3 ? PINHD-2X20 pinhead 15 
+ EndSubSection
+
+ SubSection A_RAM12 class NA
+  IC2 ? XC3S400PQ208 PQ208 138 
+  PLD_3 ? PINHD-2X20 pinhead 14 
+ EndSubSection
+
+ SubSection A_RAM13 class NA
+  IC2 ? XC3S400PQ208 PQ208 139 
+  PLD_3 ? PINHD-2X20 pinhead 13 
+ EndSubSection
+
+ SubSection A_RAM14 class NA
+  IC2 ? XC3S400PQ208 PQ208 140 
+  PLD_3 ? PINHD-2X20 pinhead 12 
+ EndSubSection
+
+ SubSection A_RAM15 class NA
+  IC2 ? XC3S400PQ208 PQ208 141 
+  PLD_3 ? PINHD-2X20 pinhead 11 
+ EndSubSection
+
+ SubSection A_RAM16 class NA
+  IC2 ? XC3S400PQ208 PQ208 143 
+  PLD_3 ? PINHD-2X20 pinhead 10 
+ EndSubSection
+
+ SubSection A_RAM17 class NA
+  IC2 ? XC3S400PQ208 PQ208 144 
+  PLD_3 ? PINHD-2X20 pinhead 9 
+ EndSubSection
+
+ SubSection A_RAM18 class NA
+  IC2 ? XC3S400PQ208 PQ208 146 
+  PLD_3 ? PINHD-2X20 pinhead 8 
+ EndSubSection
+
+ SubSection A_RAM19 class NA
+  IC2 ? XC3S400PQ208 PQ208 147 
+ EndSubSection
+
+ SubSection A_RAM20 class NA
+  IC2 ? XC3S400PQ208 PQ208 148 
+ EndSubSection
+
+ SubSection A_RAM21 class NA
+  IC2 ? XC3S400PQ208 PQ208 149 
+ EndSubSection
+
+ SubSection A_RAM22 class NA
+  IC2 ? XC3S400PQ208 PQ208 150 
+ EndSubSection
+
+ SubSection A_RAM23 class NA
+  IC2 ? XC3S400PQ208 PQ208 152 
+ EndSubSection
+
+ SubSection CCLK class NA
+  IC1 ? XCF04S SSOP20 3 
+  IC2 ? XC3S400PQ208 PQ208 104 
+  JP1 ? conf 2X10 13 
+ EndSubSection
+
+ SubSection CLK_CPU_CL class NA
+  IC2 ? XC3S400PQ208 PQ208 180 
+  PLD_1 ? PINHD-2X20 pinhead 36 
+ EndSubSection
+
+ SubSection CLK_SCAN class NA
+  IC2 ? XC3S400PQ208 PQ208 181 
+  OSC1 ? X091 X091 3 
+  OSC2 ? X053 X053 3 
+ EndSubSection
+
+ SubSection CLK_SCAN_ENABLE class NA
+  JP1 ? conf 2X10 12 
+  OSC1 ? X091 X091 1 
+  OSC2 ? X053 X053 1 
+  P24 ? PAD pads P$1 
+  R1 ? 330 0207/10 1 
+ EndSubSection
+
+ SubSection CPU_IEO class NA
+  IC2 ? XC3S400PQ208 PQ208 197 
+  PLD_1 ? PINHD-2X20 pinhead 18 
+ EndSubSection
+
+ SubSection D0 class NA
+  IC2 ? XC3S400PQ208 PQ208 161 
+  PLD_1 ? PINHD-2X20 pinhead 2 
+ EndSubSection
+
+ SubSection D1 class NA
+  IC2 ? XC3S400PQ208 PQ208 162 
+  PLD_1 ? PINHD-2X20 pinhead 4 
+ EndSubSection
+
+ SubSection D2 class NA
+  IC2 ? XC3S400PQ208 PQ208 165 
+  PLD_1 ? PINHD-2X20 pinhead 6 
+ EndSubSection
+
+ SubSection D3 class NA
+  IC2 ? XC3S400PQ208 PQ208 166 
+  PLD_1 ? PINHD-2X20 pinhead 8 
+ EndSubSection
+
+ SubSection D4 class NA
+  IC2 ? XC3S400PQ208 PQ208 167 
+  PLD_1 ? PINHD-2X20 pinhead 10 
+ EndSubSection
+
+ SubSection D5 class NA
+  IC2 ? XC3S400PQ208 PQ208 168 
+  PLD_1 ? PINHD-2X20 pinhead 12 
+ EndSubSection
+
+ SubSection D6 class NA
+  IC2 ? XC3S400PQ208 PQ208 169 
+  PLD_1 ? PINHD-2X20 pinhead 14 
+ EndSubSection
+
+ SubSection D7 class NA
+  IC2 ? XC3S400PQ208 PQ208 171 
+  PLD_1 ? PINHD-2X20 pinhead 16 
+ EndSubSection
+
+ SubSection DBG_0 class NA
+  IC2 ? XC3S400PQ208 PQ208 61 
+  PLD_2 ? PINHD-2X25 pinhead 19 
+ EndSubSection
+
+ SubSection DBG_1 class NA
+  IC2 ? XC3S400PQ208 PQ208 33 
+  PLD_2 ? PINHD-2X25 pinhead 21 
+ EndSubSection
+
+ SubSection DBG_2 class NA
+  IC2 ? XC3S400PQ208 PQ208 44 
+  PLD_2 ? PINHD-2X25 pinhead 23 
+ EndSubSection
+
+ SubSection DBG_3 class NA
+  IC2 ? XC3S400PQ208 PQ208 43 
+  PLD_2 ? PINHD-2X25 pinhead 25 
+ EndSubSection
+
+ SubSection DBG_4 class NA
+  IC2 ? XC3S400PQ208 PQ208 96 
+  P5 ? PAD pads P$1 
+  PLD_2 ? PINHD-2X25 pinhead 27 
+ EndSubSection
+
+ SubSection DBG_5 class NA
+  IC2 ? XC3S400PQ208 PQ208 40 
+  PLD_2 ? PINHD-2X25 pinhead 29 
+ EndSubSection
+
+ SubSection DBG_6 class NA
+  IC2 ? XC3S400PQ208 PQ208 39 
+  PLD_2 ? PINHD-2X25 pinhead 31 
+ EndSubSection
+
+ SubSection DBG_7 class NA
+  IC2 ? XC3S400PQ208 PQ208 37 
+  PLD_2 ? PINHD-2X25 pinhead 33 
+ EndSubSection
+
+ SubSection DIN class NA
+  IC1 ? XCF04S SSOP20 1 
+  IC2 ? XC3S400PQ208 PQ208 92 
+  JP1 ? conf 2X10 11 
+ EndSubSection
+
+ SubSection DONE class NA
+  IC1 ? XCF04S SSOP20 10 
+  IC2 ? XC3S400PQ208 PQ208 103 
+  JP1 ? conf 2X10 17 
+  R5 ? 330 0207/10 1 
+ EndSubSection
+
+ SubSection DOUT class NA
+  IC2 ? XC3S400PQ208 PQ208 81 
+  P15 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection D_RAM0 class NA
+  IC2 ? XC3S400PQ208 PQ208 106 
+  PLD_3 ? PINHD-2X20 pinhead 29 
+ EndSubSection
+
+ SubSection D_RAM1 class NA
+  IC2 ? XC3S400PQ208 PQ208 107 
+  PLD_3 ? PINHD-2X20 pinhead 30 
+ EndSubSection
+
+ SubSection D_RAM2 class NA
+  IC2 ? XC3S400PQ208 PQ208 108 
+  PLD_3 ? PINHD-2X20 pinhead 39 
+ EndSubSection
+
+ SubSection D_RAM3 class NA
+  IC2 ? XC3S400PQ208 PQ208 109 
+  PLD_3 ? PINHD-2X20 pinhead 40 
+ EndSubSection
+
+ SubSection D_RAM4 class NA
+  IC2 ? XC3S400PQ208 PQ208 111 
+  PLD_3 ? PINHD-2X20 pinhead 37 
+ EndSubSection
+
+ SubSection D_RAM5 class NA
+  IC2 ? XC3S400PQ208 PQ208 113 
+  PLD_3 ? PINHD-2X20 pinhead 38 
+ EndSubSection
+
+ SubSection D_RAM6 class NA
+  IC2 ? XC3S400PQ208 PQ208 114 
+  PLD_3 ? PINHD-2X20 pinhead 35 
+ EndSubSection
+
+ SubSection D_RAM7 class NA
+  IC2 ? XC3S400PQ208 PQ208 115 
+  PLD_3 ? PINHD-2X20 pinhead 36 
+ EndSubSection
+
+ SubSection EXT_IEI class NA
+  IC2 ? XC3S400PQ208 PQ208 196 
+  PLD_1 ? PINHD-2X20 pinhead 33 
+ EndSubSection
+
+ SubSection FAIL class NA
+  IC2 ? XC3S400PQ208 PQ208 58 
+  PLD_2 ? PINHD-2X25 pinhead 13 
+ EndSubSection
+
+ SubSection FAIL_1 class NA
+  IC2 ? XC3S400PQ208 PQ208 63 
+  PLD_3 ? PINHD-2X20 pinhead 18 
+ EndSubSection
+
+ SubSection FAIL_2 class NA
+  IC2 ? XC3S400PQ208 PQ208 62 
+  PLD_3 ? PINHD-2X20 pinhead 16 
+ EndSubSection
+
+ SubSection GND class NA
+  C1 ? 100n C0805 2 
+  C10 ? 100n C0805 2 
+  C11 ? 100n C0805 2 
+  C12 ? 100n C0805 2 
+  C13 ? 100n C0805 2 
+  C14 ? 100n C0805 2 
+  C15 ? 100n C0805 2 
+  C16 ? 100n C0805 2 
+  C17 ? 100n C0805 2 
+  C18 ? 100n C0805 2 
+  C19 ? 100n C0805 2 
+  C2 ? 100n C0805 2 
+  C20 ? 100n C0805 2 
+  C21 ? 100n C0805 2 
+  C22 ? 100n C0805 2 
+  C23 ? 100n C0805 2 
+  C24 ? 100n C0805 2 
+  C25 ? 100n C0805 2 
+  C26 ? 100n C0805 2 
+  C27 ? 100n C0805 2 
+  C28 ? 100n C0805 2 
+  C29 ? 100n C0805 2 
+  C3 ? 100n C0805 2 
+  C30 ? 100n C0805 2 
+  C31 ? 100n C0805 2 
+  C32 ? 100n C0805 2 
+  C33 ? 100n C0805 2 
+  C34 ? 10uF/16V 153CLV-0405 - 
+  C4 ? 10uF/16V 153CLV-0405 - 
+  C5 ? 100n C0805 2 
+  C6 ? 10uF/16V 153CLV-0405 - 
+  C7 ? 100n C0805 2 
+  C8 ? 10uF/16V 153CLV-0405 - 
+  C9 ? 100n C0805 2 
+  IC1 ? XCF04S SSOP20 11 
+  IC2 ? XC3S400PQ208 PQ208 1 
+  IC2 ? XC3S400PQ208 PQ208 105 
+  IC2 ? XC3S400PQ208 PQ208 112 
+  IC2 ? XC3S400PQ208 PQ208 118 
+  IC2 ? XC3S400PQ208 PQ208 129 
+  IC2 ? XC3S400PQ208 PQ208 134 
+  IC2 ? XC3S400PQ208 PQ208 14 
+  IC2 ? XC3S400PQ208 PQ208 145 
+  IC2 ? XC3S400PQ208 PQ208 151 
+  IC2 ? XC3S400PQ208 PQ208 157 
+  IC2 ? XC3S400PQ208 PQ208 163 
+  IC2 ? XC3S400PQ208 PQ208 170 
+  IC2 ? XC3S400PQ208 PQ208 179 
+  IC2 ? XC3S400PQ208 PQ208 186 
+  IC2 ? XC3S400PQ208 PQ208 195 
+  IC2 ? XC3S400PQ208 PQ208 202 
+  IC2 ? XC3S400PQ208 PQ208 25 
+  IC2 ? XC3S400PQ208 PQ208 30 
+  IC2 ? XC3S400PQ208 PQ208 41 
+  IC2 ? XC3S400PQ208 PQ208 47 
+  IC2 ? XC3S400PQ208 PQ208 53 
+  IC2 ? XC3S400PQ208 PQ208 59 
+  IC2 ? XC3S400PQ208 PQ208 66 
+  IC2 ? XC3S400PQ208 PQ208 75 
+  IC2 ? XC3S400PQ208 PQ208 8 
+  IC2 ? XC3S400PQ208 PQ208 82 
+  IC2 ? XC3S400PQ208 PQ208 91 
+  IC2 ? XC3S400PQ208 PQ208 99 
+  JP1 ? conf 2X10 14 
+  JP1 ? conf 2X10 16 
+  JP1 ? conf 2X10 18 
+  JP1 ? conf 2X10 20 
+  JP1 ? conf 2X10 4 
+  JP1 ? conf 2X10 6 
+  JP1 ? conf 2X10 8 
+  OSC1 ? X091 X091 2 
+  OSC2 ? X053 X053 2 
+  PLD_2 ? PINHD-2X25 pinhead 1 
+  PLD_2 ? PINHD-2X25 pinhead 2 
+  PLD_2 ? PINHD-2X25 pinhead 3 
+  PLD_2 ? PINHD-2X25 pinhead 4 
+  PLD_2 ? PINHD-2X25 pinhead 45 
+  PLD_2 ? PINHD-2X25 pinhead 46 
+  PLD_2 ? PINHD-2X25 pinhead 47 
+  PLD_2 ? PINHD-2X25 pinhead 48 
+  PLD_3 ? PINHD-2X20 pinhead 2 
+  PLD_3 ? PINHD-2X20 pinhead 4 
+  PLD_3 ? PINHD-2X20 pinhead 6 
+  PLD_4 ? PINHD-2X20 pinhead 1 
+  PLD_4 ? PINHD-2X20 pinhead 11 
+  PLD_4 ? PINHD-2X20 pinhead 13 
+  PLD_4 ? PINHD-2X20 pinhead 15 
+  PLD_4 ? PINHD-2X20 pinhead 17 
+  PLD_4 ? PINHD-2X20 pinhead 19 
+  PLD_4 ? PINHD-2X20 pinhead 21 
+  PLD_4 ? PINHD-2X20 pinhead 23 
+  PLD_4 ? PINHD-2X20 pinhead 25 
+  PLD_4 ? PINHD-2X20 pinhead 27 
+  PLD_4 ? PINHD-2X20 pinhead 29 
+  PLD_4 ? PINHD-2X20 pinhead 3 
+  PLD_4 ? PINHD-2X20 pinhead 31 
+  PLD_4 ? PINHD-2X20 pinhead 33 
+  PLD_4 ? PINHD-2X20 pinhead 35 
+  PLD_4 ? PINHD-2X20 pinhead 37 
+  PLD_4 ? PINHD-2X20 pinhead 39 
+  PLD_4 ? PINHD-2X20 pinhead 5 
+  PLD_4 ? PINHD-2X20 pinhead 7 
+  PLD_4 ? PINHD-2X20 pinhead 9 
+ EndSubSection
+
+ SubSection GPIO_0 class NA
+  IC2 ? XC3S400PQ208 PQ208 45 
+  PLD_2 ? PINHD-2X25 pinhead 34 
+ EndSubSection
+
+ SubSection GPIO_1 class NA
+  IC2 ? XC3S400PQ208 PQ208 46 
+  PLD_2 ? PINHD-2X25 pinhead 36 
+ EndSubSection
+
+ SubSection GPIO_2 class NA
+  IC2 ? XC3S400PQ208 PQ208 48 
+  PLD_2 ? PINHD-2X25 pinhead 38 
+ EndSubSection
+
+ SubSection GPIO_3 class NA
+  IC2 ? XC3S400PQ208 PQ208 50 
+  PLD_2 ? PINHD-2X25 pinhead 40 
+ EndSubSection
+
+ SubSection HSWAP_EN class NA
+  IC2 ? XC3S400PQ208 PQ208 206 
+  JP1 ? conf 2X10 3 
+ EndSubSection
+
+ SubSection INIT_B class NA
+  IC1 ? XCF04S SSOP20 8 
+  IC2 ? XC3S400PQ208 PQ208 83 
+  JP1 ? conf 2X10 15 
+  R6 ? 4k7 0207/10 1 
+ EndSubSection
+
+ SubSection M0 class NA
+  IC2 ? XC3S400PQ208 PQ208 55 
+  JP1 ? conf 2X10 5 
+ EndSubSection
+
+ SubSection M1 class NA
+  IC2 ? XC3S400PQ208 PQ208 54 
+  JP1 ? conf 2X10 7 
+ EndSubSection
+
+ SubSection M2 class NA
+  IC2 ? XC3S400PQ208 PQ208 56 
+  JP1 ? conf 2X10 9 
+ EndSubSection
+
+ SubSection PASS class NA
+  IC2 ? XC3S400PQ208 PQ208 57 
+  PLD_2 ? PINHD-2X25 pinhead 11 
+ EndSubSection
+
+ SubSection PROG_B class NA
+  IC1 ? XCF04S SSOP20 7 
+  IC2 ? XC3S400PQ208 PQ208 207 
+  JP1 ? conf 2X10 19 
+  R4 ? 4k7 0207/10 1 
+ EndSubSection
+
+ SubSection RSV_0 class NA
+  IC2 ? XC3S400PQ208 PQ208 16 
+  P3 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_1 class NA
+  IC2 ? XC3S400PQ208 PQ208 15 
+  P14 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_2 class NA
+  IC2 ? XC3S400PQ208 PQ208 19 
+  P20 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_3 class NA
+  IC2 ? XC3S400PQ208 PQ208 18 
+  P21 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_4 class NA
+  IC2 ? XC3S400PQ208 PQ208 21 
+  P22 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_5 class NA
+  IC2 ? XC3S400PQ208 PQ208 20 
+  P23 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_6 class NA
+  IC2 ? XC3S400PQ208 PQ208 24 
+  P25 ? PAD pads P$1 
+  PLD_2 ? PINHD-2X25 pinhead 15 
+ EndSubSection
+
+ SubSection RSV_7 class NA
+  IC2 ? XC3S400PQ208 PQ208 22 
+  P26 ? PAD pads P$1 
+  PLD_2 ? PINHD-2X25 pinhead 17 
+ EndSubSection
+
+ SubSection RSV_8 class NA
+  IC2 ? XC3S400PQ208 PQ208 27 
+  P27 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_13 class NA
+  IC2 ? XC3S400PQ208 PQ208 85 
+  P4 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_14 class NA
+  IC2 ? XC3S400PQ208 PQ208 42 
+  P2 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_15 class NA
+  IC2 ? XC3S400PQ208 PQ208 102 
+  P6 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_16 class NA
+  IC2 ? XC3S400PQ208 PQ208 80 
+  P7 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_17 class NA
+  IC2 ? XC3S400PQ208 PQ208 79 
+  P8 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_18 class NA
+  IC2 ? XC3S400PQ208 PQ208 90 
+  P9 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_19 class NA
+  IC2 ? XC3S400PQ208 PQ208 87 
+  P10 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_20 class NA
+  IC2 ? XC3S400PQ208 PQ208 86 
+  P11 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_30 class NA
+  IC2 ? XC3S400PQ208 PQ208 101 
+  P16 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_31 class NA
+  IC2 ? XC3S400PQ208 PQ208 100 
+  P17 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_32 class NA
+  IC2 ? XC3S400PQ208 PQ208 93 
+  P18 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_33 class NA
+  IC2 ? XC3S400PQ208 PQ208 95 
+  P12 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_34 class NA
+  IC2 ? XC3S400PQ208 PQ208 94 
+  P13 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_35 class NA
+  IC2 ? XC3S400PQ208 PQ208 97 
+  P19 ? PAD pads P$1 
+ EndSubSection
+
+ SubSection RSV_100 class NA
+  IC2 ? XC3S400PQ208 PQ208 154 
+  PLD_3 ? PINHD-2X20 pinhead 1 
+ EndSubSection
+
+ SubSection RSV_101 class NA
+  IC2 ? XC3S400PQ208 PQ208 156 
+  PLD_3 ? PINHD-2X20 pinhead 3 
+ EndSubSection
+
+ SubSection RSV_102 class NA
+  IC2 ? XC3S400PQ208 PQ208 155 
+  PLD_3 ? PINHD-2X20 pinhead 5 
+ EndSubSection
+
+ SubSection RSV_200 class NA
+  P1 ? PAD pads P$1 
+  PLD_3 ? PINHD-2X20 pinhead 7 
+ EndSubSection
+
+ SubSection SCL class NA
+  IC2 ? XC3S400PQ208 PQ208 51 
+  PLD_2 ? PINHD-2X25 pinhead 44 
+ EndSubSection
+
+ SubSection SDA class NA
+  IC2 ? XC3S400PQ208 PQ208 52 
+  PLD_2 ? PINHD-2X25 pinhead 42 
+ EndSubSection
+
+ SubSection SPARE_1 class NA
+  IC2 ? XC3S400PQ208 PQ208 36 
+  PLD_2 ? PINHD-2X25 pinhead 32 
+ EndSubSection
+
+ SubSection TCK_1 class NA
+  IC2 ? XC3S400PQ208 PQ208 76 
+  PLD_2 ? PINHD-2X25 pinhead 6 
+ EndSubSection
+
+ SubSection TCK_2 class NA
+  IC2 ? XC3S400PQ208 PQ208 77 
+  PLD_2 ? PINHD-2X25 pinhead 14 
+ EndSubSection
+
+ SubSection TCK_LOCAL class NA
+  IC1 ? XCF04S SSOP20 6 
+  IC2 ? XC3S400PQ208 PQ208 159 
+  PLD_2 ? PINHD-2X25 pinhead 37 
+ EndSubSection
+
+ SubSection TDI_1 class NA
+  IC2 ? XC3S400PQ208 PQ208 78 
+  PLD_2 ? PINHD-2X25 pinhead 22 
+ EndSubSection
+
+ SubSection TDI_2 class NA
+  IC2 ? XC3S400PQ208 PQ208 71 
+  PLD_2 ? PINHD-2X25 pinhead 24 
+ EndSubSection
+
+ SubSection TDI_LOCAL class NA
+  IC2 ? XC3S400PQ208 PQ208 208 
+  PLD_2 ? PINHD-2X25 pinhead 41 
+ EndSubSection
+
+ SubSection TDI_PROM class NA
+  IC1 ? XCF04S SSOP20 4 
+  JP1 ? conf 2X10 2 
+  R2 ? 4k7 0207/10 1 
+ EndSubSection
+
+ SubSection TDO_1 class NA
+  IC2 ? XC3S400PQ208 PQ208 68 
+  PLD_2 ? PINHD-2X25 pinhead 10 
+ EndSubSection
+
+ SubSection TDO_2 class NA
+  IC2 ? XC3S400PQ208 PQ208 67 
+  PLD_2 ? PINHD-2X25 pinhead 18 
+ EndSubSection
+
+ SubSection TDO_FPGA class NA
+  IC2 ? XC3S400PQ208 PQ208 158 
+  JP1 ? conf 2X10 1 
+ EndSubSection
+
+ SubSection TDO_LOCAL class NA
+  IC1 ? XCF04S SSOP20 17 
+  PLD_2 ? PINHD-2X25 pinhead 39 
+ EndSubSection
+
+ SubSection TMS_1 class NA
+  IC2 ? XC3S400PQ208 PQ208 74 
+  PLD_2 ? PINHD-2X25 pinhead 8 
+ EndSubSection
+
+ SubSection TMS_2 class NA
+  IC2 ? XC3S400PQ208 PQ208 72 
+  PLD_2 ? PINHD-2X25 pinhead 16 
+ EndSubSection
+
+ SubSection TMS_LOCAL class NA
+  IC1 ? XCF04S SSOP20 5 
+  IC2 ? XC3S400PQ208 PQ208 160 
+  PLD_2 ? PINHD-2X25 pinhead 35 
+ EndSubSection
+
+ SubSection WDG class NA
+  IC2 ? XC3S400PQ208 PQ208 26 
+  P28 ? PAD pads P$1 
+  PLD_4 ? PINHD-2X20 pinhead 2 
+ EndSubSection
+EndSection

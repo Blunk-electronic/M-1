@@ -1,0 +1,61 @@
+#! /bin/sh
+
+bsmcl chkpsn mmu.udb mmu.opt
+[ "$?" -ne 0 ] && exit 1
+
+[ -e setup/journal.txt ] && rm setup/journal.txt
+[ "$?" -ne 0 ] && exit 1
+
+# infrastructure and interconnect tests
+bsmcl generate mmu.udb infrastructure infra
+[ "$?" -ne 0 ] && exit 1
+bsmcl compile mmu.udb infra
+[ "$?" -ne 0 ] && exit 1
+
+bsmcl generate mmu.udb interconnect intercon1
+[ "$?" -ne 0 ] && exit 1
+bsmcl compile mmu.udb intercon1
+[ "$?" -ne 0 ] && exit 1
+
+# memory interconnect tests
+bsmcl generate mmu.udb memconnect sram_ic202 IC202 models/U62256_no_ce_pin_1000.txt NDIP28
+[ "$?" -ne 0 ] && exit 1
+bsmcl compile mmu.udb sram_ic202
+[ "$?" -ne 0 ] && exit 1
+
+bsmcl generate mmu.udb memconnect sram_ic203 IC203 models/U62256_no_ce_pin_8000.txt NDIP28
+[ "$?" -ne 0 ] && exit 1
+bsmcl compile mmu.udb sram_ic203
+[ "$?" -ne 0 ] && exit 1
+
+# oscillator test
+bsmcl generate mmu.udb clock osc IC301 6 10 1 1
+[ "$?" -ne 0 ] && exit 1
+bsmcl compile mmu.udb osc
+[ "$?" -ne 0 ] && exit 1
+
+# LED tests
+bsmcl generate mmu.udb toggle LED_D401 LED0 10 1 1
+[ "$?" -ne 0 ] && exit 1
+bsmcl compile mmu.udb LED_D401
+[ "$?" -ne 0 ] && exit 1
+
+bsmcl generate mmu.udb toggle LED_D402 LED1 10 0.1 1
+[ "$?" -ne 0 ] && exit 1
+bsmcl compile mmu.udb LED_D402
+[ "$?" -ne 0 ] && exit 1
+
+bsmcl generate mmu.udb toggle LED_D403 LED2 10 0.2 0.2
+[ "$?" -ne 0 ] && exit 1
+bsmcl compile mmu.udb LED_D403
+[ "$?" -ne 0 ] && exit 1
+
+bsmcl generate mmu.udb toggle LED_D404 LED3 10 5 5
+[ "$?" -ne 0 ] && exit 1
+bsmcl compile mmu.udb LED_D404
+[ "$?" -ne 0 ] && exit 1
+
+echo "done. ready for upload"
+
+exit
+

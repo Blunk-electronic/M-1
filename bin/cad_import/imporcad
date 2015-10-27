@@ -1,0 +1,526 @@
+#! /bin/sh
+
+version=1.0
+
+#reads ORCAD netlistt
+#command is:	imporcad netlist.net
+#written by MBL
+
+# to do:
+#	- read values of parts. not done yet because ORCAD uses space as delimiter and does not prevent user from using whitespaces in pin-type and value
+#	- at this state values and packages are set to "unknown"
+#	- do part counting
+
+	umask 003
+
+	overwrite_main_module=no
+	overwrite_sub_module=no
+	[ -e skeleton.txt ] &&
+		{
+		echo 'WARNING ! CAD data for main module already exists.'
+		echo -n '          Overwrite existing data set ? (y/n/c) '
+		read key
+		[ "$key" != "y" -a "$key" != "n" ] && 
+					{
+					echo 'CAD data import cancelled'
+					exit 1;
+					}
+
+		[ "$key" = "y" ] && 
+			{
+			overwrite_main_module=yes
+			break
+			}
+		[ "$key" = "n" ] && 
+			{
+			overwrite_sub_module=yes
+			#echo $overwrite_sub_module	
+			echo 'Importing CAD data as UUT submodule.'
+			echo -n 'Enter submodule name : '
+			read sub_name;
+			[ -e skeleton_$sub_name.txt ] &&
+				{ 
+				echo 'WARNING ! Cad data for submodule '$sub_name' already exists.'
+				echo -n '          Overwrite existing data set ? (y/n/c) '
+				read key2
+				[ "$key2" != "y" ] && 
+					{
+					echo 'CAD data import cancelled'
+					exit 1;
+					}
+				}
+			}
+		}
+
+
+
+# clean up tmp directory
+	touch tmp/dummy.tmp	#CS: try more elegant way !
+	rm tmp/*.tmp
+
+#read files passed to this script into shell variables
+	netlist=$1
+	#partlist=$2
+
+	echo
+	echo "importing ORCAD CAD-Data with importer version" $version
+	echo 'netlist        : '$netlist 
+	echo
+
+	echo 'Section info' > tmp/np.tmp
+
+	[ "$overwrite_sub_module" = "yes" ] && echo ' -- netlist skeleton submodule' >> tmp/np.tmp
+	[ "$overwrite_sub_module" = "no" ] && echo ' -- netlist skeleton' >> tmp/np.tmp
+	echo ' -- created by imporcad version' $version >> tmp/np.tmp
+	echo -n ' -- ' >> tmp/np.tmp
+	date >> tmp/np.tmp
+	echo "-----------------------------------------------------------------------------------" >> tmp/np.tmp
+
+
+##############################################
+
+# convert netlist from DOS to UNIX	
+	#echo '- converting ' $netlist 'to UNIX format'
+	cp $netlist tmp/netlist_unix.tmp
+	dos2unix -q tmp/netlist_unix.tmp # suppress messages
+	netlist=tmp/netlist_unix.tmp
+	#echo $netlist
+
+
+	#cut away header
+	lp=1
+	wire_list_entered="no"
+	component_list_entered="no"
+	net_entered="no"
+	part_ct=0
+	net_ct=0
+
+	while IFS=" " read -a line
+	do
+		#echo $lp ${#line[*]}
+		[ "$lp" -eq 1 ] &&
+			{
+			#echo ${line[1]}
+			[ "${line[0]}" != "Wire" -o "${line[1]}" != "List" ] && 
+				{
+				echo "ERROR   : Entry 'Wire List' expected in line" $lp " ! ABORTED"
+				exit 1
+				}
+			}
+
+		[ "$lp" -eq 3 ] && 
+			{
+			echo " -- project name :" ${line[0]} >> tmp/np.tmp
+			echo -n " -- revised      :" >> tmp/np.tmp
+			echo -n " "${line[2]} >> tmp/np.tmp
+			echo -n " "${line[3]} >> tmp/np.tmp
+			echo -n " "${line[4]} >> tmp/np.tmp
+			echo " "${line[5]} >> tmp/np.tmp
+			}
+
+		[ "$lp" -eq 4 ] && 
+			{
+			echo " -- mat. no.     : "${line[0]} >> tmp/np.tmp
+			echo " -- revision     : "${line[2]} >> tmp/np.tmp
+			}
+
+		# search for entry <<< Component List >>>
+		[ "${line[0]}" = "<<<" -a "${line[1]}" = "Component" -a "${line[2]}" = "List" -a "${line[3]}" = ">>>" ] &&
+			{
+			#echo "component list found"
+			component_list_entered=yes
+			#echo >> tmp/components.tmp
+			#echo "Section netlist_skeleton" >> tmp/np.tmp
+			#echo >> tmp/np.tmp
+			#exit 1
+			}
+
+ 		[ "$component_list_entered" = "yes" ] &&
+ 			{
+ 			[ ${#line[*]} -eq 3 ] && 
+				{
+				echo ${line[*]} >> tmp/components.tmp
+				}
+ 			[ ${#line[*]} -eq 0 ] && 
+				{
+				component_list_entered="no"
+				}
+			}
+
+		# search for entry <<< Wire List >>> 
+		[ "${line[0]}" = "<<<" -a "${line[1]}" = "Wire" -a "${line[2]}" = "List" -a "${line[3]}" = ">>>" ] &&
+			{
+			#echo "wire list found"
+			wire_list_entered=yes
+			#echo >> tmp/np.tmp
+			echo "Section netlist_skeleton" >> tmp/nets.tmp
+			#echo >> tmp/nets.tmp
+			#exit 1
+			}
+
+
+
+ 		[ "$wire_list_entered" = "yes" ] &&
+ 			{
+ 			[ ${#line[*]} -eq 2 ] && 
+				{
+				net_entered=yes
+				echo >> tmp/nets.tmp
+				echo " SubSection" ${line[1]} "class NA" >> tmp/nets.tmp
+				net_ct=$[net_ct+1]
+				}
+
+ 			[ "$net_entered" = "yes" -a ${#line[*]} -gt 2 ] && 
+				{
+				echo "  "${line[0]} "? value_unknown package_unknown" ${line[1]}  >> tmp/nets.tmp
+				
+				#value_field_ct=${#line[*]}
+				#value_field_ct=$[value_field_ct-4]
+				#ct=1
+				#while [ $ct -le $value_field_ct ]
+				#do
+				#		echo -n ${line[value_field_ct+ct]} "_" >> tmp/np.tmp
+			#			ct=$[ct+1]
+
+				#done
+
+				#${line[4]} >> tmp/np.tmp
+				}
+
+ 			[ "$net_entered" = "yes" -a ${#line[*]} -eq 0 ] && 
+				{
+				net_entered=no 
+				echo " EndSubSection" >> tmp/nets.tmp
+				}
+
+# 			#echo ${line[*]}
+ 			}
+  
+		#advance line pointer
+		lp=$[lp+1]
+		echo -n -e "\r$lp" # output progress
+	done < $netlist
+	echo 'EndSection' >> tmp/nets.tmp
+
+	echo >> tmp/np.tmp
+	echo " -- "$net_ct "nets imported" >> tmp/np.tmp
+	echo " -- Please verify net count against CAD tool !" >> tmp/np.tmp
+	#echo >> tmp/np.tmp
+	echo 'EndSection' >> tmp/np.tmp
+	echo >> tmp/np.tmp
+#	exit
+
+
+# 	#filter netname, part and pad
+# 	netcount=0
+# 	while IFS=" " read -a v
+# 	do
+# 		# if netlist exported from brd:
+# 		#check parameter count greater than 3 (e.g. net names containing space characters)
+# 		[ "$netlist_exported_from_sch" = "no" ] && [ ${#v[*]} -gt 3 ] &&
+# 			(
+# 			echo "WARNING ! Bad parameter count in net ${v[0]}, please check netlist" >> tmp/np.tmp #tmp/nl.tmp ;
+# 			echo "          Troubleshooting measures:" >> tmp/np.tmp
+# 			echo "          1. Make sure netname does not contain space characters !" >> tmp/np.tmp
+# 			);
+# 
+# 		# if netlist exported from sch:
+# 		#check parameter count greater than 5 (e.g. net names containing space characters)
+# 		[ "$netlist_exported_from_sch" = "yes" ] && [ ${#v[*]} -gt 5 ] &&
+# 			(
+# 			echo "WARNING ! Bad parameter count in net ${v[0]}, please check netlist" >> tmp/np.tmp #tmp/nl.tmp ;
+# 			echo "          Troubleshooting measures:" >> tmp/np.tmp
+# 			echo "          1. Make sure netname does not contain space characters !" >> tmp/np.tmp
+# 			);
+# 
+# 
+# 		#write net-end marker
+# 		[ "$netlist_exported_from_sch" = "yes" ] && [ ${#v[*]} -eq 5 ] && [ "$netcount" -gt 0 ] && echo :end >> tmp/nets2.tmp
+# 		[ "$netlist_exported_from_sch" = "no" ]  && [ ${#v[*]} -eq 3 ] && [ "$netcount" -gt 0 ] && echo :end >> tmp/nets2.tmp
+# 		#count nets
+# 		[ "$netlist_exported_from_sch" = "yes" ] && [ ${#v[*]} -eq 5 ] && netcount=$[netcount+1] ;
+# 		[ "$netlist_exported_from_sch" = "no" ] && [ ${#v[*]} -eq 3 ] && netcount=$[netcount+1] ;
+# 
+# 
+# 		#check for line with net name
+# 		[ "$netlist_exported_from_sch" = "no" -a ${#v[*]} -eq 3 ] &&
+# 			#extract line with net field into temp file
+# 			(
+# 				#CS: check if netname contains a forbidden colon ":" and replace by "c_"
+# 				#CS: otherwise chkpsn will not work properly
+# 				echo :net ${v[0]} >> tmp/nets2.tmp ;
+# 				#	echo "reading net no." $netcount "name: "${v[0]} ;
+# 				#print out net number being processed
+# 				echo -n -e "\r$netcount"
+# 				echo ${v[1]} ${v[2]} >> tmp/nets2.tmp;
+# 			)
+# 
+# 		[ "$netlist_exported_from_sch" = "yes" -a ${#v[*]} -eq 5 ] &&
+# 			#extract line with net field into temp file
+# 			(
+# 				#CS: check if netname contains a forbidden colon ":" and replace by "c_"
+# 				#CS: otherwise chkpsn will not work properly
+# 				echo :net ${v[0]} >> tmp/nets2.tmp ;
+# 				#	echo "reading net no." $netcount "name: "${v[0]} ;
+# 				#print out net number being processed
+# 				echo -n -e "\r$netcount"
+# 				echo ${v[1]} ${v[2]} >> tmp/nets2.tmp;
+# 			)
+# 
+# 		#check for lines without net name
+# 		[ "$netlist_exported_from_sch" = "no" -a ${#v[*]} -eq 2 ] && 
+# 			#extract lines without net field into temp file
+# 			(
+# 				echo ${v[0]} ${v[1]} >> tmp/nets2.tmp
+# 			)
+# 
+# 		[ "$netlist_exported_from_sch" = "yes" -a ${#v[*]} -eq 4 ] &&
+# 			#extract lines without net field into temp file
+# 			(
+# 				echo ${v[0]} ${v[1]} >> tmp/nets2.tmp
+# 			)
+# 		
+# 
+# 	done < tmp/nets.tmp
+# 	#append end marker to last net
+# 	echo :end >> tmp/nets2.tmp
+# 
+# 
+# 
+# 
+# 	echo ' --' $netcount nets imported >> tmp/np.tmp #tmp/nl.tmp
+# 	echo ' --' Please verify net count against CAD tool ! >> tmp/np.tmp #tmp/nl.tmp
+# 	echo "-----------------------------------------------------------------------------------" >> tmp/np.tmp #tmp/nl.tmp
+# 	echo
+
+	#copy to result file
+#	mv tmp/nets.tmp tmp/netlist.tmp
+
+
+	#clean up
+#	rm tmp/nets.tmp
+
+
+# nets, parts, pins ready in tmp/netlist.tmp
+#################################################
+
+
+
+
+
+
+##############################################
+#read partlist
+# 	echo
+# 	echo '- processing parts'
+# 
+# 
+# 	#cut away header
+# 	lp=1
+# 	partlist_exported_from_sch="no"
+# 	while read -a line
+# 	do
+# 		#write header into log/import.log
+# 		[ "$lp" -eq 1 ] && echo " --" ${line[*]} $2 >> tmp/np.tmp #tmp/nl.tmp
+# 		[ "$lp" -eq 3 ] && echo " --" ${line[*]} >> tmp/np.tmp #tmp/nl.tmp
+# 		[ "$lp" -eq 5 ] && (echo " --" ${line[*]} >> tmp/np.tmp ; echo >> tmp/np.tmp )
+# 		[ "$lp" -eq 7 ] &&
+# 			{
+# 			[ ${line[0]} = "Assembly" ] && [ ${#line[*]} -gt 2 ] # assembly variant defined
+# 				{
+# 				echo "NOTE    :" ${line[*]}
+# 				echo " -- NOTE    :" ${line[*]} >> tmp/np.tmp
+# 				}
+# 			[ ${line[0]} = "Assembly" ] && [ ${#line[*]} -eq 2 ] && # no assembly variant defined
+# 				{
+# 				echo "NOTE    : Default assembly variant found."
+# 				echo " -- NOTE    : Default assembly variant found." >> tmp/np.tmp
+# 				}
+# 			[ ${line[0]} != "Assembly" ] && # no assembly entry at all
+# 				{
+# 				echo "ERROR   : Partlist faulty or format is of an earlier EAGLE version than 6.x."
+# 				echo " -- NOTE    : Partlist faulty or format is of an earlier EAGLE version than 6.x." >> tmp/np.tmp
+# 				exit 1
+# 				}
+# 			}
+# 
+# 		# find out if partlist origin is brd or sch
+# 		[ "$lp" -eq 9 ] && [ "${line[2]}" = "Device" ] && 
+# 			{
+# 			partlist_exported_from_sch="yes"
+# 			echo "NOTE    : It appears the partlist has been exported from a schematic."
+# 			echo " -- NOTE    : It appears the partlist has been exported from a schematic." >> tmp/np.tmp;
+# 			}
+# 
+# 		[ "$lp" -eq 9 ] && [ "${line[2]}" = "Package" ] && 
+# 			{
+# 			partlist_exported_from_sch="no"
+# 			echo "NOTE    : It appears the partlist has been exported from a board."
+# 			echo " -- NOTE    : It appears the partlist has been exported from a board." >> tmp/np.tmp;
+# 			}
+# 
+# 
+# 		#write netto data in temp file
+# 		[ "$lp" -gt 10 ] && echo ${line[*]} >> tmp/parts.tmp  # ins V2.22
+# 
+# 		#advance line pointer
+# 		lp=$[lp+1]
+# 	done < $partlist
+# 	# netto data of partlist ready in tmp/parts.tmp
+# 
+# #exit
+# 
+# 	#filter part,value and package
+# 	partcount=0
+# 	#read line per line into array v
+# 	while IFS=" " read -a v
+# 	do
+# 		#check array length
+# 		#[ ${#v[*]} -ne 6 ] && #rm V2.22
+# 		#echo ${v[*]} >> tmp/np.tmp
+# 		[ "$partlist_exported_from_sch" = "no" ] && [ ${#v[*]} -ne 7 ] &&
+# 			(
+# 			echo " -- WARNING ! Bad parameter count in part: "${v[0]}", please check partlist" >> tmp/np.tmp #tmp/nl.tmp ;
+# 			);
+# 
+# 		[ "$partlist_exported_from_sch" = "yes" ] && [ ${#v[*]} -ne 6 ] &&
+# 			(
+# 			echo " -- WARNING ! Bad parameter count in part: "${v[0]}", please check partlist" >> tmp/np.tmp #tmp/nl.tmp ;
+# 			);
+# 
+# 		partcount=$[partcount+1];
+# 	
+# 		#echo "reading part no." $partcount "name: "${v[0]};
+# 		echo -n -e "\r$partcount"
+# 
+# 		#write part, value, package into temp file
+# 		[ "$partlist_exported_from_sch" = "no" ] && echo ${v[0]} ${v[1]} ${v[2]} >> tmp/parts2.tmp
+# 		[ "$partlist_exported_from_sch" = "yes" ] && echo ${v[0]} ${v[1]} ${v[3]} >> tmp/parts2.tmp
+# 
+# 	done < tmp/parts.tmp
+# 
+# 
+# 	echo ' --' $partcount parts imported >> tmp/np.tmp #tmp/nl.tmp
+# 	echo ' --' please verify part count against CAD tool ! >> tmp/np.tmp # tmp/nl.tmp
+# 	echo 'EndSection' >> tmp/np.tmp # tmp/nl.tmp
+# 	echo >> tmp/np.tmp # tmp/nl.tmp
+# 	echo
+# 
+# 	#mv tmp/nl.tmp tmp/nl_cells.tmp
+# 
+# 	#copy to result file
+# 	mv tmp/parts2.tmp tmp/partlist.tmp
+# 
+# 	#clean up
+# 	rm tmp/parts.tmp
+
+
+
+# parts, values, packages ready in tmp/partlist.tmp
+###################################################
+
+# 	echo
+# 	echo '- merging net and partlist'
+# 	echo 'Section netlist_skeleton' >> tmp/np.tmp
+
+
+###################################################
+#merge netlist.txt and partlist.txt
+
+# 	lp=1
+# 	while IFS=" " read -a n
+# 	do
+# 		lp=$[lp+1]
+# 		#check for non-empty line in netlist
+# 		[ ${#n[*]} -gt 0 ] && 
+# 			(
+# 				#find net name after string ":net", then write net name into np.tmp
+# 				[ "${n[0]}"  = ":net" ] &&
+# 				(
+# 					#echo
+# 					#echo -n -e "\r${n[1]}"
+# 					echo -n -e "\r$lp" # output progress
+# 					#echo ${n[1]}; 	#ver 1.0
+# 					echo >> tmp/np.tmp #tmp/np.tmp ;
+# 					#write net name into np.tmp
+# 					#echo " SubSection "${n[1]} "class ?" >> tmp/np.tmp #tmp/np.tmp ; # rm V2.3
+# 					echo " SubSection "${n[1]} "class NA" >> tmp/np.tmp #tmp/np.tmp ; # ins V2.3
+# 					#write default class into np.tmp
+# 					#echo "NET_CLASS:=?" >> tmp/np.tmp #tmp/np.tmp ;
+# 					#echo "  --part class val pack pin port dir cell" >> tmp/np.tmp #tmp/np.tmp;
+# 					#echo "  ---------------------------------------------------------" >> tmp/np.tmp #tmp/np.tmp;
+# 				);
+# 
+# 				#find net name after string ":net", then write net name into np.tmp
+# 				[ "${n[0]}"  = ":end" ] &&
+# 				(
+# 					echo " EndSubSection" >> tmp/np.tmp #tmp/np.tmp ;
+# 				);
+# 		
+# 				#if first field is neither :net or :end, then read part from partlist
+# 				[ "${n[0]}" != ":net" ] && [ "${n[0]}" != ":end" ] &&
+# 				(
+# 					#echo -n "."; #output "." for every part of this net
+# 					#write part name + "|" into np.tmp
+# 					echo -n '  '${n[0]}" " >> tmp/np.tmp #tmp/np.tmp ;
+# 					#write class "?" + "|" into np.tmp
+# 					echo -n "? " >> tmp/np.tmp #tmp/np.tmp ;
+# 					#read partlist
+# 					while IFS=" " read -a p ;
+# 					do
+# 						#find part in partlist
+# 						#when match
+# 						#[ "${p[0]}" = "${n[0]}" ] && #rm V2.22 
+# 						[ "${p[0]}" = "${n[0]}" ] &&  #ins V2.22
+# 							(
+# 								#echo ${p[0]} ${n[0]}
+# 								#write value + "|" into np.tmp
+# 								echo -n ${p[1]}" " >> tmp/np.tmp #tmp/np.tmp;
+# 								#write package + "|" into np.tmp
+# 								echo -n ${p[2]}" " >> tmp/np.tmp #tmp/np.tmp;
+# 							);
+# 					done < tmp/partlist.tmp;
+# 					#write pin name + "|" from netlist intp np.tmp
+# 					echo ${n[1]}" " >> tmp/np.tmp;
+# 				);
+# 			)
+# 	done < tmp/netlist.tmp
+# 
+# 	echo 'EndSection' >> tmp/np.tmp # tmp/nl.tmp
+# 
+# 	#copy to result file
+# 	#echo $overwrite_main_module
+# 	#echo $overwrite_sub_module
+# 
+# 	echo
+# 	echo "----------------------------------------------------------------------"
+# 	echo "imported nets : " $netcount
+# 	echo "imported parts: " $partcount
+# 	echo
+
+	cat tmp/nets.tmp >> tmp/np.tmp
+	echo
+
+	[ "$overwrite_main_module" = "no" -a "$overwrite_sub_module" = "no" ] && 
+		{
+		cp tmp/np.tmp skeleton.txt
+		echo "NOTE: Please read "skeleton.txt" for warnings !"
+		}
+
+	[ "$overwrite_main_module" = "yes" ] && 
+		{
+		mv tmp/np.tmp skeleton.txt
+		echo "NOTE: Please read "skeleton.txt" for warnings !"
+		}
+	[ "$overwrite_sub_module" = "yes" ] && 
+        {
+		mv tmp/np.tmp skeleton_$sub_name.txt
+		echo "NOTE: Please read "skeleton_$sub_name.txt" for warnings !"
+        }
+
+# np.txt ready
+####################################################
+	echo
+
+exit 0
+

@@ -1,0 +1,10 @@
+Section info
+ created by memory connections test/program generator version 2.8
+ date                : Fri Feb 15 15:16:55 CET 2013
+ target memory device: IC600
+ device package      : NDIP32
+ model file          : models/BS62LV4006.txt
+ database            : M-1.udb
+ algorithm           : standard
+EndSection
+
