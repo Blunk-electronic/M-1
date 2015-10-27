@@ -1,8 +1,3 @@
--- V3.3
--- user confirmation skipped
--- V3.4
--- bugfix: delete test directory if already there
-
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
 with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
@@ -28,14 +23,14 @@ with Ada.Calendar;				use Ada.Calendar;
 with Ada.Calendar.Formatting;	use Ada.Calendar.Formatting;
 with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
 
-procedure mkintercon is
+procedure mkmemcon is
 
-	Version			: String (1..3) := "3.4";
+	version			: String (1..3) := "031";
 	test_name  		: Unbounded_string;	
 	data_base  		: Unbounded_string;
 
 	--algorithm		: unbounded_string;
-	prog_position	: String (1..3) := "---";
+	prog_position	: String (1..4) := "----";
 	InputFile 		: Ada.Text_IO.File_Type;
 	InputFile2 		: Ada.Text_IO.File_Type;
 	OutputFile 		: Ada.Text_IO.File_Type;
@@ -1681,4 +1676,4 @@ begin
 			--	put ("PROGRAM ABORTED !"); new_line; new_line;
 
 			
-end mkintercon;
+end mkmemcon;
