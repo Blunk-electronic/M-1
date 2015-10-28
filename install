@@ -12,20 +12,46 @@ procedure_copy_script()
 	[ $? -ne 0 ] && exit 1		
 	}
 
-echo "creating configuration directory (if not existing already) ..."
-[ ! -e $HOME/.M-1 ] && cp -R conf/.M-1 $HOME
-[ $? -ne 1 ] && exit 1
+procedure_operator_confirmation()
+	{
+	echo -n "proceed ? (y/n): "
+	read key
+	echo
+	[ ! $key = "y" ] && 
+		{
+		echo "installation aborted by operator"
+		exit 1
+		}
+	}
+
+procedure_make()
+	{
+	target=$1
+	echo "-" $target
+	cd src/$target # change into source dir
+	[ $? -ne 0 ] && exit 1	
+	#make clean # clean up
+	#[ $? -ne 0 ] && exit 1			
+	make # compile
+	[ $? -ne 0 ] && exit 1
+	make install # install
+	[ $? -ne 0 ] && exit 1	
+	make clean # clean up
+	[ $? -ne 0 ] && exit 1		
+	cd - # change back to origin dir
+	}
+
+
+[ ! -e $HOME/.M-1 ] && 
+	{
+	echo "creating configuration directory (if not existing already) ..."
+	cp -R conf/.M-1 $HOME
+	[ $? -ne 0 ] && exit 1
+	}
 
 echo "copying script files in" $dest_script_dir "..."
 echo "WARNING ! Already existing script files residing there will be overwritten !"
-echo -n "proceed ? (y/n): "
-read key
-echo
-[ ! $key = "y" ] && 
-	{
-	echo "installation aborted by operator"
-	exit 1
-	}
+procedure_operator_confirmation
 	
 procedure_copy_script impaltium
 procedure_copy_script impeagle6x
@@ -42,6 +68,49 @@ procedure_copy_script runtest
 procedure_copy_script stoptest
 procedure_copy_script version
 procedure_copy_script stop_sequence
+
+
+lib_examples_uut_dir=M-1
+if [ ! -e $HOME/$lib_examples_uut_dir ]; then
+	echo "creating lib, examples, doc and uut directory  ..."
+	mkdir $HOME/$lib_examples_uut_dir
+	[ $? -ne 0 ] && exit 1
+	echo "- uut directory  ..."	
+	cp -R uut/ $HOME/$lib_examples_uut_dir/
+	[ $? -ne 0 ] && exit 1
+	echo "- lib directory  ..."		
+	cp -R lib/ $HOME/$lib_examples_uut_dir/
+	[ $? -ne 0 ] && exit 1
+	echo "- documentation directory  ..."		
+	cp -R doc/ $HOME/$lib_examples_uut_dir/
+	[ $? -ne 0 ] && exit 1
+else
+	echo "WARNING ! Updating device libraries, examples and documentation in "$HOME/$lib_examples_uut_dir "?"
+	procedure_operator_confirmation
+	echo "updating:"
+	echo "- lib directory ..."
+	cp -R -u lib/ $HOME/$lib_examples_uut_dir/
+	[ $? -ne 0 ] && exit 1
+	echo "- examples in uut directory ..."
+	cp -R -u uut/ $HOME/$lib_examples_uut_dir/
+	[ $? -ne 0 ] && exit 1	
+	echo "- documentation directory ..."
+	cp -R -u doc/ $HOME/$lib_examples_uut_dir/
+	[ $? -ne 0 ] && exit 1		
+fi
+
+echo "compiling and installing ..."
+procedure_make bsmcl
+procedure_make chkpsn
+procedure_make compseq
+procedure_make impbsdl
+procedure_make impzuken
+procedure_make joinnetlist
+procedure_make mkintercon
+procedure_make mknets
+procedure_make mkoptions
+procedure_make mktoggle
+procedure_make mkvmod
 
 exit
 echo done
