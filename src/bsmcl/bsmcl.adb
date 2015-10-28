@@ -39,7 +39,7 @@ with m1;
 with m1_internal; use m1_internal;
 
 procedure bsmcl is
-	Version			: String (1..3) := "021";
+	Version			: String (1..3) := "022";
 	--bin_dir			: String := "/opt/m-1/bin/"; -- CS: need to adapt it to the customers machine ?
 --	bin_dir			: String := "/home/luno/cad/projects/m-1/bin/"; -- CS: need to adapt it to the customers machine ? -- mod v017 -- rm v020
 
@@ -101,8 +101,8 @@ procedure bsmcl is
 	conf_file				: Ada.Text_IO.File_Type;
 	help_file				: Ada.Text_IO.File_Type;
 	home_directory			: universal_string_type.bounded_string;
-	conf_directory			: string (1..5) := ".m-1/";
-	conf_file_name			: string (1..8) := "m-1.conf";
+	conf_directory			: string (1..5) := ".M-1/";
+	conf_file_name			: string (1..8) := "M-1.conf";
 	help_file_name_german	: string (1..15) := "help_german.txt";
 	help_file_name_english	: string (1..16) := "help_english.txt";
 	--log_file_txt			: unbounded_string := to_unbounded_string("stock_log.txt");
