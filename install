@@ -1,0 +1,48 @@
+#! /bin/sh
+version=002
+source_script_dir=scripts
+dest_script_dir=$HOME/bin
+echo "System M-1 installer version" $version
+
+procedure_copy_script()
+	{
+	name=$1
+	#echo "-" $name
+	cp $source_script_dir/$name $dest_script_dir
+	[ $? -ne 0 ] && exit 1		
+	}
+
+echo "creating configuration directory (if not existing already) ..."
+[ ! -e $HOME/.M-1 ] && cp -R conf/.M-1 $HOME
+[ $? -ne 1 ] && exit 1
+
+echo "copying script files in" $dest_script_dir "..."
+echo "WARNING ! Already existing script files residing there will be overwritten !"
+echo -n "proceed ? (y/n): "
+read key
+echo
+[ ! $key = "y" ] && 
+	{
+	echo "installation aborted by operator"
+	exit 1
+	}
+	
+procedure_copy_script impaltium
+procedure_copy_script impeagle6x
+procedure_copy_script imporcad
+procedure_copy_script mkinfra
+procedure_copy_script mkmemcon
+procedure_copy_script open_report
+procedure_copy_script run_and_log_sequence
+procedure_copy_script clrram
+procedure_copy_script diag
+procedure_copy_script dump_outram
+procedure_copy_script loadtest
+procedure_copy_script runtest
+procedure_copy_script stoptest
+procedure_copy_script version
+procedure_copy_script stop_sequence
+
+exit
+echo done
+exit
