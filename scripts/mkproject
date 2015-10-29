@@ -1,0 +1,46 @@
+#! /bin/sh
+
+version=019
+install_dir=$HOME/.M-1/snippets
+#umask 003 # ins V1.4
+
+echo project creator version $version;
+project_name=$1;
+echo "creating project '"$project_name"'";
+echo -n "in directory   : "
+pwd
+
+if [ -e $project_name ]
+    then
+    {
+	echo -n "WARNING ! Old project '"$project_name"' already exists, should it be erased ? (y/n) "
+	read key
+	echo
+	[ "$key" = "y" ] && 
+	{
+	rm -rf $project_name;
+	}
+	[ "$key" != "y" ] && 
+	{
+	echo "CANCELLED ! Project '"$project_name"' left untouched."
+	exit 2
+	}
+    }
+fi
+
+mkdir $project_name;
+mkdir $project_name/tmp;
+mkdir $project_name/bak;
+mkdir $project_name/cad;
+mkdir $project_name/doc;
+mkdir $project_name/models;
+mkdir $project_name/setup;
+mkdir $project_name/scripts;
+mkdir $project_name/msg;
+
+echo "Project description:" > $project_name/proj_desc.txt
+
+cp $install_dir/scanpath.txt $project_name/$project_name.udb
+cp $install_dir/test_init_general.txt $project_name/setup/
+cp $install_dir/mkoptions.conf $project_name/
+exit

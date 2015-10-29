@@ -68,7 +68,7 @@ procedure_copy_script runtest
 procedure_copy_script stoptest
 procedure_copy_script version
 procedure_copy_script stop_sequence
-
+procedure_copy_script mkproject
 
 lib_examples_uut_dir=M-1
 if [ ! -e $HOME/$lib_examples_uut_dir ]; then
