@@ -1,5 +1,9 @@
 #! /bin/sh
-version=002
+version=003
+
+#to do:
+# check for kermit
+
 source_script_dir=scripts
 dest_script_dir=$HOME/bin
 echo "System M-1 installer version" $version
@@ -69,6 +73,7 @@ procedure_copy_script stoptest
 procedure_copy_script version
 procedure_copy_script stop_sequence
 procedure_copy_script mkproject
+procddure_copy_script run_continuous
 
 lib_examples_uut_dir=M-1
 if [ ! -e $HOME/$lib_examples_uut_dir ]; then
