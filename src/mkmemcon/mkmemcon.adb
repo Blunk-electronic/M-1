@@ -19,40 +19,38 @@ with GNAT.OS_Lib;   	use GNAT.OS_Lib;
 with Ada.Command_Line;	use Ada.Command_Line;
 with Ada.Directories;	use Ada.Directories;
  
-with Ada.Calendar;				use Ada.Calendar;
-with Ada.Calendar.Formatting;	use Ada.Calendar.Formatting;
-with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
+--with Ada.Calendar;				use Ada.Calendar;
+--with Ada.Calendar.Formatting;	use Ada.Calendar.Formatting;
+--with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
 
 with m1;
-with m1_internal;
+with m1_internal; --use m1_internal;
 
 procedure mkmemcon is
 
 	version			: String (1..3) := "032";
 	prog_position	: String (1..5) := "-----";
-	now				: time := clock;
-	date_now		: string (1..19) := image(now, time_zone => UTC_Time_Offset(now));
 
-	universal_string_length	: natural := 100;
-	package universal_string_type is new generic_bounded_length(universal_string_length); use universal_string_type;
-	test_name  		: universal_string_type.bounded_string;
-	data_base  		: universal_string_type.bounded_string;
-	target_device	: universal_string_type.bounded_string;
-	model_file		: universal_string_type.bounded_string;
-	device_package	: universal_string_type.bounded_string;
+	--m : m1_internal.bscan_ic_ptr;
+	--n : m1_internal.net_ptr;
+	--subtype parts_of_net_local is m1_internal.type_parts_of_net (1..2);
+	--p : parts_of_net_local;
+--	n := new
+	--type hexnumber is array(1..4) of m1_internal.type_bit_character_class_1;
+	five : array (1..2) of m1_internal.type_bit_character_class_1 := "01";
 
-	seq_file		: ada.text_io.file_type;
+	--package char_io is new Ada.Text_IO.Enumeration_IO(Character);
 
 	procedure write_info_section is
 	begin
 		put_line("Section info");
 		put_line(" created by memory connections test generator version "& version);
-		put_line(" date          : " & date_now);
-		put_line(" database      : " & to_string(data_base));
+		put_line(" date          : " & m1.date_now);
+		put_line(" database      : " & m1_internal.universal_string_type.to_string(m1_internal.data_base));
 		put_line(" algorithm     : standard");
-		put_line(" target_device : " & to_string(target_device));
-		put_line(" model_file    : " & to_string(model_file));
-		put_line(" device_package: " & to_string(device_package));
+		put_line(" target_device : " & m1_internal.universal_string_type.to_string(m1_internal.target_device));
+		put_line(" model_file    : " & m1_internal.universal_string_type.to_string(m1_internal.model_file));
+		put_line(" device_package: " & m1_internal.universal_string_type.to_string(m1_internal.device_package));
 		put_line("EndSection"); 
 		new_line;
 	end write_info_section;
@@ -61,42 +59,65 @@ procedure mkmemcon is
 
 begin
 	prog_position := "IN000";
-	put("memory interconnect test generator version "& Version); new_line;
+	put_line("memory interconnect test generator version "& Version);
 
-	data_base:= to_bounded_string(Argument(1));
-	put_line ("data base      : " & to_string(data_base));
-
-	test_name:= to_bounded_string(Argument(2));
-	put_line ("test name      : " & to_string(test_name));
-
-	target_device := to_bounded_string(Argument(3));
-	put_line ("target device  : " & to_string(target_device));
-
-	model_file := to_bounded_string(Argument(4));
-	put_line ("model file     : " & to_string(model_file));
-
-	device_package := to_bounded_string(Argument(5));
-	put_line ("device package : " & to_string(device_package));
-
+ 	m1_internal.data_base:= m1_internal.universal_string_type.to_bounded_string(Argument(1));
+ 	put_line ("data base      : " & m1_internal.universal_string_type.to_string(m1_internal.data_base));
+ 
+ 	m1_internal.test_name:= m1_internal.universal_string_type.to_bounded_string(Argument(2));
+ 	put_line ("test name      : " & m1_internal.universal_string_type.to_string(m1_internal.test_name));
+ 
+ 	m1_internal.target_device := m1_internal.universal_string_type.to_bounded_string(Argument(3));
+ 	put_line ("target device  : " & m1_internal.universal_string_type.to_string(m1_internal.target_device));
+ 
+ 	m1_internal.model_file := m1_internal.universal_string_type.to_bounded_string(Argument(4));
+ 	put_line ("model file     : " & m1_internal.universal_string_type.to_string(m1_internal.model_file));
+ 
+ 	m1_internal.device_package := m1_internal.universal_string_type.to_bounded_string(Argument(5));
+ 	put_line ("device package : " & m1_internal.universal_string_type.to_string(m1_internal.device_package));
+ 
 	-- recreate an empty tmp directory
-	prog_position := "TMP01";
-	m1.clean_up_tmp_dir;
-	
+ 	prog_position := "TMP01";
+ 	m1.clean_up_tmp_dir;
+
+	-- create test directory
 	prog_position := "DIR01";
-	m1_internal.create_test_directory(to_string(test_name));
+ 	m1_internal.create_test_directory(m1_internal.universal_string_type.to_string(m1_internal.test_name));
+ 
+ 	prog_position := "OSE01";
+ 	create(m1_internal.seq_file, 
+		name => compose(m1_internal.universal_string_type.to_string(m1_internal.test_name),m1_internal.universal_string_type.to_string(m1_internal.test_name),"seq"));
+	close(m1_internal.seq_file);
+	prog_position := "OSE02";
+	open(file => m1_internal.seq_file, mode => out_file,
+		name => compose(m1_internal.universal_string_type.to_string(m1_internal.test_name),m1_internal.universal_string_type.to_string(m1_internal.test_name),"seq"));
+ 	prog_position := "OSE03";
+ 	set_output(m1_internal.seq_file);
+ 	prog_position := "OSE04";
+ 	write_info_section;
 
-	prog_position := "OSE01";
-	create(seq_file, name => compose(to_string(test_name),to_string(test_name),"seq") );
-	--prog_position := "OSE02";
-	--open(file => seq_file, mode => out_file, name => compose(to_string(test_name),to_string(test_name),"seq") );
-	prog_position := "OSE03";
-	set_output(seq_file);
-	prog_position := "OSE04";
-	write_info_section;
+ 	set_output(standard_output);
 
+	if m1_internal.read_uut_data_base(m1_internal.universal_string_type.to_string(m1_internal.data_base)) then null; end if;
+-- 		put_line("ir  length:" & natural'image(m1_internal.bic.len_ir));
+-- 		put_line("bsr length:" & natural'image(m1_internal.bic.len_bsr));
+--  		m1_internal.bic := m1_internal.bic.next;
+-- 		put_line("ir  length:" & natural'image(m1_internal.bic.len_ir));
+-- 		put_line("bsr length:" & natural'image(m1_internal.bic.len_bsr));
 
+-- 		put_line("ir length:" & natural'image(m1_internal.bic.len_ir));
+-- 		put_line("net  " & m1_internal.universal_string_type.to_string(m1_internal.n.name));
+-- 		put_line("part " & m1_internal.universal_string_type.to_string(m1_internal.n.parts(2)));
+--	end if;
 
-	close(seq_file);
+	--put_line("capture ir :" & m1_internal.type_string_of_characters_class_1'image(m.capture_ir));
+	--put_line("ir length:" & natural'image(m(1,1).len_ir));
+	
+	--put("capt_ir  :" & m(1,1).capture_ir'first);
+--	put_line( five(1..2) );
+	--put(m1_internal.type_string_of_characters_class_1'image(m1_internal.type_string_of_characters_class_1'val(1))); new_line;
+
+	close(m1_internal.seq_file);
 -- 
 -- 	fraction_data_base;
 -- 
@@ -143,13 +164,22 @@ begin
 --	vector_ct := write_sxr(vector_ct,0); -- 0 -> sdr , 1 -> sir
 
 	exception
-		when constraint_error => 
-			put_line(prog_position);
-			if prog_position = "-----" then
-				--new_line;									
-				--put ("ERROR : Test generator aborted !"); new_line;
-				set_exit_status(1);
-			end if;
-		when others =>
+-- 		when constraint_error => 
+-- 			put_line(prog_position);
+-- 			if prog_position = "-----" then
+-- 				--new_line;									
+-- 				--put ("ERROR : Test generator aborted !"); new_line;
+-- 				set_exit_status(1);
+-- 			end if;
+-- 		when others =>
+-- 			put_line("program error at position " & prog_position);
+
+		when event: others =>
+			put("unexpected exception: ");
+			put_line(exception_name(event));
+			put(exception_message(event)); new_line;
 			put_line("program error at position " & prog_position);
+			--clean_up;
+			--raise;
+
 end mkmemcon;
