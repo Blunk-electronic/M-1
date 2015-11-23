@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="6.5.0">
+<eagle version="6.6.0">
 <drawing>
 <settings>
 <setting alwaysvectorfont="yes"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="2" unitdist="mm" unit="mm" style="lines" multiple="1" display="yes" altdistance="0.2" altunitdist="mm" altunit="mm"/>
+<grid distance="1" unitdist="mm" unit="mm" style="lines" multiple="1" display="yes" altdistance="0.2" altunitdist="mm" altunit="mm"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="no" active="yes"/>
 <layer number="2" name="Route2" color="1" fill="3" visible="no" active="no"/>
@@ -59,6 +59,8 @@
 <layer number="49" name="Reference" color="7" fill="1" visible="no" active="yes"/>
 <layer number="51" name="tDocu" color="7" fill="1" visible="no" active="yes"/>
 <layer number="52" name="bDocu" color="7" fill="1" visible="no" active="yes"/>
+<layer number="53" name="tCopper" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="54" name="bCopper" color="7" fill="1" visible="yes" active="yes"/>
 </layers>
 <board>
 <plain>
@@ -80,7 +82,7 @@
 <wire x1="70" y1="52" x2="40" y2="52" width="0.15" layer="47" style="dashdot"/>
 <wire x1="70" y1="102" x2="36" y2="102" width="0.15" layer="47" style="dashdot"/>
 <wire x1="60" y1="12" x2="60" y2="114" width="0.15" layer="47" style="dashdot"/>
-<circle x="145" y="45" radius="12" width="0.25" layer="20"/>
+<circle x="145" y="45" radius="11.5" width="0.25" layer="20"/>
 <circle x="157.3" y="57.3" radius="1.7" width="0.25" layer="20"/>
 <circle x="132.7" y="57.3" radius="1.7" width="0.25" layer="20"/>
 <circle x="132.7" y="32.7" radius="1.7" width="0.25" layer="20"/>
@@ -130,7 +132,6 @@
 <dimension x1="165.2" y1="32.7" x2="168" y2="0" x3="172" y3="16.35" textsize="4" layer="47" dtype="vertical"/>
 <dimension x1="170" y1="45" x2="181" y2="0" x3="180" y3="22.5" textsize="4" layer="47" dtype="vertical"/>
 <dimension x1="178.45" y1="57.3" x2="188" y2="0" x3="189" y3="28.65" textsize="4" layer="47" dtype="vertical"/>
-<dimension x1="135.969078125" y1="52.90205625" x2="154.030921875" y2="37.09794375" x3="154.030921875" y3="37.09794375" textsize="4" layer="47" dtype="diameter"/>
 <dimension x1="131.49791875" y1="56.09791875" x2="133.90208125" y2="58.50208125" x3="129" y3="60.999996875" textsize="4" layer="47" dtype="diameter"/>
 <dimension x1="95.317246875" y1="96.796940625" x2="104.682753125" y2="107.203059375" x3="90" y3="110.999996875" textsize="4" layer="47" dtype="diameter"/>
 <dimension x1="55.40380625" y1="97.40380625" x2="64.59619375" y2="106.59619375" x3="49.999996875" y3="112" textsize="4" layer="47" dtype="diameter"/>
@@ -214,6 +215,7 @@
 <text x="352" y="50" size="5" layer="21" font="vector" ratio="10">PASS</text>
 <dimension x1="305.71963125" y1="100.46355625" x2="308.28036875" y2="103.53644375" x3="300.999996875" y3="106.999996875" textsize="4" layer="47" dtype="diameter"/>
 <dimension x1="247.688765625" y1="27.728465625" x2="250.311234375" y2="26.271534375" x3="254.000009375" y3="35.999996875" textsize="4" layer="47" dtype="diameter"/>
+<dimension x1="135.431421875" y1="51.379053125" x2="154.568578125" y2="38.620946875" x3="154.568578125" y3="38.620946875" textsize="4" layer="47" dtype="diameter"/>
 </plain>
 <libraries>
 </libraries>

@@ -9,5 +9,8 @@ DEADJOE
 *.lis
 *.hex
 *.kate-swp
-*.b##
-*.s##
+*.b#?
+*.s#?
+*.epf
+*.epf.in
+eagle.rc
