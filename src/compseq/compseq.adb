@@ -31,7 +31,7 @@ with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
 
 procedure compseq is
 
-	Version			: String (1..7) := "004.002";
+	Version			: String (1..7) := "004.003";
 
 	--type unsigned_byte is mod 256;
 	package seq_io_unsigned_byte is new Ada.Sequential_IO(unsigned_8);
@@ -1472,81 +1472,97 @@ begin
 			-- read tck_driver_port_1 characteristic
 			if get_field(line,1) = "tck_driver_port_1" then 
 				if get_field(line,2) = "push-pull" then tck1_drv_char	:= 16#06#; end if;
+				if get_field(line,2) = "push_pull" then tck1_drv_char	:= 16#06#; end if; -- ins 004.003
 				if get_field(line,2) = "weak1" then tck1_drv_char 		:= 16#01#; end if;
 				if get_field(line,2) = "weak0" then tck1_drv_char 		:= 16#02#; end if;
 				if get_field(line,2) = "tie_low" then tck1_drv_char 	:= 16#04#; end if;
 				if get_field(line,2) = "tie_high" then tck1_drv_char 	:= 16#05#; end if;
 				if get_field(line,2) = "high-z" then tck1_drv_char 		:= 16#03#; end if;
+				if get_field(line,2) = "high_z" then tck1_drv_char 		:= 16#03#; end if; -- ins 004.003
 			end if;
 
 			-- read tms_driver_port_1 characteristic
 			if get_field(line,1) = "tms_driver_port_1" then 
 				if get_field(line,2) = "push-pull" then tms1_drv_char	:= 16#30#; end if;
+				if get_field(line,2) = "push_pull" then tms1_drv_char	:= 16#30#; end if; -- ins 004.003
 				if get_field(line,2) = "weak1" then tms1_drv_char 		:= 16#08#; end if;
 				if get_field(line,2) = "weak0" then tms1_drv_char 		:= 16#10#; end if;
 				if get_field(line,2) = "tie_low" then tms1_drv_char 	:= 16#20#; end if;
 				if get_field(line,2) = "tie_high" then tms1_drv_char 	:= 16#28#; end if;
 				if get_field(line,2) = "high-z" then tms1_drv_char 		:= 16#18#; end if;
+				if get_field(line,2) = "high_z" then tms1_drv_char 		:= 16#18#; end if; -- ins 004.003
 			end if;
 
 			-- read tdo_driver_port_1 characteristic
 			if get_field(line,1) = "tdo_driver_port_1" then 
 				if get_field(line,2) = "push-pull" then tdo1_drv_char	:= 16#06#; end if;
+				if get_field(line,2) = "push_pull" then tdo1_drv_char	:= 16#06#; end if; -- ins 004.003
 				if get_field(line,2) = "weak1" then tdo1_drv_char 		:= 16#01#; end if;
 				if get_field(line,2) = "weak0" then tdo1_drv_char 		:= 16#02#; end if;
 				if get_field(line,2) = "tie_low" then tdo1_drv_char 	:= 16#04#; end if;
 				if get_field(line,2) = "tie_high" then tdo1_drv_char 	:= 16#05#; end if;
 				if get_field(line,2) = "high-z" then tdo1_drv_char 		:= 16#03#; end if;
+				if get_field(line,2) = "high_z" then tdo1_drv_char 		:= 16#03#; end if; -- ins 004.003
 			end if;
 
 			-- read trst_driver_port_1 characteristic
 			if get_field(line,1) = "trst_driver_port_1" then 
 				if get_field(line,2) = "push-pull" then trst1_drv_char	:= 16#30#; end if;
+				if get_field(line,2) = "push_pull" then trst1_drv_char	:= 16#30#; end if; -- ins 004.003
 				if get_field(line,2) = "weak1" then trst1_drv_char 		:= 16#08#; end if;
 				if get_field(line,2) = "weak0" then trst1_drv_char 		:= 16#10#; end if;
 				if get_field(line,2) = "tie_low" then trst1_drv_char 	:= 16#20#; end if;
 				if get_field(line,2) = "tie_high" then trst1_drv_char 	:= 16#28#; end if;
 				if get_field(line,2) = "high-z" then trst1_drv_char 	:= 16#18#; end if;
+				if get_field(line,2) = "high_z" then trst1_drv_char 	:= 16#18#; end if; -- ins 004.003
 			end if;
 
 			-- read tck_driver_port_2 characteristic
 			if get_field(line,1) = "tck_driver_port_2" then 
 				if get_field(line,2) = "push-pull" then tck2_drv_char	:= 16#06#; end if;
+				if get_field(line,2) = "push_pull" then tck2_drv_char	:= 16#06#; end if; -- ins 004.003
 				if get_field(line,2) = "weak1" then tck2_drv_char 		:= 16#01#; end if;
 				if get_field(line,2) = "weak0" then tck2_drv_char 		:= 16#02#; end if;
 				if get_field(line,2) = "tie_low" then tck2_drv_char 	:= 16#04#; end if;
 				if get_field(line,2) = "tie_high" then tck2_drv_char 	:= 16#05#; end if;
 				if get_field(line,2) = "high-z" then tck2_drv_char 		:= 16#03#; end if;
+				if get_field(line,2) = "high_z" then tck2_drv_char 		:= 16#03#; end if; -- ins 004.003
 			end if;
 
 			-- read tms_driver_port_2 characteristic
 			if get_field(line,1) = "tms_driver_port_2" then 
 				if get_field(line,2) = "push-pull" then tms2_drv_char	:= 16#30#; end if;
+				if get_field(line,2) = "push_pull" then tms2_drv_char	:= 16#30#; end if; -- ins 004.003
 				if get_field(line,2) = "weak1" then tms2_drv_char 		:= 16#08#; end if;
 				if get_field(line,2) = "weak0" then tms2_drv_char 		:= 16#10#; end if;
 				if get_field(line,2) = "tie_low" then tms2_drv_char 	:= 16#20#; end if;
 				if get_field(line,2) = "tie_high" then tms2_drv_char 	:= 16#28#; end if;
 				if get_field(line,2) = "high-z" then tms2_drv_char 		:= 16#18#; end if;
+				if get_field(line,2) = "high_z" then tms2_drv_char 		:= 16#18#; end if; -- ins 004.003
 			end if;
 
 			-- read tdo_driver_port_2 characteristic
 			if get_field(line,1) = "tdo_driver_port_2" then 
 				if get_field(line,2) = "push-pull" then tdo2_drv_char	:= 16#06#; end if;
+				if get_field(line,2) = "push_pull" then tdo2_drv_char	:= 16#06#; end if; -- ins 004.003
 				if get_field(line,2) = "weak1" then tdo2_drv_char 		:= 16#01#; end if;
 				if get_field(line,2) = "weak0" then tdo2_drv_char 		:= 16#02#; end if;
 				if get_field(line,2) = "tie_low" then tdo2_drv_char 	:= 16#04#; end if;
 				if get_field(line,2) = "tie_high" then tdo2_drv_char 	:= 16#05#; end if;
 				if get_field(line,2) = "high-z" then tdo2_drv_char 		:= 16#03#; end if;
+				if get_field(line,2) = "high_z" then tdo2_drv_char 		:= 16#03#; end if; -- ins 004.003
 			end if;
 
 			-- read trst_driver_port_2 characteristic
 			if get_field(line,1) = "trst_driver_port_2" then 
 				if get_field(line,2) = "push-pull" then trst2_drv_char	:= 16#30#; end if;
+				if get_field(line,2) = "push_pull" then trst2_drv_char	:= 16#30#; end if; -- ins 004.003
 				if get_field(line,2) = "weak1" then trst2_drv_char 		:= 16#08#; end if;
 				if get_field(line,2) = "weak0" then trst2_drv_char 		:= 16#10#; end if;
 				if get_field(line,2) = "tie_low" then trst2_drv_char 	:= 16#20#; end if;
 				if get_field(line,2) = "tie_high" then trst2_drv_char 	:= 16#28#; end if;
 				if get_field(line,2) = "high-z" then trst2_drv_char 	:= 16#18#; end if;
+				if get_field(line,2) = "high_z" then trst2_drv_char 	:= 16#18#; end if; -- ins 004.003
 			end if;
 
 		end loop; -- read options

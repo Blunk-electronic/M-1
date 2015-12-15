@@ -31,6 +31,8 @@ procedure mkmemcon is
 	version			: String (1..3) := "032";
 	prog_position	: String (1..5) := "-----";
 
+	bic : m1_internal.bscan_ic_ptr;
+	--bic_boundary_register	: m1_internal.type_bic_boundary_register_array;
 	--m : m1_internal.bscan_ic_ptr;
 	--n : m1_internal.net_ptr;
 	--subtype parts_of_net_local is m1_internal.type_parts_of_net (1..2);
@@ -98,7 +100,18 @@ begin
 
  	set_output(standard_output);
 
-	if m1_internal.read_uut_data_base(m1_internal.universal_string_type.to_string(m1_internal.data_base)) then null; end if;
+	if m1_internal.read_uut_data_base(m1_internal.universal_string_type.to_string(m1_internal.data_base)) then 
+		null; 
+		--put_line(m1_internal.universal_string_type(m1_internal.bic.name));
+-- 		put_line("--");
+-- 		put_line(natural'image(m1_internal.bic.position));
+-- 		m1_internal.bic := m1_internal.bic.next;
+-- 		put_line(natural'image(m1_internal.bic.position));
+-- 		m1_internal.bic := m1_internal.bic.next;
+-- 		put_line(natural'image(m1_internal.bic.position));
+
+
+	end if;
 -- 		put_line("ir  length:" & natural'image(m1_internal.bic.len_ir));
 -- 		put_line("bsr length:" & natural'image(m1_internal.bic.len_bsr));
 --  		m1_internal.bic := m1_internal.bic.next;
