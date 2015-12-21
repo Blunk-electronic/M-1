@@ -31,7 +31,7 @@ procedure mkmemcon is
 	version			: String (1..3) := "032";
 	prog_position	: String (1..5) := "-----";
 
-	bic : m1_internal.bscan_ic_ptr;
+--	bic : m1_internal.bscan_ic_ptr;
 	--bic_boundary_register	: m1_internal.type_bic_boundary_register_array;
 	--m : m1_internal.bscan_ic_ptr;
 	--n : m1_internal.net_ptr;
@@ -39,7 +39,7 @@ procedure mkmemcon is
 	--p : parts_of_net_local;
 --	n := new
 	--type hexnumber is array(1..4) of m1_internal.type_bit_character_class_1;
-	five : array (1..2) of m1_internal.type_bit_character_class_1 := "01";
+	--five : array (1..2) of m1_internal.type_bit_character_class_1 := "01";
 
 	--package char_io is new Ada.Text_IO.Enumeration_IO(Character);
 
@@ -78,6 +78,8 @@ begin
  	m1_internal.device_package := m1_internal.universal_string_type.to_bounded_string(Argument(5));
  	put_line ("device package : " & m1_internal.universal_string_type.to_string(m1_internal.device_package));
  
+	m1_internal.debug_level := natural'value(argument(6));
+
 	-- recreate an empty tmp directory
  	prog_position := "TMP01";
  	m1.clean_up_tmp_dir;
@@ -100,8 +102,11 @@ begin
 
  	set_output(standard_output);
 
-	if m1_internal.read_uut_data_base(m1_internal.universal_string_type.to_string(m1_internal.data_base)) then 
-		null; 
+	if m1_internal.read_uut_data_base(
+			name_of_data_base_file => m1_internal.universal_string_type.to_string(m1_internal.data_base),
+			debug_level => m1_internal.debug_level
+			) then 
+				null; 
 		--put_line(m1_internal.universal_string_type(m1_internal.bic.name));
 -- 		put_line("--");
 -- 		put_line(natural'image(m1_internal.bic.position));
@@ -112,6 +117,7 @@ begin
 
 
 	end if;
+		m1_internal.print_bic_info;
 -- 		put_line("ir  length:" & natural'image(m1_internal.bic.len_ir));
 -- 		put_line("bsr length:" & natural'image(m1_internal.bic.len_bsr));
 --  		m1_internal.bic := m1_internal.bic.next;
