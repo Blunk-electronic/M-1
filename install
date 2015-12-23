@@ -34,7 +34,7 @@ procedure_make()
 	echo "-" $target
 	cd src/$target # change into source dir
 	[ $? -ne 0 ] && exit 1	
-	#make clean # clean up
+	make clean # clean up
 	#[ $? -ne 0 ] && exit 1			
 	make # compile
 	[ $? -ne 0 ] && exit 1
@@ -73,7 +73,7 @@ procedure_copy_script stoptest
 procedure_copy_script version
 procedure_copy_script stop_sequence
 procedure_copy_script mkproject
-procddure_copy_script run_continuous
+procedure_copy_script run_continuous
 
 lib_examples_uut_dir=M-1
 if [ ! -e $HOME/$lib_examples_uut_dir ]; then
