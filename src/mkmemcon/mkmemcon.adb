@@ -117,7 +117,7 @@ begin
 
 
 	end if;
-		m1_internal.print_bic_info;
+		--m1_internal.print_bic_info;
 
 -- 		put_line("ir  length:" & natural'image(m1_internal.bic.len_ir));
 -- 		put_line("bsr length:" & natural'image(m1_internal.bic.len_bsr));
