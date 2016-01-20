@@ -60,6 +60,7 @@ begin
 	put_line("action         : " & type_action'image(action));
 
 	if action = udbinfo then
+		debug_level := natural'value(argument(5));
 		read_data_base;
 
 		inquired_item := type_item_udbinfo'value(argument(3));
