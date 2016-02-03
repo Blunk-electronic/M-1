@@ -50,65 +50,67 @@ procedure udbinfo is
 			debug_level => debug_level 
 			); --.net_count_statistics.total > 0 then null; 
 
-		if not summary.sections_processed.scanpath_configuration then
-			put_line("ERROR : Section " & type_section'image(scanpath_configuration) & " incomplete or missing !");
-			raise constraint_error;
-		end if;
+		if not summary.sections_processed.all_sections then
 
-		if not summary.sections_processed.registers then
-			put_line("ERROR : Section " & type_section'image(registers) & " incomplete or missing !");
-			raise constraint_error;
-		end if;
+			if not summary.sections_processed.scanpath_configuration then
+				put_line("ERROR : Section " & type_section'image(scanpath_configuration) & " incomplete or missing !");
+				raise constraint_error;
+			end if;
 
-		if not summary.sections_processed.locked_control_cells_in_class_EH_EL_NA_nets then
-			put_line("ERROR : Section " & type_section'image(locked_control_cells_in_class_EH_EL_NA_nets) & " incomplete or missing !");
-			raise constraint_error;
-		end if;
+			if not summary.sections_processed.registers then
+				put_line("ERROR : Section " & type_section'image(registers) & " incomplete or missing !");
+				raise constraint_error;
+			end if;
 
-		if not summary.sections_processed.locked_control_cells_in_class_DH_DL_NR_nets then
-			put_line("ERROR : Section " & type_section'image(locked_control_cells_in_class_DH_DL_NR_nets) & " incomplete or missing !");
-			raise constraint_error;
-		end if;
+			if not summary.sections_processed.locked_control_cells_in_class_EH_EL_NA_nets then
+				put_line("ERROR : Section " & type_section'image(locked_control_cells_in_class_EH_EL_NA_nets) & " incomplete or missing !");
+				raise constraint_error;
+			end if;
 
-		if not summary.sections_processed.locked_control_cells_in_class_PU_PD_nets then
-			put_line("ERROR : Section " & type_section'image(locked_control_cells_in_class_PU_PD_nets) & " incomplete or missing !");
-			raise constraint_error;
-		end if;
+			if not summary.sections_processed.locked_control_cells_in_class_DH_DL_NR_nets then
+				put_line("ERROR : Section " & type_section'image(locked_control_cells_in_class_DH_DL_NR_nets) & " incomplete or missing !");
+				raise constraint_error;
+			end if;
 
-		if not summary.sections_processed.locked_output_cells_in_class_PU_PD_nets then
-			put_line("ERROR : Section " & type_section'image(locked_output_cells_in_class_PU_PD_nets) & " incomplete or missing !");
-			raise constraint_error;
-		end if;
+			if not summary.sections_processed.locked_control_cells_in_class_PU_PD_nets then
+				put_line("ERROR : Section " & type_section'image(locked_control_cells_in_class_PU_PD_nets) & " incomplete or missing !");
+				raise constraint_error;
+			end if;
 
-		if not summary.sections_processed.locked_output_cells_in_class_DH_DL_nets then
-			put_line("ERROR : Section " & type_section'image(locked_output_cells_in_class_DH_DL_nets) & " incomplete or missing !");
-			raise constraint_error;
-		end if;
+			if not summary.sections_processed.locked_output_cells_in_class_PU_PD_nets then
+				put_line("ERROR : Section " & type_section'image(locked_output_cells_in_class_PU_PD_nets) & " incomplete or missing !");
+				raise constraint_error;
+			end if;
 
-		if not summary.sections_processed.static_expect then
-			put_line("ERROR : Section " & type_section'image(static_expect) & " incomplete or missing !");
-			raise constraint_error;
-		end if;
+			if not summary.sections_processed.locked_output_cells_in_class_DH_DL_nets then
+				put_line("ERROR : Section " & type_section'image(locked_output_cells_in_class_DH_DL_nets) & " incomplete or missing !");
+				raise constraint_error;
+			end if;
 
-		if not summary.sections_processed.atg_expect then
-			put_line("ERROR : Section " & type_section'image(atg_expect) & " incomplete or missing !");
-			raise constraint_error;
-		end if;
+			if not summary.sections_processed.static_expect then
+				put_line("ERROR : Section " & type_section'image(static_expect) & " incomplete or missing !");
+				raise constraint_error;
+			end if;
 
-		if not summary.sections_processed.atg_drive then
-			put_line("ERROR : Section " & type_section'image(atg_drive) & " incomplete or missing !");
-			raise constraint_error;
-		end if;
+			if not summary.sections_processed.atg_expect then
+				put_line("ERROR : Section " & type_section'image(atg_expect) & " incomplete or missing !");
+				raise constraint_error;
+			end if;
 
-		if not summary.sections_processed.input_cells_in_class_NA_nets then
-			put_line("ERROR : Section " & type_section'image(input_cells_in_class_NA_nets) & " incomplete or missing !");
-			raise constraint_error;
-		end if;
+			if not summary.sections_processed.atg_drive then
+				put_line("ERROR : Section " & type_section'image(atg_drive) & " incomplete or missing !");
+				raise constraint_error;
+			end if;
 
-		if not summary.sections_processed.statistics then
-			put_line("WARNING : Section " & type_section'image(statistics) & " incomplete or missing !");
-		end if;
+			if not summary.sections_processed.input_cells_in_class_NA_nets then
+				put_line("ERROR : Section " & type_section'image(input_cells_in_class_NA_nets) & " incomplete or missing !");
+				raise constraint_error;
+			end if;
 
+			if not summary.sections_processed.statistics then
+				put_line("WARNING : Section " & type_section'image(statistics) & " incomplete or missing !");
+			end if;
+		end if;
 
 	end read_data_base;
 
@@ -128,7 +130,6 @@ begin
 
 	if action = udbinfo then
 		debug_level := natural'value(argument(5));
-		read_data_base;
 
 		inquired_item := type_item_udbinfo'value(argument(3));
 		put_line("item           : " & type_item_udbinfo'image(inquired_item));
@@ -136,11 +137,14 @@ begin
 		inquired_target := universal_string_type.to_bounded_string(argument(4));
 		put_line("name           : " & universal_string_type.to_string(inquired_target));
 
+		read_data_base;
 
 
-		if inquired_item = net then
-			print_net_info(universal_string_type.to_string(inquired_target));
-		end if;
+		case inquired_item is
+			when net => print_net_info(universal_string_type.to_string(inquired_target));
+			when bic => print_bic_info(universal_string_type.to_string(inquired_target));
+			when others => null;
+		end case;
 	end if;
 	
 
