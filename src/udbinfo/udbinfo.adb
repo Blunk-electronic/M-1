@@ -53,58 +53,63 @@ procedure udbinfo is
 		if not summary.sections_processed.all_sections then
 
 			if not summary.sections_processed.scanpath_configuration then
-				put_line("ERROR : Section " & type_section'image(scanpath_configuration) & " incomplete or missing !");
-				raise constraint_error;
+				put_line("WARNING : Section " & type_section'image(scanpath_configuration) & " incomplete or missing !");
+				--raise constraint_error;
 			end if;
 
 			if not summary.sections_processed.registers then
-				put_line("ERROR : Section " & type_section'image(registers) & " incomplete or missing !");
-				raise constraint_error;
+				put_line("WARNING : Section " & type_section'image(registers) & " incomplete or missing !");
+				--raise constraint_error;
+			end if;
+
+			if not summary.sections_processed.netlist then
+				put_line("WARNING : Section " & type_section'image(net_list) & " incomplete or missing !");
+				--raise constraint_error;
 			end if;
 
 			if not summary.sections_processed.locked_control_cells_in_class_EH_EL_NA_nets then
-				put_line("ERROR : Section " & type_section'image(locked_control_cells_in_class_EH_EL_NA_nets) & " incomplete or missing !");
-				raise constraint_error;
+				put_line("WARNING : Section " & type_section'image(locked_control_cells_in_class_EH_EL_NA_nets) & " incomplete or missing !");
+				--raise constraint_error;
 			end if;
 
 			if not summary.sections_processed.locked_control_cells_in_class_DH_DL_NR_nets then
-				put_line("ERROR : Section " & type_section'image(locked_control_cells_in_class_DH_DL_NR_nets) & " incomplete or missing !");
-				raise constraint_error;
+				put_line("WARNING : Section " & type_section'image(locked_control_cells_in_class_DH_DL_NR_nets) & " incomplete or missing !");
+				--raise constraint_error;
 			end if;
 
 			if not summary.sections_processed.locked_control_cells_in_class_PU_PD_nets then
-				put_line("ERROR : Section " & type_section'image(locked_control_cells_in_class_PU_PD_nets) & " incomplete or missing !");
-				raise constraint_error;
+				put_line("WARNING : Section " & type_section'image(locked_control_cells_in_class_PU_PD_nets) & " incomplete or missing !");
+				--raise constraint_error;
 			end if;
 
 			if not summary.sections_processed.locked_output_cells_in_class_PU_PD_nets then
-				put_line("ERROR : Section " & type_section'image(locked_output_cells_in_class_PU_PD_nets) & " incomplete or missing !");
-				raise constraint_error;
+				put_line("WARNING : Section " & type_section'image(locked_output_cells_in_class_PU_PD_nets) & " incomplete or missing !");
+				--raise constraint_error;
 			end if;
 
 			if not summary.sections_processed.locked_output_cells_in_class_DH_DL_nets then
-				put_line("ERROR : Section " & type_section'image(locked_output_cells_in_class_DH_DL_nets) & " incomplete or missing !");
-				raise constraint_error;
+				put_line("WARNING : Section " & type_section'image(locked_output_cells_in_class_DH_DL_nets) & " incomplete or missing !");
+				--raise constraint_error;
 			end if;
 
 			if not summary.sections_processed.static_expect then
-				put_line("ERROR : Section " & type_section'image(static_expect) & " incomplete or missing !");
-				raise constraint_error;
+				put_line("WARNING : Section " & type_section'image(static_expect) & " incomplete or missing !");
+				--raise constraint_error;
 			end if;
 
 			if not summary.sections_processed.atg_expect then
-				put_line("ERROR : Section " & type_section'image(atg_expect) & " incomplete or missing !");
-				raise constraint_error;
+				put_line("WARNING : Section " & type_section'image(atg_expect) & " incomplete or missing !");
+				--raise constraint_error;
 			end if;
 
 			if not summary.sections_processed.atg_drive then
-				put_line("ERROR : Section " & type_section'image(atg_drive) & " incomplete or missing !");
-				raise constraint_error;
+				put_line("WARNING : Section " & type_section'image(atg_drive) & " incomplete or missing !");
+				--raise constraint_error;
 			end if;
 
 			if not summary.sections_processed.input_cells_in_class_NA_nets then
-				put_line("ERROR : Section " & type_section'image(input_cells_in_class_NA_nets) & " incomplete or missing !");
-				raise constraint_error;
+				put_line("WARNING : Section " & type_section'image(input_cells_in_class_NA_nets) & " incomplete or missing !");
+				--raise constraint_error;
 			end if;
 
 			if not summary.sections_processed.statistics then
