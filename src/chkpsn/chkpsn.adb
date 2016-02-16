@@ -92,6 +92,8 @@ procedure chkpsn is
 
 
 	procedure add_to_options_net_list(
+		-- this procedure adds a primary net (incl. secondary nets) to a net list
+		-- multiple occurencs of nets in options file will be checked
 		list								: in out type_options_net_ptr;
 		name_given							: in string;
 		class_given							: in type_net_class;
@@ -111,7 +113,7 @@ procedure chkpsn is
 				-- if primary net already specified as primary net:
 				if universal_string_type.to_string(n.name) = name then
 					prog_position := "OP3100";
-					put_line("ERROR: Primary net '" & name & "' already specified as such !");
+					put_line("ERROR: Net '" & name & "' already specified as primary net !");
 					raise constraint_error;
 				end if;
 
@@ -131,6 +133,7 @@ procedure chkpsn is
 		end verify_primary_net_appears_only_once;
 
 		procedure verify_secondary_net_appears_only_once (name : string) is
+		-- checks if secondary net appears only once in options file
 			n	: type_options_net_ptr := options_net_ptr;
 		begin
 			prog_position := "OP4000";
@@ -143,7 +146,7 @@ procedure chkpsn is
 				-- if secondary net already specified as primary net:
 				if universal_string_type.to_string(n.name) = name then
 					prog_position := "OP4100";
-					put_line("ERROR: Secondary net '" & name & "' already specified as primary net !");
+					put_line("ERROR: Net '" & name & "' already specified as primary net !");
 					raise constraint_error;
 				end if;
 
@@ -164,25 +167,16 @@ procedure chkpsn is
 
 
 	begin
-		verify_primary_net_appears_only_once(name_given);
+		verify_primary_net_appears_only_once(name_given); -- checks other primary nets and their secondary nets in options file
 
-		if secondary_net_ct_given > 0 then
-			for s in 1..secondary_net_ct_given loop
-				if debug_level >= 30 then
-					put_line("checking secondary net : " & universal_string_type.to_string(list_of_secondary_net_names_given(s)) 
-						& "' for multiple occurences ...");
-				end if;
-				verify_secondary_net_appears_only_once(universal_string_type.to_string(list_of_secondary_net_names_given(s)));
-			end loop;
+		if debug_level >= 20 then
+			put_line("adding to options net list : " & name_given);
 		end if;
-
 
 		prog_position := "OP2000";
 		case secondary_net_ct_given is
 			when 0 => 
-				if debug_level >= 20 then
-					put_line("adding to options net list : " & name_given);
-				end if;
+				-- if no secondary nets present, the object to create does not have a list of secondary nets
 				list := new type_options_net'(
 					next => list,
 					name					=> universal_string_type.to_bounded_string(name_given),
@@ -190,10 +184,29 @@ procedure chkpsn is
 					has_secondaries			=> false,
 					secondary_net_count		=> 0
 					);
+
 			when others =>
-				if debug_level >= 20 then
-					put_line("adding to options net list : " & name_given);
-				end if;
+				-- if secondary nets present, the oject to create does have a list of secondary nets which needs checking:
+				for s in 1..secondary_net_ct_given loop
+					if debug_level >= 30 then
+						put_line("checking secondary net : " & universal_string_type.to_string(list_of_secondary_net_names_given(s)) 
+							& "' for multiple occurences ...");
+					end if;
+
+					-- make sure the list of secondary nets does contain unique net names (means no multiple occurences of secondary nets within
+					-- the same primary net
+					for i in s+1..secondary_net_ct_given loop
+						if universal_string_type.to_string(list_of_secondary_net_names_given(s)) = universal_string_type.to_string(list_of_secondary_net_names_given(i)) then
+							prog_position := "OP2100";
+							put_line("ERROR: Net '" & universal_string_type.to_string(list_of_secondary_net_names_given(s)) & "' must be specified only once as secondary net of this primary net !");
+							raise constraint_error;
+						end if;
+					end loop;
+
+					-- check if current secondary net occurs in other primary and secondary nets
+					verify_secondary_net_appears_only_once(universal_string_type.to_string(list_of_secondary_net_names_given(s)));
+				end loop;
+
 				list := new type_options_net'(
 					next => list,
 					name					=> universal_string_type.to_bounded_string(name_given),
@@ -203,8 +216,6 @@ procedure chkpsn is
 					list_of_secondary_net_names	=> list_of_secondary_net_names_given
 					);
 		end case;
-
-
 	end add_to_options_net_list;
 
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
@@ -246,61 +257,18 @@ begin
 	Set_Input(opt_file); -- set data source
 	while not end_of_file
 		loop
-			prog_position := "OP0000";
+			prog_position := "OP5000";
 			line_counter := line_counter + 1;
 			line_of_file := extended_string.to_bounded_string(get_line);
 			line_of_file := remove_comment_from_line(line_of_file);
 
 			if get_field_count(extended_string.to_string(line_of_file)) > 0 then -- if line contains anything
 				if debug_level >= 40 then
---					put_line("line read : ->" & to_string(line_of_file) & "<-");
 					put_line(extended_string.to_string(line_of_file));
 				end if;
 
 				if primary_net_section_entered then
 					-- we are inside primary net section
-
-					-- wait for end of primary net section
-					if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_section_mark'image(EndSection) then
-						primary_net_section_entered := false;
-
-						-- when end of primary net secion reached:
-						if debug_level >= 20 then
-							put_line("primary net name    : " & extended_string.to_string(name_of_current_primary_net));
-							put_line("primary net class   : " & type_net_class'image(class_of_current_primary_net));
-							if secondary_net_count > 0 then
-								put_line("secondary net count :" & natural'image(secondary_net_count));
-								put("secondary nets      : ");
-								for s in 1..secondary_net_count loop
-									put(universal_string_type.to_string(list_of_secondary_net_names(s)) & row_separator_0);
-								end loop;
-								new_line;
-							end if;
-						end if;
-
-						-- ask if the primary net (incl. secondary nets) may become member of class specified in options file
-						prog_position := "OP0100";
-						if m1_internal.query_render_net_class (
-							primary_net_name => extended_string.to_string(name_of_current_primary_net),
-							primary_net_class => class_of_current_primary_net,
-							list_of_secondary_net_names	=> list_of_secondary_net_names,
-							secondary_net_count	=> secondary_net_count
-							) then 
-								prog_position := "OP0110";
-								add_to_options_net_list(
-									list 								=> options_net_ptr,
-									name_given							=> extended_string.to_string(name_of_current_primary_net),
-									class_given							=> class_of_current_primary_net,
-									secondary_net_ct_given				=> secondary_net_count,
-									list_of_secondary_net_names_given	=> list_of_secondary_net_names
-								);
-								
-						end if;
-
-						secondary_net_count := 0; -- reset secondary net counter for next primary net
-
-					end if;
-
 
 					if secondary_net_section_entered then
 						-- we are inside secondary net section
@@ -308,24 +276,71 @@ begin
 						-- wait for end of secondary net section mark
 						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_subsection_mark'image(EndSubSection) then
 							secondary_net_section_entered := false;
-						end if;
 
 						-- count secondary nets and collect them in array list_of_secondary_net_names
-						if to_upper(get_field_from_line(line_of_file,1)) = type_secondary_net_name_identifier'image(net) then
+						--if to_upper(get_field_from_line(line_of_file,1)) = type_options_net_identifier'image(net) then
+						elsif to_upper(get_field_from_line(line_of_file,1)) = type_options_net_identifier'image(net) then
 							secondary_net_count := secondary_net_count + 1;
 							list_of_secondary_net_names(secondary_net_count) := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
--- 						else
--- 							put_line("ERROR: Identifier '" & type_secondary_net_name_identifier'image(net) & "' expected after primary net name !");
--- 							raise constraint_error;
-						end if; -- CS: check for misspelling of keyword "net" --type type_options_net_identifier is ( NET ); -- CS: use it !
-
+						else
+							prog_position := "OP5100";
+ 							put_line("ERROR: Keyword '" & type_secondary_net_name_identifier'image(net) & "' or '"
+								& type_end_of_subsection_mark'image(EndSubSection) & "' expected !");
+ 							raise constraint_error;
+						end if;
 					else
+						-- wait for end of primary net section
+						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_section_mark'image(EndSection) then
+							primary_net_section_entered := false;
+
+							-- when end of primary net section reached:
+							if debug_level >= 10 then
+								new_line;
+								put_line("primary net name    : " & extended_string.to_string(name_of_current_primary_net));
+								put_line("primary net class   : " & type_net_class'image(class_of_current_primary_net));
+								if secondary_net_count > 0 then
+									put_line("secondary net count :" & natural'image(secondary_net_count));
+									put("secondary nets      : ");
+									for s in 1..secondary_net_count loop
+										put(universal_string_type.to_string(list_of_secondary_net_names(s)) & row_separator_0);
+									end loop;
+									new_line;
+								end if;
+							end if;
+
+							-- ask if the primary net (incl. secondary nets) may become member of class specified in options file
+							-- if class request can be fulfilled, add net to options net list
+							prog_position := "OP5200";
+							if m1_internal.query_render_net_class (
+								primary_net_name => extended_string.to_string(name_of_current_primary_net),
+								primary_net_class => class_of_current_primary_net,
+								list_of_secondary_net_names	=> list_of_secondary_net_names,
+								secondary_net_count	=> secondary_net_count
+								) then 
+									prog_position := "OP5300";
+									add_to_options_net_list(
+										list 								=> options_net_ptr,
+										name_given							=> extended_string.to_string(name_of_current_primary_net),
+										class_given							=> class_of_current_primary_net,
+										secondary_net_ct_given				=> secondary_net_count,
+										list_of_secondary_net_names_given	=> list_of_secondary_net_names
+									);
+									
+							end if;
+							secondary_net_count := 0; -- reset secondary net counter for next primary net
+
 						-- if not secondary_net_section_entered yet, wait for "SubSection secondary_nets" header
 						-- if "SubSection secondary_nets" found, set secondary_net_section_entered flag
-						if to_upper(get_field_from_line(line_of_file,1)) = type_start_of_subsection_mark'image(SubSection) then
-							if to_upper(get_field_from_line(line_of_file,2)) = type_secondary_nets_section_identifier'image(secondary_nets) then
+						elsif to_upper(get_field_from_line(line_of_file,1)) = type_start_of_subsection_mark'image(SubSection) and
+							to_upper(get_field_from_line(line_of_file,2)) = type_secondary_nets_section_identifier'image(secondary_nets) then
 								secondary_net_section_entered := true;
-							end if;
+						else
+							prog_position := "OP5400";
+ 							put_line("ERROR: Keywords '" & type_start_of_subsection_mark'image(SubSection) 
+								& " " & type_secondary_nets_section_identifier'image(secondary_nets)
+								& "' or '" & type_end_of_section_mark'image(EndSection)
+								& "' expected !");
+ 							raise constraint_error;
 						end if;
 					end if;
 
@@ -337,12 +352,16 @@ begin
 					if to_upper(get_field_from_line(line_of_file,3)) = type_options_class_identifier'image(class) then
 						null; -- fine
 					else
-						prog_position := "OP0200";
+						prog_position := "OP5500";
 						put_line("ERROR: Identifier '" & type_options_class_identifier'image(class) & "' expected after primary net name !");
 						raise constraint_error;
 					end if;
 					class_of_current_primary_net := type_net_class'value(get_field_from_line(line_of_file,4));
 					primary_net_section_entered := true;
+				else
+					prog_position := "OP5600";
+					put_line("ERROR: Keyword '" & type_start_of_section_mark'image(Section) & "' expected !");
+					raise constraint_error;
 				end if;
 
 			end if;
@@ -351,7 +370,8 @@ begin
 
 	set_input(standard_input);
 	close(opt_file);
-
+	-- options net list ready. pointer options_net_ptr points to list !
+	-- data base net list ready, pointer net_ptr points to list !
 
 
 	-- extract from current udb the sections "scanpath_configuration" and "registers" in preliminary data base
@@ -371,7 +391,7 @@ begin
 	set_input(data_base_file); -- set data source
 	prog_position := "EX1000";
 	line_counter := 0;
-	while line_counter <= udb_summary.line_number_end_of_section_netlist
+	while line_counter <= udb_summary.line_number_end_of_section_registers
 		loop
 			prog_position := "EX2000";
 			line_counter := line_counter + 1;
