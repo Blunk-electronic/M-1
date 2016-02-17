@@ -37,17 +37,17 @@
 --									- no need to check bidir or output3 pin for non-self-controlling output cell
 
 with Ada.Text_IO;			use Ada.Text_IO;
-with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
-with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
-with Ada.Characters.Handling;
-use Ada.Characters.Handling;
+--with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
+--with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
+with Ada.Characters.Handling; use Ada.Characters.Handling;
 
 --with System.OS_Lib;   use System.OS_Lib;
-with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+--with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Strings.Bounded; 	use Ada.Strings.Bounded;
 with Ada.Strings.Fixed; 	use Ada.Strings.Fixed;
+with Ada.Strings; 			use Ada.Strings;
 with Ada.Numerics;			use Ada.Numerics;
-with Ada.Numerics.Elementary_Functions;	use Ada.Numerics.Elementary_Functions;
+--with Ada.Numerics.Elementary_Functions;	use Ada.Numerics.Elementary_Functions;
 
 --with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
 --with Ada.Task_Identification;  use Ada.Task_Identification;
@@ -56,10 +56,6 @@ with Ada.Exceptions; use Ada.Exceptions;
 with GNAT.OS_Lib;   	use GNAT.OS_Lib;
 with Ada.Command_Line;	use Ada.Command_Line;
 with Ada.Directories;	use Ada.Directories;
- 
-with Ada.Calendar;				use Ada.Calendar;
-with Ada.Calendar.Formatting;	use Ada.Calendar.Formatting;
-with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
 
 with m1;
 with m1_internal; use m1_internal;
@@ -81,6 +77,8 @@ procedure chkpsn is
 
 	secondary_net_count					: natural := 0;
 	list_of_secondary_net_names			: type_list_of_secondary_net_names;
+
+	total_options_net_count				: natural := 0;
 
 	procedure read_data_base is
 	begin
@@ -186,7 +184,7 @@ procedure chkpsn is
 					);
 
 			when others =>
-				-- if secondary nets present, the oject to create does have a list of secondary nets which needs checking:
+				-- if secondary nets present, the object to create does have a list of secondary nets which needs checking:
 				for s in 1..secondary_net_ct_given loop
 					if debug_level >= 30 then
 						put_line("checking secondary net : " & universal_string_type.to_string(list_of_secondary_net_names_given(s)) 
@@ -216,7 +214,98 @@ procedure chkpsn is
 					list_of_secondary_net_names	=> list_of_secondary_net_names_given
 					);
 		end case;
+
+		-- update net counter of options file by: one primary net + number of attached secondaries
+		total_options_net_count := total_options_net_count + 1 + secondary_net_count;
+
 	end add_to_options_net_list;
+
+
+	procedure make_new_net_list is
+		-- with the two net lists pointed to by net_ptr and options_net_ptr, a new net list is created and appended to the
+		-- preliminary data base
+		-- the class requirements and secondary net dependencies from the options file are taken into account
+		o	: type_options_net_ptr 	:= options_net_ptr;
+
+		procedure dump_net_content (name : string; spacing_from_left : positive) is
+		-- from a given net name, the whole content (means all devices) is dumped into the preliminary data base
+			d : type_net_ptr := net_ptr;
+		begin
+			while d /= null loop
+				if universal_string_type.to_string(d.name) = name then
+					-- IC301 ? XC9536 PLCC-S44 2  pb00_00 | 107 bc_1 input x | 106 bc_1 output3 x 105 0 z
+					for p in 1..d.part_ct loop
+						put(spacing_from_left*row_separator_0 & universal_string_type.to_string(d.pin(p).device_name)
+							& row_separator_0 & type_device_class'image(d.pin(p).device_class)
+							& row_separator_0 & universal_string_type.to_string(d.pin(p).device_value)
+							& row_separator_0 & universal_string_type.to_string(d.pin(p).device_package)
+							& row_separator_0 & universal_string_type.to_string(d.pin(p).device_pin_name)
+						);
+						if d.pin(p).is_bscan_capable then
+							put(row_separator_0 & universal_string_type.to_string(d.pin(p).device_port_name));
+							if d.pin(p).cell_info.input_cell_id /= -1 then
+								put(row_separator_1 & trim(natural'image(d.pin(p).cell_info.input_cell_id),left)
+									& row_separator_0 & type_boundary_register_cell'image(d.pin(p).cell_info.input_cell_type)
+									& row_separator_0 & type_cell_function'image(d.pin(p).cell_info.input_cell_function)
+									& row_separator_0 & type_bit_char_class_1'image(d.pin(p).cell_info.input_cell_safe_value)(2)
+									);
+							end if;
+
+							if d.pin(p).cell_info.output_cell_id /= -1 then
+								put(row_separator_1 & trim(natural'image(d.pin(p).cell_info.output_cell_id),left)
+									& row_separator_0 & type_boundary_register_cell'image(d.pin(p).cell_info.output_cell_type)
+									& row_separator_0 & type_cell_function'image(d.pin(p).cell_info.output_cell_function)
+									& row_separator_0 & type_bit_char_class_1'image(d.pin(p).cell_info.output_cell_safe_value)(2)
+									);
+
+								if d.pin(p).cell_info.control_cell_id /= -1 then
+									put(row_separator_0 & trim(natural'image(d.pin(p).cell_info.control_cell_id),left)
+										& row_separator_0 & type_bit_char_class_0'image(d.pin(p).cell_info.disable_value)(2)
+										& row_separator_0 & type_disable_result'image(d.pin(p).cell_info.disable_result)
+										);
+								end if;
+							end if;
+						end if;
+						new_line;
+					end loop;
+					exit;
+				end if;
+				d := d.next;
+			end loop;
+		end dump_net_content;
+
+	begin
+		while o /= null loop
+			new_line;
+			-- write primary net header like "SubSection LED0 class NR" (name and class taken from options net list)
+			put_line(column_separator_0);
+			put_line(row_separator_0 & "SubSection" & row_separator_0 & universal_string_type.to_string(o.name) & row_separator_0 
+				& "class" & row_separator_0 & type_net_class'image(o.class));
+
+			-- the net will be searched for in the net list and its content dumped into the preliminary data base
+			dump_net_content(name => universal_string_type.to_string(o.name), spacing_from_left => 2);
+
+			-- put end of primary net mark
+			put_line(row_separator_0 & "EndSubSection");
+
+			-- if there are secondary nets specified in options net list, dump them one by one into the preliminary data base
+			if o.has_secondaries then
+				put_line(row_separator_0 & "SubSection secondary_nets_of" & row_separator_0 & universal_string_type.to_string(o.name));
+				new_line;
+				for s in 1..o.secondary_net_count loop
+					put_line(2*row_separator_0 & "SubSection" & row_separator_0 & universal_string_type.to_string(o.list_of_secondary_net_names(s)));
+					dump_net_content(name => universal_string_type.to_string(o.list_of_secondary_net_names(s)), spacing_from_left => 4);
+					put_line(2*row_separator_0 & "EndSubSection");
+					new_line;
+				end loop;
+				put_line(row_separator_0 & "EndSubSection secondary_nets_of" & row_separator_0 & universal_string_type.to_string(o.name));
+				put_line(column_separator_0);
+				new_line;
+			end if;
+
+			o := o.next;
+		end loop;
+	end make_new_net_list;
 
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
@@ -276,6 +365,10 @@ begin
 						-- wait for end of secondary net section mark
 						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_subsection_mark'image(EndSubSection) then
 							secondary_net_section_entered := false;
+							if secondary_net_count = 0 then
+								put_line("WARNING: Primary net '" & extended_string.to_string(name_of_current_primary_net) 
+									& "' has an empty secondary net subsection !");
+							end if;
 
 						-- count secondary nets and collect them in array list_of_secondary_net_names
 						--if to_upper(get_field_from_line(line_of_file,1)) = type_options_net_identifier'image(net) then
@@ -373,6 +466,13 @@ begin
 	-- options net list ready. pointer options_net_ptr points to list !
 	-- data base net list ready, pointer net_ptr points to list !
 
+-- CS: compare net numbers ?
+--	put_line("comparing net count");
+--	if total_options_net_count < udb_summary.net_count_statistics.total then
+--		put_line("WARNING: Number of nets found in options file differs from number those in data base !");
+		put_line("options net count   : " & natural'image(total_options_net_count));
+		put_line("data base net count : " & natural'image(udb_summary.net_count_statistics.bs_testable));
+--	end if;
 
 	-- extract from current udb the sections "scanpath_configuration" and "registers" in preliminary data base
 	prog_position := "EX0000";
@@ -389,6 +489,7 @@ begin
 		);
 
 	set_input(data_base_file); -- set data source
+	set_output(data_base_file_preliminary); -- set data sink
 	prog_position := "EX1000";
 	line_counter := 0;
 	while line_counter <= udb_summary.line_number_end_of_section_registers
@@ -397,11 +498,22 @@ begin
 			line_counter := line_counter + 1;
 			line_of_file := extended_string.to_bounded_string(get_line);
 			prog_position := "EX2100";
-			put_line(data_base_file_preliminary,extended_string.to_string(line_of_file));
+			put_line(extended_string.to_string(line_of_file));
 		end loop;
 	prog_position := "EX2200";
 	set_input(standard_input);
 	close(data_base_file);
+
+
+	put_line("Section netlist");
+	put_line(column_separator_0);
+	put_line("-- modified by primary/secondary/class builder version " & version);
+	put_line("-- date: " & date_now & " (YYYY-MM-DD HH:MM:SS)");
+	new_line(2);
+
+	make_new_net_list;
+
+
 	close(data_base_file_preliminary);
 
 	exception
