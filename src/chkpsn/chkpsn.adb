@@ -90,7 +90,7 @@ procedure chkpsn is
 
 
 	procedure add_to_options_net_list(
-		-- this procedure adds a primary net (incl. secondary nets) to a net list
+		-- this procedure adds a primary net (incl. secondary nets) to the options net list
 		-- multiple occurencs of nets in options file will be checked
 		list								: in out type_options_net_ptr;
 		name_given							: in string;
@@ -227,10 +227,281 @@ procedure chkpsn is
 		-- the class requirements and secondary net dependencies from the options file are taken into account
 		o	: type_options_net_ptr 	:= options_net_ptr;
 
-		procedure dump_net_content (name : string; spacing_from_left : positive) is
+		procedure dump_net_content (
 		-- from a given net name, the whole content (means all devices) is dumped into the preliminary data base
+			name 				: string; 
+			level 				: type_net_level; 
+
+			-- for secondary nets, the superordinated primary net is taken here. otherwise the default is ""
+			-- this argument is required for writing cell lists, where reference to primary nets is required
+			primary_net_is		: universal_string_type.bounded_string := universal_string_type.to_bounded_string("");
+
+			class 				: type_net_class; 
+			spacing_from_left 	: positive
+			) is
 			d : type_net_ptr := net_ptr;
-		begin
+
+			procedure update_cell_lists( d : type_net_ptr ) is
+			-- updates cell lists by the net where d points to (in data base net list)
+				c : type_net_ptr := d;
+
+				procedure add_to_locked_control_cells_in_class_EH_EL_NA_nets(
+					list				: in out type_cell_list_locked_control_cells_in_class_EH_EL_NA_nets_ptr;
+					class_given			: type_net_class;
+					level_given			: type_net_level;
+					net_given			: universal_string_type.bounded_string;
+					device_given		: universal_string_type.bounded_string;
+					pin_given			: universal_string_type.bounded_string;
+					cell_given			: natural;
+					disable_value_given	: type_bit_char_class_0
+					) is
+				begin
+					null;
+				end add_to_locked_control_cells_in_class_EH_EL_NA_nets;
+
+				procedure add_to_locked_control_cells_in_class_DH_DL_NR_nets(
+					list				: in out type_cell_list_locked_control_cells_in_class_DH_DL_NR_nets_ptr;
+					class_given			: type_net_class;
+					level_given			: type_net_level;
+					net_given			: universal_string_type.bounded_string;
+					device_given		: universal_string_type.bounded_string;
+					pin_given			: universal_string_type.bounded_string;
+					cell_given			: natural;
+					locked_to_enable_state_given	: natural;
+					enable_value_given				: type_bit_char_class_0 := '0';
+					disable_value_given				: type_bit_char_class_0 := '0'
+					) is
+				begin
+					null;
+				end add_to_locked_control_cells_in_class_DH_DL_NR_nets;
+
+				procedure add_to_locked_control_cells_in_class_PU_PD_nets(
+					list				: in out type_cell_list_locked_control_cells_in_class_PU_PD_nets_ptr;
+					class_given			: type_net_class;
+					level_given			: type_net_level;
+					net_given			: universal_string_type.bounded_string;
+					device_given		: universal_string_type.bounded_string;
+					pin_given			: universal_string_type.bounded_string;
+					cell_given			: natural;
+					disable_value_given	: type_bit_char_class_0
+					) is
+				begin
+					null;
+				end add_to_locked_control_cells_in_class_PU_PD_nets;
+
+				procedure add_to_locked_output_cells_in_class_PU_PD_nets(
+					list				: in out type_cell_list_locked_output_cells_in_class_PU_PD_nets;
+					class_given			: type_net_class;
+					level_given			: type_net_level := primary; -- because this is always a primary net
+					net_given			: universal_string_type.bounded_string;
+					device_given		: universal_string_type.bounded_string;
+					pin_given			: universal_string_type.bounded_string;
+					cell_given			: natural;
+					drive_value_given	: type_bit_char_class_0
+					) is
+				begin
+					null;
+				end add_to_locked_output_cells_in_class_PU_PD_nets;
+
+				procedure add_to_locked_output_cells_in_class_DH_DL_nets(
+					list				: in out type_cell_list_locked_output_cells_in_class_DH_DL_nets_ptr;
+					class_given			: type_net_class;
+					level_given			: type_net_level := primary; -- because this is always a primary net
+					net_given			: universal_string_type.bounded_string;
+					device_given		: universal_string_type.bounded_string;
+					pin_given			: universal_string_type.bounded_string;
+					cell_given			: natural;
+					drive_value_given	: type_bit_char_class_0
+					) is
+				begin
+					null;
+				end add_to_locked_output_cells_in_class_DH_DL_nets;
+
+				procedure add_to_static_expect(
+					list				: in out type_cell_list_static_expect_ptr;
+					class_given			: type_net_class;
+					level_given			: type_net_level;
+					net_given			: universal_string_type.bounded_string;
+					device_given		: universal_string_type.bounded_string;
+					pin_given			: universal_string_type.bounded_string;
+					cell_given			: natural;
+					expect_value_given	: type_bit_char_class_0
+					) is
+				begin
+					list := new type_cell_list_static_expect'(
+						next 			=> list,
+						class			=> class_given,
+						level			=> level_given,
+						net				=> net_given,
+						device			=> device_given,
+						pin				=> pin_given,
+						cell			=> cell_given,
+						expect_value	=> expect_value_given
+						);
+				end add_to_static_expect;
+
+				procedure add_to_atg_expect(
+					list				: in out type_cell_list_atg_expect_ptr;
+					class_given			: type_net_class;
+					level_given			: type_net_level;
+					net_given			: universal_string_type.bounded_string;
+					device_given		: universal_string_type.bounded_string;
+					pin_given			: universal_string_type.bounded_string;
+					cell_given			: natural;
+					primary_net_is_given: universal_string_type.bounded_string
+					) is
+				begin
+					case level_given is
+						when primary =>
+							list := new type_cell_list_atg_expect'(
+								next 			=> list,
+								class			=> class_given,
+								level			=> primary,
+								net				=> net_given,
+								device			=> device_given,
+								pin				=> pin_given,
+								cell			=> cell_given
+								);
+						when secondary =>
+							list := new type_cell_list_atg_expect'(
+								next 			=> list,
+								class			=> class_given,
+								level			=> secondary,
+								net				=> net_given,
+								device			=> device_given,
+								pin				=> pin_given,
+								cell			=> cell_given,
+								primary_net_is	=> primary_net_is_given -- reference to primary net required here
+								);
+					end case;
+				end add_to_atg_expect;
+
+				procedure add_to_atg_drive(
+					list				: in out type_cell_list_atg_drive_ptr;
+					class_given			: type_net_class;
+					level_given			: type_net_level := primary; -- because this is always a primary net
+					net_given			: universal_string_type.bounded_string;
+					device_given		: universal_string_type.bounded_string;
+					pin_given			: universal_string_type.bounded_string;
+					cell_given			: natural;
+					drive_by_control_cell_given	: boolean;
+					inverted_given		: boolean := false -- default in case it is not required
+					) is
+				begin
+					null;
+				end add_to_atg_drive;
+
+				procedure add_to_input_cells_in_class_NA_nets(
+					list				: in out type_cell_list_input_cells_in_class_NA_nets_ptr;
+					class_given			: type_net_class := NA; -- because this is always a class NA net
+					level_given			: type_net_level;
+					net_given			: universal_string_type.bounded_string;
+					device_given		: universal_string_type.bounded_string;
+					pin_given			: universal_string_type.bounded_string;
+					cell_given			: natural;
+					primary_net_is_given: universal_string_type.bounded_string
+					) is
+				begin
+					case level_given is
+						when primary =>
+							list := new type_cell_list_input_cells_in_class_NA_nets'(
+								next 			=> list,
+								class			=> NA,
+								level			=> primary,
+								net				=> net_given,
+								device			=> device_given,
+								pin				=> pin_given,
+								cell			=> cell_given
+								);
+						when secondary =>
+							list := new type_cell_list_input_cells_in_class_NA_nets'(
+								next 			=> list,
+								class			=> NA,
+								level			=> secondary,
+								net				=> net_given,
+								device			=> device_given,
+								pin				=> pin_given,
+								cell			=> cell_given,
+								primary_net_is	=> primary_net_is_given -- reference to primary net required here
+								);
+					end case;
+				end add_to_input_cells_in_class_NA_nets;
+
+
+			begin -- update_cell_lists
+				for p in 1..c.part_ct loop
+
+					if c.pin(p).is_bscan_capable then
+
+						-- THIS IS ABOUT INPUT CELLS:
+						-- add all input cells of static and dynamic (atg) nets to cell list "static_expect" and "atg_expect"
+						-- since all input cells are listening, the net level (primary/secondary) does not matter
+						-- here and will not be evaluated
+						if c.pin(p).cell_info.input_cell_id /= -1 then -- if pin does have an input cell
+							case class is
+								when EH | DH =>
+									add_to_static_expect(
+										list			=> cell_list_static_expect_ptr,
+										class_given		=> class,
+										level_given		=> level,
+										net_given		=> universal_string_type.to_bounded_string(name),
+										device_given	=> c.pin(p).device_name,
+										pin_given		=> c.pin(p).device_pin_name,
+										cell_given		=> c.pin(p).cell_info.input_cell_id,
+										expect_value_given	=> '1'
+									);
+								when EL | DL =>
+									add_to_static_expect(
+										list			=> cell_list_static_expect_ptr,
+										class_given		=> class,
+										level_given		=> level,
+										net_given		=> universal_string_type.to_bounded_string(name),
+										device_given	=> c.pin(p).device_name,
+										pin_given		=> c.pin(p).device_pin_name,
+										cell_given		=> c.pin(p).cell_info.input_cell_id,
+										expect_value_given	=> '0'
+									);
+								when NR | PU | PD =>
+									add_to_atg_expect(
+										list			=> cell_list_atg_expect_ptr,
+										class_given		=> class,
+										level_given		=> level, 
+										-- if secondary net, the argument "primary_net_is" will be evaluated
+										primary_net_is_given	=> primary_net_is,
+										net_given		=> universal_string_type.to_bounded_string(name),
+										device_given	=> c.pin(p).device_name,
+										pin_given		=> c.pin(p).device_pin_name,
+										cell_given		=> c.pin(p).cell_info.input_cell_id
+										);
+								when NA =>
+									add_to_input_cells_in_class_NA_nets(
+										list			=> cell_list_input_cells_in_class_NA_nets_ptr,
+										--class_given		=> class, -- no need, class NA set inside add_to_input_cells_in_class_NA_nets
+										level_given		=> level, 
+										-- if secondary net, the argument "primary_net_is" will be evaluated
+										primary_net_is_given	=> primary_net_is,
+										net_given		=> universal_string_type.to_bounded_string(name),
+										device_given	=> c.pin(p).device_name,
+										pin_given		=> c.pin(p).device_pin_name,
+										cell_given		=> c.pin(p).cell_info.input_cell_id
+										);
+							end case; -- class
+						end if;
+
+
+						-- THIS IS ABOUT CONTROL AND OUTPUT CELLS:
+						case level is
+							when primary =>
+								null;
+							when secondary =>
+								null;
+						end case;
+
+					end if; -- if pin is scan capable
+				end loop;
+			end update_cell_lists;
+
+		begin -- dump_net_content
 			while d /= null loop
 				if universal_string_type.to_string(d.name) = name then
 					-- IC301 ? XC9536 PLCC-S44 2  pb00_00 | 107 bc_1 input x | 106 bc_1 output3 x 105 0 z
@@ -265,6 +536,10 @@ procedure chkpsn is
 										);
 								end if;
 							end if;
+
+							-- now that d points to the net in data base net list, the new cell list can be updated regarding this net
+							update_cell_lists( d ); -- so we pass pointer d
+
 						end if;
 						new_line;
 					end loop;
@@ -274,7 +549,7 @@ procedure chkpsn is
 			end loop;
 		end dump_net_content;
 
-	begin
+	begin -- make_new_net_list
 		while o /= null loop
 			new_line;
 			-- write primary net header like "SubSection LED0 class NR" (name and class taken from options net list)
@@ -282,8 +557,13 @@ procedure chkpsn is
 			put_line(row_separator_0 & "SubSection" & row_separator_0 & universal_string_type.to_string(o.name) & row_separator_0 
 				& "class" & row_separator_0 & type_net_class'image(o.class));
 
-			-- the net will be searched for in the net list and its content dumped into the preliminary data base
-			dump_net_content(name => universal_string_type.to_string(o.name), spacing_from_left => 2);
+			-- this is a primary net. it will be searched for in the net list and its content dumped into the preliminary data base
+			dump_net_content(
+				name => universal_string_type.to_string(o.name), 
+				level => primary,
+				class => o.class,
+				spacing_from_left => 2
+				);
 
 			-- put end of primary net mark
 			put_line(row_separator_0 & "EndSubSection");
@@ -294,7 +574,13 @@ procedure chkpsn is
 				new_line;
 				for s in 1..o.secondary_net_count loop
 					put_line(2*row_separator_0 & "SubSection" & row_separator_0 & universal_string_type.to_string(o.list_of_secondary_net_names(s)));
-					dump_net_content(name => universal_string_type.to_string(o.list_of_secondary_net_names(s)), spacing_from_left => 4);
+					dump_net_content(
+						name => universal_string_type.to_string(o.list_of_secondary_net_names(s)),
+						level => secondary,
+						primary_net_is => o.name, -- required for writing some cell lists where reference to primary net is required
+						class => o.class, 
+						spacing_from_left => 4
+						);
 					put_line(2*row_separator_0 & "EndSubSection");
 					new_line;
 				end loop;
