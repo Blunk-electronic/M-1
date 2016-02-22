@@ -58,6 +58,12 @@ procedure udbinfo is
 
 	inquired_item	: type_item_udbinfo;
 	inquired_target	: universal_string_type.bounded_string;
+	separator					: string (1..1) := "#";
+	separator_position			: natural;
+	length_of_inquired_target	: natural;
+	inquired_target_sub_1		: universal_string_type.bounded_string;
+	inquired_target_sub_2		: universal_string_type.bounded_string;
+
 
 	debug_level 	: natural := 0;
 
@@ -173,6 +179,18 @@ begin
 		case inquired_item is
 			when net => print_net_info(universal_string_type.to_string(inquired_target));
 			when bic => print_bic_info(universal_string_type.to_string(inquired_target));
+			when scc => 
+				separator_position := universal_string_type.index(inquired_target,separator);
+				length_of_inquired_target := universal_string_type.length(inquired_target);
+				inquired_target_sub_1 := universal_string_type.to_bounded_string
+						(universal_string_type.slice(inquired_target,1,separator_position-1));
+				inquired_target_sub_2 := universal_string_type.to_bounded_string
+						(universal_string_type.slice(inquired_target,separator_position+1, length_of_inquired_target));
+
+				print_scc_info(
+					bic_name 			=> universal_string_type.to_string(inquired_target_sub_1),
+					control_cell_id		=> natural'value(universal_string_type.to_string(inquired_target_sub_2))
+					);
 			when others => null;
 		end case;
 	end if;
