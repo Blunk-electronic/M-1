@@ -256,7 +256,16 @@ procedure chkpsn is
 					disable_value_given	: type_bit_char_class_0
 					) is
 				begin
-					null;
+					list := new type_cell_list_locked_control_cells_in_class_EH_EL_NA_nets'(
+						next 			=> list,
+						class			=> class_given,
+						level			=> level_given,
+						net				=> net_given,
+						device			=> device_given,
+						pin				=> pin_given,
+						cell			=> cell_given,
+						disable_value	=> disable_value_given
+						);
 				end add_to_locked_control_cells_in_class_EH_EL_NA_nets;
 
 				procedure add_to_locked_control_cells_in_class_DH_DL_NR_nets(
@@ -267,12 +276,37 @@ procedure chkpsn is
 					device_given		: universal_string_type.bounded_string;
 					pin_given			: universal_string_type.bounded_string;
 					cell_given			: natural;
-					locked_to_enable_state_given	: natural;
+					locked_to_enable_state_given	: boolean;
 					enable_value_given				: type_bit_char_class_0 := '0';
 					disable_value_given				: type_bit_char_class_0 := '0'
 					) is
 				begin
-					null;
+					case locked_to_enable_state_given is
+						when true =>
+							list := new type_cell_list_locked_control_cells_in_class_DH_DL_NR_nets'(
+								next 			=> list,
+								class			=> class_given,
+								level			=> level_given,
+								net				=> net_given,
+								device			=> device_given,
+								pin				=> pin_given,
+								cell			=> cell_given,
+								locked_to_enable_state	=> true,
+								enable_value			=> enable_value_given
+								);
+						when false =>
+							list := new type_cell_list_locked_control_cells_in_class_DH_DL_NR_nets'(
+								next 			=> list,
+								class			=> class_given,
+								level			=> level_given,
+								net				=> net_given,
+								device			=> device_given,
+								pin				=> pin_given,
+								cell			=> cell_given,
+								locked_to_enable_state	=> false,
+								disable_value			=> disable_value_given
+								);
+					end case;
 				end add_to_locked_control_cells_in_class_DH_DL_NR_nets;
 
 				procedure add_to_locked_control_cells_in_class_PU_PD_nets(
@@ -494,7 +528,23 @@ procedure chkpsn is
 							when primary =>
 								null;
 							when secondary =>
-								null;
+								-- all control cells in secondary nets must be in disable state
+								if c.pin(p).cell_info.control_cell_id /= -1 then -- if pin has a control cell
+									case class is
+										when EL | EH | NA =>
+											add_to_locked_control_cells_in_class_EH_EL_NA_nets(
+												list				=> cell_list_locked_control_cells_in_class_EH_EL_NA_nets_ptr,
+												class_given			=> class,
+												level_given			=> level,
+												net_given			=> universal_string_type.to_bounded_string(name),
+												device_given		=> c.pin(p).device_name,
+												pin_given			=> c.pin(p).device_pin_name,
+												cell_given			=> c.pin(p).cell_info.control_cell_id,
+												disable_value_given	=> c.pin(p).cell_info.disable_value
+												);
+										when others => null;
+									end case;
+								end if;
 						end case;
 
 					end if; -- if pin is scan capable
