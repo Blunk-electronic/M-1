@@ -104,7 +104,7 @@ procedure chkpsn is
 		begin
 			prog_position := "OP3000";
 			while n /= null loop
-				if debug_level >= 30 then
+				if debug_level >= 50 then
 					put_line("searching primary net : " & universal_string_type.to_string(n.name) & " ...");
 				end if;
 
@@ -493,7 +493,13 @@ procedure chkpsn is
 					pin_given			: universal_string_type.bounded_string;
 					cell_given			: natural;
 					controlled_by_control_cell_given	: boolean; -- if controlled by output cell -> false
+					-- examples for controlled_by_control_cell_given = true:
+					-- class PU primary_net /CPU_WR device IC300 pin 26 control_cell 6 inverted yes
+					-- class PD primary_net /DRV_EN device IC301 pin 27 control_cell 9 inverted no
 					control_cell_inverted_given			: boolean := false -- default in case it is not required
+
+					-- example for controlled_by_control_cell_given = false:
+					-- class NR primary_net LED7 device IC303 pin 2 output_cell 7
 					) is
 				begin
 					case controlled_by_control_cell_given is
@@ -562,12 +568,84 @@ procedure chkpsn is
 					end case;
 				end add_to_input_cells_in_class_NA_nets;
 
+				procedure disable_remaining_drivers ( d : type_net_ptr) is
+					sj	: type_shared_control_cell_journal_ptr := shared_control_cell_journal_ptr;
+				begin
+					-- FIND INPUT CONTROL CELLS TO BE DISABLED:
+					prog_position := "DD1000";
+					for p in 1..d.part_ct loop -- loop through pin list of given net
+						if d.pin(p).is_bscan_capable then -- care for scan capable pins only
+							-- pin must have a control cell and an output cell
+							if d.pin(p).cell_info.control_cell_id /= -1 and d.pin(p).cell_info.output_cell_id /= -1 then 
+								prog_position := "DD1100";
+								if not d.pin(p).cell_info.selected_as_driver then -- care for drivers not marked as active
+
+									if debug_level >= 30 then
+										put_line(standard_output,"disabling driver pin : " 
+											& row_separator_0 & universal_string_type.to_string(d.pin(p).device_name)
+											& row_separator_0 & universal_string_type.to_string(d.pin(p).device_pin_name)
+											);
+									end if;
+
+									-- if non-shared control cell, just turn it off
+									if not d.pin(p).cell_info.control_cell_shared then
+										prog_position := "DD1300";
+										case class is
+											when DH | DL | NR =>
+												-- add control cell to list
+												prog_position := "DD1400";
+												add_to_locked_control_cells_in_class_DH_DL_NR_nets(
+													-- prepares writing a cell list entry like:
+													-- class NR primary_net LED0 device IC303 pin 10 control_cell 16 locked_to enable_value 0
+													-- class NR primary_net LED1 device IC303 pin 9 control_cell 16 locked_to enable_value 0
+													-- class NR secondary_net LED7_R device IC301 pin 13 control_cell 75 locked_to disable_value 0
+													list				=> cell_list_locked_control_cells_in_class_DH_DL_NR_nets_ptr,
+													class_given			=> class,
+													level_given			=> level,
+													net_given			=> universal_string_type.to_bounded_string(name),
+													device_given		=> d.pin(p).device_name,
+													pin_given			=> d.pin(p).device_pin_name,
+													cell_given			=> d.pin(p).cell_info.control_cell_id,
+													locked_to_enable_state_given	=> false, -- the pin is to be disabled
+													disable_value_given				=> d.pin(p).cell_info.disable_value
+													);
+											when PU | PD =>
+												-- add control cell to list
+												prog_position := "DD1500";
+												add_to_locked_control_cells_in_class_PU_PD_nets(
+													-- prepares writing a cell list entry like:
+													-- class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
+													-- class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to enable_value 0
+													-- class PD secondary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
+													list				=> cell_list_locked_control_cells_in_class_PU_PD_nets_ptr,
+													class_given			=> class,
+													level_given			=> level,
+													net_given			=> universal_string_type.to_bounded_string(name),
+													device_given		=> d.pin(p).device_name,
+													pin_given			=> d.pin(p).device_pin_name,
+													cell_given			=> d.pin(p).cell_info.control_cell_id,
+													locked_to_enable_state_given	=> false, -- the pin is to be disabled
+													disable_value_given				=> d.pin(p).cell_info.disable_value
+													);
+											when others => null;
+										end case;
+									else
+									-- if shared control cell
+										prog_position := "DD2000";
+										null; -- CS: look up shared_control_cell_journal and inquire cell status and usage
+									end if; -- if non-shared control cell, just turn it off
+								end if;  -- care for drivers not marked as active
+							end if; -- pin must have a control cell and an output cell
+						end if;
+					end loop;
+				end disable_remaining_drivers;
 
 			begin -- update_cell_lists
 				-- d is a net pointer and points to the net being processed
 
 				-- FIND INPUT CELLS AND CONTROL CELLS TO BE DISABLED:
 				for p in 1..d.part_ct loop -- loop through pin list of given net
+					prog_position := "UC1000";
 
 					if d.pin(p).is_bscan_capable then -- care for scan capable pins only
 
@@ -575,9 +653,12 @@ procedure chkpsn is
 						-- add all input cells of static and dynamic (atg) nets to cell list "static_expect" and "atg_expect"
 						-- since all input cells are listening, the net level (primary/secondary) does not matter
 						-- here and will not be evaluated
+						prog_position := "UC1100";
 						if d.pin(p).cell_info.input_cell_id /= -1 then -- if pin does have an input cell
+							prog_position := "UC1200";
 							case class is
 								when EH | DH =>
+									prog_position := "UC1300";
 									add_to_static_expect(
 										list			=> cell_list_static_expect_ptr,
 										class_given		=> class,
@@ -589,6 +670,7 @@ procedure chkpsn is
 										expect_value_given	=> '1'
 									);
 								when EL | DL =>
+									prog_position := "UC1400";
 									add_to_static_expect(
 										list			=> cell_list_static_expect_ptr,
 										class_given		=> class,
@@ -600,6 +682,7 @@ procedure chkpsn is
 										expect_value_given	=> '0'
 									);
 								when NR | PU | PD =>
+									prog_position := "UC1500";
 									add_to_atg_expect(
 										list			=> cell_list_atg_expect_ptr,
 										class_given		=> class,
@@ -612,6 +695,7 @@ procedure chkpsn is
 										cell_given		=> d.pin(p).cell_info.input_cell_id
 										);
 								when NA =>
+									prog_position := "UC1600";
 									add_to_input_cells_in_class_NA_nets(
 										list			=> cell_list_input_cells_in_class_NA_nets_ptr,
 										--class_given		=> class, -- no need, class NA set inside add_to_input_cells_in_class_NA_nets
@@ -629,8 +713,10 @@ procedure chkpsn is
 						-- THIS IS ABOUT CONTROL CELLS:
 						-- in nets of class EH, EL or NA, all control cells must be in disable state, regardless of net level
 						if d.pin(p).cell_info.control_cell_id /= -1 then -- if pin has disable spec. (means: a control cell)
+							prog_position := "UC2000";
 							case class is
 								when EL | EH | NA =>
+								prog_position := "UC2100";
 								-- all control cells of those nets must be in disable state (don't care about net level)
 									add_to_locked_control_cells_in_class_EH_EL_NA_nets(
 										list				=> cell_list_locked_control_cells_in_class_EH_EL_NA_nets_ptr,
@@ -642,7 +728,8 @@ procedure chkpsn is
 										cell_given			=> d.pin(p).cell_info.control_cell_id,
 										disable_value_given	=> d.pin(p).cell_info.disable_value
 										);
-								when others => null;
+								when others => 
+									prog_position := "UC2200";
 							end case;
 						end if;
 
@@ -699,49 +786,79 @@ procedure chkpsn is
 				end loop;
 
 				-- FIND SUITABLE DRIVER PIN BEGIN:
+				prog_position := "UC2000";
 				case level is
 					when primary =>
-						case class is
-							when DH | DL =>
-								-- FIND OUTPUT PIN WITHOUT DISABLE SPEC
-								-- if there is such a pin, it is to be preferred over other drivers
-								drivers_without_disable_spec_ct := 0; -- reset counter for drivers without disable spec
-								for p in 1..d.part_ct loop -- loop through pin list of given net
-									if d.pin(p).is_bscan_capable then -- care for scan capable pins only
-										-- if pin has no disable spec. (means: no control cell)
-										if d.pin(p).cell_info.output_cell_id /= -1 and d.pin(p).cell_info.control_cell_id = -1 then
+						-- FIND ALL OUTPUT PINs WITHOUT DISABLE SPEC
+						-- if there is such a pin, it is to be preferred over other drivers
+						prog_position := "UC2100";
+						drivers_without_disable_spec_ct := 0; -- reset counter for drivers without disable spec
+						for p in 1..d.part_ct loop -- loop through pin list of given net
+							if d.pin(p).is_bscan_capable then -- care for scan capable pins only
+								prog_position := "UC2200";
+								-- if pin has no disable spec. (means: no control cell)
+								if d.pin(p).cell_info.output_cell_id /= -1 and d.pin(p).cell_info.control_cell_id = -1 then
+									prog_position := "UC2300";
+									case class is
+										when DH | DL =>
+											prog_position := "UC2400";
 											add_to_locked_output_cells_in_class_DH_DL_nets(
 												list				=> cell_list_locked_output_cells_in_class_DH_DL_nets_ptr,
 												class_given			=> class,
 												net_given			=> universal_string_type.to_bounded_string(name),
 												device_given		=> d.pin(p).device_name,
 												pin_given			=> d.pin(p).device_pin_name,
-												cell_given			=> d.pin(p).cell_info.control_cell_id,
+												cell_given			=> d.pin(p).cell_info.output_cell_id,
 												drive_value_given	=> drive_value_derived_from_class(class)
 												);
-											d.pin(p).cell_info.selected_as_driver := true; -- mark driver as active
-											-- CS: CAUTION ! MAKE SURE ATG SYNCRONIZES THOSE DRIVERS !
-											drivers_without_disable_spec_ct := drivers_without_disable_spec_ct + 1;
-										end if;
- 									end if; -- if pin is scan capable
-								end loop; -- loop through pin list of given net
+										when NR =>
+											prog_position := "UC2500";
+											add_to_atg_drive(
+												list				=> cell_list_atg_drive_ptr,
+												class_given			=> class,
+												net_given			=> universal_string_type.to_bounded_string(name),
+												device_given		=> d.pin(p).device_name,
+												pin_given			=> d.pin(p).device_pin_name,
+												cell_given			=> d.pin(p).cell_info.output_cell_id,
+												controlled_by_control_cell_given	=> false -- controlled by output cell
+												-- example: class NR primary_net LED7 device IC303 pin 2 output_cell 7
+												);
+										when others => 
+											prog_position := "UC2600";
+											put_line("ERROR : Driver pin without disable specification not allowed for this net class !");
+											raise constraint_error; -- CS: this should never happen, place a prog_position mark anyway
+									end case; -- class
 
-								-- if output pin without disable spec found, other drivers must be found and disabled
-								if drivers_without_disable_spec_ct > 0 then
-									null;
-									-- disable remaining drivers
-								else -- no output pin without disable spec found -> other drivers must be found:
+									d.pin(p).cell_info.selected_as_driver := true; -- mark driver as active
+									-- CS: CAUTION ! MAKE SURE ATG SYNCRONIZES THOSE DRIVERS !
+									drivers_without_disable_spec_ct := drivers_without_disable_spec_ct + 1;
 
-									-- FIND DRIVER WITH NON-SHARED CONTROL CELL
-									for p in 1..d.part_ct loop -- loop through pin list of given net
-										if d.pin(p).is_bscan_capable then -- care for scan capable pins only
-											-- if pin has output cell with disable spec. (means: there is a control cell)
-											if d.pin(p).cell_info.output_cell_id /= -1 and d.pin(p).cell_info.control_cell_id /= -1 then
+								end if;
+							end if; -- if pin is scan capable
+						end loop; -- loop through pin list of given net
 
-												-- prefer non-shared control cells
-												if not d.pin(p).cell_info.control_cell_shared then
+						-- if output pin without disable spec found, other drivers must be found and disabled
+						prog_position := "UC2700";
+						if drivers_without_disable_spec_ct > 0 then
+							prog_position := "UC2800";
+							disable_remaining_drivers(d); -- disable left over drivers in net where d points to
+						else 
+						-- NO OUTPUT PIN WITHOUT DISABLE SPEC FOUND
+						-- FIND ONE DRIVER WITH NON-SHARED CONTROL CELL
+							prog_position := "UC2900";
+							for p in 1..d.part_ct loop -- loop through pin list of given net
+								if d.pin(p).is_bscan_capable then -- care for scan capable pins only
+									-- if pin has output cell with disable spec. (means: there is a control cell)
+									prog_position := "UC3000";
+									if d.pin(p).cell_info.output_cell_id /= -1 and d.pin(p).cell_info.control_cell_id /= -1 then
+										-- select non-shared control cells
+										prog_position := "UC3100";
+										if not d.pin(p).cell_info.control_cell_shared then
 
+											case class is
+												when DH | DL =>
 													-- add control cell to list
+													prog_position := "UC3200";
 													add_to_locked_control_cells_in_class_DH_DL_NR_nets(
 														list				=> cell_list_locked_control_cells_in_class_DH_DL_NR_nets_ptr,
 														class_given			=> class,
@@ -750,11 +867,12 @@ procedure chkpsn is
 														device_given		=> d.pin(p).device_name,
 														pin_given			=> d.pin(p).device_pin_name,
 														cell_given			=> d.pin(p).cell_info.control_cell_id,
-														locked_to_enable_state_given	=> true,
+														locked_to_enable_state_given	=> true, -- the pin is to be enabled
 														enable_value_given				=> negate_bit_character_class_0(d.pin(p).cell_info.disable_value)
 														);
 
 													-- add output cell to list
+													prog_position := "UC3300";
 													add_to_locked_output_cells_in_class_DH_DL_nets(
 														list				=> cell_list_locked_output_cells_in_class_DH_DL_nets_ptr,
 														class_given			=> class,
@@ -765,65 +883,150 @@ procedure chkpsn is
 														drive_value_given	=> drive_value_derived_from_class(class)
 														);
 
-														d.pin(p).cell_info.selected_as_driver := true; -- mark driver as active
-														driver_with_non_shared_control_cell_found := true;
-														exit; -- no more driver search required
-												end if; -- if non-shared control cell
+												when NR =>
+													-- add control cell to list
+													prog_position := "UC3400";
+													add_to_locked_control_cells_in_class_DH_DL_NR_nets(
+														list				=> cell_list_locked_control_cells_in_class_DH_DL_NR_nets_ptr,
+														class_given			=> class,
+														level_given			=> level,
+														net_given			=> universal_string_type.to_bounded_string(name),
+														device_given		=> d.pin(p).device_name,
+														pin_given			=> d.pin(p).device_pin_name,
+														cell_given			=> d.pin(p).cell_info.control_cell_id,
+														locked_to_enable_state_given	=> true, -- the pin is to be enabled
+														enable_value_given				=> negate_bit_character_class_0(d.pin(p).cell_info.disable_value)
+														);
+													
+													-- add output cell to list
+													prog_position := "UC3500";
+													add_to_atg_drive(
+														list				=> cell_list_atg_drive_ptr,
+														class_given			=> class,
+														net_given			=> universal_string_type.to_bounded_string(name),
+														device_given		=> d.pin(p).device_name,
+														pin_given			=> d.pin(p).device_pin_name,
+														cell_given			=> d.pin(p).cell_info.output_cell_id,
+														controlled_by_control_cell_given	=> false -- controlled by output cell
+														-- example: class NR primary_net LED7 device IC303 pin 2 output_cell 7
+														);
 
-											end if; -- if pin has output and control cell
-										end if; -- if pin is scan capable
-									end loop; -- loop through pin list of given net
+												when PU | PD =>
+													-- add output cell to list
+													-- NOTE: in pull-up/down nets, the output cell of the driver is static
+													prog_position := "UC3600";
+													add_to_locked_output_cells_in_class_PU_PD_nets(
+														list				=> cell_list_locked_output_cells_in_class_PU_PD_nets_ptr,
+														class_given			=> class,
+														net_given			=> universal_string_type.to_bounded_string(name),
+														device_given		=> d.pin(p).device_name,
+														pin_given			=> d.pin(p).device_pin_name,
+														cell_given			=> d.pin(p).cell_info.output_cell_id,
+														drive_value_given	=> drive_value_derived_from_class(class)
+														-- example: class PU primary_net /SYS_RESET device IC300 pin 39 output_cell 37 locked_to drive_value 0
+														);
 
-									if driver_with_non_shared_control_cell_found then
-										null;
-										-- disable remaining drivers
-									else
-										-- FIND DRIVER WITH SHARED CONTROL CELL
+													-- add control cell to list
+													-- NOTE: in pull-up/down nets, the control cell of the driver is dynamic (means ATG controlled)
+													prog_position := "UC3700";
+													add_to_atg_drive(
+														list				=> cell_list_atg_drive_ptr,
+														class_given			=> class,
+														net_given			=> universal_string_type.to_bounded_string(name),
+														device_given		=> d.pin(p).device_name,
+														pin_given			=> d.pin(p).device_pin_name,
+														cell_given			=> d.pin(p).cell_info.control_cell_id,
+														controlled_by_control_cell_given	=> true, -- controlled by control cell
+														control_cell_inverted_given	=> inverted_status_derived_from_class_and_disable_value(
+																							class_given => class,
+																							disable_value_given => d.pin(p).cell_info.disable_value
+																							)
+														-- example: -- class PU primary_net /CPU_WR device IC300 pin 26 control_cell 6 inverted yes
+														);
+
+												when others => null;
+											end case;
+
+											prog_position := "UC3800";
+											d.pin(p).cell_info.selected_as_driver := true; -- mark driver as active
+											driver_with_non_shared_control_cell_found := true;
+											exit; -- no more driver search required
+
+
+										end if; -- if non-shared control cell
+									end if; -- if pin has output and control cell
+								end if; -- if pin is scan capable
+							end loop; -- loop through pin list of given net
+
+							prog_position := "UC4000";
+							if driver_with_non_shared_control_cell_found then
+								prog_position := "UC4100";
+								disable_remaining_drivers(d); -- disable left over drivers in net where d points to
+							else
+							-- NO OUTPUT PIN WITHOUT NON-SHARED CONTROL CELL FOUND
+							-- FIND DRIVER WITH SHARED CONTROL CELL
+								case class is
+									when PU | PD =>
+										-- FOR PU/PD NETS, WITHOUT SPECIAL THREATMENT, ABORT HERE
+										prog_position := "UC4200";
+										put_line("ERROR : No suitable driver pin found in class " 
+											& type_net_class'image(class) & " net '" & name & "' !");
+										raise constraint_error;
+
+									when others =>
+										prog_position := "UC4300";
 										for p in 1..d.part_ct loop -- loop through pin list of given net
 											if d.pin(p).is_bscan_capable then -- care for scan capable pins only
 												-- if pin has output cell with disable spec. (means: there is a control cell)
+												prog_position := "UC4500";
 												if d.pin(p).cell_info.output_cell_id /= -1 and d.pin(p).cell_info.control_cell_id /= -1 then
 
-													-- care for shared control cells only
-													if d.pin(p).cell_info.control_cell_shared then
-														null;
+													case class is
+														when DH | DL =>
 
-														-- CS: TO BE DONE
-														-- add output cell to list
--- 														add_to_locked_output_cells_in_class_DH_DL_nets(
--- 															list				=> cell_list_locked_output_cells_in_class_DH_DL_nets_ptr,
--- 															class_given			=> class,
--- 															net_given			=> universal_string_type.to_bounded_string(name),
--- 															device_given		=> d.pin(p).device_name,
--- 															pin_given			=> d.pin(p).device_pin_name,
--- 															cell_given			=> d.pin(p).cell_info.output_cell_id,
--- 															drive_value_given	=> drive_value_derived_from_class(class)
--- 															);
--- 
--- 															d.pin(p).cell_info.selected_as_driver := true; -- mark driver as active
--- 															driver_with_shared_control_cell_found := true;
--- 															exit; -- no more driver search required
-													end if; -- if non-shared control cell
+															-- care for shared control cells only
+															if d.pin(p).cell_info.control_cell_shared then
+																null;
 
+																-- CS: TO BE DONE
+																-- add output cell to list
+		-- 														add_to_locked_output_cells_in_class_DH_DL_nets(
+		-- 															list				=> cell_list_locked_output_cells_in_class_DH_DL_nets_ptr,
+		-- 															class_given			=> class,
+		-- 															net_given			=> universal_string_type.to_bounded_string(name),
+		-- 															device_given		=> d.pin(p).device_name,
+		-- 															pin_given			=> d.pin(p).device_pin_name,
+		-- 															cell_given			=> d.pin(p).cell_info.output_cell_id,
+		-- 															drive_value_given	=> drive_value_derived_from_class(class)
+		-- 															);
+		-- 
+		-- 															d.pin(p).cell_info.selected_as_driver := true; -- mark driver as active
+		-- 															driver_with_shared_control_cell_found := true;
+		-- 															exit; -- no more driver search required
+															end if; -- if non-shared control cell
+
+														when others => null;
+													end case;
 												end if; -- if pin has output and control cell
 											end if; -- if pin is scan capable
 										end loop; -- loop through pin list of given net
 
-									end if; -- if driver_with_non_shared_control_cell_found
-								end if; -- if drivers_witout_disable_spec_ct > 0
+								end case; -- case class
+							end if; -- if driver_with_non_shared_control_cell_found
+						end if; -- if drivers_witout_disable_spec_ct > 0
 
 
-							when others => null;
-						end case; -- class
 					when others => null; -- secondary nets never have any drivers enabled
 				end case;
 			end update_cell_lists;
 
 		begin -- dump_net_content
 			while d /= null loop
+				prog_position := "DN1000";
 				if universal_string_type.to_string(d.name) = name then
 					-- IC301 ? XC9536 PLCC-S44 2  pb00_00 | 107 bc_1 input x | 106 bc_1 output3 x 105 0 z
 					for p in 1..d.part_ct loop
+						prog_position := "DN1100";
 						put(spacing_from_left*row_separator_0 & universal_string_type.to_string(d.pin(p).device_name)
 							& row_separator_0 & type_device_class'image(d.pin(p).device_class)
 							& row_separator_0 & universal_string_type.to_string(d.pin(p).device_value)
@@ -831,6 +1034,7 @@ procedure chkpsn is
 							& row_separator_0 & universal_string_type.to_string(d.pin(p).device_pin_name)
 						);
 						if d.pin(p).is_bscan_capable then
+							prog_position := "DN1200";
 							put(row_separator_0 & universal_string_type.to_string(d.pin(p).device_port_name));
 							if d.pin(p).cell_info.input_cell_id /= -1 then
 								put(row_separator_1 & trim(natural'image(d.pin(p).cell_info.input_cell_id),left)
@@ -841,6 +1045,7 @@ procedure chkpsn is
 							end if;
 
 							if d.pin(p).cell_info.output_cell_id /= -1 then
+								prog_position := "DN1300";
 								put(row_separator_1 & trim(natural'image(d.pin(p).cell_info.output_cell_id),left)
 									& row_separator_0 & type_boundary_register_cell'image(d.pin(p).cell_info.output_cell_type)
 									& row_separator_0 & type_cell_function'image(d.pin(p).cell_info.output_cell_function)
@@ -848,6 +1053,7 @@ procedure chkpsn is
 									);
 
 								if d.pin(p).cell_info.control_cell_id /= -1 then
+									prog_position := "DN1400";
 									put(row_separator_0 & trim(natural'image(d.pin(p).cell_info.control_cell_id),left)
 										& row_separator_0 & type_bit_char_class_0'image(d.pin(p).cell_info.disable_value)(2)
 										& row_separator_0 & type_disable_result'image(d.pin(p).cell_info.disable_result)
@@ -856,6 +1062,7 @@ procedure chkpsn is
 							end if;
 
 							-- now that d points to the net in data base net list, the new cell list can be updated regarding this net
+							prog_position := "DN1500";
 							update_cell_lists( d ); -- so we pass pointer d
 
 						end if;
@@ -876,6 +1083,7 @@ procedure chkpsn is
 				& "class" & row_separator_0 & type_net_class'image(o.class));
 
 			-- this is a primary net. it will be searched for in the net list and its content dumped into the preliminary data base
+			prog_position := "NL2100";
 			dump_net_content(
 				name => universal_string_type.to_string(o.name), 
 				level => primary,
@@ -887,11 +1095,13 @@ procedure chkpsn is
 			put_line(row_separator_0 & "EndSubSection");
 
 			-- if there are secondary nets specified in options net list, dump them one by one into the preliminary data base
+			prog_position := "NL2150";
 			if o.has_secondaries then
 				put_line(row_separator_0 & "SubSection secondary_nets_of" & row_separator_0 & universal_string_type.to_string(o.name));
 				new_line;
 				for s in 1..o.secondary_net_count loop
 					put_line(2*row_separator_0 & "SubSection" & row_separator_0 & universal_string_type.to_string(o.list_of_secondary_net_names(s)));
+					prog_position := "NL2200";
 					dump_net_content(
 						name => universal_string_type.to_string(o.list_of_secondary_net_names(s)),
 						level => secondary,
@@ -909,7 +1119,115 @@ procedure chkpsn is
 
 			o := o.next;
 		end loop;
+
+		put_line("EndSection");
+		new_line;
 	end make_new_net_list;
+
+
+	procedure write_new_cell_lists is
+		a : type_cell_list_locked_control_cells_in_class_EH_EL_NA_nets_ptr	:= cell_list_locked_control_cells_in_class_EH_EL_NA_nets_ptr;
+		b : type_cell_list_locked_control_cells_in_class_DH_DL_NR_nets_ptr	:= cell_list_locked_control_cells_in_class_DH_DL_NR_nets_ptr;
+		c : type_cell_list_locked_control_cells_in_class_PU_PD_nets_ptr 	:= cell_list_locked_control_cells_in_class_PU_PD_nets_ptr;
+		d : type_cell_list_locked_output_cells_in_class_PU_PD_nets_ptr		:= cell_list_locked_output_cells_in_class_PU_PD_nets_ptr;
+		e : type_cell_list_locked_output_cells_in_class_DH_DL_nets_ptr		:= cell_list_locked_output_cells_in_class_DH_DL_nets_ptr;
+		f : type_cell_list_static_expect_ptr								:= cell_list_static_expect_ptr;
+		g : type_cell_list_atg_expect_ptr									:= cell_list_atg_expect_ptr;
+		h : type_cell_list_atg_drive_ptr									:= cell_list_atg_drive_ptr;
+		i : type_cell_list_input_cells_in_class_NA_nets_ptr					:= cell_list_input_cells_in_class_NA_nets_ptr;
+	begin
+		put_line(column_separator_1);
+
+		put_line("Section locked_control_cells_in_class_EH_EL_NA_nets"); -- CS: Section locked_control_cells_in_class_EH_EL_?_nets discarded
+		-- writes a cell list entry like:
+		-- class NA primary_net OSC_OUT device IC300 pin 6 control_cell 93 locked_to disable_value 0
+		-- class NA secondary_net OSC_OUT device IC300 pin 6 control_cell 93 locked_to disable_value 0
+		while a /= null loop
+			put_line(" class " & type_net_class'image(a.class) & row_separator_0 & to_lower(type_net_level'image(a.level)) & "_net"
+				& row_separator_0 & universal_string_type.to_string(a.net) & " device"
+				& row_separator_0 & universal_string_type.to_string(a.device) & " pin"
+				& row_separator_0 & universal_string_type.to_string(a.pin) & " control_cell" & natural'image(a.cell)
+				& " locked_to disable_value " & type_bit_char_class_0'image(a.disable_value)(2) -- strip "'" delimiters
+				);
+			a := a.next;
+		end loop;
+		put_line("EndSection"); new_line;
+
+		put_line("Section locked_control_cells_in_class_DH_DL_NR_nets");
+		-- writes a cell list entry like:
+		-- class NR primary_net LED0 device IC303 pin 10 control_cell 16 locked_to enable_value 0
+		-- class NR primary_net LED1 device IC303 pin 9 control_cell 16 locked_to enable_value 0
+		-- class NR secondary_net LED7_R device IC301 pin 13 control_cell 75 locked_to disable_value 0
+		while b /= null loop
+			put(" class " & type_net_class'image(b.class) & row_separator_0 & to_lower(type_net_level'image(b.level)) & "_net"
+				& row_separator_0 & universal_string_type.to_string(b.net) & " device"
+				& row_separator_0 & universal_string_type.to_string(b.device) & " pin"
+				& row_separator_0 & universal_string_type.to_string(b.pin) & " control_cell" & natural'image(b.cell)
+				& " locked_to ");
+			case b.locked_to_enable_state is
+				when true 	=> put_line("enable_value " & type_bit_char_class_0'image(b.enable_value)(2)); -- strip "'" delimiters
+				when false	=> put_line("disable_value " & type_bit_char_class_0'image(b.disable_value)(2)); -- strip "'" delimiters
+			end case;
+			b := b.next;
+		end loop;
+		put_line("EndSection"); new_line;
+
+		put_line("Section locked_control_cells_in_class_PU_PD_nets");
+		-- writes a cell list entry like:
+		-- class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
+		-- class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to enable_value 0
+		-- class PD secondary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
+		while c /= null loop
+			put(" class " & type_net_class'image(c.class) & row_separator_0 & to_lower(type_net_level'image(c.level)) & "_net"
+				& row_separator_0 & universal_string_type.to_string(c.net) & " device"
+				& row_separator_0 & universal_string_type.to_string(c.device) & " pin"
+				& row_separator_0 & universal_string_type.to_string(c.pin) & " control_cell" & natural'image(c.cell)
+				& " locked_to ");
+			case c.locked_to_enable_state is
+				when true 	=> put_line("enable_value " & type_bit_char_class_0'image(c.enable_value)(2)); -- strip "'" delimiters
+				when false	=> put_line("disable_value " & type_bit_char_class_0'image(c.disable_value)(2)); -- strip "'" delimiters
+			end case;
+			c := c.next;
+		end loop;
+		put_line("EndSection"); new_line;
+
+		put_line("Section locked_output_cells_in_class_PU_PD_nets");
+		-- writes a cell list entry like:
+		-- class PU primary_net /SYS_RESET device IC300 pin 39 output_cell 37 locked_to drive_value 0
+		put_line("EndSection"); new_line;
+
+		put_line("Section locked_output_cells_in_class_DH_DL_nets");
+		-- writes a cell list entry like:
+		-- class DL primary_net /CPU_MREQ device IC300 pin 28 output_cell 13 locked_to drive_value 0
+		-- class DH primary_net /CPU_RD device IC300 pin 27 output_cell 10 locked_to drive_value 1
+		put_line("EndSection"); new_line;
+
+		put_line("Section static_expect");
+		-- writes a cell list entry like:
+		-- class DL primary_net /CPU_MREQ device IC300 pin 28 input_cell 14 expect_value 0
+		-- class DL secondary_net /CPU_MREQ device IC300 pin 28 input_cell 14 expect_value 0
+		put_line("EndSection"); new_line;
+
+		put_line("Section atg_expect");
+		-- writes a cell list entry like:
+		-- class PU secondary_net CT_D3 device IC303 pin 19 input_cell 11 primary_net_is D3
+		-- class PU primary_net /CPU_WR device IC300 pin 26 input_cell 8
+		put_line("EndSection"); new_line;
+
+		put_line("Section atg_drive");
+		-- writes a cell list entry like:
+		-- class NR primary_net LED7 device IC303 pin 2 output_cell 7
+		-- class PU primary_net /CPU_WR device IC300 pin 26 control_cell 6 inverted yes
+		-- class PD primary_net /DRV_EN device IC301 pin 27 control_cell 9 inverted no
+		put_line("EndSection"); new_line;
+
+		put_line("input_cells_in_class_NA_nets"); -- CS: input_cells_in_class_?_nets discarded
+		-- writes a cell list entry like:
+		-- class NA primary_net OSC_OUT device IC301 pin 6 input_cell 95
+		-- class NA secondary_net LED0_R device IC301 pin 2 input_cell 107 primary_net_is LED0
+		put_line("EndSection"); new_line;
+		put_line(column_separator_0);
+	end write_new_cell_lists;
 
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
@@ -1109,21 +1427,38 @@ begin
 	close(data_base_file);
 
 
+	prog_position := "NL1000";
 	put_line("Section netlist");
 	put_line(column_separator_0);
 	put_line("-- modified by primary/secondary/class builder version " & version);
 	put_line("-- date: " & date_now & " (YYYY-MM-DD HH:MM:SS)");
 	new_line(2);
 
+	prog_position := "NL2000";
 	make_new_net_list;
 
+	prog_position := "NL3000";
+	write_new_cell_lists;
 
+	prog_position := "NL4000";
+	set_output(standard_output);
 	close(data_base_file_preliminary);
 
 	exception
-		when others =>
-			put_line("ERROR in options file in line :" & natural'image(line_counter));
---			put_line("affected line reads        : " & trim(to_string(line_of_file),both));
-			put_line("ERROR at program position     : " & prog_position);
+-- 		when others =>
+-- 			set_output(standard_output);
+-- 			put_line("ERROR in options file in line :" & natural'image(line_counter));
+-- --			put_line("affected line reads        : " & trim(to_string(line_of_file),both));
+-- 			put_line("ERROR at program position     : " & prog_position);
+
+		when event: others =>
+			set_output(standard_output);
+			put("unexpected exception: ");
+			put_line(exception_name(event));
+			put(exception_message(event)); new_line;
+			put_line("program error at position " & prog_position);
+			--clean_up;
+			--raise;
+
 
 end chkpsn;
