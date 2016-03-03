@@ -158,22 +158,26 @@ begin
 	put_line("UUT DATA BASE INFO version "& version);
 	put_line("====================================");
 
+	prog_position	:= 10;
  	data_base:= universal_string_type.to_bounded_string(Argument(1));
  	put_line("data base      : " & universal_string_type.to_string(data_base));
- 
-	action := type_action'value(argument(2));
-	put_line("action         : " & type_action'image(action));
 
-	if action = udbinfo then
-		debug_level := natural'value(argument(5));
+	prog_position	:= 20;
+	inquired_item := type_item_udbinfo'value(argument(2));
+	put_line("item           : " & type_item_udbinfo'image(inquired_item));
 
-		inquired_item := type_item_udbinfo'value(argument(3));
-		put_line("item           : " & type_item_udbinfo'image(inquired_item));
+	prog_position	:= 30;
+	inquired_target := universal_string_type.to_bounded_string(argument(3));
+	put_line("name           : " & universal_string_type.to_string(inquired_target));
 
-		inquired_target := universal_string_type.to_bounded_string(argument(4));
-		put_line("name           : " & universal_string_type.to_string(inquired_target));
+	prog_position	:= 40;
+	if argument_count = 4 then
+		debug_level := natural'value(argument(4));
+		put_line("debug level    :" & natural'image(debug_level));
+	end if;
 
-		read_data_base;
+	prog_position	:= 50;
+	read_data_base;
 
 
 		case inquired_item is
@@ -193,28 +197,37 @@ begin
 					);
 			when others => null;
 		end case;
-	end if;
-	
-
-
-		--m1_internal.print_bic_info;
 
 	exception
 -- 		when constraint_error => 
--- 			put_line(prog_position);
--- 			if prog_position = "-----" then
--- 				--new_line;									
--- 				--put ("ERROR : Test generator aborted !"); new_line;
--- 				set_exit_status(1);
--- 			end if;
--- 		when others =>
--- 			put_line("program error at position " & prog_position);
 
 		when event: others =>
-			put("unexpected exception: ");
-			put_line(exception_name(event));
-			put(exception_message(event)); new_line;
-			put_line("program error at position " & natural'image(prog_position));
+			case prog_position is
+				when 10 =>
+					put_line("ERROR: Data base file missing or insufficient access rights !");
+					put_line("       Provide data base name as argument. Example: udbinfo my_uut.udb");
+				when 20 =>
+					put("ERROR: Inquired item invalid or missing. Valid items are:");
+					for i in 0..type_item_udbinfo'pos(type_item_udbinfo'last) loop
+						put(m1_internal.row_separator_0 & type_item_udbinfo'image(type_item_udbinfo'val(i)));
+					end loop;
+					new_line;
+					put_line("       Provide item as argument ! Example: udbinfo my_uut.udb net");
+				when 30 =>
+					put_line("ERROR: Name of item missing. Provide name as argument !");
+					put_line("       Example 1: udbinfo my_uut.udb net cpu_clk");
+					put_line("       Example 2: udbinfo my_uut.udb bic IC303");
+					put_line("       Example 3: udbinfo my_uut.udb scc IC303#16");
+				when 40 =>
+					put_line("ERROR: Invalid argument for debug level. Debug level must be provided as natural number !");
+
+
+				when others =>
+					put("unexpected exception: ");
+					put_line(exception_name(event));
+					put(exception_message(event)); new_line;
+					put_line("program error at position " & natural'image(prog_position));
+			end case;
 			--clean_up;
 			--raise;
 

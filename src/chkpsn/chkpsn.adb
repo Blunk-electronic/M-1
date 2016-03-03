@@ -31,11 +31,6 @@
 --
 
 
--- V 4.1
--- in procedure check_class bugfix: - it is sufficient if PD/PD prim. nets have at least one bidir or output3 pin, 
---									- disable value and result are don't care
---									- no need to check bidir or output3 pin for non-self-controlling output cell
-
 with Ada.Text_IO;			use Ada.Text_IO;
 --with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
 --with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
@@ -231,6 +226,7 @@ procedure chkpsn is
 		-- preliminary data base
 		-- the class requirements and secondary net dependencies from the options file are taken into account
 		o	: type_options_net_ptr 	:= ptr_options_net;
+		n 	: type_net_ptr			:= ptr_net; -- used to dump non-optimized nets
 
 		procedure dump_net_content (
 		-- from a given net name, the whole content (means all devices) is dumped into the preliminary data base
@@ -601,82 +597,6 @@ procedure chkpsn is
 					end case;
 				end add_to_input_cells_in_class_NA_nets;
 
-				procedure disable_remaining_drivers ( d : type_net_ptr) is
-				begin
-					if debug_level >= 30 then
-						put_line(standard_output,"disabling remaining drivers in net " & row_separator_0 & universal_string_type.to_string(d.name));
-					end if;
-
-					-- FIND CONTROL CELLS TO BE DISABLED:
-					prog_position := "DD1000";
-					for p in 1..d.part_ct loop -- loop through pin list of given net
-						if d.pin(p).is_bscan_capable then -- care for scan capable pins only
-							-- pin must have a control cell and an output cell
-							if d.pin(p).cell_info.control_cell_id /= -1 and d.pin(p).cell_info.output_cell_id /= -1 then 
-								prog_position := "DD1100";
-								if not d.pin(p).cell_info.selected_as_driver then -- care for drivers not marked as active
-
-									if debug_level >= 35 then
-										put_line(standard_output," driver pin : " 
---											& row_separator_0 & universal_string_type.to_string(d.name)
-											& row_separator_0 & universal_string_type.to_string(d.pin(p).device_name)
-											& row_separator_0 & universal_string_type.to_string(d.pin(p).device_pin_name)
-											);
-									end if;
-
-									-- if non-shared control cell, just turn it off
-									if not d.pin(p).cell_info.control_cell_shared then
-										prog_position := "DD1300";
-										case class is
-											when DH | DL | NR =>
-												-- add control cell to list
-												prog_position := "DD1400";
-												add_to_locked_control_cells_in_class_DH_DL_NR_nets(
-													-- prepares writing a cell list entry like:
-													-- class NR primary_net LED0 device IC303 pin 10 control_cell 16 locked_to enable_value 0
-													-- class NR primary_net LED1 device IC303 pin 9 control_cell 16 locked_to enable_value 0
-													-- class NR secondary_net LED7_R device IC301 pin 13 control_cell 75 locked_to disable_value 0
-													list				=> ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets,
-													class_given			=> class,
-													level_given			=> level,
-													net_given			=> universal_string_type.to_bounded_string(name),
-													device_given		=> d.pin(p).device_name,
-													pin_given			=> d.pin(p).device_pin_name,
-													cell_given			=> d.pin(p).cell_info.control_cell_id,
-													locked_to_enable_state_given	=> false, -- the pin is to be disabled
-													disable_value_given				=> d.pin(p).cell_info.disable_value
-													);
-											when PU | PD =>
-												-- add control cell to list
-												prog_position := "DD1500";
-												add_to_locked_control_cells_in_class_PU_PD_nets(
-													-- prepares writing a cell list entry like:
-													-- class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
-													-- class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to enable_value 0
-													-- class PD secondary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
-													list				=> ptr_cell_list_locked_control_cells_in_class_PU_PD_nets,
-													class_given			=> class,
-													level_given			=> level,
-													net_given			=> universal_string_type.to_bounded_string(name),
-													device_given		=> d.pin(p).device_name,
-													pin_given			=> d.pin(p).device_pin_name,
-													cell_given			=> d.pin(p).cell_info.control_cell_id,
-													--locked_to_enable_state_given	=> false, -- the pin is to be disabled
-													disable_value_given				=> d.pin(p).cell_info.disable_value
-													);
-											when others => null;
-										end case;
-									else
-									-- if shared control cell
-										prog_position := "DD2000";
-										null; -- CS: look up shared_control_cell_journal and inquire cell status and usage
-									end if; -- if non-shared control cell, just turn it off
-								end if;  -- care for drivers not marked as active
-							end if; -- pin must have a control cell and an output cell
-						end if;
-					end loop;
-				end disable_remaining_drivers;
-
 				function control_cell_in_enable_state_by_any_cell_list(
 				-- searches cell lists for given control cell and returns false if cell is not in enable state
 				-- aborts if cell in enable state or targeted by atg
@@ -755,7 +675,7 @@ procedure chkpsn is
 							& " net '" & universal_string_type.to_string(net) & "' !");
 					end print_error_on_shared_control_cell_conflict;
 
-				begin
+				begin -- control_cell_in_disable_state_by_any_cell_list
 					while a /= null loop -- loop through cell list indicated by pointer a (locked_control_cells_in_class_EH_EL_NA_nets)
 						if universal_string_type.to_string(a.device) = universal_string_type.to_string(device) then -- on device name match
 							if a.cell = cell_id then -- on cell id match
@@ -830,6 +750,125 @@ procedure chkpsn is
 					-- given control cell is not in disable state
 					return false;
 				end control_cell_in_disable_state_by_any_cell_list;
+
+				procedure disable_remaining_drivers ( d : type_net_ptr) is
+				begin
+					if debug_level >= 30 then
+						put_line(standard_output,"disabling remaining drivers in net " & row_separator_0 & universal_string_type.to_string(d.name));
+					end if;
+
+					-- FIND CONTROL CELLS TO BE DISABLED:
+					prog_position := "DD1000";
+					for p in 1..d.part_ct loop -- loop through pin list of given net
+						if d.pin(p).is_bscan_capable then -- care for scan capable pins only
+							-- pin must have a control cell and an output cell
+							if d.pin(p).cell_info.control_cell_id /= -1 and d.pin(p).cell_info.output_cell_id /= -1 then 
+								prog_position := "DD1100";
+								if not d.pin(p).cell_info.selected_as_driver then -- care for drivers not marked as active
+
+									if debug_level >= 35 then
+										put_line(standard_output," driver pin : " 
+--											& row_separator_0 & universal_string_type.to_string(d.name)
+											& row_separator_0 & universal_string_type.to_string(d.pin(p).device_name)
+											& row_separator_0 & universal_string_type.to_string(d.pin(p).device_pin_name)
+											);
+									end if;
+
+									-- if non-shared control cell, just turn it off
+									if not d.pin(p).cell_info.control_cell_shared then
+										prog_position := "DD1300";
+										case class is
+											when DH | DL | NR =>
+												-- add control cell to list
+												prog_position := "DD1400";
+												add_to_locked_control_cells_in_class_DH_DL_NR_nets(
+													-- prepares writing a cell list entry like:
+													-- class NR secondary_net LED7_R device IC301 pin 13 control_cell 75 locked_to disable_value 0
+													list				=> ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets,
+													class_given			=> class,
+													level_given			=> level,
+													net_given			=> universal_string_type.to_bounded_string(name),
+													device_given		=> d.pin(p).device_name,
+													pin_given			=> d.pin(p).device_pin_name,
+													cell_given			=> d.pin(p).cell_info.control_cell_id,
+													locked_to_enable_state_given	=> false, -- the pin is to be disabled
+													disable_value_given				=> d.pin(p).cell_info.disable_value
+													);
+											when PU | PD =>
+												-- add control cell to list
+												prog_position := "DD1500";
+												add_to_locked_control_cells_in_class_PU_PD_nets(
+													-- prepares writing a cell list entry like:
+													-- class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
+													-- class PD secondary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
+													list				=> ptr_cell_list_locked_control_cells_in_class_PU_PD_nets,
+													class_given			=> class,
+													level_given			=> level,
+													net_given			=> universal_string_type.to_bounded_string(name),
+													device_given		=> d.pin(p).device_name,
+													pin_given			=> d.pin(p).device_pin_name,
+													cell_given			=> d.pin(p).cell_info.control_cell_id,
+													--locked_to_enable_state_given	=> false, -- the pin is to be disabled
+													disable_value_given				=> d.pin(p).cell_info.disable_value
+													);
+											when others => null;
+										end case;
+									else
+									-- if shared control cell
+										prog_position := "DD2000";
+
+										-- check if control cell can be set to disable state
+										if not control_cell_in_enable_state_by_any_cell_list( 
+											net		=> d.name,
+											class	=> class,
+											device	=> d.pin(p).device_name,
+											cell_id	=> d.pin(p).cell_info.control_cell_id) then
+
+											case class is
+												when DH | DL | NR =>
+													-- add control cell to list
+													prog_position := "DD2100";
+													add_to_locked_control_cells_in_class_DH_DL_NR_nets(
+														-- prepares writing a cell list entry like:
+														-- class NR secondary_net LED7_R device IC301 pin 13 control_cell 75 locked_to disable_value 0
+														list				=> ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets,
+														class_given			=> class,
+														level_given			=> level,
+														net_given			=> universal_string_type.to_bounded_string(name),
+														device_given		=> d.pin(p).device_name,
+														pin_given			=> d.pin(p).device_pin_name,
+														cell_given			=> d.pin(p).cell_info.control_cell_id,
+														locked_to_enable_state_given	=> false, -- the pin is to be disabled
+														disable_value_given				=> d.pin(p).cell_info.disable_value
+														);
+												when PU | PD =>
+													-- add control cell to list
+													prog_position := "DD2200";
+													add_to_locked_control_cells_in_class_PU_PD_nets(
+														-- prepares writing a cell list entry like:
+														-- class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
+														-- class PD secondary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
+														list				=> ptr_cell_list_locked_control_cells_in_class_PU_PD_nets,
+														class_given			=> class,
+														level_given			=> level,
+														net_given			=> universal_string_type.to_bounded_string(name),
+														device_given		=> d.pin(p).device_name,
+														pin_given			=> d.pin(p).device_pin_name,
+														cell_given			=> d.pin(p).cell_info.control_cell_id,
+														--locked_to_enable_state_given	=> false, -- the pin is to be disabled
+														disable_value_given				=> d.pin(p).cell_info.disable_value
+														);
+												when others => null;
+											end case;
+										end if; -- check if control cell can be set to disable state
+
+									end if; -- if non-shared control cell, just turn it off
+								end if;  -- care for drivers not marked as active
+							end if; -- pin must have a control cell and an output cell
+						end if;
+					end loop;
+				end disable_remaining_drivers;
+
 
 			begin -- update_cell_lists
 				-- d is a net pointer and points to the net being processed
@@ -1136,8 +1175,7 @@ procedure chkpsn is
 														);
 												when others => 
 													prog_position := "UC2650";
-													--put_line("ERROR : Driver pin without disable specification not allowed for this net class !");
-													raise constraint_error; -- CS: this should never happen, place a prog_position mark anyway
+													raise constraint_error; -- this should never happen
 											end case; -- class
 
 											d.pin(p).cell_info.selected_as_driver := true; -- mark driver as active
@@ -1413,17 +1451,26 @@ procedure chkpsn is
 			end update_cell_lists;
 
 		begin -- dump_net_content for net name given in "name"
+			-- net name "name" is passed from superordinated procedure make_new_net_list when calling this procedure
+			-- marks the net as "optimized"
+			-- fetches net content from data base net list pointed to by pointer d
+			-- updates cell lists using cell info from net pointed to by d
 			while d /= null loop -- loop through net list taken from uut data base
 				prog_position := "DN1000";
 
-				-- on match of net name:
+				-- on match of net name: means, the net given from make_new_net_list has been found in data base net list pointed to by d
 				if universal_string_type.to_string(d.name) = name then
+
+					-- mark this net as optimized by chkpsn
+					-- later, it helps to distinguish non-optimzed nets which must be dumped into the preliminary data base too
+					d.optimized := true;
 
 					-- loop through part list of the net
 					-- and dump the net content like "IC301 ? XC9536 PLCC-S44 2  pb00_00 | 107 bc_1 input x | 106 bc_1 output3 x 105 0 z"
 					-- into the preliminary data base
 					for p in 1..d.part_ct loop
 						prog_position := "DN1100";
+						-- dump the standard segment like "IC301 ? XC9536 PLCC-S44 2"
 						put(spacing_from_left*row_separator_0 & universal_string_type.to_string(d.pin(p).device_name)
 							& row_separator_0 & type_device_class'image(d.pin(p).device_class)
 							& row_separator_0 & universal_string_type.to_string(d.pin(p).device_value)
@@ -1431,6 +1478,7 @@ procedure chkpsn is
 							& row_separator_0 & universal_string_type.to_string(d.pin(p).device_pin_name)
 						);
 						if d.pin(p).is_bscan_capable then
+							-- dump the input cell segment like "| 107 bc_1 input x "
 							prog_position := "DN1200";
 							put(row_separator_0 & universal_string_type.to_string(d.pin(p).device_port_name));
 							if d.pin(p).cell_info.input_cell_id /= -1 then
@@ -1442,6 +1490,7 @@ procedure chkpsn is
 							end if;
 
 							if d.pin(p).cell_info.output_cell_id /= -1 then
+								-- dump the output cell segment like "| 106 bc_1 output3"
 								prog_position := "DN1300";
 								put(row_separator_1 & trim(natural'image(d.pin(p).cell_info.output_cell_id),left)
 									& row_separator_0 & type_boundary_register_cell'image(d.pin(p).cell_info.output_cell_type)
@@ -1450,6 +1499,7 @@ procedure chkpsn is
 									);
 
 								if d.pin(p).cell_info.control_cell_id /= -1 then
+									-- dump the contol cell segment like "x 105 0 z"
 									prog_position := "DN1400";
 									put(row_separator_0 & trim(natural'image(d.pin(p).cell_info.control_cell_id),left)
 										& row_separator_0 & type_bit_char_class_0'image(d.pin(p).cell_info.disable_value)(2)
@@ -1457,7 +1507,10 @@ procedure chkpsn is
 										);
 								end if;
 							end if;
-
+						else -- pin is not scan capable, but it might have a port name (linkage pins of bic)
+							if universal_string_type.to_string(d.pin(p).device_port_name) /= "" then
+								put(row_separator_0 & universal_string_type.to_string(d.pin(p).device_port_name));
+							end if;
 						end if;
 						new_line; -- line finished, add line break for next line
 					end loop; -- loop through part list of the net
@@ -1474,7 +1527,28 @@ procedure chkpsn is
 		end dump_net_content;
 
 	begin -- make_new_net_list
-		while o /= null loop
+	-- reads options net list pointed to by pointer o
+	-- writes a structure as shown below in the preliminary data base:
+	
+--> header:	SubSection LED1 class NR
+
+--> by procedure dump_net_content:
+-- 		RN302 '?' 2k7 SIL8 4
+-- 		JP402 '?' MON1 2X20 22
+-- 		IC303 '?' SN74BCT8240ADWR SOIC24 9 y2(3) | 1 BC_1 OUTPUT3 X 16 1 Z
+-- 		D402 '?' none LED5MM K
+--> footer:	EndSubSection
+--> footer:	SubSection secondary_nets_of LED1
+-- 
+--> header: SubSection LED1_R class NR
+--> by procedure dump_net_content:
+-- 			RN302 '?' 2k7 SIL8 3
+-- 			JP402 '?' MON1 2X20 28
+-- 			IC301 '?' XC9536 PLCC-S44 3 pb00_01 | 104 BC_1 INPUT X | 103 BC_1 OUTPUT3 X 102 0 Z
+--> footer:	EndSubSection
+--> footer: EndSubSection secondary_nets_of LED1
+
+		while o /= null loop -- o points to options net list
 			new_line;
 			-- write primary net header like "SubSection LED0 class NR" (name and class taken from options net list)
 			put_line(column_separator_0);
@@ -1483,6 +1557,8 @@ procedure chkpsn is
 
 			-- this is a primary net. it will be searched for in the net list and its content dumped into the preliminary data base
 			prog_position := "NL2100";
+			put_line("  -- name class value package pin"
+				& " [ port | in_cell: id type func safe | out_cell: id type func safe [ ctrl_cell id disable result ]]");
 			dump_net_content(
 				name => universal_string_type.to_string(o.name), 
 				level => primary,
@@ -1520,6 +1596,39 @@ procedure chkpsn is
 			end if;
 
 			o := o.next;
+		end loop;
+
+		-- dump non-optimized nets 
+		-- they have the "optimized" flag cleared (false) and default to level primary with class NA
+		-- pointer n points to data base net list
+		put_line(column_separator_0);
+		put_line("-- NON-OPTIMIZED NETS ---------------------------");
+		put_line(column_separator_0);
+		prog_position := "NL2300";
+		while n /= null loop -- n points to data base net list
+			--put_line(universal_string_type.to_string(n.name));
+			if not n.optimized then -- if non-optimized
+				prog_position := "NL2310";
+				--put_line(prog_position);
+				new_line;
+				-- write primary net header like "SubSection LED0 class NR" (name and class taken from options net list)
+				put_line(column_separator_0);
+				put_line(row_separator_0 & "SubSection" & row_separator_0 & universal_string_type.to_string(n.name) & row_separator_0 
+					& "class" & row_separator_0 & type_net_class'image(NA));
+
+				-- this is a primary net. it will be searched for in the net list and its content dumped into the preliminary data base
+				prog_position := "NL2320";
+				dump_net_content(
+					name => universal_string_type.to_string(n.name), 
+					level => primary,
+					class => NA,
+					spacing_from_left => 2
+					);
+
+				-- put end of primary net mark
+				put_line(row_separator_0 & "EndSubSection");
+			end if;
+			n := n.next;
 		end loop;
 	end make_new_net_list;
 
@@ -1745,15 +1854,18 @@ begin
 
 
 	new_line;
-	put("primary/secondary/class builder "& version); new_line;
-
+	put_line("primary/secondary/class builder "& version);
+	put_line("=======================================");
+	prog_position := "ARG001";
 	data_base := universal_string_type.to_bounded_string(Argument(1));
-	data_base_backup_name := data_base; -- backup name of data base. used for overwriting data base with temporarily data base
 	put_line ("data base      : " & universal_string_type.to_string(data_base));
+	data_base_backup_name := data_base; -- backup name of data base. used for overwriting data base with temporarily data base
 
+	prog_position := "ARG002";
 	options_file := universal_string_type.to_bounded_string(Argument(2));
 	put_line ("options file   : " & universal_string_type.to_string(options_file));
 
+	prog_position := "ARG003";
 	if argument_count = 3 then
 		debug_level := natural'value(argument(3));
 		put_line ("debug level    :" & natural'image(debug_level));
@@ -1762,19 +1874,27 @@ begin
 	-- make backup of given udb
 	
 	-- recreate an empty tmp directory
+	prog_position := "TMP001";
 	m1.clean_up_tmp_dir;
 
+	prog_position := "RDB001";
 	read_data_base;
 	
 
 	-- open options file
+	prog_position := "OPT001";
 	open( 
 		file => opt_file,
 		mode => in_file,
 		name => universal_string_type.to_string(options_file)
 		);
 
-	-- find primary net in options file	
+	-- read options file
+	-- check if primary net incl. secondary nets may change class as specified in options file
+	-- if class rendering allowed, add primary net with its secondary nets to options net list
+	-- this is achieved at prog_position OP5300 by procedure add_to_options_net_list
+	-- ptr_options_net points to generated options net list
+	prog_position := "OPT005";
 	put_line("reading options file ...");
 	Set_Input(opt_file); -- set data source
 	while not end_of_file
@@ -1897,7 +2017,9 @@ begin
 
 		end loop;
 
+	prog_position := "OPT100";
 	set_input(standard_input);
+	prog_position := "OPT105";
 	close(opt_file);
 	-- options net list ready. pointer options_net_ptr points to list !
 	-- data base net list ready, pointer net_ptr points to list !
@@ -1948,7 +2070,12 @@ begin
 	put_line("-- date: " & date_now & " (YYYY-MM-DD HH:MM:SS)");
 	--new_line(2);
 	prog_position := "NL2000";
+
+	-- with the two net lists pointed to by net_ptr and options_net_ptr, a new net list is created and appended to the
+	-- preliminary data base
+	-- the class requirements and secondary net dependencies from the options file are taken into account
 	make_new_net_list;
+
 	put_line("EndSection");
 	new_line(2);
 
@@ -1986,21 +2113,26 @@ begin
 	delete_file(universal_string_type.to_string(data_base));
 
 	exception
--- 		when others =>
--- 			set_output(standard_output);
--- 			put_line("ERROR in options file in line :" & natural'image(line_counter));
--- --			put_line("affected line reads        : " & trim(to_string(line_of_file),both));
--- 			put_line("ERROR at program position     : " & prog_position);
 
 		when event: others =>
 			set_output(standard_output);
-			put("unexpected exception: ");
-			put_line(exception_name(event));
-			put(exception_message(event)); new_line;
-			put_line("program error at position " & prog_position);
-			--put_line("ERROR in options file in line :" & natural'image(line_counter));
-			--clean_up;
-			--raise;
 
+			if prog_position = "ARG001" then
+				put_line("ERROR: Data base file missing or insufficient access rights !");
+				put_line("       Provide data base name as argument. Example: chkpsn my_uut.udb");
+
+			elsif prog_position = "ARG002" then
+				put_line("ERROR: Options file missing or insufficient access rights !");
+				put_line("       Provide options file as argument. Example: chkpsn my_uut.udb my_options.opt");
+
+			else
+				put("unexpected exception: ");
+				put_line(exception_name(event));
+				put(exception_message(event)); new_line;
+				put_line("program error at position " & prog_position);
+					--put_line("ERROR in options file in line :" & natural'image(line_counter));
+					--clean_up;
+					--raise;
+			end if;
 
 end chkpsn;

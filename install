@@ -107,6 +107,7 @@ fi
 echo "compiling and installing ..."
 procedure_make bsmcl
 procedure_make chkpsn
+procedure_make udbinfo
 procedure_make compseq
 procedure_make impbsdl
 procedure_make impzuken
