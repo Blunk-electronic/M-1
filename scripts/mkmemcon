@@ -1,7 +1,7 @@
 #! /bin/sh
 
 
-	version=030 #029
+	version=031 #029
 	echo memory connections test/program generator version $version
 
 	# V2.4	- sequence 1 has first commands: delay 0.5 and connect port 1
@@ -1546,11 +1546,11 @@
 #write static drive values in seq file
 	echo ' -- load static drive values' >> $test_name/$test_name.seq
 
-	sed -n '/Section locked_control_cells_in_class_EH_EL_?_nets/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/cells1.tmp
+	sed -n '/Section locked_control_cells_in_class_EH_EL_NA_nets/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/cells1.tmp
 # ins v029 begin
 	[ "$(stat -c%s "tmp/cells1.tmp")" -eq 0 ] && 
 		{
-		echo "WARNING: Section 'locked_control_cells_in_class_EH_EL_?_nets' not found in data base !";
+		echo "WARNING: Section 'locked_control_cells_in_class_EH_EL_NA_nets' not found in data base !";
 		}
 # ins v029 end
 

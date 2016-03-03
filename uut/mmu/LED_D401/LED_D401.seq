@@ -1,7 +1,7 @@
 Section info
- created by pin toggle generator version 002
- date          : 2015-06-30 07:29:24
- UTC_Offset    : 2 hours
+ created by pin toggle generator version 003
+ date          : 2016-03-03 16:46:41
+ UTC_Offset    : 1 hours
  database      : mmu.udb
  target net    : LED0
  cycle count   : 10
@@ -16,14 +16,14 @@ Section options
    trailer_dr 11001010
    voltage_out_port_1  3.3  
    voltage_out_port_2  1.8
-   tck_driver_port_1 push-pull  
-   tms_driver_port_1 push-pull
-   tdo_driver_port_1 push-pull
-   trst_driver_port_1 push-pull 
-   tck_driver_port_2 push-pull
-   tms_driver_port_2 push-pull
-   tdo_driver_port_2 push-pull
-   trst_driver_port_2 push-pull 
+   tck_driver_port_1 push_pull  
+   tms_driver_port_1 push_pull
+   tdo_driver_port_1 push_pull
+   trst_driver_port_1 push_pull 
+   tck_driver_port_2 push_pull
+   tms_driver_port_2 push_pull
+   tdo_driver_port_2 push_pull
+   trst_driver_port_2 push_pull 
    threshold_tdi_port_1 0.8  
    threshold_tdi_port_2 0.8
 EndSection
@@ -74,8 +74,8 @@ Section sequence 1
  sir id 3
 
  -- load static drive values
- set IC301 drv boundary 93=0 105=0 102=0 96=0 90=0 84=0 81=0 78=0 75=0 12=1 36=0 99=0 87=0 39=0 45=0 10=1 7=0 52=0 49=0 43=0 34=0 31=0 28=0 25=0 22=0 16=0 19=0 13=0
- set IC300 drv boundary 105=0 102=0 96=0 93=0 12=1 9=1 3=1 45=0 7=0 37=0 73=0 70=0 67=0 64=0 61=0 58=0 52=0 49=0 43=0 34=0 31=0 28=0 25=0 22=0 19=0 16=0 100=0 88=1 40=0 13=0 10=1 4=0
+ set IC301 drv boundary 93=0 105=0 102=0 96=0 90=0 84=0 81=0 78=0 75=0 12=1 39=0 10=1 7=0 37=0 100=0 52=0 49=0 43=0 34=0 31=0 28=0 25=0 22=0 88=1 46=0 16=0 19=0 13=0
+ set IC300 drv boundary 105=0 102=0 96=0 93=0 12=1 9=1 3=1 36=0 99=0 87=0 39=0 45=0 7=0 73=0 70=0 67=0 64=0 61=0 58=0 52=0 49=0 43=0 34=0 31=0 28=0 25=0 22=0 19=0 16=0 13=0 10=1 4=0
  set IC303 drv boundary 16=0 16=0 16=0 16=0 17=0 17=0 17=0 17=0
  sdr id 4
 

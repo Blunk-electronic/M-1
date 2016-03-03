@@ -4,6 +4,7 @@
 #include
 #bin
 DEADJOE
+*.tmp
 *.vec
 *.bin
 *.lis

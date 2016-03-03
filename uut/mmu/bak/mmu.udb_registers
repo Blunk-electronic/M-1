@@ -11,14 +11,14 @@ Section scanpath_configuration
   voltage_out_port_1  3.3  -- min value +1.8V, max value +3.3V
   voltage_out_port_2  1.8
 
-  tck_driver_port_1 push-pull  -- NOTE: similar commands: weak1, weak0, tie_high, tie_low, high-z
-  tms_driver_port_1 push-pull
-  tdo_driver_port_1 push-pull
-  trst_driver_port_1 push-pull 
-  tck_driver_port_2 push-pull
-  tms_driver_port_2 push-pull
-  tdo_driver_port_2 push-pull
-  trst_driver_port_2 push-pull 
+  tck_driver_port_1 push_pull  -- NOTE: similar commands: weak1, weak0, tie_high, tie_low, high-z
+  tms_driver_port_1 push_pull
+  tdo_driver_port_1 push_pull
+  trst_driver_port_1 push_pull 
+  tck_driver_port_2 push_pull
+  tms_driver_port_2 push_pull
+  tdo_driver_port_2 push_pull
+  trst_driver_port_2 push_pull 
 
   threshold_tdi_port_1 0.8  -- range: 0 ... +3.3V
   threshold_tdi_port_2 0.8
@@ -29,7 +29,7 @@ Section scanpath_configuration
 	--device, package, path to bsdl model, option [ remove_pin_prefix p ]
 	--NOTE: use lower case letters for package names 
 
-	IC301 pc44 models/BSDL/xc9536_pc44.bsd
+		IC301 pc44 models/BSDL/xc9536_pc44.bsd
         IC300 pc44 models/BSDL/xc9536_pc44.bsd
         IC303 dw models/BSDL/sctm001.bsm
 

@@ -1827,6 +1827,9 @@ procedure chkpsn is
 		new_line;
 		put_line("Section statistics");
 		put_line("---------------------------------------------------");
+ 		put_line(" ATG-drivers   (dynamic) :" & natural'image(udb_summary.net_count_statistics.atg_drivers));
+ 		put_line(" ATG-receivers (dynamic) :" & natural'image(udb_summary.net_count_statistics.atg_receivers));
+		put_line("---------------------------------------------------");
 		put_line(" Pull-Up nets        (PU):" & natural'image(udb_summary.net_count_statistics.pu));
  		put_line(" Pull-Down nets      (PD):" & natural'image(udb_summary.net_count_statistics.pd));
  		put_line(" Drive-High nets     (DH):" & natural'image(udb_summary.net_count_statistics.dh));

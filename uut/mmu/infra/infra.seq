@@ -1,6 +1,6 @@
 Section info
  created by infra structure test generator version 3.8
- date      : Tue Jun 30 09:28:05 CEST 2015
+ date      : Thu Mar  3 17:45:41 CET 2016
  database  : mmu.udb
  algorithm : standard
 EndSection
@@ -11,14 +11,14 @@ Section options
  trailer_dr 11001010
  voltage_out_port_1 3.3
  voltage_out_port_2 1.8
- tck_driver_port_1 push-pull
- tms_driver_port_1 push-pull
- tdo_driver_port_1 push-pull
- trst_driver_port_1 push-pull
- tck_driver_port_2 push-pull
- tms_driver_port_2 push-pull
- tdo_driver_port_2 push-pull
- trst_driver_port_2 push-pull
+ tck_driver_port_1 push_pull
+ tms_driver_port_1 push_pull
+ tdo_driver_port_1 push_pull
+ trst_driver_port_1 push_pull
+ tck_driver_port_2 push_pull
+ tms_driver_port_2 push_pull
+ tdo_driver_port_2 push_pull
+ trst_driver_port_2 push_pull
  threshold_tdi_port_1 0.8
  threshold_tdi_port_2 0.8
 EndSection
