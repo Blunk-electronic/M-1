@@ -1,14 +1,15 @@
 Section info
  created by clock test generator version 002
- date      : Thu Mar  3 17:46:30 CET 2016
+ date      : Fri Mar  4 09:42:14 CET 2016
  database  : mmu.udb
  algorithm : non-intrusive
 EndSection
 
 Section options
- on_fail hstrst
- trailer_ir 11001010
- trailer_dr 11001010
+ on_fail power_down
+ frequency 1
+ trailer_ir 01010010
+ trailer_dr 01010010
  voltage_out_port_1 3.3
  voltage_out_port_2 1.8
  tck_driver_port_1 push_pull

@@ -1,6 +1,6 @@
 Section info
  created by pin toggle generator version 003
- date          : 2016-03-03 16:46:42
+ date          : 2016-03-04 08:42:30
  UTC_Offset    : 1 hours
  database      : mmu.udb
  target net    : LED1
@@ -11,9 +11,10 @@ Section info
 EndSection
 
 Section options
-   on_fail hstrst 
-   trailer_ir 11001010 
-   trailer_dr 11001010
+   on_fail power_down 
+   frequency 1 
+   trailer_ir 01010010 
+   trailer_dr 01010010
    voltage_out_port_1  3.3  
    voltage_out_port_2  1.8
    tck_driver_port_1 push_pull  
