@@ -72,6 +72,7 @@ procedure mkinfra is
 			put_line (" date          : " & date_now); 
 			--put_line (" UTC_Offset    : " ); Put (Integer(UTC_Time_Offset/60),1); put(" hours"); new_line; 
 			put_line (" data base     : " & universal_string_type.to_string(data_base));
+			put_line (" bic count     :" & positive'image(summary.bic_ct));
 			put_line (" algorithm     : standard");
 			put_line ("EndSection"); new_line;
 
@@ -82,21 +83,231 @@ procedure mkinfra is
 
 	procedure write_sequences is
 		b : type_bscan_ic_ptr;
+
+		procedure one_of_all( p : positive; instruction : type_bic_instruction_for_infra_structure) is
+			b : type_bscan_ic_ptr;
+		begin
+
+				b := ptr_bic; -- reset bic pointer b
+				while b /= null loop
+					if b.id = p then -- if bic id matches p:
+
+						-- if instruction does not exist, skip writing test vector and exit
+						case instruction is
+							when bypass		=> if not instruction_present(b.opc_bypass) 
+								then 
+									put_line(standard_output,"ERROR: IC '" & universal_string_type.to_string(b.name) 
+										& "' does not support mandatory BYPASS mode !");
+									raise constraint_error;
+								end if;
+							when idcode		=> if not instruction_present(b.opc_idcode) then exit; end if;
+							when usercode	=> if not instruction_present(b.opc_usercode) then exit; end if;
+							when preload	=> if not instruction_present(b.opc_preload) then exit; end if;
+							when sample		=> if not instruction_present(b.opc_sample) then
+								put_line(standard_output,"WARNING: IC '" & universal_string_type.to_string(b.name) 
+									& "' does not support SAMPLE mode !");
+								exit; end if;
+							when extest		=> if not instruction_present(b.opc_extest) then exit; end if;
+						end case;
+						-- instruction exists
+
+						-- write instruction drive
+						put(row_separator_0 
+							& sequence_instruction_set.set & row_separator_0
+							& universal_string_type.to_string(b.name) & row_separator_0
+							& sxr_io_identifier.drive & row_separator_0
+							& sir_target_register.ir
+							& type_register_length'image(b.len_ir - 1) & row_separator_0
+							& sxr_vector_direction.downto & row_separator_0 & "0" & row_separator_0
+							& sxr_assignment_operator.assign & row_separator_0
+							);
+						case instruction is
+							when idcode => m1_internal.put_binary_class_1(b.opc_idcode);
+							when usercode => m1_internal.put_binary_class_1(b.opc_usercode);
+							when sample => m1_internal.put_binary_class_1(b.opc_sample);
+							when preload => m1_internal.put_binary_class_1(b.opc_preload);
+							when extest => 
+								put_line(standard_output,"WARNING: IC '" & universal_string_type.to_string(b.name) 
+									& "' WILL BE OPERATED IN EXTEST MODE !");
+								m1_internal.put_binary_class_1(b.opc_extest);
+							when others => 
+								put_line(standard_output,"ERROR: Instruction '" & bic_instruction'image(instruction)
+									& "' not allowed for infra structure test !");
+								raise constraint_error;
+						end case;
+						put_line(row_separator_0 & to_lower(bic_instruction'image(instruction)));
+
+						-- write sir instruction
+						put_line(row_separator_0 & sequence_instruction_set.sir & sxr_id_identifier.id & positive'image(sxr_ct));
+						sxr_ct := sxr_ct + 1;
+
+
+						-- write data drive
+						put(row_separator_0 
+							& sequence_instruction_set.set & row_separator_0
+							& universal_string_type.to_string(b.name) & row_separator_0
+							& sxr_io_identifier.drive & row_separator_0
+							);
+						case instruction is
+							when idcode =>
+								put(sdr_target_register.idcode
+									& " 31 " & sxr_vector_direction.downto 
+									& " 0 "
+									& sxr_assignment_operator.assign
+									& " 0" -- we drive 32bits of 0 into the register. it is a read-only register (as specified in std)
+									);
+								new_line;
+
+								-- write data expect
+								put(row_separator_0 
+									& sequence_instruction_set.set & row_separator_0
+									& universal_string_type.to_string(b.name) & row_separator_0
+									& sxr_io_identifier.expect & row_separator_0
+									& sdr_target_register.idcode
+									& " 0" -- bit position (since this addresses the bypass register)
+						& sxr_assignment_operator.assign
+						& type_bit_char_class_0'image(b.capture_bypass)(2) -- expect a 0 acc. std. regardless what has been written here (see above)
+						);
+					new_line;
+
+
+
+						exit;
+					end if; -- if bic id matches p
+
+					b := b.next;
+				end loop;
+
+	--		end if; -- if instruction present
+		end one_of_all;
+
 	begin
 		new_line(2);
 		put_line(" -- check bypass registers");
-		b := ptr_bic;
-		while b /= null loop
-			put_line(row_separator_0 
-				& sequence_instruction_set.set & row_separator_0
-				& universal_string_type.to_string(b.name) & row_separator_0
-				& sxr_io_identifier.drive & row_separator_0
-				& sir_target_register.ir
-				& type_register_length'image(b.len_ir - 1) & row_separator_0
-				& sxr_vector_direction.downto & row_separator_0 & "0" & row_separator_0
-				& sxr_assignment_operator.assign & row_separator_0
-				);
-			b := b.next;
+
+		-- write sir bypass:
+
+		-- the bic shall be written into the seq file in the same order as section scanpath configuration (see udb)
+		-- the scanpath itself does not matter here
+
+		-- writes something like:
+
+-- 		set IC301 drv ir 7 downto 0 = 11111111 bypass
+-- 		set IC301 exp ir 7 downto 0 = 000xxx01
+-- 		set IC300 drv ir 7 downto 0 = 11111111 bypass
+-- 		set IC300 exp ir 7 downto 0 = 000xxx01
+-- 		set IC303 drv ir 7 downto 0 = 11111111 bypass
+-- 		set IC303 exp ir 7 downto 0 = 10000001
+-- 		sir id 1
+
+		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+
+			b := ptr_bic; -- reset bic pointer b
+			while b /= null loop
+				if b.id = p then -- if bic id matches p:
+
+					-- write instruction drive
+					put(row_separator_0 
+						& sequence_instruction_set.set & row_separator_0
+						& universal_string_type.to_string(b.name) & row_separator_0
+						& sxr_io_identifier.drive & row_separator_0
+						& sir_target_register.ir
+						& type_register_length'image(b.len_ir - 1) & row_separator_0
+						& sxr_vector_direction.downto & row_separator_0 & "0" & row_separator_0
+						& sxr_assignment_operator.assign & row_separator_0
+						);
+					m1_internal.put_binary_class_1(b.opc_bypass);
+					put_line(" bypass");
+
+					-- write instruction capture
+					put(row_separator_0 
+						& sequence_instruction_set.set & row_separator_0
+						& universal_string_type.to_string(b.name) & row_separator_0
+						& sxr_io_identifier.expect & row_separator_0
+						& sir_target_register.ir
+						& type_register_length'image(b.len_ir - 1) & row_separator_0
+						& sxr_vector_direction.downto & row_separator_0 & "0" & row_separator_0
+						& sxr_assignment_operator.assign & row_separator_0
+						);
+					m1_internal.put_binary_class_1(b.capture_ir);
+					new_line;
+
+				end if; -- if bic id matches p
+
+				b := b.next;
+			end loop;
+		end loop;
+
+		-- write sir instruction
+		put_line(row_separator_0 & sequence_instruction_set.sir & sxr_id_identifier.id & positive'image(sxr_ct));
+		sxr_ct := sxr_ct + 1;
+
+
+		-- write sdr bypass:
+
+-- 		set IC301 drv bypass 1=1
+-- 		set IC301 exp bypass 1=0
+-- 		set IC300 drv bypass 1=1
+-- 		set IC300 exp bypass 1=0
+-- 		set IC303 drv bypass 1=1
+-- 		set IC303 exp bypass 1=0
+-- 		sdr id 2
+
+		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+
+			b := ptr_bic; -- reset bic pointer b
+			while b /= null loop
+				if b.id = p then -- if bic id matches p:
+
+					-- write data drive
+					put(row_separator_0 
+						& sequence_instruction_set.set & row_separator_0
+						& universal_string_type.to_string(b.name) & row_separator_0
+						& sxr_io_identifier.drive & row_separator_0
+						& sdr_target_register.bypass
+						& " 0" -- bit position (since this addresses the bypass register)
+						& sxr_assignment_operator.assign
+						& "1" -- we drive a 1 into the register. if it is a read-only register (as specified in std) a 0 is expected
+						);
+					new_line;
+
+					-- write data expect
+					put(row_separator_0 
+						& sequence_instruction_set.set & row_separator_0
+						& universal_string_type.to_string(b.name) & row_separator_0
+						& sxr_io_identifier.expect & row_separator_0
+						& sdr_target_register.bypass
+						& " 0" -- bit position (since this addresses the bypass register)
+						& sxr_assignment_operator.assign
+						& type_bit_char_class_0'image(b.capture_bypass)(2) -- expect a 0 acc. std. regardless what has been written here (see above)
+						);
+					new_line;
+
+				end if; -- if bic id matches p
+
+				b := b.next;
+			end loop;
+		end loop;
+
+		-- write sdr instruction
+		put_line(row_separator_0 & sequence_instruction_set.sdr & sxr_id_identifier.id & positive'image(sxr_ct));
+		sxr_ct := sxr_ct + 1;
+
+
+		-- IDCODE CHECK ---------------------
+
+		new_line(2);
+		put_line(" -- check idcode registers");
+		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+--			if instruction_present(instruction) then -- if given instruction contains only x, it is regarded as non-existent
+			-- if instruction does not exist, skip writing test vectors. otherwise:
+
+			one_of_all(p,sample);
+
+			-- write sir instruction
+			--put_line(row_separator_0 & sequence_instruction_set.sir & sxr_id_identifier.id & positive'image(sxr_ct));
+			--sxr_ct := sxr_ct + 1;
+
 		end loop;
 
 	end write_sequences;
