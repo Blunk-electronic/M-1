@@ -22,40 +22,28 @@
 --    along with this program.  If not, see <http://www.gnu.org/licenses/>. --
 ------------------------------------------------------------------------------
 
+with Ada.Text_IO;				use Ada.Text_IO;
+with Ada.Integer_Text_IO;		use Ada.Integer_Text_IO;
+with Ada.Characters.Handling; 	use Ada.Characters.Handling;
 
-with Ada.Text_IO;			use Ada.Text_IO;
-with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
-with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
-with Ada.Characters.Handling;
-use Ada.Characters.Handling;
-
---with System.OS_Lib;   use System.OS_Lib;
---with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-with Ada.Strings.Bounded; 	use Ada.Strings.Bounded;
-with Ada.Strings.Fixed; 	use Ada.Strings.Fixed;
-with Ada.Numerics;			use Ada.Numerics;
-with Ada.Numerics.Elementary_Functions;	use Ada.Numerics.Elementary_Functions;
-
-with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
-with Ada.Task_Identification;  use Ada.Task_Identification;
-with Ada.Exceptions; use Ada.Exceptions;
+with Ada.Strings.Bounded; 		use Ada.Strings.Bounded;
+with Ada.Exceptions; 			use Ada.Exceptions;
  
-with GNAT.OS_Lib;   	use GNAT.OS_Lib;
-with Ada.Command_Line;	use Ada.Command_Line;
-with Ada.Directories;	use Ada.Directories;
- 
---with Ada.Calendar;				use Ada.Calendar;
---with Ada.Calendar.Formatting;	use Ada.Calendar.Formatting;
---with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
+with Ada.Command_Line;			use Ada.Command_Line;
+with Ada.Directories;			use Ada.Directories;
 
 with m1;
 with m1_internal; use m1_internal;
+
 
 procedure mkinfra is
 
 	version			: String (1..3) := "039";
 	prog_position	: natural := 0;
 
+	type type_algorithm is ( standard , intrusive);
+	algorithm : type_algorithm;
+	--type type_option is ( none, intrusive ); -- CS
 
 	procedure write_info_section is
 		--previous_output	: file_fype renames current_output;
@@ -73,26 +61,43 @@ procedure mkinfra is
 			--put_line (" UTC_Offset    : " ); Put (Integer(UTC_Time_Offset/60),1); put(" hours"); new_line; 
 			put_line (" data base     : " & universal_string_type.to_string(data_base));
 			put_line (" bic count     :" & positive'image(summary.bic_ct));
-			put_line (" algorithm     : standard");
+			put_line (" algorithm     : " & type_algorithm'image(standard));
+			--put_line (" options       : " & type_option'image()); -- CS 
 			put_line ("EndSection"); new_line;
 
 			--Close(OutputFile); --Close(InputFile);
 			--Set_Output(Previous_Output); --Set_Input(Previous_Input);
 		end;
 
+	procedure write_sir is
+	begin
+		-- write sir instruction -- example: "sir id 6"
+		put_line(row_separator_0 & sequence_instruction_set.sir & sxr_id_identifier.id & positive'image(sxr_ct));
+		sxr_ct := sxr_ct + 1;
+	end write_sir;
+
+	procedure write_sdr is
+	begin
+		-- write sdr instruction -- example: "sdr id 6"
+		put_line(row_separator_0 & sequence_instruction_set.sdr & sxr_id_identifier.id & positive'image(sxr_ct));
+		sxr_ct := sxr_ct + 1;
+	end write_sdr;
 
 	procedure write_sequences is
 		b : type_bscan_ic_ptr;
 
-		procedure one_of_all( p : positive; instruction : type_bic_instruction_for_infra_structure) is
+		procedure one_of_all( 
+			position	: positive; 
+			instruction	: type_bic_instruction_for_infra_structure;
+			write_sxr	: boolean := true
+			) is
 			b : type_bscan_ic_ptr;
 		begin
-
 				b := ptr_bic; -- reset bic pointer b
 				while b /= null loop
-					if b.id = p then -- if bic id matches p:
+					if b.id = position then -- if bic id matches p:
 
-						-- if instruction does not exist, skip writing test vector and exit
+						-- if desired instruction does not exist, skip writing test vector and exit
 						case instruction is
 							when bypass		=> if not instruction_present(b.opc_bypass) 
 								then 
@@ -111,7 +116,9 @@ procedure mkinfra is
 						end case;
 						-- instruction exists
 
-						-- write instruction drive
+						-- write instruction drive (default part)
+						-- example: "set IC301 drv ir 7 downto 0 := "
+						new_line;
 						put(row_separator_0 
 							& sequence_instruction_set.set & row_separator_0
 							& universal_string_type.to_string(b.name) & row_separator_0
@@ -121,8 +128,9 @@ procedure mkinfra is
 							& sxr_vector_direction.downto & row_separator_0 & "0" & row_separator_0
 							& sxr_assignment_operator.assign & row_separator_0
 							);
+						-- write instruction depended part
 						case instruction is
-							when idcode => m1_internal.put_binary_class_1(b.opc_idcode);
+							when idcode => m1_internal.put_binary_class_1(b.opc_idcode); -- example: "11111110 idcode"
 							when usercode => m1_internal.put_binary_class_1(b.opc_usercode);
 							when sample => m1_internal.put_binary_class_1(b.opc_sample);
 							when preload => m1_internal.put_binary_class_1(b.opc_preload);
@@ -137,51 +145,110 @@ procedure mkinfra is
 						end case;
 						put_line(row_separator_0 & to_lower(bic_instruction'image(instruction)));
 
-						-- write sir instruction
-						put_line(row_separator_0 & sequence_instruction_set.sir & sxr_id_identifier.id & positive'image(sxr_ct));
-						sxr_ct := sxr_ct + 1;
+						if write_sxr then
+							write_sir;
+						end if;
 
-
-						-- write data drive
+						-- WRITE DATA DRIVE (default part)
+						-- example: "set IC300 drv"
 						put(row_separator_0 
 							& sequence_instruction_set.set & row_separator_0
 							& universal_string_type.to_string(b.name) & row_separator_0
 							& sxr_io_identifier.drive & row_separator_0
 							);
+						-- write instruction depended part
 						case instruction is
 							when idcode =>
-								put(sdr_target_register.idcode
-									& " 31 " & sxr_vector_direction.downto 
+								-- example: "idcode 31 downto 0 := 0"
+								put_line(sdr_target_register.idcode
+									--& " 31 " & sxr_vector_direction.downto 
+									& type_register_length'image(bic_idcode_register_length - 1)
+									& row_separator_0
+									& sxr_vector_direction.downto 
 									& " 0 "
 									& sxr_assignment_operator.assign
-									& " 0" -- we drive 32bits of 0 into the register. it is a read-only register (as specified in std)
+									& " 0" -- we drive 32bits of 0 into the register. but it is a read-only register (as specified in std)
 									);
+
+							when usercode =>
+								-- example: "usercode 31 downto 0 := 0"
+								put_line(sdr_target_register.usercode
+									& type_register_length'image(bic_usercode_register_length -1)
+									& row_separator_0
+									& sxr_vector_direction.downto 
+									& " 0 "
+									& sxr_assignment_operator.assign
+									& " 0" -- we drive 32bits of 0 into the register. but it is a read-only register (as specified in std)
+									);
+
+							when others => -- sample, preload, extest
+								-- example: "boundary 5 downto 0 := XXX11"
+								put(sdr_target_register.boundary
+									& natural'image(b.len_bsr - 1) & row_separator_0 & sxr_vector_direction.downto 
+									& " 0 "
+									& sxr_assignment_operator.assign & row_separator_0
+									);
+								m1_internal.put_binary_class_1(b.safebits);
 								new_line;
 
-								-- write data expect
-								put(row_separator_0 
-									& sequence_instruction_set.set & row_separator_0
-									& universal_string_type.to_string(b.name) & row_separator_0
-									& sxr_io_identifier.expect & row_separator_0
-									& sdr_target_register.idcode
-									& " 0" -- bit position (since this addresses the bypass register)
-						& sxr_assignment_operator.assign
-						& type_bit_char_class_0'image(b.capture_bypass)(2) -- expect a 0 acc. std. regardless what has been written here (see above)
-						);
-					new_line;
+						end case;
+						
+						-- WRITE DATA EXPECT (default part)
+						-- example: "set IC300 exp"
+						put(row_separator_0 
+							& sequence_instruction_set.set & row_separator_0
+							& universal_string_type.to_string(b.name) & row_separator_0
+							& sxr_io_identifier.expect & row_separator_0
+							);
+						-- write instruction depended part
+						case instruction is
+							when idcode =>
+								-- example: "idcode 31 downto 0 = xxxx1001010100000010000010010011"
+								put(sdr_target_register.idcode
+									& type_register_length'image(bic_idcode_register_length -1)
+									& row_separator_0 
+									& sxr_vector_direction.downto 
+									& " 0 "
+									& sxr_assignment_operator.assign & row_separator_0
+									);
+								m1_internal.put_binary_class_1(b.idcode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
 
+							when usercode =>
+								-- example: "usercode 31 downto 0 = xxxx1001010100000010000010010011"
+								put(sdr_target_register.usercode
+									& type_register_length'image(bic_usercode_register_length -1)
+									& row_separator_0
+									& sxr_vector_direction.downto 
+									& " 0 "
+									& sxr_assignment_operator.assign & row_separator_0
+									);
+								m1_internal.put_binary_class_1(b.usercode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
+								-- NOTE: if usercode not programmed yet, it is all x
 
+							when others => -- sample, preload, extest
+								-- example: "boundary 5 downto 0 := X"
+								put(sdr_target_register.boundary
+									& natural'image(b.len_bsr - 1) & row_separator_0 & sxr_vector_direction.downto 
+									& " 0 "
+									& sxr_assignment_operator.assign
+									& " X "
+									);
 
-						exit;
+						end case;
+						new_line;
+
+						if write_sxr then
+							write_sdr;
+						end if;
+
+						exit; -- bic addressed by p processed. no further search of bic required
 					end if; -- if bic id matches p
 
 					b := b.next;
 				end loop;
-
-	--		end if; -- if instruction present
 		end one_of_all;
 
-	begin
+	begin -- write_sequences
 		new_line(2);
 		put_line(" -- check bypass registers");
 
@@ -238,9 +305,7 @@ procedure mkinfra is
 			end loop;
 		end loop;
 
-		-- write sir instruction
-		put_line(row_separator_0 & sequence_instruction_set.sir & sxr_id_identifier.id & positive'image(sxr_ct));
-		sxr_ct := sxr_ct + 1;
+		write_sir;
 
 
 		-- write sdr bypass:
@@ -289,26 +354,51 @@ procedure mkinfra is
 			end loop;
 		end loop;
 
-		-- write sdr instruction
-		put_line(row_separator_0 & sequence_instruction_set.sdr & sxr_id_identifier.id & positive'image(sxr_ct));
-		sxr_ct := sxr_ct + 1;
+		write_sdr;
 
 
 		-- IDCODE CHECK ---------------------
-
 		new_line(2);
 		put_line(" -- check idcode registers");
 		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
---			if instruction_present(instruction) then -- if given instruction contains only x, it is regarded as non-existent
-			-- if instruction does not exist, skip writing test vectors. otherwise:
-
-			one_of_all(p,sample);
-
-			-- write sir instruction
-			--put_line(row_separator_0 & sequence_instruction_set.sir & sxr_id_identifier.id & positive'image(sxr_ct));
-			--sxr_ct := sxr_ct + 1;
-
+			one_of_all(p,idcode);
 		end loop;
+
+
+		-- USERCODE CHECK ---------------------
+		new_line(2);
+		put_line(" -- check usercode registers");
+		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+			one_of_all(p,usercode);
+		end loop;
+
+		-- BOUNDARY REGISTER CHECK ---------------------
+		new_line(2);
+		put_line(" -- check boundary registers");
+		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+			one_of_all(p,sample);
+		end loop;
+
+		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+			one_of_all(p,preload);
+		end loop;
+
+		-- CAUTION: USE FOR INTRUSIVE MODE ONLY
+		if algorithm = intrusive then
+			for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+				one_of_all(
+					position 	=> p,
+					instruction => extest,
+					write_sxr	=> false
+					);
+			end loop;
+			write_sir; -- SWTICHING TO EXTEST MUST HAPPEN FOR ALL BICS SIMULTANEOUSLY
+			write_sdr;
+		end if;
+
+		new_line;
+		put_line(row_separator_0 & sequence_instruction_set.trst);
+		put_line(section_mark.endsection);
 
 	end write_sequences;
 
@@ -334,6 +424,10 @@ begin
 		put_line("debug level    :" & natural'image(debug_level));
 	end if;
 
+	-- CS: get algorithm as argument
+	-- for the time being it is fixed
+	algorithm := standard;
+
 	prog_position	:= 40;
 	read_data_base;
 
@@ -344,10 +438,13 @@ begin
 		);
 
 	write_info_section;
-	write_test_subsection_options;
+	write_test_section_options;
 
 	write_test_init;
 	write_sequences;
+
+	set_output(standard_output);
+	close(sequence_file);
 
 
 	exception

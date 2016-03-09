@@ -1,5 +1,5 @@
 #! /bin/sh
-version=004
+version=005
 
 #to do:
 # check for kermit
@@ -60,7 +60,7 @@ procedure_operator_confirmation
 procedure_copy_script impaltium
 procedure_copy_script impeagle6x
 procedure_copy_script imporcad
-procedure_copy_script mkinfra
+#procedure_copy_script mkinfra
 procedure_copy_script mkclock
 procedure_copy_script mkmemcon
 procedure_copy_script open_report
@@ -113,6 +113,7 @@ procedure_make compseq
 procedure_make impbsdl
 procedure_make impzuken
 procedure_make joinnetlist
+procedure_make mkinfra
 procedure_make mkintercon
 procedure_make mknets
 procedure_make mkoptions

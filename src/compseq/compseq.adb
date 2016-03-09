@@ -28,8 +28,9 @@
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
---
-
+-- bugfix: at prog_position BY2 and BY6 changed expected register assignment for bypass to 0=1 and 0=0
+-- at prog_position MA1 EX1 added 'X' to don't care bit case
+-- added letter X to bit_char 
 
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
@@ -64,7 +65,7 @@ with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
 
 procedure compseq is
 
-	Version			: String (1..7) := "004.003";
+	Version			: String (1..7) := "004.004";
 
 	--type unsigned_byte is mod 256;
 	package seq_io_unsigned_byte is new Ada.Sequential_IO(unsigned_8);
@@ -177,7 +178,7 @@ procedure compseq is
 	dummy			: Integer;
 
 	lp				: natural; -- line pointer
-	bit_char	 : character_set := to_set("01x");
+	bit_char	 : character_set := to_set("01xX");
 --	type string_ is array (Positive range <>) of My_Character;
 
 	retry_ct_max	: natural := 100;
@@ -512,7 +513,7 @@ procedure compseq is
 						-- set bit position where to expect something
 						when '0' | '1' =>	byte_scratch := (16#80# or  byte_scratch); -- replace 1,0 by 1
 						-- clear bit position where a "don't care" is
-						when 'x' =>			byte_scratch := (16#7F# and byte_scratch); -- replace x by 0
+						when 'x' | 'X' =>	byte_scratch := (16#7F# and byte_scratch); -- replace x by 0
 
 						when others => 	prog_position := "MA1"; raise constraint_error;
 					end case;
@@ -557,7 +558,7 @@ procedure compseq is
 						-- set bit position where to expect 1
 						when '1' =>			byte_scratch := (16#80# or  byte_scratch); -- write 1
 						-- clear bit position where to expect 0 or where a don't care is
-						when '0' | 'x' => 	byte_scratch := (16#7F# and byte_scratch); -- write 0, replace x by 0
+						when '0' | 'x' | 'X' => byte_scratch := (16#7F# and byte_scratch); -- write 0, replace x by 0
 
 						when others => 	prog_position := "EX1"; raise constraint_error;
 					end case;
@@ -822,8 +823,8 @@ procedure compseq is
 
 									-- get bypass drv bit of particular device
 									prog_position := "BY2";
-									if    get_field(line,5) = "1=0" then chain(chain_pt).members(nat_scratch).byp_drv := '0';
-									elsif get_field(line,5) = "1=1" then chain(chain_pt).members(nat_scratch).byp_drv := '1';
+									if    get_field(line,5) = "0=0" then chain(chain_pt).members(nat_scratch).byp_drv := '0';
+									elsif get_field(line,5) = "0=1" then chain(chain_pt).members(nat_scratch).byp_drv := '1';
 									else raise constraint_error;
 									end if;
 
@@ -933,8 +934,8 @@ procedure compseq is
 
 									-- get bypass exp bit of particular device
 									prog_position := "BY6";
-									if    get_field(line,5) = "1=0" then chain(chain_pt).members(nat_scratch).byp_exp := '0'; --put_line("exp");
-									elsif get_field(line,5) = "1=1" then chain(chain_pt).members(nat_scratch).byp_exp := '1';
+									if    get_field(line,5) = "0=0" then chain(chain_pt).members(nat_scratch).byp_exp := '0'; --put_line("exp");
+									elsif get_field(line,5) = "0=1" then chain(chain_pt).members(nat_scratch).byp_exp := '1';
 									else raise constraint_error;
 									end if;
 
