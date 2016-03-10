@@ -5,9 +5,11 @@ Section info
 	version		1.0
 	status		experimental
 	author		MBL / Blunk electronic
-	memory_type	RAM
+	class		RAM
 	manufacturer	UMC
-	write_protect	no
+	write_protect	false
+	protocol	parallel
+	ram_type	SRAM
 EndSection
 
 

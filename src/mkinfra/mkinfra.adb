@@ -69,20 +69,6 @@ procedure mkinfra is
 			--Set_Output(Previous_Output); --Set_Input(Previous_Input);
 		end;
 
-	procedure write_sir is
-	begin
-		-- write sir instruction -- example: "sir id 6"
-		put_line(row_separator_0 & sequence_instruction_set.sir & sxr_id_identifier.id & positive'image(sxr_ct));
-		sxr_ct := sxr_ct + 1;
-	end write_sir;
-
-	procedure write_sdr is
-	begin
-		-- write sdr instruction -- example: "sdr id 6"
-		put_line(row_separator_0 & sequence_instruction_set.sdr & sxr_id_identifier.id & positive'image(sxr_ct));
-		sxr_ct := sxr_ct + 1;
-	end write_sdr;
-
 	procedure write_sequences is
 		b : type_bscan_ic_ptr;
 
@@ -454,7 +440,7 @@ begin
 			case prog_position is
 				when 10 =>
 					put_line("ERROR: Data base file missing or insufficient access rights !");
-					put_line("       Provide data base name as argument. Example: udbinfo my_uut.udb");
+					put_line("       Provide data base name as argument. Example: mkinfra my_uut.udb");
 				when 20 =>
 					put_line("ERROR: Test name missing !");
 					put_line("       Provide test name as argument ! Example: mkinfra my_uut.udb my_infrastructure_test");
