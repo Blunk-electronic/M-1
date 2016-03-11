@@ -36,6 +36,7 @@ with Ada.Integer_Text_IO;		use Ada.Integer_Text_IO;
 with Ada.Characters.Handling; 	use Ada.Characters.Handling;
 
 with Ada.Strings.Bounded; 		use Ada.Strings.Bounded;
+with Ada.Strings.fixed; 		use Ada.Strings.fixed;
 with Ada.Exceptions; 			use Ada.Exceptions;
  
 with Ada.Command_Line;			use Ada.Command_Line;
@@ -53,6 +54,24 @@ procedure mkmemcon is
 	type type_algorithm is ( standard );
 	algorithm 		: type_algorithm;
 	line_counter 	: natural := 0; -- counts lines in model file
+
+	type type_section_name is
+		record
+			info			: string (1..4)  := "info";
+			port_pin_map	: string (1..12) := "port_pin_map";
+		end record;
+	section_name : type_section_name;
+
+	type type_port_pin_map_identifier is
+		record
+			data		: string (1..4) := "data";
+			address		: string (1..7) := "address";
+			control		: string (1..7) := "control";
+			input		: string (1..2) := "in";
+			output		: string (1..3) := "out";
+			inout		: string (1..5) := "inout";
+		end record;
+	port_pin_map_identifier : type_port_pin_map_identifier;
 
 	type type_info_item is
 		record
@@ -204,12 +223,77 @@ procedure mkmemcon is
 		put_line("version       : " & universal_string_type.to_string(ptr_target.version));
 	end print_info;
 
+	type type_port_vector is
+		record
+			name	: universal_string_type.bounded_string;
+			msb		: natural := 0;
+			lsb		: natural := 0;
+			mirrored: boolean := false;
+		end record;
+
+	function fraction_port_name(port_name_given : string) return type_port_vector is
+ 		length		: natural := port_name_given'last;
+		ob			: string (1..1) := "[";
+		cb			: string (1..1) := "]";
+		ifs			: string (1..1) := ":";
+		pos_ob		: positive;
+		pos_cb		: positive;
+		pos_ifs		: positive;
+		ct_ifs		: natural := ada.strings.fixed.count(port_name_given,ifs);
+		ct_ob		: natural := ada.strings.fixed.count(port_name_given,ob);
+		ct_cb		: natural := ada.strings.fixed.count(port_name_given,cb);
+		port_vector	: type_port_vector;
+	begin
+		if ct_ob = 1 and ct_cb = 1 and ct_ifs = 1 then -- it seems like a vector
+
+			-- get position of opening, closing bracket and ifs to verify syntax
+			pos_ob  := ada.strings.fixed.index(port_name_given,ob);
+			pos_cb  := ada.strings.fixed.index(port_name_given,cb);
+			pos_ifs := ada.strings.fixed.index(port_name_given,ifs);
+
+			-- the opening bracket must be on position greater 1 -- example ADR[14:0]
+			-- the closing bracket must be on last position
+			if pos_ob > 1 and pos_cb = length then
+
+				-- ifs must be within brackets, but not next to a bracket
+				-- MSB is always on the left, LSB always on the left
+				if pos_ifs > pos_ob + 1 and pos_ifs < pos_cb - 1 then
+					port_vector.msb := positive'value(port_name_given (pos_ob+1 .. pos_ifs-1)); -- msb is always non-zero
+					port_vector.lsb := natural'value(port_name_given (pos_ifs+1 .. pos_cb-1));
+
+					if port_vector.msb > port_vector.lsb then
+						-- the port name is from pos. 1 to opening bracket
+						port_vector.name := universal_string_type.to_bounded_string(port_name_given (port_name_given'first .. pos_ob-1));
+					else
+						raise constraint_error;
+					end if;
+				else
+					raise constraint_error;
+				end if;
+			else
+				raise constraint_error;
+			end if;
+
+
+		elsif ct_ob = 0 and ct_cb = 0 and ct_ifs = 0 then -- it is a single port (no vector)
+			-- copy port_name_given as it is in port_name_given.name
+			-- and set msb equal to lsb to indicate a non-vector port
+			port_vector.name := universal_string_type.to_bounded_string(port_name_given);
+			port_vector.msb := 0;
+			port_vector.lsb := 0;
+		
+		else -- other bracket counts are invalid
+			raise constraint_error;
+		end if;
+		return port_vector;
+	end fraction_port_name;
 
 	procedure read_memory_model is
 		line_of_file	: extended_string.bounded_string;
 		ptr_pin			: type_ptr_pin;
 
-		section_info_entered	:	boolean := false;
+		section_info_entered			:	boolean := false;
+		section_port_pin_map_entered	:	boolean := false;
 
 		scratch_value			: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
 		scratch_compatibles		: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
@@ -224,6 +308,10 @@ procedure mkmemcon is
 		scratch_ram_type		: type_type_ram := unknown;
 		scratch_rom_type		: type_type_rom := unknown;
 
+		scratch_pin_class		: type_pin_class := control;
+		scratch_pin_direction	: type_direction := output;
+		scratch_port_name		: universal_string_type.bounded_string;
+		scratch_port_name_frac	: type_port_vector;
 	begin
 		put_line("reading memory model file ...");
 		open(
@@ -242,6 +330,7 @@ procedure mkmemcon is
 					put_line("line read : ->" & extended_string.to_string(line_of_file) & "<-");
 				end if;
 
+				-- section info related begin
 				if section_info_entered then
 					if get_field_from_line(line_of_file,1) = section_mark.endsection then
 						section_info_entered := false;
@@ -329,7 +418,7 @@ procedure mkmemcon is
 						print_info;
 
 					else
-						-- process info section:
+						-- process info section here:
 						-- collect all info items in scratch variables
 						-- scratch variables will be used to create an object of type type_targt pointed to by ptr_target
 						if debug_level >= 100 then
@@ -400,11 +489,72 @@ procedure mkmemcon is
 
 				else
 					if get_field_from_line(line_of_file,1) = section_mark.section then
-						if get_field_from_line(line_of_file,2) = "info" then
+						if get_field_from_line(line_of_file,2) = section_name.info then
 							section_info_entered := true;
 						end if;
 					end if;
 				end if;
+				-- section info related end
+
+
+				-- section port_pin_map related begin
+				if section_port_pin_map_entered then
+					prog_position := 2000;
+					if get_field_from_line(line_of_file,1) = section_mark.endsection then
+						section_port_pin_map_entered := false;
+						-- section port_pin_map reading done.
+					else
+						-- process section port_pin_map here
+						if debug_level >= 100 then
+							put_line("port_pin_map : ->" & extended_string.to_string(line_of_file) & "<-");
+						end if;
+
+						-- read pin class identifier
+						if get_field_from_line(line_of_file,1) = port_pin_map_identifier.data then
+							scratch_pin_class := data;
+						elsif
+							get_field_from_line(line_of_file,1) = port_pin_map_identifier.address then
+							scratch_pin_class := address;
+						elsif
+							get_field_from_line(line_of_file,1) = port_pin_map_identifier.control then
+							scratch_pin_class := control;
+						else
+							prog_position := 2100; -- CS: refine error output
+							raise constraint_error;
+						end if;
+
+						-- read pin direction identifier
+						if get_field_from_line(line_of_file,2) = port_pin_map_identifier.input then
+							scratch_pin_direction := input;
+						elsif
+							get_field_from_line(line_of_file,2) = port_pin_map_identifier.output then
+							scratch_pin_direction := output;
+						elsif
+							get_field_from_line(line_of_file,2) = port_pin_map_identifier.inout then
+							scratch_pin_direction := inout;
+						else
+							prog_position := 2200;  -- CS: refine error output
+							raise constraint_error;
+						end if;
+
+						-- read port name -- A[14:0]
+						scratch_port_name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3));
+						scratch_port_name_frac := fraction_port_name(universal_string_type.to_string(scratch_port_name));
+
+						put_line("port name : " & universal_string_type.to_string(scratch_port_name_frac.name));
+						put_line("port msb  :" & positive'image(scratch_port_name_frac.msb));
+						put_line("port lsb  :" & natural'image(scratch_port_name_frac.lsb));
+
+					end if;
+				else
+					if get_field_from_line(line_of_file,1) = section_mark.section then
+						if get_field_from_line(line_of_file,2) = section_name.port_pin_map then
+							section_port_pin_map_entered := true;
+						end if;
+					end if;
+				end if;
+				-- section port_pin_map related end
+
 
 			end if; -- if line contains anything
 
@@ -431,7 +581,7 @@ procedure mkmemcon is
 			name => (compose (universal_string_type.to_string(test_name), universal_string_type.to_string(test_name), "seq")));
 		set_output(sequence_file); -- set data sink
 
-		put_line("Section info");
+		put_line("Section " & section_name.info);
 		put_line(" created by memory connections test generator version "& version);
 		put_line(" date          : " & m1.date_now);
 		put_line(" database      : " & m1_internal.universal_string_type.to_string(m1_internal.data_base));
@@ -541,6 +691,7 @@ begin
 					put("unexpected exception: ");
 					put_line(exception_name(event));
 					put(exception_message(event)); new_line;
+					put_line("error in model file in line :" & natural'image(line_counter));
 					put_line("program error at position " & natural'image(prog_position));
 			end case;
 
