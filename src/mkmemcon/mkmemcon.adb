@@ -35,6 +35,7 @@ with Ada.Text_IO;				use Ada.Text_IO;
 with Ada.Integer_Text_IO;		use Ada.Integer_Text_IO;
 with Ada.Characters.Handling; 	use Ada.Characters.Handling;
 
+with Ada.Strings; 				use Ada.Strings;
 with Ada.Strings.Bounded; 		use Ada.Strings.Bounded;
 with Ada.Strings.fixed; 		use Ada.Strings.fixed;
 with Ada.Exceptions; 			use Ada.Exceptions;
@@ -131,13 +132,13 @@ procedure mkmemcon is
 	-- type definition of a single pin
 	-- The object of type type_pin will be added to a list later
 	-- and accessed by pointer ptr_pin.
-	type type_pin;
-	type type_ptr_pin is access all type_pin;
+	type type_memory_pin;
+	type type_ptr_memory_pin is access all type_memory_pin;
 	type type_pin_class is ( data, address, control);
 	type type_direction is ( input, output, inout, bidir);
-	type type_pin (class : type_pin_class) is
+	type type_memory_pin (class : type_pin_class) is
 		record
-			next			: type_ptr_pin;
+			next			: type_ptr_memory_pin;
 			name_pin		: universal_string_type.bounded_string; -- like pin 75, 34, 4
 			name_port		: universal_string_type.bounded_string; -- like port A13, SDA, D15
 			direction		: type_direction;
@@ -149,7 +150,7 @@ procedure mkmemcon is
 					null;
 			end case;
 		end record;
-
+	ptr_memory_pin	: type_ptr_memory_pin;
 	-- vector inout D[7:0] 19 18 17 16 15 13 12 11
 	-- vector input A[14:0] 1 26 2 23 21 24 25 3 4 5 6 7 8 9 10
 -- 	type type_bus (width : positive) is
@@ -159,18 +160,61 @@ procedure mkmemcon is
 -- 		end record;
 
 	procedure add_to_pin_list(
-		list				: in out type_ptr_pin;
+	-- adds a port and its pin name to pin list: 
+	-- example 1: port D5 maps to pin 17 ( taken from -- vector inout D[7:0] 19 18 17 16 15 13 12 11)
+	-- example 2: port WE maps to pin 27 ( taken from -- control in WE 	27)
+		list				: in out type_ptr_memory_pin;
 		class_given			: in type_pin_class;
 		name_pin_given		: in universal_string_type.bounded_string;
 		name_port_given		: in universal_string_type.bounded_string;
 		direction_given		: in type_direction;
-		index_given			: in natural := 0 -- default in case it is don't care
+		index_given			: in natural := 0 -- default in case it is not required. 
+											-- single port names do not have an index (like CE)
 		) is
+
+		procedure check_if_pin_already_in_list is
+			p	: type_ptr_memory_pin := ptr_memory_pin;
+		begin
+			while p /= null loop
+				-- CHECK OCCURENCE OF PORT NAME
+				--  on port name match
+				if universal_string_type.to_string(p.name_port) = universal_string_type.to_string(name_port_given) then
+
+					-- if data or address port, check index
+					if p.class = data or p.class = address then
+						if p.index = index_given then -- on index match
+							put_line("ERROR: Port '" 
+								& universal_string_type.to_string(name_port_given)
+								& trim(natural'image(index_given),left)
+								& "' already used !");
+							raise constraint_error;
+						end if;
+					else -- other ports like "control" do not have any indexes, so it is sufficient to have the port name checked
+						put_line("ERROR: Port '" 
+							& universal_string_type.to_string(name_port_given)
+							& "' already used !");
+						raise constraint_error;
+					end if;
+				end if;
+
+				-- CHECK OCCURENCE OF PIN NAME
+				if universal_string_type.to_string(p.name_pin) = universal_string_type.to_string(name_pin_given) then
+					put_line("ERROR: Pin '" & universal_string_type.to_string(name_pin_given) & "' already used !");
+					raise constraint_error;
+				end if;
+
+				p := p.next;
+			end loop;
+			-- pin not used already
+		end check_if_pin_already_in_list;
+
 	begin
 		-- CS: check if pin already in list
+		check_if_pin_already_in_list;
+
 		case class_given is
 			when data =>
-				list := new type_pin'(
+				list := new type_memory_pin'(
 					next		=> list,
 					class		=> data,
 					name_pin	=> name_pin_given,
@@ -179,7 +223,7 @@ procedure mkmemcon is
 					index		=> index_given
 					);
 			when address =>
-				list := new type_pin'(
+				list := new type_memory_pin'(
 					next		=> list,
 					class		=> address,
 					name_pin	=> name_pin_given,
@@ -188,7 +232,7 @@ procedure mkmemcon is
 					index		=> index_given
 					);
 			when others =>
-				list := new type_pin'(
+				list := new type_memory_pin'(
 					next		=> list,
 					class		=> control,
 					name_pin	=> name_pin_given,
@@ -228,10 +272,13 @@ procedure mkmemcon is
 			name	: universal_string_type.bounded_string;
 			msb		: natural := 0;
 			lsb		: natural := 0;
-			mirrored: boolean := false;
+			length	: positive := 1;
+			--mirrored: boolean := false; -- CS: not used yet
 		end record;
 
 	function fraction_port_name(port_name_given : string) return type_port_vector is
+	-- breaks down something line A[14:0] into the components name=A, msb=14, lsb=0 and length=15
+	-- if a single port given like 'CE', the components are name=CE, msb=0, lsb=0 and length=1
  		length		: natural := port_name_given'last;
 		ob			: string (1..1) := "[";
 		cb			: string (1..1) := "]";
@@ -261,6 +308,7 @@ procedure mkmemcon is
 					port_vector.msb := positive'value(port_name_given (pos_ob+1 .. pos_ifs-1)); -- msb is always non-zero
 					port_vector.lsb := natural'value(port_name_given (pos_ifs+1 .. pos_cb-1));
 
+					-- msb must be greater than lsb
 					if port_vector.msb > port_vector.lsb then
 						-- the port name is from pos. 1 to opening bracket
 						port_vector.name := universal_string_type.to_bounded_string(port_name_given (port_name_given'first .. pos_ob-1));
@@ -285,12 +333,15 @@ procedure mkmemcon is
 		else -- other bracket counts are invalid
 			raise constraint_error;
 		end if;
+
+		-- calculate vector length. in case of a single port, the length becomes 1
+		port_vector.length := port_vector.msb - port_vector.lsb + 1;
 		return port_vector;
 	end fraction_port_name;
 
 	procedure read_memory_model is
 		line_of_file	: extended_string.bounded_string;
-		ptr_pin			: type_ptr_pin;
+		field_count		: natural;
 
 		section_info_entered			:	boolean := false;
 		section_port_pin_map_entered	:	boolean := false;
@@ -325,7 +376,9 @@ procedure mkmemcon is
 			line_of_file := extended_string.to_bounded_string(get_line);
 			line_of_file := remove_comment_from_line(line_of_file);
 
-			if get_field_count(extended_string.to_string(line_of_file)) > 0 then -- if line contains anything
+			field_count := get_field_count(extended_string.to_string(line_of_file));
+
+			if field_count > 0 then -- if line contains anything
 				if debug_level >= 110 then
 					put_line("line read : ->" & extended_string.to_string(line_of_file) & "<-");
 				end if;
@@ -537,13 +590,44 @@ procedure mkmemcon is
 							raise constraint_error;
 						end if;
 
+						prog_position := 2210;
 						-- read port name -- A[14:0]
 						scratch_port_name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3));
 						scratch_port_name_frac := fraction_port_name(universal_string_type.to_string(scratch_port_name));
 
-						put_line("port name : " & universal_string_type.to_string(scratch_port_name_frac.name));
-						put_line("port msb  :" & positive'image(scratch_port_name_frac.msb));
-						put_line("port lsb  :" & natural'image(scratch_port_name_frac.lsb));
+						if debug_level >= 100 then
+							prog_position := 2220;
+							put("port: " & universal_string_type.to_string(scratch_port_name_frac.name));
+							if scratch_port_name_frac.length > 1 then
+								put(" msb" & positive'image(scratch_port_name_frac.msb));
+								put(" lsb" & natural'image(scratch_port_name_frac.lsb));
+								put(" length" & natural'image(scratch_port_name_frac.length));
+							end if;
+							new_line;
+						end if;
+		
+						prog_position := 2230;
+						-- vector length must match number of pins given after port name
+						-- example: data inout D[7:0] 19 18 17 16 15 13 12 20 -- 11 fields
+						-- vector length is 8, number of pins given is 8
+						if scratch_port_name_frac.length = field_count - 3 then
+							for p in 4..field_count loop
+								add_to_pin_list(
+									list			=> ptr_memory_pin,
+									class_given		=> scratch_pin_class,
+									name_pin_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,p)),
+									name_port_given	=> scratch_port_name_frac.name,
+									direction_given	=> scratch_pin_direction,
+									-- calculate index: example: port D index 7 maps to pin 19. ,  port D index 0 maps to pin 20.
+									-- pin names start in field 4
+									index_given		=> scratch_port_name_frac.length - 1 - (p - 4)
+									);
+
+							end loop;
+						else
+							put_line("ERROR: Expected" & positive'image(scratch_port_name_frac.length) & " pin name(s) after port name !");
+							raise constraint_error;
+						end if;
 
 					end if;
 				else
@@ -557,16 +641,6 @@ procedure mkmemcon is
 
 
 			end if; -- if line contains anything
-
-
--- add_to_pin_list(
--- 		list				=> ptr_pin,
--- 		class_given			=> data,
--- 		name_pin_given		=> universal_string_type.to_bounded_string("x"),
--- 		name_port_given		=> universal_string_type.to_bounded_string("x"),
--- 		direction_given		=> bidir,
--- 		index_given			=> 0
--- 		);
 
 
 		end loop;
