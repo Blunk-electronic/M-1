@@ -101,20 +101,26 @@ procedure mkmemcon is
 	--type type_target (class : type_target_class := ram) is
 	type type_target;
 	type type_ptr_target is access all type_target;
-	type type_target (class : type_target_class := ram) is
+	type type_target (class_target : type_target_class := ram) is
 		record
 			date			: universal_string_type.bounded_string;
 			author			: universal_string_type.bounded_string;
 			status			: type_model_status;
 			version			: universal_string_type.bounded_string;
-			case class is
+			device_name		: universal_string_type.bounded_string; -- like IC202
+			data_base		: universal_string_type.bounded_string;
+			test_name		: universal_string_type.bounded_string; -- like my_sram_test
+			model_file		: universal_string_type.bounded_string; -- like models/U256D.txt
+			case class_target is
 				when RAM | ROM =>
 					value			: universal_string_type.bounded_string;
 					compatibles		: universal_string_type.bounded_string;
 					manufacturer	: universal_string_type.bounded_string;
+					device_package	: universal_string_type.bounded_string;
 					protocol 		: type_protocol;
+					algorithm		: type_algorithm;
 					write_protect	: type_write_protect;
-					case class is
+					case class_target is
 						when RAM => 
 							ram_type		: type_type_ram;
 						when ROM =>
@@ -135,15 +141,16 @@ procedure mkmemcon is
 	type type_memory_pin;
 	type type_ptr_memory_pin is access all type_memory_pin;
 	type type_pin_class is ( data, address, control);
-	type type_direction is ( input, output, inout, bidir);
-	type type_memory_pin (class : type_pin_class) is
+	type type_direction is ( input, output, inout);
+	type type_memory_pin (class_pin : type_pin_class) is
 		record
 			next			: type_ptr_memory_pin;
 			name_pin		: universal_string_type.bounded_string; -- like pin 75, 34, 4
 			name_port		: universal_string_type.bounded_string; -- like port A13, SDA, D15
+			name_net 		: universal_string_type.bounded_string; -- the net it is connected with like CPU_WE
 			direction		: type_direction;
 			-- indexing is required for address or data ports only
-			case class is
+			case class_pin is
 				when data | address =>
 					index		: natural; -- like address 0, data 7
 				when others => -- like CE, WE
@@ -159,12 +166,33 @@ procedure mkmemcon is
 -- 			ptr_pin_list		: type_ptr_pin;
 -- 		end record;
 
+	invalid_value	: boolean := false;
+	invalid_package	: boolean := false;
+
+	type type_model_section_processed is
+		record
+			info			: boolean := false;
+			port_pin_map	: boolean := false;
+			prog		 	: boolean := false;
+		end record;
+	model_section_processed : type_model_section_processed;
+
+	type type_prog_subsection_processed is
+		record
+			init			: boolean := false;
+			write 			: boolean := false;
+			read  			: boolean := false;
+			disable			: boolean := false;
+		end record;
+	prog_subsection_processed : type_prog_subsection_processed;
+			
+
 	procedure add_to_pin_list(
 	-- adds a port and its pin name to pin list: 
 	-- example 1: port D5 maps to pin 17 ( taken from -- vector inout D[7:0] 19 18 17 16 15 13 12 11)
 	-- example 2: port WE maps to pin 27 ( taken from -- control in WE 	27)
 		list				: in out type_ptr_memory_pin;
-		class_given			: in type_pin_class;
+		pin_class_given		: in type_pin_class;
 		name_pin_given		: in universal_string_type.bounded_string;
 		name_port_given		: in universal_string_type.bounded_string;
 		direction_given		: in type_direction;
@@ -173,15 +201,18 @@ procedure mkmemcon is
 		) is
 
 		procedure check_if_pin_already_in_list is
+		-- searches name_pin_given and name_port_given in pin list (accessed by ptr_memory_pin)
+		-- if pin or port already used, abort
 			p	: type_ptr_memory_pin := ptr_memory_pin;
 		begin
-			while p /= null loop
+			while p /= null loop -- loop through pin list
+
 				-- CHECK OCCURENCE OF PORT NAME
 				--  on port name match
 				if universal_string_type.to_string(p.name_port) = universal_string_type.to_string(name_port_given) then
 
 					-- if data or address port, check index
-					if p.class = data or p.class = address then
+					if p.class_pin = data or p.class_pin = address then
 						if p.index = index_given then -- on index match
 							put_line("ERROR: Port '" 
 								& universal_string_type.to_string(name_port_given)
@@ -198,74 +229,160 @@ procedure mkmemcon is
 				end if;
 
 				-- CHECK OCCURENCE OF PIN NAME
+				--  on pin name match
 				if universal_string_type.to_string(p.name_pin) = universal_string_type.to_string(name_pin_given) then
 					put_line("ERROR: Pin '" & universal_string_type.to_string(name_pin_given) & "' already used !");
 					raise constraint_error;
 				end if;
 
-				p := p.next;
+				p := p.next; -- advance to next pin
 			end loop;
-			-- pin not used already
+			-- if this point is reached, the pin is not used already -> fine
 		end check_if_pin_already_in_list;
 
+		function get_connected_net return universal_string_type.bounded_string is
+		-- from object "target" (created after processing section "info"), accessed by ptr_target we
+		-- get the device name, value and package (ptr_target.device_name, ptr_target.device_value and ptr_target.device_package)
+		-- now the net list (from data base) is searched for a net that contains the target device with name_pin_given
+			n			: type_net_ptr := ptr_net;
+			net_name	: universal_string_type.bounded_string;
+			net_found	: boolean := false; -- indicates whether a net has been found
+		begin
+			loop_through_net_list:
+			while n /= null loop
+				for p in 1..n.part_ct loop -- loop through pins of net pointed to by n
+
+					-- to speed up the process, only non-scan pins are adressed
+					if not n.pin(p).is_bscan_capable then
+
+						-- on device name match
+						if universal_string_type.to_string(n.pin(p).device_name) = universal_string_type.to_string(ptr_target.device_name) then
+
+							-- on pin name match, the net connected to the given pin has been found
+							if universal_string_type.to_string(n.pin(p).device_pin_name) = universal_string_type.to_string(name_pin_given) then
+								net_name := n.name; -- save net name
+								if debug_level >= 100 then
+									put_line("net : " & universal_string_type.to_string(n.name));
+								end if;
+
+								-- do a net class check in connection with pin direction
+								case n.class is
+									-- class NA | EL | EH nets can not be used to drive data into the target
+									when NA | EL | EH =>
+										case direction_given is
+											when input =>
+												put("ERROR: Input pin '" & universal_string_type.to_string(name_pin_given)
+													& "' port '" & universal_string_type.to_string(name_port_given));
+												if pin_class_given /= control then
+													put(trim(natural'image(index_given),left));
+												end if;
+												put_line("' of '" & universal_string_type.to_string(ptr_target.device_name) 
+													& "' is connected to net '"
+													& universal_string_type.to_string(net_name) & "' which is in class '" 
+													& type_net_class'image(n.class) & "' !");
+												put_line("       In nets of this class, no drivers become active !");
+												raise constraint_error;
+											when inout =>
+												put("WARNING: Bidir pin '" & universal_string_type.to_string(name_pin_given)
+													& "' port '" & universal_string_type.to_string(name_port_given));
+												if pin_class_given /= control then
+													put(trim(natural'image(index_given),left));
+												end if;
+												put_line("' of '" & universal_string_type.to_string(ptr_target.device_name) 
+													& "' is connected to net '"
+													& universal_string_type.to_string(net_name) & "' which is in class '" 
+													& type_net_class'image(n.class) & "' !");
+												put_line("         In nets of this class, no drivers become active !");
+											when output =>
+												null; -- CS: put warning ?
+										end case; -- direction_given
+									when others => 
+										null;
+										-- CS: more class checking ?
+								end case; -- class
+
+								-- verify value of target, but do this only once
+								-- the global flag invalid_value is used to ensure this message comes up only once
+								if not invalid_value then
+									if universal_string_type.to_string(n.pin(p).device_value) /= universal_string_type.to_string(ptr_target.value) then
+										invalid_value := true;
+										put_line("WARNING: Target value mismatch !");
+										put_line("         value given as parameter : " & universal_string_type.to_string(ptr_target.value));
+										put_line("         value found in data base : " & universal_string_type.to_string(n.pin(p).device_value));
+									end if;
+								end if;
+
+								-- verify package, but do this only once
+								-- the global flag invalid_package is used to ensure this message comes up only once
+								if not invalid_package then
+									if universal_string_type.to_string(n.pin(p).device_package) /= universal_string_type.to_string(ptr_target.device_package) then
+										invalid_package := true;
+										put_line("WARNING: Target package mismatch !");
+										put_line("         package given as parameter : " & universal_string_type.to_string(ptr_target.device_package));
+										put_line("         package found in data base : " & universal_string_type.to_string(n.pin(p).device_package));
+									end if;
+								end if;
+
+								-- now, a connected net has been found
+								net_found := true;
+
+								-- abort searching net list here
+								exit loop_through_net_list;
+							end if; -- on pin name match
+
+						end if; -- on device name match
+					end if; -- pin must not be scan capable
+				end loop;
+				n := n.next; -- advance to next net
+			end loop loop_through_net_list;
+
+			-- if net not found after searching the uut net list, abort
+			if not net_found then
+				put_line("ERROR: Target device '" & universal_string_type.to_string(ptr_target.device_name) & "' not found in data base !");
+				put_line("       Make sure device exists or check spelling (case sensitive) !");
+				raise constraint_error;
+			end if;
+			return net_name; -- send net name back
+		end get_connected_net;
+
 	begin
-		-- CS: check if pin already in list
+		-- check if pin already in list
 		check_if_pin_already_in_list;
 
-		case class_given is
+		-- in depence of the given pin class, add the given pin to the pin list
+		case pin_class_given is
 			when data =>
 				list := new type_memory_pin'(
 					next		=> list,
-					class		=> data,
+					class_pin	=> data,
 					name_pin	=> name_pin_given,
 					name_port	=> name_port_given,
+					name_net	=> get_connected_net, -- find connected net
 					direction	=> direction_given,
 					index		=> index_given
 					);
 			when address =>
 				list := new type_memory_pin'(
 					next		=> list,
-					class		=> address,
+					class_pin	=> address,
 					name_pin	=> name_pin_given,
 					name_port	=> name_port_given,
+					name_net	=> get_connected_net, -- find connected net
 					direction	=> direction_given,
 					index		=> index_given
 					);
 			when others =>
 				list := new type_memory_pin'(
 					next		=> list,
-					class		=> control,
+					class_pin	=> control,
 					name_pin	=> name_pin_given,
 					name_port	=> name_port_given,
+					name_net	=> get_connected_net, -- find connected net
 					direction	=> direction_given
 					);
 		end case;
 	end add_to_pin_list;
 
-
-	procedure print_info is
-	begin
-		put_line("target properties:");
-		put_line("class         : " & type_target_class'image(ptr_target.class));
-		case ptr_target.class is 
-			when RAM => put_line("ram_type      : " & type_type_ram'image(ptr_target.ram_type));
-			when ROM => put_line("rom_type      : " & type_type_rom'image(ptr_target.rom_type));
-			when others => null;
-		end case;
-		case ptr_target.class is 
-			when RAM | ROM =>
-				put_line("value         : " & universal_string_type.to_string(ptr_target.value));
-				put_line("compatibles   : " & universal_string_type.to_string(ptr_target.compatibles));
-				put_line("manufacturer  : " & universal_string_type.to_string(ptr_target.manufacturer));
-				put_line("protocol      : " & type_protocol'image(ptr_target.protocol));
-				put_line("write_protect : " & type_write_protect'image(ptr_target.write_protect));
-			when others => null;
-		end case;
-		put_line("date          : " & universal_string_type.to_string(ptr_target.date));
-		put_line("author        : " & universal_string_type.to_string(ptr_target.author));
-		put_line("status        : " & type_model_status'image(ptr_target.status));
-		put_line("version       : " & universal_string_type.to_string(ptr_target.version));
-	end print_info;
 
 	type type_port_vector is
 		record
@@ -340,12 +457,17 @@ procedure mkmemcon is
 	end fraction_port_name;
 
 	procedure read_memory_model is
+	-- reads the given memory model file section by section
+	-- the sections are based on each other in the follwing order: info, port_pin_map, prog
+	-- if a section is missing, subsequent sections can not be processed
 		line_of_file	: extended_string.bounded_string;
 		field_count		: natural;
 
 		section_info_entered			:	boolean := false;
 		section_port_pin_map_entered	:	boolean := false;
+		section_prog_entered			:	boolean := false;
 
+		-- model properties specified in section "info". if a property is missing in sectin "info" a default is used
 		scratch_value			: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
 		scratch_compatibles		: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
 		scratch_manufacturer	: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
@@ -355,48 +477,62 @@ procedure mkmemcon is
 		scratch_author			: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
 		scratch_protocol 		: type_protocol := unknown;
 		scratch_write_protect	: type_write_protect := true; -- safety measure
-		scratch_class			: type_target_class := unknown;
+		scratch_target_class	: type_target_class := unknown;
 		scratch_ram_type		: type_type_ram := unknown;
 		scratch_rom_type		: type_type_rom := unknown;
 
-		scratch_pin_class		: type_pin_class := control;
-		scratch_pin_direction	: type_direction := output;
-		scratch_port_name		: universal_string_type.bounded_string;
-		scratch_port_name_frac	: type_port_vector;
-	begin
-		put_line("reading memory model file ...");
+		-- model properties specified in section "port_pin_map"
+		-- example: data inout D[7:0] 19 18 17 16 15 13 12 11
+		-- example: control in OE 22
+		scratch_pin_class		: type_pin_class; -- like address, data, control
+		scratch_pin_direction	: type_direction; -- like input, output, inout 
+		scratch_port_name		: universal_string_type.bounded_string; -- like D or OE
+		scratch_port_name_frac	: type_port_vector; -- like [7:0]
+	begin -- read memory model
+		put_line("reading memory/cluster model file ...");
+
+		-- open model file as given via command line argument
 		open(
 			file => model, 
 			name => universal_string_type.to_string(model_file),
 			mode => in_file
 			);
-		set_input(model);
-		while not end_of_file loop
-			line_counter := line_counter + 1;
-			line_of_file := extended_string.to_bounded_string(get_line);
-			line_of_file := remove_comment_from_line(line_of_file);
+		set_input(model); -- all input comes from the model file from now on
 
-			field_count := get_field_count(extended_string.to_string(line_of_file));
+		while not end_of_file loop -- read model file
+			line_counter := line_counter + 1; -- count lines in model file
+			line_of_file := extended_string.to_bounded_string(get_line); -- get a line from the model
+			line_of_file := remove_comment_from_line(line_of_file); -- remove comment from line
 
-			if field_count > 0 then -- if line contains anything
+			field_count := get_field_count(extended_string.to_string(line_of_file)); -- get number of fields (separated by space)
+
+			if field_count > 0 then -- if line contains anything useful. empty lines are skipped
 				if debug_level >= 110 then
 					put_line("line read : ->" & extended_string.to_string(line_of_file) & "<-");
 				end if;
 
-				-- section info related begin
+				-- SECTION "INFO" RELATED BEGIN
 				if section_info_entered then
-					if get_field_from_line(line_of_file,1) = section_mark.endsection then
-						section_info_entered := false;
 
-						-- section info reading done. now check for missing parameters in that section
-						-- then create object "target"
+					-- once inside section "info", wait for end of section mark
+					if get_field_from_line(line_of_file,1) = section_mark.endsection then -- when endsection found
+						section_info_entered := false; -- reset section entered flag
+						model_section_processed.info := true; -- mark section "info" as processed so that subsequent sections can be read
+
+						-- SECTION "INFO" READING DONE. NOW CHECK FOR MISSING PARAMETERS IN THAT SECTION
+						-- (if a parameter has not been specified in "info" section, the default as defined above is still there)
+						-- then create object "target" pointed to by pointer ptr_target
+	
+						-- check if protocl not specified
 						if scratch_protocol = unknown then
 							put_line("ERROR: Protocol not specified in section info !");
 							raise constraint_error;
 						end if;
 
+						-- in dependence of the target class check parameters
 						prog_position := 1000;
-						case scratch_class is
+						case scratch_target_class is
+							-- a ROM must have write protection enabled/disabled
 							when ROM =>
 								if scratch_write_protect = false then -- by default this options is enabled (true)
 									prog_position := 1010; -- otherwise warn operator
@@ -421,42 +557,60 @@ procedure mkmemcon is
 
 						-- create target object pointed to by ptr_target
 						-- the object subtype depends on discriminant "class"
+						-- variables with prefix "scratch_" are derived from section "info"
+						-- others come from parameters given via command line
 						prog_position := 1200;
-						case scratch_class is
+						case scratch_target_class is
 							when RAM =>
 								prog_position := 1210;
 								ptr_target := new type_target'(
-									class			=> RAM,
+									class_target	=> RAM,
 									value			=> scratch_value,
 									compatibles		=> scratch_compatibles,
 									manufacturer	=> scratch_manufacturer,
+									data_base		=> data_base,  -- derived from cmd line argument
+									test_name		=> test_name, --  derived from cmd line argument
+									model_file		=> model_file,  -- derived from cmd line argument
+									device_name		=> target_device, -- derived from cmd line argument
+									device_package	=> device_package,  -- derived from cmd line argument
 									date			=> scratch_date,
 									version			=> scratch_version,
 									status			=> scratch_status,
 									author			=> scratch_author,
 									protocol		=> scratch_protocol,
+									algorithm		=> algorithm, -- currently fixed when collecting command line arguments
 									write_protect	=> scratch_write_protect,
 									ram_type		=> scratch_ram_type
 									);
 							when ROM =>
 								prog_position := 1220;
 								ptr_target := new type_target'(
-									class			=> ROM,
+									class_target	=> ROM,
 									value			=> scratch_value,
 									compatibles		=> scratch_compatibles,
 									manufacturer	=> scratch_manufacturer,
+									data_base		=> data_base,  -- derived from cmd line argument
+									test_name		=> test_name, --  derived from cmd line argument
+									model_file		=> model_file,  -- derived from cmd line argument
+									device_name		=> target_device,  -- derived from cmd line argument
+									device_package	=> device_package,  -- derived from cmd line argument
 									date			=> scratch_date,
 									version			=> scratch_version,
 									status			=> scratch_status,
 									author			=> scratch_author,
 									protocol		=> scratch_protocol,
+									algorithm		=> algorithm, -- currently fixed when collecting command line arguments
 									write_protect	=> scratch_write_protect,
 									rom_type		=> scratch_rom_type
 									);
 							when CLUSTER =>
 								prog_position := 1230;
 								ptr_target := new type_target'(
-									class			=> CLUSTER,
+									class_target	=> CLUSTER,
+									data_base		=> data_base,  -- derived from cmd line argument
+									test_name		=> test_name, --  derived from cmd line argument
+									model_file		=> model_file,  -- derived from cmd line argument
+									device_name		=> target_device,  -- derived from cmd line argument
 									date			=> scratch_date,
 									version			=> scratch_version,
 									status			=> scratch_status,
@@ -468,10 +622,8 @@ procedure mkmemcon is
 								raise constraint_error;
 						end case;
 
-						print_info;
-
 					else
-						-- process info section here:
+						-- PROCESSING "INFO" SECTION BEGIN
 						-- collect all info items in scratch variables
 						-- scratch variables will be used to create an object of type type_targt pointed to by ptr_target
 						if debug_level >= 100 then
@@ -510,7 +662,7 @@ procedure mkmemcon is
 
 						prog_position := 1370;
 						if get_field_from_line(line_of_file,1) = info_item.class then
-							scratch_class := type_target_class'value(get_field_from_line(line_of_file,2));
+							scratch_target_class := type_target_class'value(get_field_from_line(line_of_file,2));
 						end if;
 
 						prog_position := 1380;
@@ -541,28 +693,34 @@ procedure mkmemcon is
 					end if;
 
 				else
+					-- wait for section "info" begin mark
 					if get_field_from_line(line_of_file,1) = section_mark.section then
 						if get_field_from_line(line_of_file,2) = section_name.info then
-							section_info_entered := true;
+							section_info_entered := true; -- set section enterd "flag"
 						end if;
 					end if;
 				end if;
-				-- section info related end
+				-- SECTION "INFO" RELATED END
 
 
-				-- section port_pin_map related begin
+				-- SECTION "PORT_PIN_MAP" RELATED BEGIN
 				if section_port_pin_map_entered then
 					prog_position := 2000;
+
+					-- once inside section "port_pin_map", wait for end of section mark
 					if get_field_from_line(line_of_file,1) = section_mark.endsection then
-						section_port_pin_map_entered := false;
+						section_port_pin_map_entered := false; -- clear section entered flag
+						model_section_processed.port_pin_map := true; -- mark section as processed
 						-- section port_pin_map reading done.
 					else
-						-- process section port_pin_map here
+						-- PROCESSING SECTION "PORT_PIN_MAP" BEGIN
 						if debug_level >= 100 then
 							put_line("port_pin_map : ->" & extended_string.to_string(line_of_file) & "<-");
 						end if;
 
-						-- read pin class identifier
+						-- read pin class identifier from field 1
+						-- example: data inout D[7:0] 19 18 17 16 15 13 12 11
+						-- depending on the identifier (data, address, control) set scratch_pin_class
 						if get_field_from_line(line_of_file,1) = port_pin_map_identifier.data then
 							scratch_pin_class := data;
 						elsif
@@ -576,7 +734,8 @@ procedure mkmemcon is
 							raise constraint_error;
 						end if;
 
-						-- read pin direction identifier
+						-- read pin direction identifier from field 2
+						-- depending on the identifier (input, inout, output) set scratch_pin_direction
 						if get_field_from_line(line_of_file,2) = port_pin_map_identifier.input then
 							scratch_pin_direction := input;
 						elsif
@@ -591,7 +750,8 @@ procedure mkmemcon is
 						end if;
 
 						prog_position := 2210;
-						-- read port name -- A[14:0]
+						-- read port name (like A[14:0]) from field 3
+						-- break down port name into name, msb, lsb and length as defined by type type_port_vector
 						scratch_port_name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3));
 						scratch_port_name_frac := fraction_port_name(universal_string_type.to_string(scratch_port_name));
 
@@ -610,11 +770,12 @@ procedure mkmemcon is
 						-- vector length must match number of pins given after port name
 						-- example: data inout D[7:0] 19 18 17 16 15 13 12 20 -- 11 fields
 						-- vector length is 8, number of pins given is 8
+						-- add pin by pin to pin list pointed to by ptr_memory_pin
 						if scratch_port_name_frac.length = field_count - 3 then
-							for p in 4..field_count loop
+							for p in 4..field_count loop -- start with field 4 (where the first pin name is)
 								add_to_pin_list(
 									list			=> ptr_memory_pin,
-									class_given		=> scratch_pin_class,
+									pin_class_given	=> scratch_pin_class,
 									name_pin_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,p)),
 									name_port_given	=> scratch_port_name_frac.name,
 									direction_given	=> scratch_pin_direction,
@@ -622,29 +783,55 @@ procedure mkmemcon is
 									-- pin names start in field 4
 									index_given		=> scratch_port_name_frac.length - 1 - (p - 4)
 									);
+							end loop; 
+							-- all pins have been added to pin list now
 
-							end loop;
-						else
+						else -- on mismatch of pin numbers and length of port:
 							put_line("ERROR: Expected" & positive'image(scratch_port_name_frac.length) & " pin name(s) after port name !");
 							raise constraint_error;
 						end if;
 
 					end if;
+					-- PROCESSING SECTION "PORT_PIN_MAP" END
+
 				else
-					if get_field_from_line(line_of_file,1) = section_mark.section then
-						if get_field_from_line(line_of_file,2) = section_name.port_pin_map then
-							section_port_pin_map_entered := true;
+					-- wait for section begin mark like "Section port_pin_map NDIP28"
+					-- this only makes sense if "info" section has been processed before
+					if model_section_processed.info then 
+						if get_field_from_line(line_of_file,1) = section_mark.section then -- on match of "Section"
+							if get_field_from_line(line_of_file,2) = section_name.port_pin_map then -- on match of "port_pin_map"
+
+								-- if target is a cluster, no need to check the package name
+								if ptr_target.class_target = cluster then
+									section_port_pin_map_entered := true;
+								else
+								-- if target is class RAM or ROM, check name of package in field 3
+									if get_field_from_line(line_of_file,3) = universal_string_type.to_string(ptr_target.device_package) then
+										section_port_pin_map_entered := true;
+									end if;
+								end if;
+							end if;
 						end if;
 					end if;
 				end if;
-				-- section port_pin_map related end
-
+				-- SECTION "PORT_PIN_MAP" RELATED END
 
 			end if; -- if line contains anything
+		end loop; -- read model file
 
 
-		end loop;
-	end read_memory_model;
+		-- CHECK FOR NON-PROCESSED SECTIONS
+		if not model_section_processed.info then
+			put_line("ERROR: Section 'info' not found !");
+			raise constraint_error;
+		end if;
+		if not model_section_processed.port_pin_map then
+			put_line("ERROR: No port_pin_map for given package '" & universal_string_type.to_string(ptr_target.device_package) & "' found in device model !");
+			put_line("       Check spelling (case sensitive) and try again.");
+			raise constraint_error;
+		end if;
+
+	end read_memory_model; 
 
 
 
@@ -656,13 +843,28 @@ procedure mkmemcon is
 		set_output(sequence_file); -- set data sink
 
 		put_line("Section " & section_name.info);
-		put_line(" created by memory connections test generator version "& version);
+		put_line(" created by memory/module connections test generator version "& version);
 		put_line(" date          : " & m1.date_now);
-		put_line(" database      : " & m1_internal.universal_string_type.to_string(m1_internal.data_base));
-		put_line(" algorithm     : " & type_algorithm'image(standard));
-		put_line(" target_device : " & m1_internal.universal_string_type.to_string(m1_internal.target_device));
-		put_line(" model_file    : " & universal_string_type.to_string(model_file));
-		put_line(" device_package: " & m1_internal.universal_string_type.to_string(m1_internal.device_package));
+		put_line(" data base     : " & universal_string_type.to_string(ptr_target.data_base));
+		put_line(" test name     : " & universal_string_type.to_string(ptr_target.test_name));
+		put_line(" target name   : " & universal_string_type.to_string(ptr_target.device_name));
+		put_line(" target class  : " & type_target_class'image(ptr_target.class_target));
+		case ptr_target.class_target is 
+			when RAM | ROM =>
+				put_line(" package       : " & universal_string_type.to_string(ptr_target.device_package));
+				put_line(" value         : " & universal_string_type.to_string(ptr_target.value));
+				put_line(" compatibles   : " & universal_string_type.to_string(ptr_target.compatibles));
+				put_line(" manufacturer  : " & universal_string_type.to_string(ptr_target.manufacturer));
+				put_line(" protocol      : " & type_protocol'image(ptr_target.protocol));
+				put_line(" algorithm     : " & type_algorithm'image(ptr_target.algorithm));
+				put_line(" write protect : " & type_write_protect'image(ptr_target.write_protect));
+			when others => null;
+		end case;
+		put_line(" model file    : " & universal_string_type.to_string(ptr_target.model_file));
+		put_line(" model version : " & universal_string_type.to_string(ptr_target.version));
+		put_line(" model author  : " & universal_string_type.to_string(ptr_target.author));
+		put_line(" model status  : " & type_model_status'image(ptr_target.status));
+
 		put_line("EndSection"); 
 		new_line;
 	end write_info_section;
@@ -672,34 +874,36 @@ procedure mkmemcon is
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
-	put_line("memory interconnect test generator version "& Version);
-	put_line("==============================================");
+	put_line("memory/module interconnect test generator version "& Version);
+	put_line("=====================================================");
 
+	-- ALL COMMAND LINE ARGUMENTS WILL BE PASSED WHEN CREATING OBJECT "TARGET" POINTED TO BY PTR_TARGET
 	prog_position	:= 10;
- 	m1_internal.data_base:= m1_internal.universal_string_type.to_bounded_string(Argument(1));
- 	put_line ("data base      : " & m1_internal.universal_string_type.to_string(m1_internal.data_base));
+ 	data_base:= universal_string_type.to_bounded_string(Argument(1));
+ 	put_line ("data base      : " & universal_string_type.to_string(data_base));
  
 	prog_position	:= 20;
- 	m1_internal.test_name:= m1_internal.universal_string_type.to_bounded_string(Argument(2));
- 	put_line ("test name      : " & m1_internal.universal_string_type.to_string(m1_internal.test_name));
+ 	test_name:= universal_string_type.to_bounded_string(Argument(2));
+ 	put_line ("test name      : " & universal_string_type.to_string(test_name));
  
 	prog_position	:= 30;
- 	m1_internal.target_device := m1_internal.universal_string_type.to_bounded_string(Argument(3));
- 	put_line ("target device  : " & m1_internal.universal_string_type.to_string(m1_internal.target_device));
+ 	target_device := universal_string_type.to_bounded_string(Argument(3));
+ 	put_line ("target device  : " & universal_string_type.to_string(target_device));
  
 	prog_position	:= 40;
- 	m1_internal.model_file := m1_internal.universal_string_type.to_bounded_string(Argument(4));
- 	put_line ("model file     : " & m1_internal.universal_string_type.to_string(m1_internal.model_file));
+ 	model_file := universal_string_type.to_bounded_string(Argument(4));
+ 	put_line ("model file     : " & universal_string_type.to_string(model_file));
  
 	prog_position	:= 50;
- 	m1_internal.device_package := m1_internal.universal_string_type.to_bounded_string(Argument(5));
- 	put_line ("device package : " & m1_internal.universal_string_type.to_string(m1_internal.device_package));
- 
+ 	device_package := universal_string_type.to_bounded_string(Argument(5));
+ 	put_line ("device package : " & universal_string_type.to_string(device_package));
+
 	prog_position	:= 55;
 	if argument_count = 6 then
-		m1_internal.debug_level := natural'value(argument(6));
+		debug_level := natural'value(argument(6));
 		put_line("debug level    :" & natural'image(debug_level));
 	end if;
+	-- COMMAND LINE ARGUMENTS COLLECTING DONE
 
 	-- CS: get algorithm as argument
 	-- for the time being it is fixed
@@ -757,6 +961,7 @@ begin
 				when 50 =>
 					put_line("ERROR: Device package missing !");
 					put_line("       Provide device package as argument ! Example: mkmemcon my_uut.udb my_memory_test IC22 models/sdram.txt SOP24");
+					put_line("       Use dummy package for cluster/module test. Example: mkmemcon my_uut.udb my_module_test X39 models/module.txt dummy");
 				when 55 =>
 					put_line("ERROR: Invalid argument for debug level. Debug level must be provided as natural number !");
 
