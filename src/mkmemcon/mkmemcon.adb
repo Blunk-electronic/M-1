@@ -71,9 +71,13 @@ procedure mkmemcon is
 			input		: string (1..2) := "in";
 			output		: string (1..3) := "out";
 			inout		: string (1..5) := "inout";
+			option		: string (1..6) := "option";
+			min			: string (1..3) := "min";
+			max			: string (1..3) := "max";
 		end record;
 	port_pin_map_identifier : type_port_pin_map_identifier;
 
+	-- items to be found in section "info" of memory model
 	type type_info_item is
 		record
 			value			: string (1..5)  := "value";
@@ -98,7 +102,16 @@ procedure mkmemcon is
 	type type_protocol is ( UNKNOWN, PARALLEL, I2C, SPI );
 	type type_write_protect	is new boolean;
 
-	--type type_target (class : type_target_class := ram) is
+	--type type_option_address is ( none, address_min, address_max );
+	subtype type_option_address_min is integer range -1..integer'last; -- -1 if option not given
+	subtype type_option_address_max is integer range -1..integer'last; -- -1 if option not given
+
+	-- global variables to count address, data and control pins
+	-- on leaving secion port_pin_map they are copied into the target
+	scratch_width_address	: natural := 0;
+	scratch_width_data		: natural := 0;
+	scratch_width_control	: natural := 0;
+
 	type type_target;
 	type type_ptr_target is access all type_target;
 	type type_target (class_target : type_target_class := ram) is
@@ -111,6 +124,16 @@ procedure mkmemcon is
 			data_base		: universal_string_type.bounded_string;
 			test_name		: universal_string_type.bounded_string; -- like my_sram_test
 			model_file		: universal_string_type.bounded_string; -- like models/U256D.txt
+
+			-- values that hold the number of address, data, control pins
+			-- serves to indicate whether target has address, data or control pins
+			width_address	: natural;
+			width_data		: natural;
+			width_control	: natural;
+		
+			option_address_min	: type_option_address_min;
+			option_address_max	: type_option_address_max;
+
 			case class_target is
 				when RAM | ROM =>
 					value			: universal_string_type.bounded_string;
@@ -352,6 +375,7 @@ procedure mkmemcon is
 		-- in depence of the given pin class, add the given pin to the pin list
 		case pin_class_given is
 			when data =>
+				scratch_width_data := scratch_width_data + 1;
 				list := new type_memory_pin'(
 					next		=> list,
 					class_pin	=> data,
@@ -362,6 +386,7 @@ procedure mkmemcon is
 					index		=> index_given
 					);
 			when address =>
+				scratch_width_address := scratch_width_address + 1;
 				list := new type_memory_pin'(
 					next		=> list,
 					class_pin	=> address,
@@ -371,7 +396,8 @@ procedure mkmemcon is
 					direction	=> direction_given,
 					index		=> index_given
 					);
-			when others =>
+			when control =>
+				scratch_width_control := scratch_width_control + 1;
 				list := new type_memory_pin'(
 					next		=> list,
 					class_pin	=> control,
@@ -488,6 +514,10 @@ procedure mkmemcon is
 		scratch_pin_direction	: type_direction; -- like input, output, inout 
 		scratch_port_name		: universal_string_type.bounded_string; -- like D or OE
 		scratch_port_name_frac	: type_port_vector; -- like [7:0]
+
+		scratch_option_address_min	: type_option_address_min := -1;
+		scratch_option_address_max	: type_option_address_max := -1;
+
 	begin -- read memory model
 		put_line("reading memory/cluster model file ...");
 
@@ -578,6 +608,11 @@ procedure mkmemcon is
 									status			=> scratch_status,
 									author			=> scratch_author,
 									protocol		=> scratch_protocol,
+									width_address	=> 0,
+									width_data		=> 0,
+									width_control	=> 0,
+									option_address_min	=> -1,
+									option_address_max	=> -1,
 									algorithm		=> algorithm, -- currently fixed when collecting command line arguments
 									write_protect	=> scratch_write_protect,
 									ram_type		=> scratch_ram_type
@@ -599,6 +634,11 @@ procedure mkmemcon is
 									status			=> scratch_status,
 									author			=> scratch_author,
 									protocol		=> scratch_protocol,
+									width_address	=> 0,
+									width_data		=> 0,
+									width_control	=> 0,
+									option_address_min	=> -1,
+									option_address_max	=> -1,
 									algorithm		=> algorithm, -- currently fixed when collecting command line arguments
 									write_protect	=> scratch_write_protect,
 									rom_type		=> scratch_rom_type
@@ -614,7 +654,12 @@ procedure mkmemcon is
 									date			=> scratch_date,
 									version			=> scratch_version,
 									status			=> scratch_status,
-									author			=> scratch_author
+									author			=> scratch_author,
+									width_address	=> 0,
+									width_data		=> 0,
+									width_control	=> 0,
+									option_address_min	=> -1,
+									option_address_max	=> -1
 									);
 							when others =>
 								prog_position := 1240;
@@ -711,6 +756,18 @@ procedure mkmemcon is
 					if get_field_from_line(line_of_file,1) = section_mark.endsection then
 						section_port_pin_map_entered := false; -- clear section entered flag
 						model_section_processed.port_pin_map := true; -- mark section as processed
+
+						-- update bus width in target object as counted in scratch_widt_address/data/control
+						-- if no address, data or control pins counted, the bus with in target object remains zero
+						ptr_target.width_address := scratch_width_address;
+						ptr_target.width_data := scratch_width_data;
+						ptr_target.width_control := scratch_width_control;
+
+						-- update target with address options
+						-- if no options found or given default value of -1 is used, to indicate the option is not given
+						ptr_target.option_address_min := scratch_option_address_min;
+						ptr_target.option_address_max := scratch_option_address_max;
+
 						-- section port_pin_map reading done.
 					else
 						-- PROCESSING SECTION "PORT_PIN_MAP" BEGIN
@@ -755,8 +812,26 @@ procedure mkmemcon is
 						scratch_port_name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3));
 						scratch_port_name_frac := fraction_port_name(universal_string_type.to_string(scratch_port_name));
 
+						-- read options (like option address min 8000h -- CS: read hex numbers
+						-- example: option address min 8000
+						prog_position := 2300;
+						if get_field_from_line(line_of_file,1) = port_pin_map_identifier.option then
+							prog_position := 2310;
+							if get_field_from_line(line_of_file,2) = port_pin_map_identifier.address then
+								prog_position := 2320;
+								if get_field_from_line(line_of_file,3) = port_pin_map_identifier.min then
+									prog_position := 2330;
+									scratch_option_address_min := natural'value(get_field_from_line(line_of_file,4));
+								end if;
+								if get_field_from_line(line_of_file,3) = port_pin_map_identifier.max then
+									prog_position := 2340;
+									scratch_option_address_max := natural'value(get_field_from_line(line_of_file,4));
+								end if;
+							end if;
+						end if;
+
 						if debug_level >= 100 then
-							prog_position := 2220;
+							prog_position := 2400;
 							put("port: " & universal_string_type.to_string(scratch_port_name_frac.name));
 							if scratch_port_name_frac.length > 1 then
 								put(" msb" & positive'image(scratch_port_name_frac.msb));
@@ -766,7 +841,7 @@ procedure mkmemcon is
 							new_line;
 						end if;
 		
-						prog_position := 2230;
+						prog_position := 2500;
 						-- vector length must match number of pins given after port name
 						-- example: data inout D[7:0] 19 18 17 16 15 13 12 20 -- 11 fields
 						-- vector length is 8, number of pins given is 8
@@ -836,6 +911,52 @@ procedure mkmemcon is
 
 
 	procedure write_info_section is
+
+		procedure write_pin_list is
+			p 	: type_ptr_memory_pin;
+		begin
+			put_line(" bus width");
+			put_line("  address         :" & natural'image(ptr_target.width_address));
+			put_line("  data            :" & natural'image(ptr_target.width_data));
+			put_line("  control         :" & natural'image(ptr_target.width_control));
+
+			if ptr_target.option_address_min /= -1 then
+				put_line(" option addr min  :" & natural'image(ptr_target.option_address_min));
+			end if;
+			if ptr_target.option_address_max /= -1 then
+				put_line(" option addr max  :" & natural'image(ptr_target.option_address_max));
+			end if;
+
+
+			put_line(" port-pin-net mapping");
+			put_line("  -- legend: class direction port pin net");
+			for c in 0..type_pin_class'pos( type_pin_class'last ) loop -- loop for each kind of pin class: address, data, control
+				p := ptr_memory_pin; -- reset pin pointer to end of list
+				while p /= null loop
+	
+					-- if pin class pointed to by c matches pin class in pin list
+					-- write pin class, direction, port name, [index], net name
+					if p.class_pin = type_pin_class'val(c) then
+						put(row_separator_0 & row_separator_0 & type_pin_class'image(p.class_pin) & row_separator_0 
+							& type_direction'image(p.direction) & row_separator_0 
+							& universal_string_type.to_string(p.name_port));
+						-- write index for address and data pins only, contro pins do not have indexes
+						case p.class_pin is
+							when address | data =>
+								put(trim(natural'image(p.index),left));
+							when control =>
+								null;
+						end case;
+						put_line(row_separator_0 & universal_string_type.to_string(p.name_pin)
+							& row_separator_0 & universal_string_type.to_string(p.name_net)
+							);
+					end if;
+					p := p.next;
+				end loop;
+
+			end loop;
+		end write_pin_list;
+
 	begin
 		-- create sequence file
 		create( sequence_file, 
@@ -844,26 +965,28 @@ procedure mkmemcon is
 
 		put_line("Section " & section_name.info);
 		put_line(" created by memory/module connections test generator version "& version);
-		put_line(" date          : " & m1.date_now);
-		put_line(" data base     : " & universal_string_type.to_string(ptr_target.data_base));
-		put_line(" test name     : " & universal_string_type.to_string(ptr_target.test_name));
-		put_line(" target name   : " & universal_string_type.to_string(ptr_target.device_name));
-		put_line(" target class  : " & type_target_class'image(ptr_target.class_target));
+		put_line(" date             : " & m1.date_now);
+		put_line(" data base        : " & universal_string_type.to_string(ptr_target.data_base));
+		put_line(" test name        : " & universal_string_type.to_string(ptr_target.test_name));
+		put_line(" target name      : " & universal_string_type.to_string(ptr_target.device_name));
+		put_line(" target class     : " & type_target_class'image(ptr_target.class_target));
 		case ptr_target.class_target is 
 			when RAM | ROM =>
-				put_line(" package       : " & universal_string_type.to_string(ptr_target.device_package));
-				put_line(" value         : " & universal_string_type.to_string(ptr_target.value));
-				put_line(" compatibles   : " & universal_string_type.to_string(ptr_target.compatibles));
-				put_line(" manufacturer  : " & universal_string_type.to_string(ptr_target.manufacturer));
-				put_line(" protocol      : " & type_protocol'image(ptr_target.protocol));
-				put_line(" algorithm     : " & type_algorithm'image(ptr_target.algorithm));
-				put_line(" write protect : " & type_write_protect'image(ptr_target.write_protect));
+				put_line(" package          : " & universal_string_type.to_string(ptr_target.device_package));
+				put_line(" value            : " & universal_string_type.to_string(ptr_target.value));
+				put_line(" compatibles      : " & universal_string_type.to_string(ptr_target.compatibles));
+				put_line(" manufacturer     : " & universal_string_type.to_string(ptr_target.manufacturer));
+				put_line(" protocol         : " & type_protocol'image(ptr_target.protocol));
+				put_line(" algorithm        : " & type_algorithm'image(ptr_target.algorithm));
+				put_line(" write protect    : " & type_write_protect'image(ptr_target.write_protect));
 			when others => null;
 		end case;
-		put_line(" model file    : " & universal_string_type.to_string(ptr_target.model_file));
-		put_line(" model version : " & universal_string_type.to_string(ptr_target.version));
-		put_line(" model author  : " & universal_string_type.to_string(ptr_target.author));
-		put_line(" model status  : " & type_model_status'image(ptr_target.status));
+		put_line(" model file       : " & universal_string_type.to_string(ptr_target.model_file));
+		put_line(" model version    : " & universal_string_type.to_string(ptr_target.version));
+		put_line(" model author     : " & universal_string_type.to_string(ptr_target.author));
+		put_line(" model status     : " & type_model_status'image(ptr_target.status));
+
+		write_pin_list;
 
 		put_line("EndSection"); 
 		new_line;
