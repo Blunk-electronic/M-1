@@ -483,54 +483,6 @@ procedure mkmemcon is
 	end fraction_port_name;
 
 
-	function hex_string_to_natural (text_in : string) return natural is
-		n	: natural := 0;
-		l	: natural := text_in'last;
-		base	: positive := 16;
-
-		function update_n(digit_weight : natural; char_position : positive) return natural is
-		begin
-			return n + digit_weight * base**(l-1-char_position);
-		end update_n;
-	begin
-		if l > 0 then -- if lenght is greater zero (emtpy strings are not accepted)
-			if text_in(l) = 'h' then -- the given string must end with letter 'h'
-				
-				-- process as many characters as given in text_in 
-				for char_position in reverse 1..l-1 loop 
-					--if text_in(q) in type_hexadecimal_character then
-					case text_in(char_position) is
-						when '0' => n := update_n(0,char_position); 
-						when '1' => n := update_n(1,char_position);
-						when '2' => n := update_n(2,char_position);
-						when '3' => n := update_n(3,char_position);
-						when '4' => n := update_n(4,char_position); 
-						when '5' => n := update_n(5,char_position);
-						when '6' => n := update_n(6,char_position);
-						when '7' => n := update_n(7,char_position);
-						when '8' => n := update_n(8,char_position); 
-						when '9' => n := update_n(9,char_position);
-						when 'A' | 'a' => n := update_n(10,char_position);
-						when 'B' | 'b' => n := update_n(11,char_position);
-						when 'C' | 'c' => n := update_n(12,char_position); 
-						when 'D' | 'd' => n := update_n(13,char_position);
-						when 'E' | 'e' => n := update_n(14,char_position);
-						when 'F' | 'f' => n := update_n(15,char_position);
-						when others => 
-							put_line("ERROR: Expected hexadecimal character !");
-							raise constraint_error;
-					end case;
-				end loop;
-			else
-				put_line("ERROR: Hexadecimal number must end with letter 'h' !");
-				raise constraint_error;
-			end if;
-		else
-			put_line("ERROR: Expected string with at least one hexadecimal character !");
-			raise constraint_error;
-		end if;
-		return n;
-	end hex_string_to_natural;
 
 	procedure read_memory_model is
 	-- reads the given memory model file section by section
@@ -912,12 +864,11 @@ procedure mkmemcon is
 								-- read min max identifier
 								if get_field_from_line(line_of_file,3) = port_pin_map_identifier.min then
 									prog_position := 2330;
-									--scratch_option_address_min := natural'value(get_field_from_line(line_of_file,4));
-									scratch_option_address_min := hex_string_to_natural(get_field_from_line(line_of_file,4));
+									scratch_option_address_min := string_to_natural(get_field_from_line(line_of_file,4));
 
 								elsif get_field_from_line(line_of_file,3) = port_pin_map_identifier.max then
 									prog_position := 2340;
-									scratch_option_address_max := natural'value(get_field_from_line(line_of_file,4));
+									scratch_option_address_max := string_to_natural(get_field_from_line(line_of_file,4));
 
 								else
 									put_line("ERROR: Expected keyword '" & port_pin_map_identifier.min
