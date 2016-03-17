@@ -482,6 +482,56 @@ procedure mkmemcon is
 		return port_vector;
 	end fraction_port_name;
 
+
+	function hex_string_to_natural (text_in : string) return natural is
+		n	: natural := 0;
+		l	: natural := text_in'last;
+		base	: positive := 16;
+
+		function update_n(digit_weight : natural; char_position : positive) return natural is
+		begin
+			return n + digit_weight * base**(l-1-char_position);
+		end update_n;
+	begin
+		if l > 0 then -- if lenght is greater zero (emtpy strings are not accepted)
+			if text_in(l) = 'h' then -- the given string must end with letter 'h'
+				
+				-- process as many characters as given in text_in 
+				for char_position in reverse 1..l-1 loop 
+					--if text_in(q) in type_hexadecimal_character then
+					case text_in(char_position) is
+						when '0' => n := update_n(0,char_position); 
+						when '1' => n := update_n(1,char_position);
+						when '2' => n := update_n(2,char_position);
+						when '3' => n := update_n(3,char_position);
+						when '4' => n := update_n(4,char_position); 
+						when '5' => n := update_n(5,char_position);
+						when '6' => n := update_n(6,char_position);
+						when '7' => n := update_n(7,char_position);
+						when '8' => n := update_n(8,char_position); 
+						when '9' => n := update_n(9,char_position);
+						when 'A' | 'a' => n := update_n(10,char_position);
+						when 'B' | 'b' => n := update_n(11,char_position);
+						when 'C' | 'c' => n := update_n(12,char_position); 
+						when 'D' | 'd' => n := update_n(13,char_position);
+						when 'E' | 'e' => n := update_n(14,char_position);
+						when 'F' | 'f' => n := update_n(15,char_position);
+						when others => 
+							put_line("ERROR: Expected hexadecimal character !");
+							raise constraint_error;
+					end case;
+				end loop;
+			else
+				put_line("ERROR: Hexadecimal number must end with letter 'h' !");
+				raise constraint_error;
+			end if;
+		else
+			put_line("ERROR: Expected string with at least one hexadecimal character !");
+			raise constraint_error;
+		end if;
+		return n;
+	end hex_string_to_natural;
+
 	procedure read_memory_model is
 	-- reads the given memory model file section by section
 	-- the sections are based on each other in the follwing order: info, port_pin_map, prog
@@ -775,96 +825,115 @@ procedure mkmemcon is
 							put_line("port_pin_map : ->" & extended_string.to_string(line_of_file) & "<-");
 						end if;
 
-						-- read pin class identifier from field 1
+						-- read pin class or option identifier from field 1
+
+						-- example: option address min 8000
+
+						-- if identifier is data, address or control. set scratch_pin_class
 						-- example: data inout D[7:0] 19 18 17 16 15 13 12 11
-						-- depending on the identifier (data, address, control) set scratch_pin_class
-						if get_field_from_line(line_of_file,1) = port_pin_map_identifier.data then
-							scratch_pin_class := data;
-						elsif
-							get_field_from_line(line_of_file,1) = port_pin_map_identifier.address then
-							scratch_pin_class := address;
-						elsif
+						prog_position := 2100;
+						if get_field_from_line(line_of_file,1) = port_pin_map_identifier.data or
+							get_field_from_line(line_of_file,1) = port_pin_map_identifier.address or
 							get_field_from_line(line_of_file,1) = port_pin_map_identifier.control then
-							scratch_pin_class := control;
-						else
-							prog_position := 2100; -- CS: refine error output
-							raise constraint_error;
-						end if;
+							prog_position := 2110;
+							scratch_pin_class := type_pin_class'value(get_field_from_line(line_of_file,1));
 
-						-- read pin direction identifier from field 2
-						-- depending on the identifier (input, inout, output) set scratch_pin_direction
-						if get_field_from_line(line_of_file,2) = port_pin_map_identifier.input then
-							scratch_pin_direction := input;
-						elsif
-							get_field_from_line(line_of_file,2) = port_pin_map_identifier.output then
-							scratch_pin_direction := output;
-						elsif
-							get_field_from_line(line_of_file,2) = port_pin_map_identifier.inout then
-							scratch_pin_direction := inout;
-						else
-							prog_position := 2200;  -- CS: refine error output
-							raise constraint_error;
-						end if;
+							-- read pin direction identifier from field 2
+							-- depending on the identifier (input, inout, output) set scratch_pin_direction
+							prog_position := 2120;
+							if get_field_from_line(line_of_file,2) = port_pin_map_identifier.input or
+								get_field_from_line(line_of_file,2) = port_pin_map_identifier.output or
+								get_field_from_line(line_of_file,2) = port_pin_map_identifier.inout then
+								prog_position := 2130;
+								if get_field_from_line(line_of_file,2) = port_pin_map_identifier.input then
+									scratch_pin_direction := input;
+								elsif get_field_from_line(line_of_file,2) = port_pin_map_identifier.output then
+									scratch_pin_direction := output;
+								elsif get_field_from_line(line_of_file,2) = port_pin_map_identifier.inout then
+									scratch_pin_direction := inout;
+								end if;
 
-						prog_position := 2210;
-						-- read port name (like A[14:0]) from field 3
-						-- break down port name into name, msb, lsb and length as defined by type type_port_vector
-						scratch_port_name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3));
-						scratch_port_name_frac := fraction_port_name(universal_string_type.to_string(scratch_port_name));
+								-- read port name (like A[14:0]) from field 3
+								-- break down port name into name, msb, lsb and length as defined by type type_port_vector
+								prog_position := 2140;
+								scratch_port_name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3));
+								prog_position := 2150;
+								scratch_port_name_frac := fraction_port_name(universal_string_type.to_string(scratch_port_name));
 
-						-- read options (like option address min 8000h -- CS: read hex numbers
+								if debug_level >= 100 then
+									prog_position := 2160;
+									put("port: " & universal_string_type.to_string(scratch_port_name_frac.name));
+									if scratch_port_name_frac.length > 1 then
+										put(" msb" & positive'image(scratch_port_name_frac.msb));
+										put(" lsb" & natural'image(scratch_port_name_frac.lsb));
+										put(" length" & natural'image(scratch_port_name_frac.length));
+									end if;
+									new_line;
+								end if;
+
+								-- vector length must match number of pins given after port name
+								-- example: data inout D[7:0] 19 18 17 16 15 13 12 20 -- 11 fields
+								-- vector length is 8, number of pins given is 8
+								-- add pin by pin to pin list pointed to by ptr_memory_pin
+								prog_position := 2170;
+								if scratch_port_name_frac.length = field_count - 3 then
+									for p in 4..field_count loop -- start with field 4 (where the first pin name is)
+										add_to_pin_list(
+											list			=> ptr_memory_pin,
+											pin_class_given	=> scratch_pin_class,
+											name_pin_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,p)),
+											name_port_given	=> scratch_port_name_frac.name,
+											direction_given	=> scratch_pin_direction,
+											-- calculate index: example: port D index 7 maps to pin 19. ,  port D index 0 maps to pin 20.
+											-- pin names start in field 4
+											index_given		=> scratch_port_name_frac.length - 1 - (p - 4)
+											);
+									end loop; 
+									-- all pins have been added to pin list now
+
+								else -- on mismatch of pin numbers and length of port:
+									put_line("ERROR: Expected" & positive'image(scratch_port_name_frac.length) & " pin name(s) after port name !");
+									raise constraint_error;
+								end if;
+
+							end if; -- read pin direction identifier from field 2
+						end if; -- if identifier is data, address or control. set scratch_pin_class
+
+
+						-- read options -- CS: read hex numbers
 						-- example: option address min 8000
 						prog_position := 2300;
+						-- read option identifier
 						if get_field_from_line(line_of_file,1) = port_pin_map_identifier.option then
 							prog_position := 2310;
+							-- read address identifier
 							if get_field_from_line(line_of_file,2) = port_pin_map_identifier.address then
 								prog_position := 2320;
+								-- read min max identifier
 								if get_field_from_line(line_of_file,3) = port_pin_map_identifier.min then
 									prog_position := 2330;
-									scratch_option_address_min := natural'value(get_field_from_line(line_of_file,4));
-								end if;
-								if get_field_from_line(line_of_file,3) = port_pin_map_identifier.max then
+									--scratch_option_address_min := natural'value(get_field_from_line(line_of_file,4));
+									scratch_option_address_min := hex_string_to_natural(get_field_from_line(line_of_file,4));
+
+								elsif get_field_from_line(line_of_file,3) = port_pin_map_identifier.max then
 									prog_position := 2340;
 									scratch_option_address_max := natural'value(get_field_from_line(line_of_file,4));
-								end if;
-							end if;
-						end if;
 
-						if debug_level >= 100 then
-							prog_position := 2400;
-							put("port: " & universal_string_type.to_string(scratch_port_name_frac.name));
-							if scratch_port_name_frac.length > 1 then
-								put(" msb" & positive'image(scratch_port_name_frac.msb));
-								put(" lsb" & natural'image(scratch_port_name_frac.lsb));
-								put(" length" & natural'image(scratch_port_name_frac.length));
+								else
+									put_line("ERROR: Expected keyword '" & port_pin_map_identifier.min
+										& "' or '" & port_pin_map_identifier.max & "' after option '"
+										& port_pin_map_identifier.address & "' !");
+									raise constraint_error;
+								end if;
+							else
+								put_line("ERROR: Unknown option ! Supported options are: "
+									& port_pin_map_identifier.address);
+								raise constraint_error;
 							end if;
-							new_line;
-						end if;
+						end if; -- read option identifier
+
 		
 						prog_position := 2500;
-						-- vector length must match number of pins given after port name
-						-- example: data inout D[7:0] 19 18 17 16 15 13 12 20 -- 11 fields
-						-- vector length is 8, number of pins given is 8
-						-- add pin by pin to pin list pointed to by ptr_memory_pin
-						if scratch_port_name_frac.length = field_count - 3 then
-							for p in 4..field_count loop -- start with field 4 (where the first pin name is)
-								add_to_pin_list(
-									list			=> ptr_memory_pin,
-									pin_class_given	=> scratch_pin_class,
-									name_pin_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,p)),
-									name_port_given	=> scratch_port_name_frac.name,
-									direction_given	=> scratch_pin_direction,
-									-- calculate index: example: port D index 7 maps to pin 19. ,  port D index 0 maps to pin 20.
-									-- pin names start in field 4
-									index_given		=> scratch_port_name_frac.length - 1 - (p - 4)
-									);
-							end loop; 
-							-- all pins have been added to pin list now
-
-						else -- on mismatch of pin numbers and length of port:
-							put_line("ERROR: Expected" & positive'image(scratch_port_name_frac.length) & " pin name(s) after port name !");
-							raise constraint_error;
-						end if;
 
 					end if;
 					-- PROCESSING SECTION "PORT_PIN_MAP" END
