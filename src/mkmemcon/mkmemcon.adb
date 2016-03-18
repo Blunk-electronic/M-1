@@ -933,25 +933,31 @@ procedure mkmemcon is
 	end read_memory_model; 
 
 
-	function natural_to_hex_string(natural_in : natural; base : positive) return string is
-		i			: natural := natural_in;
-		text_out 	: unbounded_string;
-		digit		: natural := 0;
+	function natural_to_string(natural_in : natural; base : positive) return string is
+	-- converts a natural to a string like EC5Fh or 0010110b
+	-- the parameter base determines the format
+		i			: natural := natural_in; -- i holds the input number
+		text_out 	: unbounded_string; -- this is what will be returned before converted to a string
+		digit		: natural := 0; -- points to the digit being processed
+
+		-- used for conversion to hex format
 		subtype type_x is positive range 1..15;
 		x			: type_x;
 
+		-- instantiate functions library
 		package functions is new generic_elementary_functions(float);
 		scratch	: float;
-		width	: positive;
+		width	: positive; -- holds the number of bits required by the given input number
+		-- width is calculated before conversion
 	begin	
 		-- calculate number of bits required
 		scratch := functions.log(x => float(i), base => float(2));
 		put_line("scratch:" & float'image(scratch));
-		-- scratch holds a float number which must be rounded up to a integer
-		-- rounding does not work if scratch is zero. in this case we need only one bit
+		-- scratch holds a float number which must be rounded up to an integer (because the bit count is always an integer)
+		-- rounding does not work if scratch is zero. for example: if input is 1, scratch becomes zero. in this case we need only one bit.
 		if scratch > float(0) then
 
-			-- if scratch is an integer, the remainder is zero -> increment width
+			-- if scratch is an integer, the remainder is zero -> increment width by 1
 			-- example: given natural_in = 8, log 8 = 3, four bits required -> add 1 to scratch
 			if float'remainder(scratch, float'ceiling(scratch) ) = float(0) then
 				-- no rounding required, add 1 to scratch to obtain number of bits required
@@ -987,8 +993,8 @@ procedure mkmemcon is
 						end if;
 					end loop;
 
-					-- fill heading space
-					text_out := (8 - digit - 1) * "0";
+					-- fill heading space. under construction
+					--text_out := (8 - digit - 1) * "0";
 
 					-- convert i to binary string
 					for d in reverse 0..digit loop
@@ -1020,7 +1026,8 @@ procedure mkmemcon is
 							exit;
 						end if;
 					end loop;
-					-- fill heading space
+
+					-- fill heading space. under construction
 					--text_out := (8 - digit - 1) * "0";
 
 					-- convert i to binary string
@@ -1061,7 +1068,7 @@ procedure mkmemcon is
 				raise constraint_error;
 		end case;
 		return to_string(text_out);
-	end natural_to_hex_string;
+	end natural_to_string;
 
 	procedure write_info_section is
 
@@ -1075,10 +1082,10 @@ procedure mkmemcon is
 
 			if ptr_target.option_address_min /= -1 then
 				--put_line(" option addr min  :" & natural'image(ptr_target.option_address_min));
-				put_line(" option addr min  :" & natural_to_hex_string(ptr_target.option_address_min,2));
+				put_line(" option addr min  : " & natural_to_string(ptr_target.option_address_min,2));
 			end if;
 			if ptr_target.option_address_max /= -1 then
-				put_line(" option addr max  :" & natural_to_hex_string(ptr_target.option_address_max,16));
+				put_line(" option addr max  : " & natural_to_string(ptr_target.option_address_max,16));
 			end if;
 
 
