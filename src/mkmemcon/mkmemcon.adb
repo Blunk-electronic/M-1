@@ -30,6 +30,7 @@
 --   history of changes:
 --
 
+		with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
 with Ada.Text_IO;				use Ada.Text_IO;
 with Ada.Integer_Text_IO;		use Ada.Integer_Text_IO;
@@ -42,6 +43,9 @@ with Ada.Exceptions; 			use Ada.Exceptions;
  
 with Ada.Command_Line;			use Ada.Command_Line;
 with Ada.Directories;			use Ada.Directories;
+
+with ada.numerics;				use ada.numerics;
+with ada.numerics.generic_elementary_functions;
 
 with m1;
 with m1_internal; use m1_internal;
@@ -929,6 +933,135 @@ procedure mkmemcon is
 	end read_memory_model; 
 
 
+	function natural_to_hex_string(natural_in : natural; base : positive) return string is
+		i			: natural := natural_in;
+		text_out 	: unbounded_string;
+		digit		: natural := 0;
+		subtype type_x is positive range 1..15;
+		x			: type_x;
+
+		package functions is new generic_elementary_functions(float);
+		scratch	: float;
+		width	: positive;
+	begin	
+		-- calculate number of bits required
+		scratch := functions.log(x => float(i), base => float(2));
+		put_line("scratch:" & float'image(scratch));
+		-- scratch holds a float number which must be rounded up to a integer
+		-- rounding does not work if scratch is zero. in this case we need only one bit
+		if scratch > float(0) then
+
+			-- if scratch is an integer, the remainder is zero -> increment width
+			-- example: given natural_in = 8, log 8 = 3, four bits required -> add 1 to scratch
+			if float'remainder(scratch, float'ceiling(scratch) ) = float(0) then
+				-- no rounding required, add 1 to scratch to obtain number of bits required
+				--put_line("remainder 0");
+				--width := positive(float'ceiling(scratch)) + 1;
+				width := positive(scratch) + 1;
+			else
+				-- scratch is not integer, rouding up to next integer required
+				--put_line("remainder greater 0");
+				width := positive(float'ceiling(scratch));
+			end if;
+
+		else 
+			-- if scratch is zero, only one bit is required
+			width := 1;
+		end if;
+		put_line("width :" & positive'image(width));
+		-- calculating width done
+
+		-- depending on given base do the conversion
+		case base is
+			when 2 =>
+				if i = 0 then -- exclude input value of zero from conversion
+					text_out := to_unbounded_string("0");
+
+				else -- begin conversion:
+
+					-- find highest digit
+					for d in 0..width+1 loop
+						if base**d > i then
+							digit := d - 1;
+							exit;
+						end if;
+					end loop;
+
+					-- fill heading space
+					text_out := (8 - digit - 1) * "0";
+
+					-- convert i to binary string
+					for d in reverse 0..digit loop
+						if base**d <= i then
+							i := i - base**d; -- update i
+							text_out := text_out & "1";
+						else
+							text_out := text_out & "0";
+						end if;
+					end loop;
+					-- end conversion
+				end if;
+
+				-- add trailing format indicator
+				text_out := text_out & "b";
+
+
+
+			when 16 =>
+				if i = 0 then -- exclude input value of zero from conversion
+					text_out := to_unbounded_string("0");
+
+				else -- begin conversion:
+
+					-- find highest digit
+					for d in 0..width+1 loop
+						if base**d > i then
+							digit := d - 1;
+							exit;
+						end if;
+					end loop;
+					-- fill heading space
+					--text_out := (8 - digit - 1) * "0";
+
+					-- convert i to binary string
+					for d in reverse 0..digit loop
+						if base**d <= i then
+							x := abs(i/base**d);
+							i := i - x * base**d; -- update i
+							case x is
+								--when 0 => text_out := text_out & "0";
+								when 1 => text_out := text_out & "1";
+								when 2 => text_out := text_out & "2";
+								when 3 => text_out := text_out & "3";
+								when 4 => text_out := text_out & "4";
+								when 5 => text_out := text_out & "5";
+								when 6 => text_out := text_out & "6";
+								when 7 => text_out := text_out & "7";
+								when 8 => text_out := text_out & "8";
+								when 9 => text_out := text_out & "9";
+								when 10 => text_out := text_out & "A";
+								when 11 => text_out := text_out & "B";
+								when 12 => text_out := text_out & "C";
+								when 13 => text_out := text_out & "D";
+								when 14 => text_out := text_out & "E";
+								when 15 => text_out := text_out & "F";
+							end case;
+						else
+							text_out := text_out & "0";
+						end if;
+					end loop;
+					-- end conversion
+				end if;
+
+				-- add trailing format indicator
+				text_out := text_out & "h";
+
+			when others => 
+				put_line("ERROR: Base not supported !");
+				raise constraint_error;
+		end case;
+		return to_string(text_out);
+	end natural_to_hex_string;
 
 	procedure write_info_section is
 
@@ -941,10 +1074,11 @@ procedure mkmemcon is
 			put_line("  control         :" & natural'image(ptr_target.width_control));
 
 			if ptr_target.option_address_min /= -1 then
-				put_line(" option addr min  :" & natural'image(ptr_target.option_address_min));
+				--put_line(" option addr min  :" & natural'image(ptr_target.option_address_min));
+				put_line(" option addr min  :" & natural_to_hex_string(ptr_target.option_address_min,2));
 			end if;
 			if ptr_target.option_address_max /= -1 then
-				put_line(" option addr max  :" & natural'image(ptr_target.option_address_max));
+				put_line(" option addr max  :" & natural_to_hex_string(ptr_target.option_address_max,16));
 			end if;
 
 
@@ -1088,6 +1222,7 @@ begin
 
 	exception
 		when event: others =>
+			set_output(standard_output);
 			case prog_position is
 				when 10 =>
 					put_line("ERROR: Data base file missing or insufficient access rights !");
