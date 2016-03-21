@@ -393,7 +393,7 @@ procedure mkmemcon is
 			return net_name; -- send net name back
 		end get_connected_net;
 
-	begin
+	begin -- add_to_pin_list
 		-- check if pin already in list
 		check_if_pin_already_in_list;
 
@@ -447,15 +447,16 @@ procedure mkmemcon is
 	-- TYPES AND OBJECTS RELATED TO SECTION "PROG"
 	type type_operation is ( INIT, WRITE, READ, DISABLE);
 	type type_atg is ( DRIVE, EXPECT, OFF );
-	type type_group (width : natural) is
+	type type_group (width : natural := 0) is
 		record
 			case width is
 				when 0 => null;
 				when others =>
-					value	: natural;
-					atg		: type_atg;
+					value	: natural := 0; -- CS: limit value to (2**width) -1
+					atg		: type_atg := OFF;
 			end case;
 		end record;
+	group_default	: type_group;
 
 	type type_step;
 	type type_ptr_step is access all type_step;
@@ -481,10 +482,25 @@ procedure mkmemcon is
 		list			: in out type_ptr_step;
 		operation_given	: type_operation;
 		step_id_given	: positive;
-		group_given		: string
+		group_address_given	: type_group := group_default; -- width zero, atg off
+		group_data_given	: type_group := group_default; -- width zero, atg off
+		group_control_given	: type_group := group_default  -- width zero, atg off
 		) is
 	begin -- add_to_step_list
-		null;
+
+		-- check if step already in list ?
+
+		list := new type_step'(
+			next			=> list,
+			operation		=> operation_given,
+			step_id			=> step_id_given,
+			group_address	=> group_address_given,
+			group_data		=> group_data_given,
+			group_control	=> group_control_given,
+			width_address	=> ptr_target.width_address,
+			width_data		=> ptr_target.width_data,
+			width_control	=> ptr_target.width_control
+			);
 	end add_to_step_list;
 
 	function fraction_port_name(port_name_given : string) return type_port_vector is
