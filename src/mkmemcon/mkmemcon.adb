@@ -44,9 +44,6 @@ with Ada.Exceptions; 			use Ada.Exceptions;
 with Ada.Command_Line;			use Ada.Command_Line;
 with Ada.Directories;			use Ada.Directories;
 
-with ada.numerics;				use ada.numerics;
-with ada.numerics.generic_elementary_functions;
-
 with m1;
 with m1_internal; use m1_internal;
 
@@ -64,8 +61,55 @@ procedure mkmemcon is
 		record
 			info			: string (1..4)  := "info";
 			port_pin_map	: string (1..12) := "port_pin_map";
+			prog			: string (1..4)  := "prog";
 		end record;
 	section_name : type_section_name;
+
+	type type_prog_subsection_name is
+		record
+			init		: string (1..4)		:= "init";
+			write		: string (1..5)		:= "write";
+			read		: string (1..4)		:= "read";
+			disable		: string (1..7)		:= "disable";
+		end record;
+	prog_subsection_name : type_prog_subsection_name;
+
+	type type_model_section_entered is
+		record
+			info			: boolean := false;
+			port_pin_map	: boolean := false;
+			prog		 	: boolean := false;
+		end record;
+	model_section_entered : type_model_section_entered;
+
+	type type_model_section_processed is
+		record
+			info			: boolean := false;
+			port_pin_map	: boolean := false;
+			prog		 	: boolean := false;
+		end record;
+	model_section_processed : type_model_section_processed;
+
+	type type_prog_subsection_entered is
+		record
+			init			: boolean := false;
+			write 			: boolean := false;
+			read  			: boolean := false;
+			disable			: boolean := false;
+		end record;
+	prog_subsection_entered : type_prog_subsection_entered;
+
+	type type_prog_subsection_processed is
+		record
+			init			: boolean := false;
+			write 			: boolean := false;
+			read  			: boolean := false;
+			disable			: boolean := false;
+		end record;
+	prog_subsection_processed : type_prog_subsection_processed;
+
+
+
 
 	type type_port_pin_map_identifier is
 		record
@@ -185,34 +229,11 @@ procedure mkmemcon is
 			end case;
 		end record;
 	ptr_memory_pin	: type_ptr_memory_pin;
-	-- vector inout D[7:0] 19 18 17 16 15 13 12 11
-	-- vector input A[14:0] 1 26 2 23 21 24 25 3 4 5 6 7 8 9 10
--- 	type type_bus (width : positive) is
--- 		record
--- 			name				: universal_string_type.bounded_string;
--- 			ptr_pin_list		: type_ptr_pin;
--- 		end record;
 
-	invalid_value	: boolean := false;
-	invalid_package	: boolean := false;
-
-	type type_model_section_processed is
-		record
-			info			: boolean := false;
-			port_pin_map	: boolean := false;
-			prog		 	: boolean := false;
-		end record;
-	model_section_processed : type_model_section_processed;
-
-	type type_prog_subsection_processed is
-		record
-			init			: boolean := false;
-			write 			: boolean := false;
-			read  			: boolean := false;
-			disable			: boolean := false;
-		end record;
-	prog_subsection_processed : type_prog_subsection_processed;
-			
+	invalid_value	: boolean := false; -- used to warn operator about value given in model differing from value found in net list 
+										-- set by function get_connected_net
+	invalid_package	: boolean := false; -- used to warn operator about package given in model differing from package found in net list 
+										-- set by function get_connected_net
 
 	procedure add_to_pin_list(
 	-- adds a port and its pin name to pin list: 
@@ -334,7 +355,7 @@ procedure mkmemcon is
 									if universal_string_type.to_string(n.pin(p).device_value) /= universal_string_type.to_string(ptr_target.value) then
 										invalid_value := true;
 										put_line("WARNING: Target value mismatch !");
-										put_line("         value given as parameter : " & universal_string_type.to_string(ptr_target.value));
+										put_line("         value given in model     : " & universal_string_type.to_string(ptr_target.value));
 										put_line("         value found in data base : " & universal_string_type.to_string(n.pin(p).device_value));
 									end if;
 								end if;
@@ -423,6 +444,49 @@ procedure mkmemcon is
 			--mirrored: boolean := false; -- CS: not used yet
 		end record;
 
+	-- TYPES AND OBJECTS RELATED TO SECTION "PROG"
+	type type_operation is ( INIT, WRITE, READ, DISABLE);
+	type type_atg is ( DRIVE, EXPECT, OFF );
+	type type_group (width : natural) is
+		record
+			case width is
+				when 0 => null;
+				when others =>
+					value	: natural;
+					atg		: type_atg;
+			end case;
+		end record;
+
+	type type_step;
+	type type_ptr_step is access all type_step;
+	-- step 1	ADDR	drive FFFF |	DATA drive FF	|	CTRL drive 111
+	-- step 4	ADDR	drive ATG	|	DATA drive ATG	|	CTRL drive 010
+	type type_step (
+		width_address	: natural;
+		width_data		: natural;
+		width_control	: natural
+		) is 
+		record
+			next			: type_ptr_step;
+			operation		: type_operation;
+			step_id			: positive;
+			group_address	: type_group(width_address);
+			group_data		: type_group(width_data);
+			group_control	: type_group(width_control);
+		end record;
+	ptr_step : type_ptr_step;
+
+
+	procedure add_to_step_list(
+		list			: in out type_ptr_step;
+		operation_given	: type_operation;
+		step_id_given	: positive;
+		group_given		: string
+		) is
+	begin -- add_to_step_list
+		null;
+	end add_to_step_list;
+
 	function fraction_port_name(port_name_given : string) return type_port_vector is
 	-- breaks down something line A[14:0] into the components name=A, msb=14, lsb=0 and length=15
 	-- if a single port given like 'CE', the components are name=CE, msb=0, lsb=0 and length=1
@@ -495,9 +559,9 @@ procedure mkmemcon is
 		line_of_file	: extended_string.bounded_string;
 		field_count		: natural;
 
-		section_info_entered			:	boolean := false;
-		section_port_pin_map_entered	:	boolean := false;
-		section_prog_entered			:	boolean := false;
+-- 		section_info_entered			:	boolean := false;
+-- 		section_port_pin_map_entered	:	boolean := false;
+-- 		section_prog_entered			:	boolean := false;
 
 		-- model properties specified in section "info". if a property is missing in sectin "info" a default is used
 		scratch_value			: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
@@ -525,7 +589,7 @@ procedure mkmemcon is
 		scratch_option_address_max	: type_option_address_max := -1;
 
 	begin -- read memory model
-		put_line("reading memory/cluster model file ...");
+		put_line("reading memory/module model file ...");
 
 		-- open model file as given via command line argument
 		open(
@@ -548,11 +612,11 @@ procedure mkmemcon is
 				end if;
 
 				-- SECTION "INFO" RELATED BEGIN
-				if section_info_entered then
+				if model_section_entered.info then
 
 					-- once inside section "info", wait for end of section mark
 					if get_field_from_line(line_of_file,1) = section_mark.endsection then -- when endsection found
-						section_info_entered := false; -- reset section entered flag
+						model_section_entered.info := false; -- reset section entered flag
 						model_section_processed.info := true; -- mark section "info" as processed so that subsequent sections can be read
 
 						-- SECTION "INFO" READING DONE. NOW CHECK FOR MISSING PARAMETERS IN THAT SECTION
@@ -747,7 +811,7 @@ procedure mkmemcon is
 					-- wait for section "info" begin mark
 					if get_field_from_line(line_of_file,1) = section_mark.section then
 						if get_field_from_line(line_of_file,2) = section_name.info then
-							section_info_entered := true; -- set section enterd "flag"
+							model_section_entered.info := true; -- set section enterd "flag"
 						end if;
 					end if;
 				end if;
@@ -755,12 +819,12 @@ procedure mkmemcon is
 
 
 				-- SECTION "PORT_PIN_MAP" RELATED BEGIN
-				if section_port_pin_map_entered then
+				if model_section_entered.port_pin_map then
 					prog_position := 2000;
 
 					-- once inside section "port_pin_map", wait for end of section mark
 					if get_field_from_line(line_of_file,1) = section_mark.endsection then
-						section_port_pin_map_entered := false; -- clear section entered flag
+						model_section_entered.port_pin_map := false; -- clear section entered flag
 						model_section_processed.port_pin_map := true; -- mark section as processed
 
 						-- update bus width in target object as counted in scratch_widt_address/data/control
@@ -902,11 +966,11 @@ procedure mkmemcon is
 
 								-- if target is a cluster, no need to check the package name
 								if ptr_target.class_target = cluster then
-									section_port_pin_map_entered := true;
+									model_section_entered.port_pin_map := true;
 								else
 								-- if target is class RAM or ROM, check name of package in field 3
 									if get_field_from_line(line_of_file,3) = universal_string_type.to_string(ptr_target.device_package) then
-										section_port_pin_map_entered := true;
+										model_section_entered.port_pin_map := true;
 									end if;
 								end if;
 							end if;
@@ -915,13 +979,177 @@ procedure mkmemcon is
 				end if;
 				-- SECTION "PORT_PIN_MAP" RELATED END
 
+
+
+				-- SECTION "PROG" RELATED BEGIN
+				if model_section_entered.prog then
+					-- once inside section "prog", wait for end of section mark
+					if get_field_from_line(line_of_file,1) = section_mark.endsection then
+						model_section_entered.prog := false; -- clear section entered flag
+						model_section_processed.prog := true; -- mark section as processed
+
+						-- check for non-processed subsections
+						if not prog_subsection_processed.init then
+							put_line("WARNING: Section '" & prog_subsection_name.init & "' missing or incomplete !");
+						end if;
+						if not prog_subsection_processed.write then
+							put_line("WARNING: Section '" & prog_subsection_name.write & "' missing or incomplete !");
+						end if;
+						if not prog_subsection_processed.read then
+							put_line("WARNING: Section '" & prog_subsection_name.read & "' missing or incomplete !");
+						end if;
+						if not prog_subsection_processed.disable then
+							put_line("WARNING: Section '" & prog_subsection_name.disable & "' missing or incomplete !");
+						end if;
+
+						-- CS: do what is required on finishing section prog
+						-- section prog reading done.
+					else
+						-- PROCESSING SECTION "PROG" BEGIN
+-- 						if debug_level >= 100 then
+-- 							put_line("prog : ->" & extended_string.to_string(line_of_file) & "<-");
+-- 						end if;
+
+						---SUBSECTION INIT RELATED BEGIN----------------------------------------------------------------------
+						if prog_subsection_entered.init then
+							-- once inside subsection "init", wait for end of subsection mark
+							if get_field_from_line(line_of_file,1) = section_mark.endsubsection then
+								prog_subsection_entered.init	:= false;
+								prog_subsection_processed.init	:= true;
+
+								-- CS: do what is required on finishing subsection init
+								-- subsection init reading done.
+							else
+								-- PROCESSING SUBSECTION INIT BEGIN
+								if debug_level >= 100 then
+									put_line("init : ->" & extended_string.to_string(line_of_file) & "<-");
+								end if;
+
+
+								-- PROCESSING SUBSECTION INIT END
+							end if;
+						else
+
+						-- wait for subsection begin mark like "subsection init"
+							if get_field_from_line(line_of_file,1) = section_mark.subsection then
+								if get_field_from_line(line_of_file,2) = prog_subsection_name.init then -- on match of "init"
+									prog_subsection_entered.init := true; -- set section entered flag
+								end if;
+							end if;
+						end if;
+						---SUBSECTION INIT RELATED END------------------------------------------------------------------------
+
+						---SUBSECTION WRITE RELATED BEGIN----------------------------------------------------------------------
+						if prog_subsection_entered.write then
+							-- once inside subsection "write", wait for end of subsection mark
+							if get_field_from_line(line_of_file,1) = section_mark.endsubsection then
+								prog_subsection_entered.write	:= false;
+								prog_subsection_processed.write	:= true;
+
+								-- CS: do what is required on finishing subsection write
+								-- subsection write reading done.
+							else
+								-- PROCESSING SUBSECTION WRITE BEGIN
+								if debug_level >= 100 then
+									put_line("write : ->" & extended_string.to_string(line_of_file) & "<-");
+								end if;
+
+
+								-- PROCESSING SUBSECTION WRITE END
+							end if;
+						else
+
+						-- wait for subsection begin mark like "subsection write"
+							if get_field_from_line(line_of_file,1) = section_mark.subsection then
+								if get_field_from_line(line_of_file,2) = prog_subsection_name.write then -- on match of "write"
+									prog_subsection_entered.write := true; -- set section entered flag
+								end if;
+							end if;
+						end if;
+						---SUBSECTION WRITE RELATED END------------------------------------------------------------------------
+
+						---SUBSECTION READ RELATED BEGIN----------------------------------------------------------------------
+						if prog_subsection_entered.read then
+							-- once inside subsection "read", wait for end of subsection mark
+							if get_field_from_line(line_of_file,1) = section_mark.endsubsection then
+								prog_subsection_entered.read	:= false;
+								prog_subsection_processed.read	:= true;
+
+								-- CS: do what is required on finishing subsection read
+								-- subsection read reading done.
+							else
+								-- PROCESSING SUBSECTION READ BEGIN
+								if debug_level >= 100 then
+									put_line("read : ->" & extended_string.to_string(line_of_file) & "<-");
+								end if;
+
+
+								-- PROCESSING SUBSECTION READ END
+							end if;
+						else
+
+						-- wait for subsection begin mark like "subsection read"
+							if get_field_from_line(line_of_file,1) = section_mark.subsection then
+								if get_field_from_line(line_of_file,2) = prog_subsection_name.read then -- on match of "read"
+									prog_subsection_entered.read := true; -- set section entered flag
+								end if;
+							end if;
+						end if;
+						---SUBSECTION WRITE RELATED END------------------------------------------------------------------------
+
+						---SUBSECTION DISABLE RELATED BEGIN----------------------------------------------------------------------
+						if prog_subsection_entered.disable then
+							-- once inside subsection "disable", wait for end of subsection mark
+							if get_field_from_line(line_of_file,1) = section_mark.endsubsection then
+								prog_subsection_entered.disable		:= false;
+								prog_subsection_processed.disable	:= true;
+
+								-- CS: do what is required on finishing subsection disable
+								-- subsection disable reading done.
+							else
+								-- PROCESSING SUBSECTION DISABLE BEGIN
+								if debug_level >= 100 then
+									put_line("disable : ->" & extended_string.to_string(line_of_file) & "<-");
+								end if;
+
+
+								-- PROCESSING SUBSECTION DISABLE END
+							end if;
+						else
+
+						-- wait for subsection begin mark like "subsection disable"
+							if get_field_from_line(line_of_file,1) = section_mark.subsection then
+								if get_field_from_line(line_of_file,2) = prog_subsection_name.disable then -- on match of "disable"
+									prog_subsection_entered.disable := true; -- set section entered flag
+								end if;
+							end if;
+						end if;
+						---SUBSECTION DISABLE RELATED END------------------------------------------------------------------------
+
+
+					end if;
+					-- PROCESSING SECTION "PROG" END
+
+				else
+					-- wait for section begin mark like "Section prog"
+					-- this only makes sense if "port_pin_map" section has been processed before
+					if model_section_processed.port_pin_map then 
+						if get_field_from_line(line_of_file,1) = section_mark.section then -- on match of "Section"
+							if get_field_from_line(line_of_file,2) = section_name.prog then -- on match of "prog"
+								model_section_entered.prog := true;
+							end if;
+						end if;
+					end if;
+				end if;
+				-- SECTION "PROG" RELATED END
+
 			end if; -- if line contains anything
 		end loop; -- read model file
 
 
 		-- CHECK FOR NON-PROCESSED SECTIONS
 		if not model_section_processed.info then
-			put_line("ERROR: Section 'info' not found !");
+			put_line("ERROR: Section 'info' not found or incomplete !");
 			raise constraint_error;
 		end if;
 		if not model_section_processed.port_pin_map then
@@ -929,150 +1157,22 @@ procedure mkmemcon is
 			put_line("       Check spelling (case sensitive) and try again.");
 			raise constraint_error;
 		end if;
+		if not model_section_processed.prog then
+			put_line("ERROR: Section 'prog' not found or incomplete !");
+			raise constraint_error;
+		end if;
 
 	end read_memory_model; 
 
 
-	function natural_to_string(natural_in : natural; base : positive) return string is
-	-- converts a natural to a string like EC5Fh or 0010110b
-	-- the parameter base determines the format
-		i			: natural := natural_in; -- i holds the input number
-		text_out 	: unbounded_string; -- this is what will be returned before converted to a string
-		digit		: natural := 0; -- points to the digit being processed
-
-		-- used for conversion to hex format
-		subtype type_x is positive range 1..15;
-		x			: type_x;
-
-		-- instantiate functions library
-		package functions is new generic_elementary_functions(float);
-		scratch	: float;
-		width	: positive; -- holds the number of bits required by the given input number
-		-- width is calculated before conversion
-	begin	
-		-- calculate number of bits required
-		scratch := functions.log(x => float(i), base => float(2));
-		put_line("scratch:" & float'image(scratch));
-		-- scratch holds a float number which must be rounded up to an integer (because the bit count is always an integer)
-		-- rounding does not work if scratch is zero. for example: if input is 1, scratch becomes zero. in this case we need only one bit.
-		if scratch > float(0) then
-
-			-- if scratch is an integer, the remainder is zero -> increment width by 1
-			-- example: given natural_in = 8, log 8 = 3, four bits required -> add 1 to scratch
-			if float'remainder(scratch, float'ceiling(scratch) ) = float(0) then
-				-- no rounding required, add 1 to scratch to obtain number of bits required
-				--put_line("remainder 0");
-				--width := positive(float'ceiling(scratch)) + 1;
-				width := positive(scratch) + 1;
-			else
-				-- scratch is not integer, rouding up to next integer required
-				--put_line("remainder greater 0");
-				width := positive(float'ceiling(scratch));
-			end if;
-
-		else 
-			-- if scratch is zero, only one bit is required
-			width := 1;
-		end if;
-		put_line("width :" & positive'image(width));
-		-- calculating width done
-
-		-- depending on given base do the conversion
-		case base is
-			when 2 =>
-				if i = 0 then -- exclude input value of zero from conversion
-					text_out := to_unbounded_string("0");
-
-				else -- begin conversion:
-
-					-- find highest digit
-					for d in 0..width+1 loop
-						if base**d > i then
-							digit := d - 1;
-							exit;
-						end if;
-					end loop;
-
-					-- fill heading space. under construction
-					--text_out := (8 - digit - 1) * "0";
-
-					-- convert i to binary string
-					for d in reverse 0..digit loop
-						if base**d <= i then
-							i := i - base**d; -- update i
-							text_out := text_out & "1";
-						else
-							text_out := text_out & "0";
-						end if;
-					end loop;
-					-- end conversion
-				end if;
-
-				-- add trailing format indicator
-				text_out := text_out & "b";
-
-
-
-			when 16 =>
-				if i = 0 then -- exclude input value of zero from conversion
-					text_out := to_unbounded_string("0");
-
-				else -- begin conversion:
-
-					-- find highest digit
-					for d in 0..width+1 loop
-						if base**d > i then
-							digit := d - 1;
-							exit;
-						end if;
-					end loop;
-
-					-- fill heading space. under construction
-					--text_out := (8 - digit - 1) * "0";
-
-					-- convert i to binary string
-					for d in reverse 0..digit loop
-						if base**d <= i then
-							x := abs(i/base**d);
-							i := i - x * base**d; -- update i
-							case x is
-								--when 0 => text_out := text_out & "0";
-								when 1 => text_out := text_out & "1";
-								when 2 => text_out := text_out & "2";
-								when 3 => text_out := text_out & "3";
-								when 4 => text_out := text_out & "4";
-								when 5 => text_out := text_out & "5";
-								when 6 => text_out := text_out & "6";
-								when 7 => text_out := text_out & "7";
-								when 8 => text_out := text_out & "8";
-								when 9 => text_out := text_out & "9";
-								when 10 => text_out := text_out & "A";
-								when 11 => text_out := text_out & "B";
-								when 12 => text_out := text_out & "C";
-								when 13 => text_out := text_out & "D";
-								when 14 => text_out := text_out & "E";
-								when 15 => text_out := text_out & "F";
-							end case;
-						else
-							text_out := text_out & "0";
-						end if;
-					end loop;
-					-- end conversion
-				end if;
-
-				-- add trailing format indicator
-				text_out := text_out & "h";
-
-			when others => 
-				put_line("ERROR: Base not supported !");
-				raise constraint_error;
-		end case;
-		return to_string(text_out);
-	end natural_to_string;
-
 	procedure write_info_section is
-
+	-- creates the sequence file,
+	-- directs subsequent puts into the sequence file
+	-- writes the info section into the sequence file
 		procedure write_pin_list is
+			-- writes bus width of address, control and data
+			-- writes the pin list
+			-- writes optionally given min/max addresses
 			p 	: type_ptr_memory_pin;
 		begin
 			put_line(" bus width");
@@ -1082,10 +1182,14 @@ procedure mkmemcon is
 
 			if ptr_target.option_address_min /= -1 then
 				--put_line(" option addr min  :" & natural'image(ptr_target.option_address_min));
-				put_line(" option addr min  : " & natural_to_string(ptr_target.option_address_min,2));
+				put_line(" option addr min  : " & natural_to_string(
+					natural_in => ptr_target.option_address_min,
+					base => 16));
 			end if;
 			if ptr_target.option_address_max /= -1 then
-				put_line(" option addr max  : " & natural_to_string(ptr_target.option_address_max,16));
+				put_line(" option addr max  : " & natural_to_string(
+					natural_in => ptr_target.option_address_max,
+					base => 16));
 			end if;
 
 
@@ -1118,7 +1222,7 @@ procedure mkmemcon is
 			end loop;
 		end write_pin_list;
 
-	begin
+	begin -- write_info_section
 		-- create sequence file
 		create( sequence_file, 
 			name => (compose (universal_string_type.to_string(test_name), universal_string_type.to_string(test_name), "seq")));
