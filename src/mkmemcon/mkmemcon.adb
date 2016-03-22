@@ -74,6 +74,19 @@ procedure mkmemcon is
 		end record;
 	prog_subsection_name : type_prog_subsection_name;
 
+	type type_prog_identifier is
+		record
+			step		: string (1..4)		:= "step";
+			addr		: string (1..4)		:= "addr";
+			data		: string (1..4)		:= "data";
+			ctrl		: string (1..4)		:= "ctrl";
+			drive		: string (1..5)		:= "drive";
+			expect		: string (1..6)		:= "expect";
+			atg			: string (1..3)		:= "atg";
+			highz		: string (1..5)		:= "highz";
+		end record;
+	prog_identifier : type_prog_identifier;
+
 	type type_model_section_entered is
 		record
 			info			: boolean := false;
@@ -445,46 +458,48 @@ procedure mkmemcon is
 		end record;
 
 	-- TYPES AND OBJECTS RELATED TO SECTION "PROG"
-	type type_operation is ( INIT, WRITE, READ, DISABLE);
-	type type_atg is ( DRIVE, EXPECT, OFF );
-	type type_group (width : natural := 0) is
+	type type_step_operation is ( INIT, WRITE, READ, DISABLE);
+	type type_step_direction is ( DRIVE, EXPECT );
+	type type_step_group (width : natural := 0) is
 		record
 			case width is
 				when 0 => null;
 				when others =>
-					value	: natural := 0; -- CS: limit value to (2**width) -1
-					atg		: type_atg := OFF;
+					direction	: type_step_direction;
+					value		: natural := 0; -- CS: limit value to (2**width) -1
+					atg			: boolean := false;
+					highz		: boolean := false;
 			end case;
 		end record;
-	group_default	: type_group;
+	--step_group_default	: type_step_group;
 
 	type type_step;
 	type type_ptr_step is access all type_step;
 	-- step 1	ADDR	drive FFFF |	DATA drive FF	|	CTRL drive 111
 	-- step 4	ADDR	drive ATG	|	DATA drive ATG	|	CTRL drive 010
-	type type_step (
-		width_address	: natural;
-		width_data		: natural;
-		width_control	: natural
-		) is 
+	type type_step 
+		--width_address	: natural
+		--width_data		: natural;
+		--width_control	: natural
+		 is 
 		record
 			next			: type_ptr_step;
-			operation		: type_operation;
+			operation		: type_step_operation;
 			step_id			: positive;
-			group_address	: type_group(width_address);
-			group_data		: type_group(width_data);
-			group_control	: type_group(width_control);
+			group_address	: type_step_group;
+--			group_data		: type_step_group(width_data);
+--			group_control	: type_step_group(width_control);
 		end record;
 	ptr_step : type_ptr_step;
 
 
 	procedure add_to_step_list(
 		list			: in out type_ptr_step;
-		operation_given	: type_operation;
+		operation_given	: type_step_operation;
 		step_id_given	: positive;
-		group_address_given	: type_group := group_default; -- width zero, atg off
-		group_data_given	: type_group := group_default; -- width zero, atg off
-		group_control_given	: type_group := group_default  -- width zero, atg off
+		group_address_given	: type_step_group -- width zero, atg off
+--		group_data_given	: type_step_group := step_group_default; -- width zero, atg off
+--		group_control_given	: type_step_group := step_group_default  -- width zero, atg off
 		) is
 	begin -- add_to_step_list
 
@@ -494,12 +509,12 @@ procedure mkmemcon is
 			next			=> list,
 			operation		=> operation_given,
 			step_id			=> step_id_given,
-			group_address	=> group_address_given,
-			group_data		=> group_data_given,
-			group_control	=> group_control_given,
-			width_address	=> ptr_target.width_address,
-			width_data		=> ptr_target.width_data,
-			width_control	=> ptr_target.width_control
+			group_address	=> group_address_given
+--			group_data		=> group_data_given,
+--			group_control	=> group_control_given,
+--			width_address	=> ptr_target.width_address
+--			width_data		=> ptr_target.width_data,
+--			width_control	=> ptr_target.width_control
 			);
 	end add_to_step_list;
 
@@ -603,6 +618,199 @@ procedure mkmemcon is
 
 		scratch_option_address_min	: type_option_address_min := -1;
 		scratch_option_address_max	: type_option_address_max := -1;
+
+		step_counter	: natural := 0;
+
+		procedure get_groups_from_line (operation : type_step_operation) is
+		-- extracts address, data, control groups from a line like:
+		-- step 1  ADDR  drive ATG  DATA drive HIGHZ  CTRL drive 011
+		-- the address group would be: ADDR  drive ATG
+		-- the data group would be: DATA drive HIGHZ
+		-- the control group would be: CTRL drive 011
+			field_ct 		: positive;
+			field_ct_max	: positive := 11;
+			--direction_address	: type_step_direction;
+			direction_data		: type_step_direction;
+			direction_control	: type_step_direction;
+			atg_address		: boolean := false;
+			atg_data		: boolean := false;
+			scratch_value	: natural;
+			address_max		: natural := (2**ptr_target.width_address)-1;
+			data_max		: natural := (2**ptr_target.width_data)-1;
+			control_max		: natural := (2**ptr_target.width_control)-1;
+			subtype type_value_address	is natural range 0..address_max;
+			subtype type_value_data 	is natural range 0..data_max;
+			subtype type_value_control	is natural range 0..control_max;
+			value_address	: type_value_address := 0;
+			value_data		: type_value_data := 0;
+			value_control	: type_value_control := 0;
+			highz_address	: boolean := false;
+			highz_data		: boolean := false;
+			-- highz_control	: boolean := false; -- CS: ?
+
+-- 			type type_ptr_group_address is access all type_step_group;
+-- 			ptr_group_address	: type_ptr_group_address;
+			group_address	: type_step_group(ptr_target.width_address);
+
+		begin
+			-- on match of "step"
+			if to_lower(get_field_from_line(line_of_file,1)) = prog_identifier.step then
+				step_counter := step_counter + 1;
+				if step_counter = positive'value(get_field_from_line(line_of_file,2)) then
+					field_ct := get_field_count(extended_string.to_string(line_of_file));
+					if field_ct > field_ct_max then
+						put_line("ERROR: Too many fields in line ! Line must have no more than" & positive'image(field_ct_max) & " fields !");
+						put_line("       Example: step 1  ADDR  drive ATG  DATA drive Z  CTRL drive 011");
+						raise constraint_error;
+					else
+						-- test fields for identifier addr, data or ctrl. 
+						-- if no address, data or control ports defined by port_pin_map abort if group specified yet
+						-- then read subsequent fields
+						for f in 3..field_ct loop
+
+							-- if identifier address found
+							if to_lower(get_field_from_line(line_of_file,f)) = prog_identifier.addr then
+								if ptr_target.width_address /= 0 then -- if bus width greater zero (means if there are address pins)
+
+									-- get direction (expect, drive) from next field
+									group_address.direction := type_step_direction'value(get_field_from_line(line_of_file,f+1));
+
+									-- if direction is "expect" the drivers must be disabled
+									if group_address.direction = expect then
+										group_address.highz := true;
+									end if;
+
+									-- get atg or value field from next field
+									if to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.atg then
+										group_address.atg := true;
+
+									-- in case of a drive command, highz is allowed like
+									-- step 5  ADDR  drive highz  DATA drive 45h  CTRL drive 11b
+									-- NOTE: highz applies for the whole group. bitwise assignment not supported yet
+									elsif group_address.direction = drive and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
+										group_address.highz := true;
+									else
+										-- the value might be given as hex, dec or binary number
+										scratch_value := string_to_natural(get_field_from_line(line_of_file,f+2));
+										if scratch_value in type_value_address then
+											group_address.value := string_to_natural(get_field_from_line(line_of_file,f+2));
+										else
+											put_line("ERROR: Address value must not be greater than" 
+												& natural'image(address_max) & " or "
+												& natural_to_string(address_max,16) & " !");
+											raise constraint_error;
+										end if;
+									end if;
+								else 
+									-- if group specified but no address port specified in port_pin_map abort
+									put_line("ERROR: Target has no address port as specified in section '" & section_name.port_pin_map & ".");
+									put_line("       Thus, no address group allowed in section '" & section_name.prog & "' !");
+									raise constraint_error;
+								end if;
+
+
+							elsif -- if identifier data found 
+								to_lower(get_field_from_line(line_of_file,f)) = prog_identifier.data then
+								if ptr_target.width_data /= 0 then -- if bus width greater zero (means if there are data pins)
+
+									-- get direction (expect, drive) from next field
+									direction_data := type_step_direction'value(get_field_from_line(line_of_file,f+1));
+
+									-- if direction is "expect" the drivers must be disabled
+									if direction_data = expect then
+										highz_data := true;
+									end if;
+
+									-- get atg or value field from next field
+									if to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.atg then
+										atg_data := true;
+
+									-- in case of a drive command, highz is allowed like
+									-- step 5  ADDR  drive ATG  DATA drive HIGHZ  CTRL drive 11b
+									-- NOTE: highz applies for the whole group. bitwise assignment not supported yet
+									elsif direction_data = drive and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
+										highz_data := true;
+									else
+										-- the value might be given as hex, dec or binary number
+										scratch_value := string_to_natural(get_field_from_line(line_of_file,f+2));
+										if scratch_value in type_value_address then
+											value_data := string_to_natural(get_field_from_line(line_of_file,f+2));
+										else
+											put_line("ERROR: Data value must not be greater than" 
+												& natural'image(data_max) & " or "
+												& natural_to_string(data_max,16) & " !");
+											raise constraint_error;
+										end if;
+									end if;
+								else 
+									-- if group specified but no data port specified in port_pin_map abort
+									put_line("ERROR: Target has no data port as specified in section '" & section_name.port_pin_map & ".");
+									put_line("       Thus, no data group allowed in section '" & section_name.prog & "' !");
+									raise constraint_error;
+								end if;
+
+
+							elsif -- if identifier control found
+								to_lower(get_field_from_line(line_of_file,f)) = prog_identifier.ctrl then
+								if ptr_target.width_control /= 0 then -- if bus width greater zero (means if there are control pins)
+
+									-- get direction (expect, drive) from next field
+									direction_control := type_step_direction'value(get_field_from_line(line_of_file,f+1));
+
+									-- CS: if direction is "expect" the drivers must be disabled
+-- 									if direction_control = expect then
+-- 										highz_control := true;
+-- 									end if;
+
+									-- get value field from next field
+									-- NOTE: ATG not available for control pins (CS: could be useful in the future)
+									-- NOTE: HIGHZ not available for control pins (CS: could be useful in the future)
+									-- the value might be given as hex, dec or binary number
+										scratch_value := string_to_natural(get_field_from_line(line_of_file,f+2));
+										if scratch_value in type_value_control then
+											value_control := string_to_natural(get_field_from_line(line_of_file,f+2));
+										else
+											put_line("ERROR: Control value must not be greater than " 
+												& natural_to_string(control_max,2) & " !");
+											raise constraint_error;
+										end if;
+								else 
+									-- if group specified but no control port specified in port_pin_map abort
+									put_line("ERROR: Target has no control port as specified in section '" & section_name.port_pin_map & ".");
+									put_line("       Thus, no control group allowed in section '" & section_name.prog & "' !");
+									raise constraint_error;
+								end if;
+
+-- 							else -- CS: delay command ?
+-- 								-- if unknown command
+-- 								put_line("ERROR: Invalid command found !");
+-- 								raise constraint_error;
+
+							end if; -- if identifier address/data/control found
+						end loop;
+					end if;
+				else -- if step id invalid
+					put_line("ERROR: Step ID invalid or already used !");
+					raise constraint_error;
+				end if;
+			end if; -- on match of "step"
+
+-- 			ptr_group_address := new type_step_group'(
+-- 				width 		=> width_address,
+-- 				direction	=> direction_address
+-- 				);
+
+--			group_address.
+
+			add_to_step_list(
+				list				=> ptr_step,
+				operation_given		=> operation,
+				step_id_given		=> step_counter,
+				group_address_given	=> group_address -- width zero, atg off
+-- 		group_data_given	: type_group := group_default; -- width zero, atg off
+-- 		group_control_given	: type_group := group_default  -- width zero, atg off
+				);
+		end get_groups_from_line;
 
 	begin -- read memory model
 		put_line("reading memory/module model file ...");
@@ -996,7 +1204,6 @@ procedure mkmemcon is
 				-- SECTION "PORT_PIN_MAP" RELATED END
 
 
-
 				-- SECTION "PROG" RELATED BEGIN
 				if model_section_entered.prog then
 					-- once inside section "prog", wait for end of section mark
@@ -1041,6 +1248,7 @@ procedure mkmemcon is
 									put_line("init : ->" & extended_string.to_string(line_of_file) & "<-");
 								end if;
 
+								get_groups_from_line(operation => init);
 
 								-- PROCESSING SUBSECTION INIT END
 							end if;
@@ -1070,6 +1278,7 @@ procedure mkmemcon is
 									put_line("write : ->" & extended_string.to_string(line_of_file) & "<-");
 								end if;
 
+								get_groups_from_line(operation => write);
 
 								-- PROCESSING SUBSECTION WRITE END
 							end if;
@@ -1099,6 +1308,7 @@ procedure mkmemcon is
 									put_line("read : ->" & extended_string.to_string(line_of_file) & "<-");
 								end if;
 
+								get_groups_from_line(operation => read);
 
 								-- PROCESSING SUBSECTION READ END
 							end if;
@@ -1128,6 +1338,7 @@ procedure mkmemcon is
 									put_line("disable : ->" & extended_string.to_string(line_of_file) & "<-");
 								end if;
 
+								get_groups_from_line(operation => disable);
 
 								-- PROCESSING SUBSECTION DISABLE END
 							end if;
