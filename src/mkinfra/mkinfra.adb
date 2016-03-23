@@ -125,11 +125,11 @@ procedure mkinfra is
 									& "' WILL BE OPERATED IN EXTEST MODE !");
 								m1_internal.put_binary_class_1(b.opc_extest);
 							when others => 
-								put_line(standard_output,"ERROR: Instruction '" & bic_instruction'image(instruction)
+								put_line(standard_output,"ERROR: Instruction '" & type_bic_instruction'image(instruction)
 									& "' not allowed for infra structure test !");
 								raise constraint_error;
 						end case;
-						put_line(row_separator_0 & to_lower(bic_instruction'image(instruction)));
+						put_line(row_separator_0 & to_lower(type_bic_instruction'image(instruction)));
 
 						if write_sxr then
 							write_sir;
