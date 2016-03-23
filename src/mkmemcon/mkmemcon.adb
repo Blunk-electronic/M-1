@@ -84,6 +84,7 @@ procedure mkmemcon is
 			expect		: string (1..6)		:= "expect";
 			atg			: string (1..3)		:= "atg";
 			highz		: string (1..5)		:= "highz";
+			dely		: string (1..5)		:= "delay";
 		end record;
 	prog_identifier : type_prog_identifier;
 
@@ -447,16 +448,6 @@ procedure mkmemcon is
 		end case;
 	end add_to_pin_list;
 
-
-	type type_port_vector is
-		record
-			name	: universal_string_type.bounded_string;
-			msb		: natural := 0;
-			lsb		: natural := 0;
-			length	: positive := 1;
-			--mirrored: boolean := false; -- CS: not used yet
-		end record;
-
 	-- TYPES AND OBJECTS RELATED TO SECTION "PROG"
 	type type_step_operation is ( INIT, WRITE, READ, DISABLE);
 	type type_step_direction is ( DRIVE, EXPECT );
@@ -471,24 +462,20 @@ procedure mkmemcon is
 					highz		: boolean := false;
 			end case;
 		end record;
-	--step_group_default	: type_step_group;
 
 	type type_step;
 	type type_ptr_step is access all type_step;
 	-- step 1	ADDR	drive FFFF |	DATA drive FF	|	CTRL drive 111
 	-- step 4	ADDR	drive ATG	|	DATA drive ATG	|	CTRL drive 010
-	type type_step 
-		--width_address	: natural
-		--width_data		: natural;
-		--width_control	: natural
-		 is 
+	type type_step is 
 		record
 			next			: type_ptr_step;
 			operation		: type_step_operation;
 			step_id			: positive;
 			group_address	: type_step_group;
---			group_data		: type_step_group(width_data);
---			group_control	: type_step_group(width_control);
+			group_data		: type_step_group;
+			group_control	: type_step_group;
+			delay_value		: type_delay_value;
 		end record;
 	ptr_step : type_ptr_step;
 
@@ -497,90 +484,23 @@ procedure mkmemcon is
 		list			: in out type_ptr_step;
 		operation_given	: type_step_operation;
 		step_id_given	: positive;
-		group_address_given	: type_step_group -- width zero, atg off
---		group_data_given	: type_step_group := step_group_default; -- width zero, atg off
---		group_control_given	: type_step_group := step_group_default  -- width zero, atg off
+		group_address_given	: type_step_group;
+		group_data_given	: type_step_group;
+		group_control_given	: type_step_group;
+		delay_value_given	: type_delay_value
 		) is
 	begin -- add_to_step_list
-
 		-- check if step already in list ?
-
 		list := new type_step'(
 			next			=> list,
 			operation		=> operation_given,
 			step_id			=> step_id_given,
-			group_address	=> group_address_given
---			group_data		=> group_data_given,
---			group_control	=> group_control_given,
---			width_address	=> ptr_target.width_address
---			width_data		=> ptr_target.width_data,
---			width_control	=> ptr_target.width_control
+			group_address	=> group_address_given,
+			group_data		=> group_data_given,
+			group_control	=> group_control_given,
+			delay_value		=> delay_value_given
 			);
 	end add_to_step_list;
-
-	function fraction_port_name(port_name_given : string) return type_port_vector is
-	-- breaks down something line A[14:0] into the components name=A, msb=14, lsb=0 and length=15
-	-- if a single port given like 'CE', the components are name=CE, msb=0, lsb=0 and length=1
- 		length		: natural := port_name_given'last;
-		ob			: string (1..1) := "[";
-		cb			: string (1..1) := "]";
-		ifs			: string (1..1) := ":";
-		pos_ob		: positive;
-		pos_cb		: positive;
-		pos_ifs		: positive;
-		ct_ifs		: natural := ada.strings.fixed.count(port_name_given,ifs);
-		ct_ob		: natural := ada.strings.fixed.count(port_name_given,ob);
-		ct_cb		: natural := ada.strings.fixed.count(port_name_given,cb);
-		port_vector	: type_port_vector;
-	begin
-		if ct_ob = 1 and ct_cb = 1 and ct_ifs = 1 then -- it seems like a vector
-
-			-- get position of opening, closing bracket and ifs to verify syntax
-			pos_ob  := ada.strings.fixed.index(port_name_given,ob);
-			pos_cb  := ada.strings.fixed.index(port_name_given,cb);
-			pos_ifs := ada.strings.fixed.index(port_name_given,ifs);
-
-			-- the opening bracket must be on position greater 1 -- example ADR[14:0]
-			-- the closing bracket must be on last position
-			if pos_ob > 1 and pos_cb = length then
-
-				-- ifs must be within brackets, but not next to a bracket
-				-- MSB is always on the left, LSB always on the left
-				if pos_ifs > pos_ob + 1 and pos_ifs < pos_cb - 1 then
-					port_vector.msb := positive'value(port_name_given (pos_ob+1 .. pos_ifs-1)); -- msb is always non-zero
-					port_vector.lsb := natural'value(port_name_given (pos_ifs+1 .. pos_cb-1));
-
-					-- msb must be greater than lsb
-					if port_vector.msb > port_vector.lsb then
-						-- the port name is from pos. 1 to opening bracket
-						port_vector.name := universal_string_type.to_bounded_string(port_name_given (port_name_given'first .. pos_ob-1));
-					else
-						raise constraint_error;
-					end if;
-				else
-					raise constraint_error;
-				end if;
-			else
-				raise constraint_error;
-			end if;
-
-
-		elsif ct_ob = 0 and ct_cb = 0 and ct_ifs = 0 then -- it is a single port (no vector)
-			-- copy port_name_given as it is in port_name_given.name
-			-- and set msb equal to lsb to indicate a non-vector port
-			port_vector.name := universal_string_type.to_bounded_string(port_name_given);
-			port_vector.msb := 0;
-			port_vector.lsb := 0;
-		
-		else -- other bracket counts are invalid
-			raise constraint_error;
-		end if;
-
-		-- calculate vector length. in case of a single port, the length becomes 1
-		port_vector.length := port_vector.msb - port_vector.lsb + 1;
-		return port_vector;
-	end fraction_port_name;
-
 
 
 	procedure read_memory_model is
@@ -589,10 +509,6 @@ procedure mkmemcon is
 	-- if a section is missing, subsequent sections can not be processed
 		line_of_file	: extended_string.bounded_string;
 		field_count		: natural;
-
--- 		section_info_entered			:	boolean := false;
--- 		section_port_pin_map_entered	:	boolean := false;
--- 		section_prog_entered			:	boolean := false;
 
 		-- model properties specified in section "info". if a property is missing in sectin "info" a default is used
 		scratch_value			: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
@@ -627,16 +543,21 @@ procedure mkmemcon is
 		-- the address group would be: ADDR  drive ATG
 		-- the data group would be: DATA drive HIGHZ
 		-- the control group would be: CTRL drive 011
+
+		-- creates temporarily objects group_address/data/control with discriminant "width_address/data/control"
+		-- "width_address/data/control" is taken from object "target"
+		-- those temporarily objects are finally passed to procedure "add_to_step_list" to be added to step list
+
 			field_ct 		: positive;
 			field_ct_max	: positive := 11;
-			--direction_address	: type_step_direction;
-			direction_data		: type_step_direction;
-			direction_control	: type_step_direction;
 			atg_address		: boolean := false;
 			atg_data		: boolean := false;
-			scratch_value	: natural;
+			scratch_value	: natural; -- holds drive/expect value before being range checked
+
+			-- according to bus width taken from object "target", the range for the address/data/control value is set
+			-- and used to create a subtype that finally holds the value
 			address_max		: natural := (2**ptr_target.width_address)-1;
-			data_max		: natural := (2**ptr_target.width_data)-1;
+			data_max		: natural := (2**ptr_target.width_data)-1;	
 			control_max		: natural := (2**ptr_target.width_control)-1;
 			subtype type_value_address	is natural range 0..address_max;
 			subtype type_value_data 	is natural range 0..data_max;
@@ -644,25 +565,32 @@ procedure mkmemcon is
 			value_address	: type_value_address := 0;
 			value_data		: type_value_data := 0;
 			value_control	: type_value_control := 0;
-			highz_address	: boolean := false;
-			highz_data		: boolean := false;
-			-- highz_control	: boolean := false; -- CS: ?
 
--- 			type type_ptr_group_address is access all type_step_group;
--- 			ptr_group_address	: type_ptr_group_address;
+			-- create temporarily objects group_address/data/control with discriminant "width_address/data/control"
 			group_address	: type_step_group(ptr_target.width_address);
+			group_data		: type_step_group(ptr_target.width_data);
+			group_control	: type_step_group(ptr_target.width_control);
+
+			-- as long as no delay commmand found, the delay defaults to zero
+			delay_value		: type_delay_value := 0.0;
 
 		begin
+			-- process line like: step 1  ADDR  drive ATG  DATA drive HIGHZ  CTRL drive 011
 			-- on match of "step"
 			if to_lower(get_field_from_line(line_of_file,1)) = prog_identifier.step then
-				step_counter := step_counter + 1;
+
+				-- count steps. the step id found must match step_counter
+				step_counter := step_counter + 1; 
 				if step_counter = positive'value(get_field_from_line(line_of_file,2)) then
+
+					-- make sure the maximim field count is not exceeded
 					field_ct := get_field_count(extended_string.to_string(line_of_file));
 					if field_ct > field_ct_max then
 						put_line("ERROR: Too many fields in line ! Line must have no more than" & positive'image(field_ct_max) & " fields !");
 						put_line("       Example: step 1  ADDR  drive ATG  DATA drive Z  CTRL drive 011");
 						raise constraint_error;
 					else
+					-- if field count ok then
 						-- test fields for identifier addr, data or ctrl. 
 						-- if no address, data or control ports defined by port_pin_map abort if group specified yet
 						-- then read subsequent fields
@@ -686,7 +614,7 @@ procedure mkmemcon is
 
 									-- in case of a drive command, highz is allowed like
 									-- step 5  ADDR  drive highz  DATA drive 45h  CTRL drive 11b
-									-- NOTE: highz applies for the whole group. bitwise assignment not supported yet
+									-- NOTE: highz applies for the whole group. bitwise assignment not supported yet CS
 									elsif group_address.direction = drive and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
 										group_address.highz := true;
 									else
@@ -714,27 +642,27 @@ procedure mkmemcon is
 								if ptr_target.width_data /= 0 then -- if bus width greater zero (means if there are data pins)
 
 									-- get direction (expect, drive) from next field
-									direction_data := type_step_direction'value(get_field_from_line(line_of_file,f+1));
+									group_data.direction := type_step_direction'value(get_field_from_line(line_of_file,f+1));
 
 									-- if direction is "expect" the drivers must be disabled
-									if direction_data = expect then
-										highz_data := true;
+									if group_data.direction = expect then
+										group_data.highz := true;
 									end if;
 
 									-- get atg or value field from next field
 									if to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.atg then
-										atg_data := true;
+										group_data.atg := true;
 
 									-- in case of a drive command, highz is allowed like
 									-- step 5  ADDR  drive ATG  DATA drive HIGHZ  CTRL drive 11b
-									-- NOTE: highz applies for the whole group. bitwise assignment not supported yet
-									elsif direction_data = drive and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
-										highz_data := true;
+									-- NOTE: highz applies for the whole group. bitwise assignment not supported yet CS
+									elsif group_data.direction = drive and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
+										group_data.highz := true;
 									else
 										-- the value might be given as hex, dec or binary number
 										scratch_value := string_to_natural(get_field_from_line(line_of_file,f+2));
 										if scratch_value in type_value_address then
-											value_data := string_to_natural(get_field_from_line(line_of_file,f+2));
+											group_data.value := string_to_natural(get_field_from_line(line_of_file,f+2));
 										else
 											put_line("ERROR: Data value must not be greater than" 
 												& natural'image(data_max) & " or "
@@ -755,7 +683,7 @@ procedure mkmemcon is
 								if ptr_target.width_control /= 0 then -- if bus width greater zero (means if there are control pins)
 
 									-- get direction (expect, drive) from next field
-									direction_control := type_step_direction'value(get_field_from_line(line_of_file,f+1));
+									group_control.direction := type_step_direction'value(get_field_from_line(line_of_file,f+1));
 
 									-- CS: if direction is "expect" the drivers must be disabled
 -- 									if direction_control = expect then
@@ -768,7 +696,7 @@ procedure mkmemcon is
 									-- the value might be given as hex, dec or binary number
 										scratch_value := string_to_natural(get_field_from_line(line_of_file,f+2));
 										if scratch_value in type_value_control then
-											value_control := string_to_natural(get_field_from_line(line_of_file,f+2));
+											group_control.value := string_to_natural(get_field_from_line(line_of_file,f+2));
 										else
 											put_line("ERROR: Control value must not be greater than " 
 												& natural_to_string(control_max,2) & " !");
@@ -781,7 +709,13 @@ procedure mkmemcon is
 									raise constraint_error;
 								end if;
 
--- 							else -- CS: delay command ?
+							elsif -- if identifier delay found (example: step 5 delay 1.5)
+								to_lower(get_field_from_line(line_of_file,f)) = prog_identifier.dely then
+									delay_value := type_delay_value'value(get_field_from_line(line_of_file,f+1));
+									-- CS: refine error output via exception handler
+									exit; -- no more reading of fields required
+
+-- 							else -- CS: other commands are ignored, put warning or abort instead
 -- 								-- if unknown command
 -- 								put_line("ERROR: Invalid command found !");
 -- 								raise constraint_error;
@@ -795,20 +729,14 @@ procedure mkmemcon is
 				end if;
 			end if; -- on match of "step"
 
--- 			ptr_group_address := new type_step_group'(
--- 				width 		=> width_address,
--- 				direction	=> direction_address
--- 				);
-
---			group_address.
-
 			add_to_step_list(
 				list				=> ptr_step,
 				operation_given		=> operation,
 				step_id_given		=> step_counter,
-				group_address_given	=> group_address -- width zero, atg off
--- 		group_data_given	: type_group := group_default; -- width zero, atg off
--- 		group_control_given	: type_group := group_default  -- width zero, atg off
+				group_address_given	=> group_address,
+				group_data_given	=> group_data,
+				group_control_given	=> group_control,
+				delay_value_given	=> delay_value	-- if delay non-zero, this step is regarded as delay (address, data, control don't care)
 				);
 		end get_groups_from_line;
 
@@ -1485,6 +1413,17 @@ procedure mkmemcon is
 	end write_info_section;
 
 
+	procedure write_sequences is
+
+	begin -- write_sequences
+		new_line(2);
+
+		all_in(sample);
+		write_ir_capture;
+		load_safe_values;
+		all_in(extest);
+
+	end write_sequences;
 
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
@@ -1548,8 +1487,7 @@ begin
 	write_test_init;
 
 	prog_position	:= 120;
-	
-	--write_sequences;
+	write_sequences;
 
 	prog_position	:= 130;
 	set_output(standard_output);
