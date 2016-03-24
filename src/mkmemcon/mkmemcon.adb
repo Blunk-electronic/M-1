@@ -1422,6 +1422,7 @@ procedure mkmemcon is
 		write_ir_capture;
 		load_safe_values;
 		all_in(extest);
+		load_static_drive_values;
 
 	end write_sequences;
 
