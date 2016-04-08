@@ -1423,6 +1423,7 @@ procedure mkmemcon is
 		load_safe_values;
 		all_in(extest);
 		load_static_drive_values;
+		load_static_expect_values;
 
 	end write_sequences;
 
