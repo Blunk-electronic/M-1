@@ -192,6 +192,14 @@ procedure mkmemcon is
 			width_address	: natural;
 			width_data		: natural;
 			width_control	: natural;
+
+			-- values that hold the number of init, read, write, disable steps
+			-- will be set when reading section prog (by procedure add_to_step_list)
+			step_count_init		: natural;
+			step_count_write	: natural;
+			step_count_read		: natural;
+			step_count_disable	: natural;
+			step_count_total	: natural;
 		
 			option_address_min	: type_option_address_min;
 			option_address_max	: type_option_address_max;
@@ -481,9 +489,9 @@ procedure mkmemcon is
 
 
 	procedure add_to_step_list(
-		list			: in out type_ptr_step;
-		operation_given	: type_step_operation;
-		step_id_given	: positive;
+		list				: in out type_ptr_step;
+		operation_given		: type_step_operation;
+		step_id_given		: positive;
 		group_address_given	: type_step_group;
 		group_data_given	: type_step_group;
 		group_control_given	: type_step_group;
@@ -500,6 +508,17 @@ procedure mkmemcon is
 			group_control	=> group_control_given,
 			delay_value		=> delay_value_given
 			);
+
+		-- count steps by their type of operation and update total step count
+		case operation_given is
+			when init 		=> ptr_target.step_count_init		:= ptr_target.step_count_init + 1;
+			when write		=> ptr_target.step_count_write		:= ptr_target.step_count_write + 1;
+			when read 		=> ptr_target.step_count_read		:= ptr_target.step_count_read + 1;
+			when disable	=> ptr_target.step_count_disable	:= ptr_target.step_count_disable + 1;
+		end case;
+		ptr_target.step_count_total := 
+				ptr_target.step_count_init + ptr_target.step_count_write +
+				ptr_target.step_count_read + ptr_target.step_count_disable;
 	end add_to_step_list;
 
 
@@ -556,6 +575,8 @@ procedure mkmemcon is
 
 			-- according to bus width taken from object "target", the range for the address/data/control value is set
 			-- and used to create a subtype that finally holds the value
+			-- NOTE: This serves as a basical check to ensure the data, address or control value fits into the given bus !
+			-- it does not check optional the specified min or max address in section port_pin_map !
 			address_max		: natural := (2**ptr_target.width_address)-1;
 			data_max		: natural := (2**ptr_target.width_data)-1;	
 			control_max		: natural := (2**ptr_target.width_control)-1;
@@ -621,11 +642,39 @@ procedure mkmemcon is
 										-- the value might be given as hex, dec or binary number
 										scratch_value := string_to_natural(get_field_from_line(line_of_file,f+2));
 										if scratch_value in type_value_address then
+
+											-- if option_address_min is given (greater -1), check if scratch_value is less then option_address_min
+											-- and output error message
+											if ptr_target.option_address_min /= -1 then
+												if scratch_value < ptr_target.option_address_min then
+													put_line("ERROR: Address must be greater than the value specified in model by '" 
+														& port_pin_map_identifier.option & row_separator_0 & port_pin_map_identifier.address 
+														& row_separator_0 & port_pin_map_identifier.min
+														& natural'image(ptr_target.option_address_min) & " ("
+														& natural_to_string(ptr_target.option_address_min,16) & ")' !");
+													raise constraint_error;
+												end if;
+											end if;
+
+											-- if option_address_max is given (greater -1), check if scratch_value is greater then option_address_max
+											-- and output error message
+											if ptr_target.option_address_max /= -1 then
+												if scratch_value > ptr_target.option_address_max then
+													put_line("ERROR: Address must be less than the value specified in model by '" 
+														& port_pin_map_identifier.option & row_separator_0 & port_pin_map_identifier.address 
+														& row_separator_0 & port_pin_map_identifier.max
+														& natural'image(ptr_target.option_address_max) & " ("
+														& natural_to_string(ptr_target.option_address_max,16) & ")' !");
+													raise constraint_error;
+												end if;
+											end if;
+
+											--and scratch_value <= ptr_target.option_address_max then
 											group_address.value := string_to_natural(get_field_from_line(line_of_file,f+2));
 										else
-											put_line("ERROR: Address value must not be greater than" 
-												& natural'image(address_max) & " or "
-												& natural_to_string(address_max,16) & " !");
+											put_line("ERROR: Address must not be greater than" 
+												& natural'image(address_max) & " ("
+												& natural_to_string(address_max,16) & ") !");
 											raise constraint_error;
 										end if;
 									end if;
@@ -833,6 +882,11 @@ procedure mkmemcon is
 									width_address	=> 0,
 									width_data		=> 0,
 									width_control	=> 0,
+									step_count_init		=> 0, -- will be set later when reading section prog (by procedure add_to_step_list)
+									step_count_read		=> 0, -- will be set later when reading section prog
+									step_count_write	=> 0, -- will be set later when reading section prog
+									step_count_disable	=> 0, -- will be set later when reading section prog
+									step_count_total	=> 0, -- will be set later when reading section prog
 									option_address_min	=> -1,
 									option_address_max	=> -1,
 									algorithm		=> algorithm, -- currently fixed when collecting command line arguments
@@ -859,6 +913,11 @@ procedure mkmemcon is
 									width_address	=> 0,
 									width_data		=> 0,
 									width_control	=> 0,
+									step_count_init		=> 0, -- will be set later when reading section prog (by procedure add_to_step_list)
+									step_count_read		=> 0, -- will be set later when reading section prog
+									step_count_write	=> 0, -- will be set later when reading section prog
+									step_count_disable	=> 0, -- will be set later when reading section prog
+									step_count_total	=> 0, -- will be set later when reading section prog
 									option_address_min	=> -1,
 									option_address_max	=> -1,
 									algorithm		=> algorithm, -- currently fixed when collecting command line arguments
@@ -880,6 +939,11 @@ procedure mkmemcon is
 									width_address	=> 0,
 									width_data		=> 0,
 									width_control	=> 0,
+									step_count_init		=> 0, -- will be set later when reading section prog (by procedure add_to_step_list)
+									step_count_read		=> 0, -- will be set later when reading section prog
+									step_count_write	=> 0, -- will be set later when reading section prog
+									step_count_disable	=> 0, -- will be set later when reading section prog
+									step_count_total	=> 0, -- will be set later when reading section prog
 									option_address_min	=> -1,
 									option_address_max	=> -1
 									);
@@ -987,8 +1051,31 @@ procedure mkmemcon is
 
 						-- update target with address options
 						-- if no options found or given default value of -1 is used, to indicate the option is not given
+
 						ptr_target.option_address_min := scratch_option_address_min;
+
+						-- if options_address_min given (greater -1) make sure it fits into the given bus size
+						if ptr_target.option_address_min /= -1 then
+							if ptr_target.option_address_min > (2**ptr_target.width_address)-1 then
+								put_line("ERROR: Value specified by 'option address min' must be less than" 
+									& natural'image((2**ptr_target.width_address)-1) & " (" 
+									& natural_to_string((2**ptr_target.width_address)-1,16) & ")");
+								raise constraint_error;
+							end if;
+						end if;
+
 						ptr_target.option_address_max := scratch_option_address_max;
+
+						-- if options_address_max given (greater -1) make sure it fits into the given bus size
+						if ptr_target.option_address_max /= -1 then
+							if ptr_target.option_address_max > (2**ptr_target.width_address)-1 then
+								put_line("ERROR: Value specified by 'option address max' must be less than" 
+									& natural'image((2**ptr_target.width_address)-1) & " (" 
+									& natural_to_string((2**ptr_target.width_address)-1,16) & ")");
+								raise constraint_error;
+							end if;
+						end if;
+
 
 						-- section port_pin_map reading done.
 					else
@@ -1072,8 +1159,8 @@ procedure mkmemcon is
 						end if; -- if identifier is data, address or control. set scratch_pin_class
 
 
-						-- read options -- CS: read hex numbers
-						-- example: option address min 8000
+						-- read options
+						-- example: option address min 8000h or 3465d
 						prog_position := 2300;
 						-- read option identifier
 						if get_field_from_line(line_of_file,1) = port_pin_map_identifier.option then
@@ -1406,6 +1493,12 @@ procedure mkmemcon is
 		put_line(" model author     : " & universal_string_type.to_string(ptr_target.author));
 		put_line(" model status     : " & type_model_status'image(ptr_target.status));
 
+		put_line(" step count by model");
+		put_line("  init            :" & natural'image(ptr_target.step_count_init));
+		put_line("  read            :" & natural'image(ptr_target.step_count_read));
+		put_line("  write           :" & natural'image(ptr_target.step_count_write));
+		put_line("  disable         :" & natural'image(ptr_target.step_count_disable));
+		put_line("  total           :" & natural'image(ptr_target.step_count_total));
 		write_pin_list;
 
 		put_line("EndSection"); 
@@ -1413,8 +1506,43 @@ procedure mkmemcon is
 	end write_info_section;
 
 
-	procedure write_sequences is
+	procedure write_operation(operation_given : type_step_operation) is
+	-- writes the operation (as specified by operation_given) in the sequence file
+	-- writes as comment the operation parameters:
+	-- -- operation: INIT
+	-- --  model: step xyz
+	-- --  drive_addr (hex): 1234h
+	-- --  drive_data (hex): 1234h
+	-- --  drive_ctrl (bin): 101b
 
+		s : type_ptr_step; -- the list of steps serves as data pool
+	begin
+		put_line("-- operation: " & type_step_operation'image(operation_given));
+		case operation_given is
+			-- since init and disable are straight forward blocks (no cycling) their steps must be sorted by id and put in the sequence file
+			when init | disable =>
+				-- sorting by step id can be achieved by searching the step list from start to end (even if not all steps are init or disable types)
+				for i in 1..ptr_target.step_count_total loop
+
+					s := ptr_step; -- set step pointer at end of step list
+					while s /= null loop -- loop though step list and filter step types as given in operation_given)
+						if s.operation = operation_given then
+							-- the first step id that matches i is to be output
+							if s.step_id = i then 
+								put(" -- model: step" & positive'image(s.step_id));
+								new_line;
+								exit;
+							end if;
+						end if;
+						s := s.next;
+					end loop;
+
+				end loop;
+			when others => null;
+		end case;
+	end write_operation;
+
+	procedure write_sequences is
 	begin -- write_sequences
 		new_line(2);
 
@@ -1424,6 +1552,8 @@ procedure mkmemcon is
 		all_in(extest);
 		load_static_drive_values;
 		load_static_expect_values;
+		
+		write_operation(init);
 
 	end write_sequences;
 
