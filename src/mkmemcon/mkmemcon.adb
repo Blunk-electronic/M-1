@@ -602,7 +602,11 @@ procedure mkmemcon is
 
 				-- count steps. the step id found must match step_counter
 				step_counter := step_counter + 1; 
-				if step_counter = positive'value(get_field_from_line(line_of_file,2)) then
+				--if step_counter = positive'value(get_field_from_line(line_of_file,2)) then
+				if step_counter /= positive'value(get_field_from_line(line_of_file,2)) then
+					-- to loosen the constraints on step ids, it is sufficient to output a warning CS: test possible malicious implications !
+					put_line("WARNING: Line" & natural'image(line_counter) & ". Step ID invalid or already used !");
+				end if;
 
 					-- make sure the maximim field count is not exceeded
 					field_ct := get_field_count(extended_string.to_string(line_of_file));
@@ -772,16 +776,18 @@ procedure mkmemcon is
 							end if; -- if identifier address/data/control found
 						end loop;
 					end if;
-				else -- if step id invalid
-					put_line("ERROR: Step ID invalid or already used !");
-					raise constraint_error;
-				end if;
+-- 				else -- if step id invalid
+-- 					put_line("ERROR: Step ID invalid or already used !");
+-- 					raise constraint_error;
+-- 				end if;
 			end if; -- on match of "step"
 
 			add_to_step_list(
 				list				=> ptr_step,
 				operation_given		=> operation,
-				step_id_given		=> step_counter,
+				--step_id_given		=> step_counter,
+				-- the step id found in the model is to be passed, even if it is invalid (a warning has been issued already)
+				step_id_given		=> positive'value(get_field_from_line(line_of_file,2)),
 				group_address_given	=> group_address,
 				group_data_given	=> group_data,
 				group_control_given	=> group_control,
@@ -1406,6 +1412,10 @@ procedure mkmemcon is
 
 	end read_memory_model; 
 
+	procedure make_lut is
+	begin
+		null;
+	end make_lut;
 
 	procedure write_info_section is
 	-- creates the sequence file,
@@ -1506,31 +1516,80 @@ procedure mkmemcon is
 	end write_info_section;
 
 
-	procedure write_operation(operation_given : type_step_operation) is
+	procedure write_operation(
+		operation_given		: type_step_operation;
+		atg_address_given	: natural := 0; -- if provided this will fill the ATG field (used by write and read operations only)
+		atg_data_given 		: natural := 0  -- if provided this will fill the ATG field (used by write and read operations only)
+		) is
 	-- writes the operation (as specified by operation_given) in the sequence file
 	-- writes as comment the operation parameters:
 	-- -- operation: INIT
-	-- --  model: step xyz
-	-- --  drive_addr (hex): 1234h
-	-- --  drive_data (hex): 1234h
-	-- --  drive_ctrl (bin): 101b
+	-- --  model: step xyz ADDR DRIVE 1235h | DATA DRIVE 45h | CTRL DRIVE 01b
 
 		s : type_ptr_step; -- the list of steps serves as data pool
 	begin
 		put_line("-- operation: " & type_step_operation'image(operation_given));
 		case operation_given is
-			-- since init and disable are straight forward blocks (no cycling) their steps must be sorted by id and put in the sequence file
+			-- since init and disable are straight forward blocks (no loops or branches) their steps must be sorted by id and put in the sequence file
 			when init | disable =>
 				-- sorting by step id can be achieved by searching the step list from start to end (even if not all steps are init or disable types)
 				for i in 1..ptr_target.step_count_total loop
 
 					s := ptr_step; -- set step pointer at end of step list
-					while s /= null loop -- loop though step list and filter step types as given in operation_given)
+					while s /= null loop -- loop though step list and filter step types as given in operation_given
 						if s.operation = operation_given then
 							-- the first step id that matches i is to be output
 							if s.step_id = i then 
-								put(" -- model: step" & positive'image(s.step_id));
-								new_line;
+								put(" -- model step" & positive'image(s.step_id) & ":");
+								if s.delay_value = 0.0 then -- if delay value is zero it is a regular test step (otherwise it is a delay)
+									if s.group_address.width > 0 then
+										put(" ADDR " & type_step_direction'image(s.group_address.direction));
+
+										if s.group_address.highz then
+											put(" Z ");
+											--CS: write cell assignments here
+										else
+											put(row_separator_0 & natural_to_string(s.group_address.value,16) & row_separator_1);
+											--CS: write cell assignments here
+										end if;
+
+									end if;
+
+
+									if s.group_data.width > 0 then
+										put(" DATA " & type_step_direction'image(s.group_data.direction));
+
+										if s.group_data.highz then
+											put(" Z ");
+											--CS: write cell assignments here
+										else
+											put(row_separator_0 & natural_to_string(s.group_data.value,16) & row_separator_1);
+											--CS: write cell assignments here
+										end if;
+
+									end if;
+
+									--CS: write cell assignments here
+
+									if s.group_control.width > 0 then
+										put(" CTRL " & type_step_direction'image(s.group_control.direction));
+
+										if s.group_control.highz then
+											put(" Z ");
+											--CS: write cell assignments here
+										else
+											put(row_separator_0 & natural_to_string(s.group_control.value,2)); -- output in binary format
+											--CS: write cell assignments here
+										end if;
+
+									end if;
+
+									new_line;
+								else
+									new_line;
+									put_line(row_separator_0 & prog_identifier.dely & row_separator_0 & type_delay_value'image(s.delay_value));
+								end if;
+
 								exit;
 							end if;
 						end if;
@@ -1538,6 +1597,78 @@ procedure mkmemcon is
 					end loop;
 
 				end loop;
+
+			when write =>
+				-- sorting by step id can be achieved by searching the step list from start to end (even if not all steps are init or disable types)
+				for i in 1..ptr_target.step_count_total loop
+
+					s := ptr_step; -- set step pointer at end of step list
+					while s /= null loop -- loop though step list and filter step types as given in operation_given
+						if s.operation = operation_given then
+							-- the first step id that matches i is to be output
+							if s.step_id = i then 
+								put(" -- model step" & positive'image(s.step_id) & ":");
+								if s.delay_value = 0.0 then -- if delay value is zero it is a regular test step (otherwise it is a delay)
+									if s.group_address.width > 0 then
+										put(" ADDR " & type_step_direction'image(s.group_address.direction));
+
+										if s.group_address.atg then
+											put(" ATG " & natural_to_string(atg_address_given,16));
+											--CS: write cell assignments here
+										elsif s.group_address.highz then
+											put(" Z ");
+											--CS: write cell assignments here
+										else
+											put(row_separator_0 & natural_to_string(s.group_address.value,16) & row_separator_1);
+											--CS: write cell assignments here
+										end if;
+									end if;
+
+									
+
+									if s.group_data.width > 0 then
+										put(" DATA " & type_step_direction'image(s.group_data.direction));
+
+										if s.group_data.atg then
+											put(" ATG " & natural_to_string(atg_data_given,16));
+											--CS: write cell assignments here
+										elsif s.group_data.highz then
+											put(" Z ");
+											--CS: write cell assignments here
+										else
+											put(row_separator_0 & natural_to_string(s.group_data.value,16) & row_separator_1);
+											--CS: write cell assignments here
+										end if;
+									end if;
+
+
+									if s.group_control.width > 0 then
+										put(" CTRL " & type_step_direction'image(s.group_control.direction));
+
+										if s.group_control.highz then
+											put(" Z ");
+											--CS: write cell assignments here
+										else
+											put(row_separator_0 & natural_to_string(s.group_control.value,2)); -- output in binary format
+											--CS: write cell assignments here
+										end if;
+									end if;
+
+									new_line;
+								else
+									new_line;
+									put_line(row_separator_0 & prog_identifier.dely & row_separator_0 & type_delay_value'image(s.delay_value));
+								end if;
+
+								exit;
+							end if;
+						end if;
+						s := s.next;
+					end loop;
+
+				end loop;
+
+
 			when others => null;
 		end case;
 	end write_operation;
@@ -1554,6 +1685,7 @@ procedure mkmemcon is
 		load_static_expect_values;
 		
 		write_operation(init);
+		write_operation(write,1000,10);
 
 	end write_sequences;
 
@@ -1599,6 +1731,8 @@ begin
 	read_data_base;
 	prog_position	:= 65;
 	read_memory_model;
+
+	make_lut;
 
 	prog_position	:= 70;
  	create_temp_directory;
