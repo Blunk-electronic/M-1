@@ -640,7 +640,7 @@ EndSection
 Section netlist
 ----------------------------------------------------------------------------------------------------
 -- modified by primary/secondary/class builder version 043
--- date: 2016-03-09 14:50:32 (YYYY-MM-DD HH:MM:SS)
+-- date: 2016-04-13 16:25:44 (YYYY-MM-DD HH:MM:SS)
 
 ----------------------------------------------------------------------------------------------------
  SubSection SDA class PU

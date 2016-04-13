@@ -26,7 +26,7 @@ bsmcl run LED_D403
 bsmcl run LED_D404
 [ "$?" -ne 0 ] && exit 1
 
-bsmcl off
-[ "$?" -ne 0 ] && exit 1
+#bsmcl off
+#[ "$?" -ne 0 ] && exit 1
 exit
 
