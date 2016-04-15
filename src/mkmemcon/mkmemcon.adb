@@ -228,6 +228,7 @@ procedure mkmemcon is
 		end record;
 	ptr_target : type_ptr_target;
 
+
 	-- type definition of a single pin
 	-- The object of type type_pin will be added to a list later
 	-- and accessed by pointer ptr_pin.
@@ -576,7 +577,7 @@ procedure mkmemcon is
 			-- according to bus width taken from object "target", the range for the address/data/control value is set
 			-- and used to create a subtype that finally holds the value
 			-- NOTE: This serves as a basical check to ensure the data, address or control value fits into the given bus !
-			-- it does not check optional the specified min or max address in section port_pin_map !
+			-- it does not check the optional specified min or max address in section port_pin_map !
 			address_max		: natural := (2**ptr_target.width_address)-1;
 			data_max		: natural := (2**ptr_target.width_data)-1;	
 			control_max		: natural := (2**ptr_target.width_control)-1;
@@ -1412,9 +1413,88 @@ procedure mkmemcon is
 
 	end read_memory_model; 
 
+
+	-- definition of a step in the lut
+	type type_lut_step;
+	type type_ptr_lut_step is access all type_lut_step;
+	type type_lut_step is
+		record
+			next		: type_ptr_lut_step;
+			address		: natural;
+			data		: natural;
+		end record;
+	ptr_lut_step	: type_ptr_lut_step;
+
 	procedure make_lut is
+		address_physical_max	: natural := (2**ptr_target.width_address)-1;
+		subtype type_address_physical_max is natural range 0..address_physical_max;
+
+		a_logical_min	: type_address_physical_max;
+		a_logical_max	: type_address_physical_max;
+		a				: natural := 0;
+		a_lut			: natural := 0;
+
+		data_max		: natural := (2**ptr_target.width_data)-1;	
+		subtype type_data is natural range 0..data_max;
+		d, di, d_lut	: natural := 0;
+
+		step	: positive := 1;
 	begin
-		null;
+		-- if option_address_min given (in this case it is greater -1)
+		-- then a_logical_min assumes this value
+		-- otherwise it assumes zero
+		if ptr_target.option_address_min /= -1 then
+			a_logical_min := ptr_target.option_address_min;
+		else
+			a_logical_min := 0;
+		end if;
+
+		-- if option_address_max given (in this case it is greater -1)
+		-- then a_logical_max assumes this value
+		-- otherwise it assumes the max value allowed by the bus width
+		if ptr_target.option_address_max /= -1 then
+			a_logical_max := ptr_target.option_address_max;
+		else
+			a_logical_max := address_physical_max;
+		end if;
+
+		case ptr_target.algorithm is
+			-- the algorithm inprinted in a standard lut is a walking "one" on the address bus
+			-- we start with LSB=1 (held by variable a). by multiplying with 2 the "one" gets shifted to the left
+			-- steps will be generated until the maximum address is reached
+			-- the minimum address is ensured by adding a_logical_min to a (in case a is less than a_logical_min)
+			when standard =>
+				a := 1; -- inital address value (LSB=1)
+				d := 1; -- inital data value (LSB=1)
+				while a <= a_logical_max loop -- loop inside the whole alotted address range 
+
+					-- compute address to be placed in lut
+					if a < a_logical_min then -- if a is below a_logical_min
+						a_lut := a + a_logical_min; -- add a_logical_min to a to ensure lower address limit
+					else -- if a is equal or greater a_logical_min, a_lut assumes a
+						a_lut := a; 
+					end if;
+
+					-- compute data to be placed in lut
+					if d < data_max then
+						d_lut := d;
+					else
+						di := di + 1;
+						d_lut := 2**(ptr_target.width_data-1) + di;
+						if d_lut > data_max then
+							put_line(standard_output,"ERROR: Maximum of dummy data reached !");
+							raise constraint_error;
+						end if;
+					end if;
+					d := d * 2;
+
+					put_line(standard_output,natural_to_string(a_lut ,16) & row_separator_0 & natural_to_string(d_lut,16));
+
+					a := a * 2; -- shift "one" one bit to the left
+				end loop;
+
+			when others => null;
+		end case;
 	end make_lut;
 
 	procedure write_info_section is
