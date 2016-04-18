@@ -30,8 +30,6 @@
 --   history of changes:
 --
 
-		with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-
 with Ada.Text_IO;				use Ada.Text_IO;
 with Ada.Integer_Text_IO;		use Ada.Integer_Text_IO;
 with Ada.Characters.Handling; 	use Ada.Characters.Handling;
@@ -1420,26 +1418,51 @@ procedure mkmemcon is
 	type type_lut_step is
 		record
 			next		: type_ptr_lut_step;
+			step_id		: natural;
 			address		: natural;
 			data		: natural;
 		end record;
 	ptr_lut_step	: type_ptr_lut_step;
 
 	procedure make_lut is
+	-- generates a lut according to the given algorithm
+	-- afterwards the lut can be accessed by pointer ptr_lut_step
+
+		-- the address bus width dictates the highest address location
 		address_physical_max	: natural := (2**ptr_target.width_address)-1;
 		subtype type_address_physical_max is natural range 0..address_physical_max;
 
+		-- set lower and upper address boundaries (they are inside the physical address range)
 		a_logical_min	: type_address_physical_max;
 		a_logical_max	: type_address_physical_max;
-		a				: natural := 0;
-		a_lut			: natural := 0;
+		a				: natural := 0; -- a scratch variable
+		a_lut			: natural := 0; -- this will be written into the lut
 
+		-- the data bus width dictates the highest data word
 		data_max		: natural := (2**ptr_target.width_data)-1;	
 		subtype type_data is natural range 0..data_max;
-		d, di, d_lut	: natural := 0;
+		d		: natural := 0; -- a scratch variable
+		di		: natural := 0; -- the "data counter" used once the MSB has been set
+		d_lut	: natural := 0; -- this will be written into the lut
 
-		step	: positive := 1;
-	begin
+		step_id	: natural := 0; -- function wide step counter
+
+		procedure add_to_lut(
+			list			: in out type_ptr_lut_step;
+			address_given	: natural;
+			data_given		: natural
+			) is
+		begin
+			step_id := step_id + 1; -- on adding a step to the lut, increment step counter
+			list := new type_lut_step'(
+				next		=> list,
+				step_id		=> step_id,
+				address		=> address_given,
+				data		=> data_given
+				);
+		end add_to_lut;
+
+	begin -- make_lut begin
 		-- if option_address_min given (in this case it is greater -1)
 		-- then a_logical_min assumes this value
 		-- otherwise it assumes zero
@@ -1463,39 +1486,76 @@ procedure mkmemcon is
 			-- we start with LSB=1 (held by variable a). by multiplying with 2 the "one" gets shifted to the left
 			-- steps will be generated until the maximum address is reached
 			-- the minimum address is ensured by adding a_logical_min to a (in case a is less than a_logical_min)
+			-- on the data bus, a walking one is applied (starting with LSB). once the MSB is reached, it keeps high, 
+			-- while on all remaining data bits a counting sequence is generated. this way a unique data pattern for every
+			-- memory location is applied
 			when standard =>
 				a := 1; -- inital address value (LSB=1)
 				d := 1; -- inital data value (LSB=1)
 				while a <= a_logical_max loop -- loop inside the whole alotted address range 
 
-					-- compute address to be placed in lut
+					-- compute address to be placed in lut: a walking one on the address bus
 					if a < a_logical_min then -- if a is below a_logical_min
 						a_lut := a + a_logical_min; -- add a_logical_min to a to ensure lower address limit
 					else -- if a is equal or greater a_logical_min, a_lut assumes a
 						a_lut := a; 
 					end if;
 
-					-- compute data to be placed in lut
+					-- compute data to be placed in lut: with a unique data pattern for every relevant memory location
 					if d < data_max then
 						d_lut := d;
 					else
 						di := di + 1;
 						d_lut := 2**(ptr_target.width_data-1) + di;
 						if d_lut > data_max then
+							-- in a standard algorithm this situation rarely comes true
 							put_line(standard_output,"ERROR: Maximum of dummy data reached !");
 							raise constraint_error;
 						end if;
 					end if;
-					d := d * 2;
-
-					put_line(standard_output,natural_to_string(a_lut ,16) & row_separator_0 & natural_to_string(d_lut,16));
-
+					d := d * 2; -- shift "one" one bit to the left (once MSB is set, this operation doesn't matter any more)
 					a := a * 2; -- shift "one" one bit to the left
+
+					-- for debugging
+					--put_line(standard_output,natural_to_string(a_lut ,16) & row_separator_0 & natural_to_string(d_lut,16));
+
+					-- add address and data to lut
+					add_to_lut(
+						list			=> ptr_lut_step,
+						address_given	=> a_lut,
+						data_given		=> d_lut
+						);
 				end loop;
 
 			when others => null;
 		end case;
 	end make_lut;
+
+	type type_get_step_from_lut_result is
+		record
+			valid		: boolean := false;
+			address		: natural := 0;
+			data		: natural := 0;
+		end record;
+
+	function get_step_from_lut (step_id_given : positive) return type_get_step_from_lut_result is
+	-- fetches a step (specified by step_id_given) from the lut.
+	-- returns result of composite type type_get_step_from_lut_result with valid=true if given id was valid
+	-- selector "valid" serves as indicator for valid steps
+		s		: type_ptr_lut_step := ptr_lut_step;
+		result	: type_get_step_from_lut_result;
+	begin
+		while s /= null loop
+			if s.step_id = step_id_given then
+				result.valid	:= true;
+				result.address	:= s.address;
+				result.data		:= s.data;
+				exit;
+			end if;
+			s := s.next;
+		end loop;
+		return result;
+	end get_step_from_lut;
 
 	procedure write_info_section is
 	-- creates the sequence file,
@@ -1599,15 +1659,21 @@ procedure mkmemcon is
 	procedure write_operation(
 		operation_given		: type_step_operation;
 		atg_address_given	: natural := 0; -- if provided this will fill the ATG field (used by write and read operations only)
-		atg_data_given 		: natural := 0  -- if provided this will fill the ATG field (used by write and read operations only)
+		atg_data_given 		: natural := 0;  -- if provided this will fill the ATG field (used by write and read operations only)
+		lut_step_id_given	: positive := 1 -- if provided this will be the suffix to the model step (like model step 6.3) in order
+											-- to indicate the lut step id
 		) is
 	-- writes the operation (as specified by operation_given) in the sequence file
 	-- writes as comment the operation parameters:
 	-- -- operation: INIT
 	-- --  model: step xyz ADDR DRIVE 1235h | DATA DRIVE 45h | CTRL DRIVE 01b
+	-- or
+	-- -- operation: WRITE
+	-- --  model: step xyz.abc ADDR DRIVE 1235h | DATA DRIVE 45h | CTRL DRIVE 01b
 
 		s : type_ptr_step; -- the list of steps serves as data pool
 	begin
+		new_line;
 		put_line("-- operation: " & type_step_operation'image(operation_given));
 		case operation_given is
 			-- since init and disable are straight forward blocks (no loops or branches) their steps must be sorted by id and put in the sequence file
@@ -1658,7 +1724,11 @@ procedure mkmemcon is
 											put(" Z ");
 											--CS: write cell assignments here
 										else
-											put(row_separator_0 & natural_to_string(s.group_control.value,2)); -- output in binary format
+											put(row_separator_0 & natural_to_string(
+												natural_in 	=> s.group_control.value,
+												base		=> 2, -- output in binary format
+												length		=> ptr_target.width_control) -- fill leading zeroes
+												); 
 											--CS: write cell assignments here
 										end if;
 
@@ -1678,7 +1748,7 @@ procedure mkmemcon is
 
 				end loop;
 
-			when write =>
+			when write | read =>
 				-- sorting by step id can be achieved by searching the step list from start to end (even if not all steps are init or disable types)
 				for i in 1..ptr_target.step_count_total loop
 
@@ -1687,7 +1757,7 @@ procedure mkmemcon is
 						if s.operation = operation_given then
 							-- the first step id that matches i is to be output
 							if s.step_id = i then 
-								put(" -- model step" & positive'image(s.step_id) & ":");
+								put(" -- model step" & positive'image(s.step_id) & "." & trim(positive'image(lut_step_id_given),left) & ":"); -- model step 6.3
 								if s.delay_value = 0.0 then -- if delay value is zero it is a regular test step (otherwise it is a delay)
 									if s.group_address.width > 0 then
 										put(" ADDR " & type_step_direction'image(s.group_address.direction));
@@ -1729,7 +1799,11 @@ procedure mkmemcon is
 											put(" Z ");
 											--CS: write cell assignments here
 										else
-											put(row_separator_0 & natural_to_string(s.group_control.value,2)); -- output in binary format
+											put(row_separator_0 & natural_to_string(
+												natural_in 	=> s.group_control.value,
+												base		=> 2, -- output in binary format
+												length		=> ptr_target.width_control) -- fill leading zeroes
+												); 
 											--CS: write cell assignments here
 										end if;
 									end if;
@@ -1749,11 +1823,13 @@ procedure mkmemcon is
 				end loop;
 
 
-			when others => null;
+			--when others => null;
 		end case;
 	end write_operation;
 
 	procedure write_sequences is
+		lut_step_id		: positive;
+		lut_step 		: type_get_step_from_lut_result;
 	begin -- write_sequences
 		new_line(2);
 
@@ -1763,9 +1839,29 @@ procedure mkmemcon is
 		all_in(extest);
 		load_static_drive_values;
 		load_static_expect_values;
-		
+
 		write_operation(init);
-		write_operation(write,1000,10);
+		--write_operation(write,1000,10);
+
+		-- WRITE WRITE-STEPS BEGIN
+		lut_step_id := 1; -- start with initial step number 1
+		lut_step := get_step_from_lut(lut_step_id); -- fetch step 1 from lut
+		while lut_step.valid loop -- fetch from lut as long as valid steps found (if step is invalid, end of lut has been reached)
+			write_operation(write,lut_step.address,lut_step.data,lut_step_id);
+			lut_step_id := lut_step_id + 1; -- advance to next step to be fetched from lut
+			lut_step := get_step_from_lut(lut_step_id); -- fetch next step from lut
+		end loop;
+
+		-- WRITE READ-STEPS BEGIN
+		lut_step_id := 1; -- start with initial step number 1
+		lut_step := get_step_from_lut(lut_step_id); -- fetch step 1 from lut
+		while lut_step.valid loop -- fetch from lut as long as valid steps found (if step is invalid, end of lut has been reached)
+			write_operation(read,lut_step.address,lut_step.data,lut_step_id);
+			lut_step_id := lut_step_id + 1; -- advance to next step to be fetched from lut
+			lut_step := get_step_from_lut(lut_step_id); -- fetch next step from lut
+		end loop;
+
+		write_operation(disable);
 
 	end write_sequences;
 
