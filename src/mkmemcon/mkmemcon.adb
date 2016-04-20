@@ -226,6 +226,16 @@ procedure mkmemcon is
 		end record;
 	ptr_target : type_ptr_target;
 
+	-- definition of a list of receivers
+	type type_receiver;
+	type type_ptr_receiver is access all type_receiver;
+	type type_receiver is
+		record
+			next		: type_ptr_receiver;
+			name_bic	: universal_string_type.bounded_string;
+			id_cell		: natural;
+		end record;
+	ptr_receiver : type_ptr_receiver;
 
 	-- type definition of a single pin
 	-- The object of type type_pin will be added to a list later
@@ -239,8 +249,14 @@ procedure mkmemcon is
 			next			: type_ptr_memory_pin;
 			name_pin		: universal_string_type.bounded_string; -- like pin 75, 34, 4
 			name_port		: universal_string_type.bounded_string; -- like port A13, SDA, D15
-			name_net 		: universal_string_type.bounded_string; -- the net it is connected with like CPU_WE
-			direction		: type_direction;
+			name_net 		: universal_string_type.bounded_string; -- the net it is connected with (like CPU_WE)
+			name_bic_driver		: universal_string_type.bounded_string;
+			id_cell_driver		: natural;
+			drive_cell_inverted	: boolean;
+			--name_bic_receiver	: universal_string_type.bounded_string;
+			--id_cell_receiver	: natural;
+			receiver_list		: type_ptr_receiver;
+			direction			: type_direction;
 			-- indexing is required for address or data ports only
 			case class_pin is
 				when data | address =>
@@ -256,8 +272,9 @@ procedure mkmemcon is
 	invalid_package	: boolean := false; -- used to warn operator about package given in model differing from package found in net list 
 										-- set by function get_connected_net
 
-	procedure add_to_pin_list(
-	-- adds a port and its pin name to pin list: 
+	procedure gather_pin_data(
+	-- adds port, pin name, direction, connected net, driver, receiver_list to pin list
+
 	-- example 1: port D5 maps to pin 17 ( taken from -- vector inout D[7:0] 19 18 17 16 15 13 12 11)
 	-- example 2: port WE maps to pin 27 ( taken from -- control in WE 	27)
 		list				: in out type_ptr_memory_pin;
@@ -310,6 +327,7 @@ procedure mkmemcon is
 		end check_if_pin_already_in_list;
 
 		function get_connected_net return universal_string_type.bounded_string is
+		-- returns the name of the net connected to the pin
 		-- from object "target" (created after processing section "info"), accessed by ptr_target we
 		-- get the device name, value and package (ptr_target.device_name, ptr_target.device_value and ptr_target.device_package)
 		-- now the net list (from data base) is searched for a net that contains the target device with name_pin_given
@@ -414,46 +432,152 @@ procedure mkmemcon is
 			return net_name; -- send net name back
 		end get_connected_net;
 
-	begin -- add_to_pin_list
+ 		name_bic_driver_scratch		: universal_string_type.bounded_string;
+		id_cell_driver_scratch		: natural;
+		drive_cell_inverted_scratch	: boolean := false;
+ 		name_net_scratch 			: universal_string_type.bounded_string;
+ 		name_net_primary 			: universal_string_type.bounded_string;
+ 		name_net_secondary 			: universal_string_type.bounded_string;
+
+		procedure get_bic_driver is
+		-- searches in atg drive cell list for the driver of the net given in name_net_primary
+		-- if the driver is not in this list, it is in a static net which does not qualify for test generation
+			c	: type_cell_list_atg_drive_ptr := ptr_cell_list_atg_drive;
+			driver_found	: boolean := false;
+		begin
+			while c /= null loop
+				if universal_string_type.to_string(c.net) = universal_string_type.to_string(name_net_primary) then
+					driver_found := true;
+					name_bic_driver_scratch := c.device; 	-- backup device name
+					id_cell_driver_scratch	:= c.cell;		-- backup driver cell
+					if c.controlled_by_control_cell then
+						drive_cell_inverted_scratch := c.inverted; -- backup inverted status
+					end if;
+					exit; -- driver found, so no more searching required
+				end if;
+				c := c.next; -- advance to next entry in atg drive cell list
+			end loop;
+			-- if net not found in atg drive list, it does not qualify for test generation, abort:
+			if not driver_found then
+				put_line("ERROR: Primary net '" & universal_string_type.to_string(name_net_primary) & "' does not qualify for test generation !");
+				put_line("       Check net class ! A customized data base for this test might be required.");
+				raise constraint_error;
+			end if;
+		end get_bic_driver;
+
+
+		procedure add_to_receiver_list (
+		-- called by get_bic_receivers when a receiver is to be appended
+			list 			: in out type_ptr_receiver;
+			name_bic_given	: in universal_string_type.bounded_string;
+			id_cell_given	: in natural
+			) is
+		begin
+			list := new type_receiver'(
+				next		=> list,
+				name_bic	=> name_bic_given,
+				id_cell		=> id_cell_given
+				);
+		end add_to_receiver_list;
+
+
+		procedure get_bic_receivers (name_net : universal_string_type.bounded_string) is
+		-- searches in atg expect list for ALL receivers if the net given in name_net
+		-- and adds them one-by-one to the receiver list pointed to by ptr_receiver
+			c	: type_cell_list_atg_expect_ptr 	:= ptr_cell_list_atg_expect;
+		begin
+			while c /= null loop
+				if universal_string_type.to_string(c.net) = universal_string_type.to_string(name_net) then
+					add_to_receiver_list( list => ptr_receiver, name_bic_given => c.device, id_cell_given => c.cell);
+-- 					put_line(standard_output,universal_string_type.to_string(c.net) & row_separator_0
+-- 						& universal_string_type.to_string(c.device)
+-- 						& natural'image(c.cell));
+					--exit;
+				end if;
+				c := c.next;
+			end loop;
+		end get_bic_receivers;
+
+		procedure add_to_pin_list is
+		-- adds a pin incl. driver and receiver_list to list pointed to by ptr_memory_pin
+		-- the receiver_list (pointed to by ptr_receiver) is copied to pointer s, which in turn becomes a part of the pin
+	
+			subtype ptr_scratch is not null type_ptr_receiver;
+			s : ptr_scratch := ptr_receiver; -- s points now to the end of the receiver_list
+		begin
+			s.all := ptr_receiver.all; -- copy receiver_list to s, which later will be part of the pin 
+
+			-- in depence of the given pin class, add the given pin to the pin list
+			case pin_class_given is
+				when data =>
+					scratch_width_data := scratch_width_data + 1;
+					list := new type_memory_pin'(
+						next		=> list,
+						class_pin	=> data,
+						name_pin	=> name_pin_given,
+						name_port	=> name_port_given,
+						name_net	=> name_net_scratch,
+						name_bic_driver 	=> name_bic_driver_scratch,
+						id_cell_driver		=> id_cell_driver_scratch,
+						drive_cell_inverted	=> drive_cell_inverted_scratch,
+						receiver_list		=> s,
+						direction	=> direction_given,
+						index		=> index_given
+						);
+				when address =>
+					scratch_width_address := scratch_width_address + 1;
+					list := new type_memory_pin'(
+						next		=> list,
+						class_pin	=> address,
+						name_pin	=> name_pin_given,
+						name_port	=> name_port_given,
+						name_net	=> name_net_scratch,
+						name_bic_driver 	=> name_bic_driver_scratch,
+						id_cell_driver		=> id_cell_driver_scratch,
+						drive_cell_inverted	=> drive_cell_inverted_scratch,
+						receiver_list		=> s,
+						direction	=> direction_given,
+						index		=> index_given
+						);
+				when control =>
+					scratch_width_control := scratch_width_control + 1;
+					list := new type_memory_pin'(
+						next		=> list,
+						class_pin	=> control,
+						name_pin	=> name_pin_given,
+						name_port	=> name_port_given,
+						name_net	=> name_net_scratch,
+						name_bic_driver 	=> name_bic_driver_scratch,
+						id_cell_driver		=> id_cell_driver_scratch,
+						drive_cell_inverted	=> drive_cell_inverted_scratch,
+						receiver_list		=> s,
+						direction	=> direction_given
+						);
+			end case;
+		end add_to_pin_list;
+
+	begin -- gather_pin_data
 		-- check if pin already in list
 		check_if_pin_already_in_list;
+		name_net_scratch := get_connected_net;
 
-		-- in depence of the given pin class, add the given pin to the pin list
-		case pin_class_given is
-			when data =>
-				scratch_width_data := scratch_width_data + 1;
-				list := new type_memory_pin'(
-					next		=> list,
-					class_pin	=> data,
-					name_pin	=> name_pin_given,
-					name_port	=> name_port_given,
-					name_net	=> get_connected_net, -- find connected net
-					direction	=> direction_given,
-					index		=> index_given
-					);
-			when address =>
-				scratch_width_address := scratch_width_address + 1;
-				list := new type_memory_pin'(
-					next		=> list,
-					class_pin	=> address,
-					name_pin	=> name_pin_given,
-					name_port	=> name_port_given,
-					name_net	=> get_connected_net, -- find connected net
-					direction	=> direction_given,
-					index		=> index_given
-					);
-			when control =>
-				scratch_width_control := scratch_width_control + 1;
-				list := new type_memory_pin'(
-					next		=> list,
-					class_pin	=> control,
-					name_pin	=> name_pin_given,
-					name_port	=> name_port_given,
-					name_net	=> get_connected_net, -- find connected net
-					direction	=> direction_given
-					);
-		end case;
-	end add_to_pin_list;
+		-- if name_net_scratch is a primary net:
+		if is_primary(name_net_scratch) then
+			name_net_primary := name_net_scratch;
+		else
+			-- if name_net_scratch is a secondary net, the superordinated primary net is to be found 
+			name_net_primary	:= get_primary_net(name_net_scratch);
+			name_net_secondary	:= name_net_scratch;
+		end if;
+		get_bic_driver; -- uses the name_net_primary
+		get_bic_receivers(name_net_primary);
+		get_bic_receivers(name_net_secondary); -- CS: currently only receivers of the directly connected secondary nets are searched
+											   -- searching receivers of all connected secondary nets could be useful
+		
+		add_to_pin_list; -- adds driver and receiver-list to pin list
+		ptr_receiver := null; -- reset pointer ptr_receiver for next list of receivers (for next pin)
+
+	end gather_pin_data;
 
 	-- TYPES AND OBJECTS RELATED TO SECTION "PROG"
 	type type_step_operation is ( INIT, WRITE, READ, DISABLE);
@@ -1142,7 +1266,7 @@ procedure mkmemcon is
 								prog_position := 2170;
 								if scratch_port_name_frac.length = field_count - 3 then
 									for p in 4..field_count loop -- start with field 4 (where the first pin name is)
-										add_to_pin_list(
+										gather_pin_data(
 											list			=> ptr_memory_pin,
 											pin_class_given	=> scratch_pin_class,
 											name_pin_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,p)),
@@ -1586,7 +1710,7 @@ procedure mkmemcon is
 
 
 			put_line(" port-pin-net mapping");
-			put_line("  -- legend: class direction port pin net");
+			put_line("  -- legend: class direction port pin net driver cell inverted receiver cell [receiver cell]");
 			for c in 0..type_pin_class'pos( type_pin_class'last ) loop -- loop for each kind of pin class: address, data, control
 				p := ptr_memory_pin; -- reset pin pointer to end of list
 				while p /= null loop
@@ -1604,9 +1728,19 @@ procedure mkmemcon is
 							when control =>
 								null;
 						end case;
-						put_line(row_separator_0 & universal_string_type.to_string(p.name_pin)
+						put(row_separator_0 & universal_string_type.to_string(p.name_pin)
 							& row_separator_0 & universal_string_type.to_string(p.name_net)
+							& row_separator_0 & universal_string_type.to_string(p.name_bic_driver)
+							& natural'image(p.id_cell_driver)
 							);
+						put(row_separator_0 & boolean'image(p.drive_cell_inverted));
+						while p.receiver_list /= null loop
+							put(row_separator_0 & universal_string_type.to_string(p.receiver_list.name_bic)
+								& natural'image(p.receiver_list.id_cell)
+							);
+							p.receiver_list := p.receiver_list.next;
+						end loop;
+						new_line;
 					end if;
 					p := p.next;
 				end loop;
