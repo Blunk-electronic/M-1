@@ -250,12 +250,15 @@ procedure mkmemcon is
 			name_pin		: universal_string_type.bounded_string; -- like pin 75, 34, 4
 			name_port		: universal_string_type.bounded_string; -- like port A13, SDA, D15
 			name_net 		: universal_string_type.bounded_string; -- the net it is connected with (like CPU_WE)
-			name_bic_driver		: universal_string_type.bounded_string;
+			name_bic_driver			: universal_string_type.bounded_string;
+			--name_pin_driver_scratch	: universal_string_type.bounded_string;
 			id_cell_driver		: natural;
 			drive_cell_inverted	: boolean;
-			--name_bic_receiver	: universal_string_type.bounded_string;
+			id_control_cell_driver : type_cell_info_cell_id; -- if -1, no control cell available at driver pin
+			control_cell_disable_value	: type_bit_char_class_0;
 			--id_cell_receiver	: natural;
-			receiver_list		: type_ptr_receiver;
+			receiver_list_last	: type_ptr_receiver; -- saves the pointer position of the last receiver added (required when resetting the pointer
+			receiver_list		: type_ptr_receiver; -- receiver_last)
 			direction			: type_direction;
 			-- indexing is required for address or data ports only
 			case class_pin is
@@ -433,26 +436,78 @@ procedure mkmemcon is
 		end get_connected_net;
 
  		name_bic_driver_scratch		: universal_string_type.bounded_string;
-		id_cell_driver_scratch		: natural;
+ 		name_pin_driver_scratch		: universal_string_type.bounded_string;
+		id_cell_driver_scratch			: natural;
+		id_control_cell_driver_scratch	: type_cell_info_cell_id := -1; -- by default we assume there is no control cell
+		control_cell_disable_value_driver_scratch : type_bit_char_class_0;
 		drive_cell_inverted_scratch	: boolean := false;
  		name_net_scratch 			: universal_string_type.bounded_string;
  		name_net_primary 			: universal_string_type.bounded_string;
  		name_net_secondary 			: universal_string_type.bounded_string;
+		list_of_secondary_nets		: type_list_of_secondary_net_names;
+		number_of_secondary_nets	: natural;
 
 		procedure get_bic_driver is
 		-- searches in atg drive cell list for the driver of the net given in name_net_primary
 		-- if the driver is not in this list, it is in a static net which does not qualify for test generation
+		-- further-on: the disable value of the control cell is derived 
 			c	: type_cell_list_atg_drive_ptr := ptr_cell_list_atg_drive;
+			c1	: type_cell_list_locked_control_cells_in_class_DH_DL_NR_nets_ptr := ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets;
 			driver_found	: boolean := false;
 		begin
-			while c /= null loop
+			while c /= null loop -- search atg drive list
 				if universal_string_type.to_string(c.net) = universal_string_type.to_string(name_net_primary) then
 					driver_found := true;
 					name_bic_driver_scratch := c.device; 	-- backup device name
+					name_pin_driver_scratch := c.pin;		-- backup driver pin
 					id_cell_driver_scratch	:= c.cell;		-- backup driver cell
-					if c.controlled_by_control_cell then
-						drive_cell_inverted_scratch := c.inverted; -- backup inverted status
-					end if;
+
+					--put_line(standard_output,"test0");
+
+					case c.class is
+
+						-- get further information if it is a PU/PD net
+						when PU | PD =>
+							--put_line(standard_output,"test1");
+							-- this implies that this net is controlled by a control cell
+							--if c.controlled_by_control_cell then
+							-- example: class PU primary_net /CPU_WR device IC300 pin 26 control_cell 6 inverted yes
+							drive_cell_inverted_scratch 	:= c.inverted; -- backup inverted status
+							id_control_cell_driver_scratch	:= c.cell; -- in this case the driver and control cell are the same
+							control_cell_disable_value_driver_scratch := disable_value_derived_from_class_and_inverted_status(
+																		class_given 	=> c.class,
+																		inverted_given 	=> c.inverted);
+
+						-- get further information if it is an NR net
+						when NR =>
+							--put_line(standard_output,"test2");
+							-- example: if atg drive list has a: class NR primary_net LED1 device IC303 pin 9 output_cell 1
+							-- then in list c1 this must be located: class NR primary_net LED1 device IC303 pin 9 control_cell 16 locked_to enable_value 0
+							-- in order to obtain disable information
+							-- if list c1 does not provide any information on how to disable the driver, then there is no control 
+							-- cell, which leaves id_control_cell_driver_scratch at -1
+							-- CS: check for shared control cell ?
+							while c1 /= null loop
+								if universal_string_type.to_string(c1.net) = universal_string_type.to_string(c.net) then
+									if universal_string_type.to_string(c1.device) = universal_string_type.to_string(c.device) then
+										if universal_string_type.to_string(c1.pin) = universal_string_type.to_string(c.pin) then
+											id_control_cell_driver_scratch := c1.cell;
+											case c1.locked_to_enable_state is
+												when true => control_cell_disable_value_driver_scratch := negate_bit_character_class_0(c1.enable_value);
+												when false => control_cell_disable_value_driver_scratch := c1.disable_value;
+											end case;
+										end if;
+									end if;
+								end if;
+								c1 := c1.next;
+							end loop;
+
+						-- other net classes are not allowed here and should not be here at all
+						when others =>
+							put_line("ERROR: Class of driver net '" & universal_string_type.to_string(name_net_primary) & "' invalid !");
+							raise constraint_error;
+					end case;
+
 					exit; -- driver found, so no more searching required
 				end if;
 				c := c.next; -- advance to next entry in atg drive cell list
@@ -484,6 +539,7 @@ procedure mkmemcon is
 		procedure get_bic_receivers (name_net : universal_string_type.bounded_string) is
 		-- searches in atg expect list for ALL receivers if the net given in name_net
 		-- and adds them one-by-one to the receiver list pointed to by ptr_receiver
+		-- it adds receivers every time it gets called
 			c	: type_cell_list_atg_expect_ptr 	:= ptr_cell_list_atg_expect;
 		begin
 			while c /= null loop
@@ -517,9 +573,12 @@ procedure mkmemcon is
 						name_pin	=> name_pin_given,
 						name_port	=> name_port_given,
 						name_net	=> name_net_scratch,
-						name_bic_driver 	=> name_bic_driver_scratch,
-						id_cell_driver		=> id_cell_driver_scratch,
-						drive_cell_inverted	=> drive_cell_inverted_scratch,
+						name_bic_driver 			=> name_bic_driver_scratch,
+						id_cell_driver				=> id_cell_driver_scratch,
+						drive_cell_inverted			=> drive_cell_inverted_scratch,
+						id_control_cell_driver 		=> id_control_cell_driver_scratch,
+						control_cell_disable_value	=> control_cell_disable_value_driver_scratch,
+						receiver_list_last	=> s, -- backup position of last receiver
 						receiver_list		=> s,
 						direction	=> direction_given,
 						index		=> index_given
@@ -532,9 +591,12 @@ procedure mkmemcon is
 						name_pin	=> name_pin_given,
 						name_port	=> name_port_given,
 						name_net	=> name_net_scratch,
-						name_bic_driver 	=> name_bic_driver_scratch,
-						id_cell_driver		=> id_cell_driver_scratch,
-						drive_cell_inverted	=> drive_cell_inverted_scratch,
+						name_bic_driver 			=> name_bic_driver_scratch,
+						id_cell_driver				=> id_cell_driver_scratch,
+						drive_cell_inverted			=> drive_cell_inverted_scratch,
+						id_control_cell_driver 		=> id_control_cell_driver_scratch,
+						control_cell_disable_value 	=> control_cell_disable_value_driver_scratch,
+						receiver_list_last	=> s,
 						receiver_list		=> s,
 						direction	=> direction_given,
 						index		=> index_given
@@ -547,9 +609,12 @@ procedure mkmemcon is
 						name_pin	=> name_pin_given,
 						name_port	=> name_port_given,
 						name_net	=> name_net_scratch,
-						name_bic_driver 	=> name_bic_driver_scratch,
-						id_cell_driver		=> id_cell_driver_scratch,
-						drive_cell_inverted	=> drive_cell_inverted_scratch,
+						name_bic_driver 			=> name_bic_driver_scratch,
+						id_cell_driver				=> id_cell_driver_scratch,
+						drive_cell_inverted			=> drive_cell_inverted_scratch,
+						id_control_cell_driver 		=> id_control_cell_driver_scratch,
+						control_cell_disable_value 	=> control_cell_disable_value_driver_scratch,
+						receiver_list_last	=> s,
 						receiver_list		=> s,
 						direction	=> direction_given
 						);
@@ -557,26 +622,37 @@ procedure mkmemcon is
 		end add_to_pin_list;
 
 	begin -- gather_pin_data
-		-- check if pin already in list
+		-- check if pin already in pin list of the target, thus avoiding multiple usage of the same pin
 		check_if_pin_already_in_list;
+
+		-- get the name of the net directly connected to the target pin
 		name_net_scratch := get_connected_net;
 
-		-- if name_net_scratch is a primary net:
+		-- the net could be primary or secondary net. we need to know the name of the primary net:
+		-- if name_net_scratch is a primary net, name_net_primary assumes the primary net name directly
 		if is_primary(name_net_scratch) then
-			name_net_primary := name_net_scratch;
+			name_net_primary 			:= name_net_scratch;
 		else
-			-- if name_net_scratch is a secondary net, the superordinated primary net is to be found 
-			name_net_primary	:= get_primary_net(name_net_scratch);
-			name_net_secondary	:= name_net_scratch;
+		-- if name_net_scratch is a secondary net, the superordinated primary net is to be found and copied into name_net_primary
+			name_net_primary			:= get_primary_net(name_net_scratch);
 		end if;
-		get_bic_driver; -- uses the name_net_primary
-		get_bic_receivers(name_net_primary);
-		get_bic_receivers(name_net_secondary); -- CS: currently only receivers of the directly connected secondary nets are searched
-											   -- searching receivers of all connected secondary nets could be useful
-		
-		add_to_pin_list; -- adds driver and receiver-list to pin list
-		ptr_receiver := null; -- reset pointer ptr_receiver for next list of receivers (for next pin)
 
+		-- with name_net_primary the driving bic and its cell is to be found:
+		get_bic_driver; -- uses the name_net_primary
+		-- find all receivers of this primary net and add them to the receiver_list
+		get_bic_receivers(name_net_primary);
+
+		-- if there are secondary nets, their receivers have to be found too
+		number_of_secondary_nets	:= get_number_of_secondary_nets(name_net_primary);
+		if number_of_secondary_nets > 0 then
+			list_of_secondary_nets	:= get_secondary_nets(name_net_primary);
+			for s in 1..number_of_secondary_nets loop
+				get_bic_receivers(list_of_secondary_nets(s));
+			end loop;
+		end if;
+		
+		add_to_pin_list; -- adds driver and receiver_list to pin list
+		ptr_receiver := null; -- reset pointer ptr_receiver for next list of receivers (for next pin)
 	end gather_pin_data;
 
 	-- TYPES AND OBJECTS RELATED TO SECTION "PROG"
@@ -1710,7 +1786,7 @@ procedure mkmemcon is
 
 
 			put_line(" port-pin-net mapping");
-			put_line("  -- legend: class direction port pin net driver cell inverted receiver cell [receiver cell]");
+			put_line("  -- legend: class direction port pin net | driver cell inverted | ctrl_cell disable_val | receiver cell [receiver cell]");
 			for c in 0..type_pin_class'pos( type_pin_class'last ) loop -- loop for each kind of pin class: address, data, control
 				p := ptr_memory_pin; -- reset pin pointer to end of list
 				while p /= null loop
@@ -1721,22 +1797,28 @@ procedure mkmemcon is
 						put(row_separator_0 & row_separator_0 & type_pin_class'image(p.class_pin) & row_separator_0 
 							& type_direction'image(p.direction) & row_separator_0 
 							& universal_string_type.to_string(p.name_port));
-						-- write index for address and data pins only, contro pins do not have indexes
+						-- write index for address and data pins only, control pins do not have indexes
 						case p.class_pin is
 							when address | data =>
 								put(trim(natural'image(p.index),left));
 							when control =>
 								null;
 						end case;
+						-- put driver
 						put(row_separator_0 & universal_string_type.to_string(p.name_pin)
 							& row_separator_0 & universal_string_type.to_string(p.name_net)
-							& row_separator_0 & universal_string_type.to_string(p.name_bic_driver)
+							& row_separator_1 & universal_string_type.to_string(p.name_bic_driver)
 							& natural'image(p.id_cell_driver)
 							);
-						put(row_separator_0 & boolean'image(p.drive_cell_inverted));
+						put(row_separator_0 & boolean'image(p.drive_cell_inverted) & row_separator_1);
+						put(type_cell_info_cell_id'image(p.id_control_cell_driver) & row_separator_0
+							& type_bit_char_class_0'image(p.control_cell_disable_value)(2) & row_separator_1);
+						-- put receivers
+						p.receiver_list := p.receiver_list_last; -- reset pointer receiver_list to the end of the list
 						while p.receiver_list /= null loop
-							put(row_separator_0 & universal_string_type.to_string(p.receiver_list.name_bic)
+							put(universal_string_type.to_string(p.receiver_list.name_bic)
 								& natural'image(p.receiver_list.id_cell)
+								& row_separator_0
 							);
 							p.receiver_list := p.receiver_list.next;
 						end loop;
