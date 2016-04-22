@@ -486,7 +486,6 @@ procedure mkmemcon is
 							-- in order to obtain disable information
 							-- if list c1 does not provide any information on how to disable the driver, then there is no control 
 							-- cell, which leaves id_control_cell_driver_scratch at -1
-							-- CS: check for shared control cell ?
 							while c1 /= null loop
 								if universal_string_type.to_string(c1.net) = universal_string_type.to_string(c.net) then
 									if universal_string_type.to_string(c1.device) = universal_string_type.to_string(c.device) then
@@ -496,6 +495,14 @@ procedure mkmemcon is
 												when true => control_cell_disable_value_driver_scratch := negate_bit_character_class_0(c1.enable_value);
 												when false => control_cell_disable_value_driver_scratch := c1.disable_value;
 											end case;
+											-- check for shared control cell and put warning CS: repeat this check but put error when assigning cell values
+											if is_shared(c1.device,c1.cell) then
+												put_line("WARNING: Shared control cell found:");
+												put_line("         - primary net: " & universal_string_type.to_string(name_net_primary));
+												put_line("         - driver     : " & universal_string_type.to_string(c.device));
+												put_line("         - pin        : " & universal_string_type.to_string(c.pin));
+												put_line("         - cell       :" & natural'image(c.cell));
+											end if;
 										end if;
 									end if;
 								end if;
@@ -1872,6 +1879,131 @@ procedure mkmemcon is
 	end write_info_section;
 
 
+	--type type_cell_assignment_group is (address, data, control);
+	--type type_cell_assignment_direction is (drive, expect);
+	type type_value_format is (bitwise, number);
+
+	procedure assign_cells(
+		pin_class	: type_pin_class;
+		direction	: type_step_direction;
+		value		: string;
+		value_format: type_value_format := number
+		) is
+		b	: type_bscan_ic_ptr := ptr_bic;
+		p	: type_ptr_memory_pin := ptr_memory_pin;
+		value_length	: positive;
+		value_natural	: natural;
+
+		--function value_to_bitwise return type_string_of_bit_characters is
+		procedure dont_now_yet is
+			subtype type_string_of_bit_characters_sized is type_string_of_bit_characters (1..value_length);
+			v : type_string_of_bit_characters_sized;
+		begin
+			case value_format is
+				when bitwise => 
+					v := to_binary(
+							text_in 	=> value,
+							length		=> value_length,
+							class		=> class_2
+							);
+				when number =>
+					value_natural := natural'value(value);
+					put_line(standard_output,natural'image(value_length) & " " 
+						& natural_to_string(natural_in => value_natural, base => 2, length => value_length));
+					v := to_binary(
+							text_in 	=> natural_to_string(natural_in => value_natural, base => 2, length => value_length)(1..value_length),
+							length		=> value_length,
+							class		=> class_0
+							);
+			end case;
+
+			--put_binary_class_2(to_binary_class_2(v));
+
+			for bic_id in 1..summary.bic_ct loop
+				b := ptr_bic;
+				while b /= null loop
+					if b.id = bic_id then
+						--put_line(standard_output,positive'image(bic_id) & " " & universal_string_type.to_string(b.name));
+
+						-- look ahead into pin list to figure out if the current bic is used at all
+						-- and write line header like: "set IC301 drv boundary" or "set IC301 exp boundary"
+						p := ptr_memory_pin;
+						while p /= null loop
+							if p.class_pin = pin_class then
+								if universal_string_type.to_string(p.name_bic_driver) = universal_string_type.to_string(b.name) then
+									put(" set " & universal_string_type.to_string(b.name));
+									case direction is 
+										when drive	=> put (" drv ");
+										when expect	=> put (" exp ");
+									end case;
+									put("boundary");
+									--new_line;
+									exit; -- bic is used, so no more looking ahead requried
+								end if;
+							end if;
+							p := p.next;
+						end loop;
+
+						-- 
+						for i in 1..v'last loop
+
+							p := ptr_memory_pin;
+							while p /= null loop
+
+								if p.class_pin = pin_class then
+									if universal_string_type.to_string(p.name_bic_driver) = universal_string_type.to_string(b.name) then
+										if p.index = i then -- CS: CURRENT
+											case direction is
+												when drive =>
+													case v(i) is
+														when 'z' | 'Z' =>
+															put(natural'image(p.id_control_cell_driver) 
+																& sxr_assignment_operator.assign
+																& type_bit_char_class_0'image(p.control_cell_disable_value)(2)
+															);
+														when '0' | '1' =>
+															put(natural'image(p.id_cell_driver) 
+																& sxr_assignment_operator.assign
+																& type_bit_char_class_2'image(v(i))(2)
+															);
+														when others => null;
+													end case;
+												when expect =>
+													null; --case v(i) is
+											end case;
+
+										end if;
+									end if;
+								end if;
+
+								p := p.next;
+							end loop;
+
+						end loop;
+						new_line;
+					end if;
+					b := b.next;
+				end loop;
+			end loop;
+		end dont_now_yet;
+			
+		
+
+	begin
+		case pin_class is
+			when address =>
+				value_length := ptr_target.width_address;
+			when data =>
+				value_length := ptr_target.width_data;
+			when control =>
+				value_length := ptr_target.width_control;
+		end case;
+
+		dont_now_yet;
+
+
+	end assign_cells;
+
 	procedure write_operation(
 		operation_given		: type_step_operation;
 		atg_address_given	: natural := 0; -- if provided this will fill the ATG field (used by write and read operations only)
@@ -1906,13 +2038,26 @@ procedure mkmemcon is
 								if s.delay_value = 0.0 then -- if delay value is zero it is a regular test step (otherwise it is a delay)
 									if s.group_address.width > 0 then
 										put(" ADDR " & type_step_direction'image(s.group_address.direction));
-
+										
 										if s.group_address.highz then
 											put(" Z ");
 											--CS: write cell assignments here
+											assign_cells(
+												pin_class 		=> address,
+												direction 		=> s.group_address.direction,
+												value 			=> ptr_target.width_address * "Z",
+												value_format	=> bitwise
+												);
 										else
 											put(row_separator_0 & natural_to_string(s.group_address.value,16) & row_separator_1);
 											--CS: write cell assignments here
+											assign_cells(
+												pin_class 		=> address,
+												direction 		=> s.group_address.direction,
+												value 			=> natural'image(s.group_address.value),
+												value_format	=> number
+												);
+
 										end if;
 
 									end if;
