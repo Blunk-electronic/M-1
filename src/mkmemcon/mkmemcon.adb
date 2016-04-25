@@ -261,12 +261,12 @@ procedure mkmemcon is
 			receiver_list		: type_ptr_receiver; -- receiver_last)
 			direction			: type_direction;
 			-- indexing is required for address or data ports only
-			case class_pin is
-				when data | address =>
+			--case class_pin is
+			--	when data | address =>
 					index		: natural; -- like address 0, data 7
-				when others => -- like CE, WE
-					null;
-			end case;
+			--	when others => -- like CE, WE
+			--		null;
+			--end case;
 		end record;
 	ptr_memory_pin	: type_ptr_memory_pin;
 
@@ -285,8 +285,7 @@ procedure mkmemcon is
 		name_pin_given		: in universal_string_type.bounded_string;
 		name_port_given		: in universal_string_type.bounded_string;
 		direction_given		: in type_direction;
-		index_given			: in natural := 0 -- default in case it is not required. 
-											-- single port names do not have an index (like CE)
+		index_given			: in natural
 		) is
 
 		procedure check_if_pin_already_in_list is
@@ -623,7 +622,8 @@ procedure mkmemcon is
 						control_cell_disable_value 	=> control_cell_disable_value_driver_scratch,
 						receiver_list_last	=> s,
 						receiver_list		=> s,
-						direction	=> direction_given
+						direction	=> direction_given,
+						index		=> index_given
 						);
 			end case;
 		end add_to_pin_list;
@@ -756,6 +756,8 @@ procedure mkmemcon is
 		scratch_pin_direction	: type_direction; -- like input, output, inout 
 		scratch_port_name		: universal_string_type.bounded_string; -- like D or OE
 		scratch_port_name_frac	: type_port_vector; -- like [7:0]
+		
+		scratch_control_pin_ct	: natural := 0; -- used for counting control pins and indexing them
 
 		scratch_option_address_min	: type_option_address_min := -1;
 		scratch_option_address_max	: type_option_address_max := -1;
@@ -1000,6 +1002,28 @@ procedure mkmemcon is
 				delay_value_given	=> delay_value	-- if delay non-zero, this step is regarded as delay (address, data, control don't care)
 				);
 		end get_groups_from_line;
+
+
+		procedure mirror_index_of_control_pins is
+		-- since control pins are numbered from 1 to x (after reading the port_pin_map) the index must be mirrored
+			p	: type_ptr_memory_pin := ptr_memory_pin;
+		begin
+			while p /= null loop -- we start with the last control pin added to the pin list
+				-- the last control pin has the highest index (and equals the bus width of the control bus)
+				if p.class_pin = control then -- we care for control pins only
+					--put_line(standard_output,"idx old" & natural'image(p.index) & " name " & universal_string_type.to_string(p.name_port));
+
+					-- an example of this calculation: 
+					-- bus width = 5
+					-- index before is 4: so (4 - bus_width) * (-1) - 1 = index after = 0
+					-- index before is 1: so (1 - bus_width) * (-1) - 1 = index after = 3
+					-- index before is 0: so (0 - bus_width) * (-1) - 1 = index after = 4
+					p.index := (p.index - ptr_target.width_control) * (-1) - 1;
+					--put_line(standard_output,"idx new" & natural'image(p.index) & " name " & universal_string_type.to_string(p.name_port));
+				end if;
+				p := p.next;
+			end loop;
+		end mirror_index_of_control_pins;
 
 	begin -- read memory model
 		put_line("reading memory/module model file ...");
@@ -1261,6 +1285,9 @@ procedure mkmemcon is
 						ptr_target.width_data := scratch_width_data;
 						ptr_target.width_control := scratch_width_control;
 
+						-- mirror index of control pins (if any)
+						mirror_index_of_control_pins;
+
 						-- update target with address options
 						-- if no options found or given, default value of -1 is used, to indicate the option is not given
 						ptr_target.option_address_min := scratch_option_address_min;
@@ -1372,12 +1399,13 @@ procedure mkmemcon is
 													name_pin_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,4)),
 													name_port_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3)),
 													direction_given	=> scratch_pin_direction,
-													-- derive index from ptr_target.width_control (ptr_target.width_control is
-													-- incremented on every control pin found)
-													index_given		=> ptr_target.width_control
+													-- derive index from scratch_control_pin_ct
+													-- which is incremented on every control pin found
+													-- NOTE: the index of control pins starts with 0 for the first pin found !
+													index_given		=> scratch_control_pin_ct
 													);
+												scratch_control_pin_ct := scratch_control_pin_ct + 1;
 									end case;
-									-- all pins have been added to pin list now
 
 								else -- on mismatch of pin numbers and length of port:
 									put_line("ERROR: Expected" & positive'image(scratch_port_name_frac.length) & " pin name(s) after port name !");
