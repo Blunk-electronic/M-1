@@ -252,9 +252,9 @@ procedure mkmemcon is
 			name_net 		: universal_string_type.bounded_string; -- the net it is connected with (like CPU_WE)
 			name_bic_driver			: universal_string_type.bounded_string;
 			--name_pin_driver_scratch	: universal_string_type.bounded_string;
-			id_cell_driver		: natural;
+			id_output_cell	: natural; -- the id of the output cell of the bic that drives this pin
 			drive_cell_inverted	: boolean;
-			id_control_cell_driver : type_cell_info_cell_id; -- if -1, no control cell available at driver pin
+			id_control_cell	: type_cell_info_cell_id; -- the id of the control cell cell of the bic that drives this pin -- if -1, no control cell available at driver pin
 			control_cell_disable_value	: type_bit_char_class_0;
 			--id_cell_receiver	: natural;
 			receiver_list_last	: type_ptr_receiver; -- saves the pointer position of the last receiver added (required when resetting the pointer
@@ -581,9 +581,9 @@ procedure mkmemcon is
 						name_port	=> name_port_given,
 						name_net	=> name_net_scratch,
 						name_bic_driver 			=> name_bic_driver_scratch,
-						id_cell_driver				=> id_cell_driver_scratch,
+						id_output_cell				=> id_cell_driver_scratch,
 						drive_cell_inverted			=> drive_cell_inverted_scratch,
-						id_control_cell_driver 		=> id_control_cell_driver_scratch,
+						id_control_cell		 		=> id_control_cell_driver_scratch,
 						control_cell_disable_value	=> control_cell_disable_value_driver_scratch,
 						receiver_list_last	=> s, -- backup position of last receiver
 						receiver_list		=> s,
@@ -599,9 +599,9 @@ procedure mkmemcon is
 						name_port	=> name_port_given,
 						name_net	=> name_net_scratch,
 						name_bic_driver 			=> name_bic_driver_scratch,
-						id_cell_driver				=> id_cell_driver_scratch,
+						id_output_cell				=> id_cell_driver_scratch,
 						drive_cell_inverted			=> drive_cell_inverted_scratch,
-						id_control_cell_driver 		=> id_control_cell_driver_scratch,
+						id_control_cell		 		=> id_control_cell_driver_scratch,
 						control_cell_disable_value 	=> control_cell_disable_value_driver_scratch,
 						receiver_list_last	=> s,
 						receiver_list		=> s,
@@ -617,9 +617,9 @@ procedure mkmemcon is
 						name_port	=> name_port_given,
 						name_net	=> name_net_scratch,
 						name_bic_driver 			=> name_bic_driver_scratch,
-						id_cell_driver				=> id_cell_driver_scratch,
+						id_output_cell				=> id_cell_driver_scratch,
 						drive_cell_inverted			=> drive_cell_inverted_scratch,
-						id_control_cell_driver 		=> id_control_cell_driver_scratch,
+						id_control_cell		 		=> id_control_cell_driver_scratch,
 						control_cell_disable_value 	=> control_cell_disable_value_driver_scratch,
 						receiver_list_last	=> s,
 						receiver_list		=> s,
@@ -1262,11 +1262,10 @@ procedure mkmemcon is
 						ptr_target.width_control := scratch_width_control;
 
 						-- update target with address options
-						-- if no options found or given default value of -1 is used, to indicate the option is not given
-
+						-- if no options found or given, default value of -1 is used, to indicate the option is not given
 						ptr_target.option_address_min := scratch_option_address_min;
 
-						-- if options_address_min given (greater -1) make sure it fits into the given bus size
+						-- if options_address_min given (greater -1), make sure it fits into the given bus size
 						if ptr_target.option_address_min /= -1 then
 							if ptr_target.option_address_min > (2**ptr_target.width_address)-1 then
 								put_line("ERROR: Value specified by 'option address min' must be less than" 
@@ -1278,7 +1277,7 @@ procedure mkmemcon is
 
 						ptr_target.option_address_max := scratch_option_address_max;
 
-						-- if options_address_max given (greater -1) make sure it fits into the given bus size
+						-- if options_address_max given (greater -1), make sure it fits into the given bus size
 						if ptr_target.option_address_max /= -1 then
 							if ptr_target.option_address_max > (2**ptr_target.width_address)-1 then
 								put_line("ERROR: Value specified by 'option address max' must be less than" 
@@ -1300,7 +1299,7 @@ procedure mkmemcon is
 
 						-- example: option address min 8000
 
-						-- if identifier is data, address or control. set scratch_pin_class
+						-- if identifier is data, address or control, set scratch_pin_class
 						-- example: data inout D[7:0] 19 18 17 16 15 13 12 11
 						prog_position := 2100;
 						if get_field_from_line(line_of_file,1) = port_pin_map_identifier.data or
@@ -1331,6 +1330,8 @@ procedure mkmemcon is
 								prog_position := 2150;
 								scratch_port_name_frac := fraction_port_name(universal_string_type.to_string(scratch_port_name));
 
+								-- CS: make sure address and data are vectored, control non-vectored 
+
 								if debug_level >= 100 then
 									prog_position := 2160;
 									put("port: " & universal_string_type.to_string(scratch_port_name_frac.name));
@@ -1348,18 +1349,34 @@ procedure mkmemcon is
 								-- add pin by pin to pin list pointed to by ptr_memory_pin
 								prog_position := 2170;
 								if scratch_port_name_frac.length = field_count - 3 then
-									for p in 4..field_count loop -- start with field 4 (where the first pin name is)
-										gather_pin_data(
-											list			=> ptr_memory_pin,
-											pin_class_given	=> scratch_pin_class,
-											name_pin_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,p)),
-											name_port_given	=> scratch_port_name_frac.name,
-											direction_given	=> scratch_pin_direction,
-											-- calculate index: example: port D index 7 maps to pin 19. ,  port D index 0 maps to pin 20.
-											-- pin names start in field 4
-											index_given		=> scratch_port_name_frac.length - 1 - (p - 4)
-											);
-									end loop; 
+									case scratch_pin_class is
+										when address | data =>
+											-- address and data port are vectored are processed here
+											for p in 4..field_count loop -- start with field 4 (where the first pin name is)
+												gather_pin_data(
+													list			=> ptr_memory_pin,
+													pin_class_given	=> scratch_pin_class,
+													name_pin_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,p)),
+													name_port_given	=> scratch_port_name_frac.name,
+													direction_given	=> scratch_pin_direction,
+													-- calculate index: example: port D index 7 maps to pin 19. ,  port D index 0 maps to pin 20.
+													-- pin names start in field 4
+													index_given		=> scratch_port_name_frac.length - 1 - (p - 4)
+													);
+											end loop; 
+										when control =>
+											-- control ports are non-vectored
+												gather_pin_data(
+													list			=> ptr_memory_pin,
+													pin_class_given	=> scratch_pin_class,
+													name_pin_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,4)),
+													name_port_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3)),
+													direction_given	=> scratch_pin_direction,
+													-- derive index from ptr_target.width_control (ptr_target.width_control is
+													-- incremented on every control pin found)
+													index_given		=> ptr_target.width_control
+													);
+									end case;
 									-- all pins have been added to pin list now
 
 								else -- on mismatch of pin numbers and length of port:
@@ -1402,7 +1419,6 @@ procedure mkmemcon is
 							end if;
 						end if; -- read option identifier
 
-		
 						prog_position := 2500;
 
 					end if;
@@ -1815,10 +1831,10 @@ procedure mkmemcon is
 						put(row_separator_0 & universal_string_type.to_string(p.name_pin)
 							& row_separator_0 & universal_string_type.to_string(p.name_net)
 							& row_separator_1 & universal_string_type.to_string(p.name_bic_driver)
-							& natural'image(p.id_cell_driver)
+							& natural'image(p.id_output_cell)
 							);
 						put(row_separator_0 & boolean'image(p.drive_cell_inverted) & row_separator_1);
-						put(type_cell_info_cell_id'image(p.id_control_cell_driver) & row_separator_0
+						put(type_cell_info_cell_id'image(p.id_control_cell) & row_separator_0
 							& type_bit_char_class_0'image(p.control_cell_disable_value)(2) & row_separator_1);
 						-- put receivers
 						p.receiver_list := p.receiver_list_last; -- reset pointer receiver_list to the end of the list
@@ -1884,6 +1900,14 @@ procedure mkmemcon is
 	type type_value_format is (bitwise, number);
 
 	procedure assign_cells(
+	-- for a given pin_class (like address, data, control) writes lines like "set IC301 drv boundary 21=1 24=1 27=1 30=1 33=1 42=1 48=1 51=0"
+	-- direction defines the "drv" or "exp" identifier
+	-- value is the value to be assigned to the cells
+	-- value_format tells whether the value comes as number or as bitwise assigment (like 001z110)
+
+	-- it starts writing the cell assigment of the bic with id 1. if a bic is a driver of the group, it appears as new line
+	-- like "set IC304 drv boundary 42=1 48=1 51=0"
+	-- like "set IC305 drv boundary 55=1 556=1 53=0 45=0"
 		pin_class	: type_pin_class;
 		direction	: type_step_direction;
 		value		: string;
@@ -1894,22 +1918,28 @@ procedure mkmemcon is
 		value_length	: positive;
 		value_natural	: natural;
 
-		--function value_to_bitwise return type_string_of_bit_characters is
-		procedure dont_now_yet is
+		procedure read_value_bitwise is
+		-- process the given value bit by bit and translate it into a cell assignment
+
+			-- we create a value v that will hold the given value as a string of bits (0,1,z,Z)
 			subtype type_string_of_bit_characters_sized is type_string_of_bit_characters (1..value_length);
 			v : type_string_of_bit_characters_sized;
+			bic_in_use				: boolean := false; -- indicates if a bic is required for a cell assigment for driving
+			bic_required_for_self_monitoring	: boolean := false; -- indicates if a bic is required self monitoring
+			bic_required_as_receiver			: boolean := false; -- indicates if a bic is required as receiver
 		begin
+			-- translate the given value into a string of bit characters of (0,1,z,Z) held by variable v
 			case value_format is
-				when bitwise => 
+				when bitwise => -- if given bitwise
 					v := to_binary(
 							text_in 	=> value,
 							length		=> value_length,
 							class		=> class_2
 							);
-				when number =>
-					value_natural := natural'value(value);
-					put_line(standard_output,natural'image(value_length) & " " 
-						& natural_to_string(natural_in => value_natural, base => 2, length => value_length));
+				when number => -- if given as number
+					value_natural := natural'value(value); 
+					--put_line(standard_output,natural'image(value_length) & " " 
+					--	& natural_to_string(natural_in => value_natural, base => 2, length => value_length));
 					v := to_binary(
 							text_in 	=> natural_to_string(natural_in => value_natural, base => 2, length => value_length)(1..value_length),
 							length		=> value_length,
@@ -1917,79 +1947,269 @@ procedure mkmemcon is
 							);
 			end case;
 
-			--put_binary_class_2(to_binary_class_2(v));
+			-- start searching of affected bic with the one of the lowest id
+			case direction is
+				when drive =>
+					-- ASSIGN DRIVE PATTERN:
+					for bic_id in 1..summary.bic_ct loop -- loop in bic list pointed to by b
+						b := ptr_bic;
+						while b /= null loop
+							if b.id = bic_id then -- on bic id match
+								--put_line(standard_output,positive'image(bic_id) & " " & universal_string_type.to_string(b.name));
 
-			for bic_id in 1..summary.bic_ct loop
-				b := ptr_bic;
-				while b /= null loop
-					if b.id = bic_id then
-						--put_line(standard_output,positive'image(bic_id) & " " & universal_string_type.to_string(b.name));
-
-						-- look ahead into pin list to figure out if the current bic is used at all
-						-- and write line header like: "set IC301 drv boundary" or "set IC301 exp boundary"
-						p := ptr_memory_pin;
-						while p /= null loop
-							if p.class_pin = pin_class then
-								if universal_string_type.to_string(p.name_bic_driver) = universal_string_type.to_string(b.name) then
-									put(" set " & universal_string_type.to_string(b.name));
-									case direction is 
-										when drive	=> put (" drv ");
-										when expect	=> put (" exp ");
-									end case;
-									put("boundary");
-									--new_line;
-									exit; -- bic is used, so no more looking ahead requried
-								end if;
-							end if;
-							p := p.next;
-						end loop;
-
-						-- 
-						for i in 1..v'last loop
-
-							p := ptr_memory_pin;
-							while p /= null loop
-
-								if p.class_pin = pin_class then
-									if universal_string_type.to_string(p.name_bic_driver) = universal_string_type.to_string(b.name) then
-										if p.index = i then -- CS: CURRENT
-											case direction is
-												when drive =>
-													case v(i) is
-														when 'z' | 'Z' =>
-															put(natural'image(p.id_control_cell_driver) 
-																& sxr_assignment_operator.assign
-																& type_bit_char_class_0'image(p.control_cell_disable_value)(2)
-															);
-														when '0' | '1' =>
-															put(natural'image(p.id_cell_driver) 
-																& sxr_assignment_operator.assign
-																& type_bit_char_class_2'image(v(i))(2)
-															);
-														when others => null;
-													end case;
-												when expect =>
-													null; --case v(i) is
-											end case;
-
+								-- look ahead into pin list to figure out if the current bic is used as driver for this group at all
+								-- and write line header like: "set IC301 drv boundary"
+								bic_in_use := false; -- for the start, we assume the current bic is not required
+								p := ptr_memory_pin;
+								while p /= null loop
+									if p.class_pin = pin_class then
+										if universal_string_type.to_string(p.name_bic_driver) = universal_string_type.to_string(b.name) then
+											--put(" set " & universal_string_type.to_string(b.name));
+											put("  set " & universal_string_type.to_string(b.name) & " drv ");
+		-- 									case direction is 
+		-- 										when drive	=> put (" drv ");
+		-- 										when expect	=> put (" exp ");
+		-- 									end case;
+											put("boundary");
+											bic_in_use := true; -- mark bic as used for this group
+											exit; -- bic is used, so no more looking ahead requried
 										end if;
 									end if;
+									p := p.next;
+								end loop;
+
+								-- if bic is required for cell assignment, start reading v (the actual bit pattern) bitwise
+								if bic_in_use then
+									for i in 1..v'last loop -- do as many loops as v has bits
+
+										p := ptr_memory_pin; -- for every bit, loop in memory pin list
+										while p /= null loop -- to find the pin that matches the given pin_class (address, data, control),
+															-- bic (p.name_bic_driver and b.name) and the bit position (i)
+
+											if p.class_pin = pin_class then -- on pin_class match
+												if universal_string_type.to_string(p.name_bic_driver) = universal_string_type.to_string(b.name) then -- on bic match
+													if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
+
+														-- the given direction of the group implies which cell it to be addressed
+														-- "drive" adresses an output and/or control cell only
+														-- "expect" adresses an input cell only
+														--case direction is
+														--	when drive =>
+																case v(i) is
+																	-- drive z addresses control cells and assigns them their disable value
+																	when 'z' | 'Z' => -- CS: use types here
+																		put(natural'image(p.id_control_cell) 
+																			& sxr_assignment_operator.assign
+																			& type_bit_char_class_0'image(p.control_cell_disable_value)(2) -- strip delimiters
+																		);
+																	when '0' | '1' =>
+																	-- drive 0/1 addresses output cells and implies activating the control cells
+																		-- if control cell differs from output cell, then the control cell must get its enable value
+																		if p.id_control_cell /= p.id_output_cell then
+																			put(natural'image(p.id_control_cell) 
+																				& sxr_assignment_operator.assign
+																			& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
+																			);
+																		end if;
+
+																		-- assign value to output cell
+																		put(natural'image(p.id_output_cell) 
+																			& sxr_assignment_operator.assign
+																			& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
+																		);
+																	when 'x' | 'X' =>
+																	-- drive x addresses output cells and implies activating the control cells
+																		-- if control cell differs from output cell, then the control cell must get its enable value
+																		if p.id_control_cell /= p.id_output_cell then
+																			put(natural'image(p.id_control_cell) 
+																				& sxr_assignment_operator.assign
+																			& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
+																			);
+																		end if;
+
+																		-- assign zero to output cell
+																		put(natural'image(p.id_output_cell) 
+																			& sxr_assignment_operator.assign
+																			& "0"
+																		);
+																end case;
+		-- 													when expect =>
+		-- 														p.receiver_list := p.receiver_list_last;
+		-- 														while p.receiver_list /= null loop
+		-- 															
+		-- 															p.receiver_list := p.receiver_list.next;
+		-- 														end loop;
+		-- 												end case;
+
+													end if;
+												end if;
+											end if;
+
+											p := p.next;
+										end loop;
+
+									end loop;
+									new_line;
 								end if;
-
-								p := p.next;
-							end loop;
-
+							end if;
+							b := b.next;
 						end loop;
-						new_line;
-					end if;
-					b := b.next;
-				end loop;
-			end loop;
-		end dont_now_yet;
+					end loop;
+				
+					-- ASSIGN EXPECT PATTERN FOR SELF MONITORING
+					put_line("  -- optional self monitoring:");
+					for bic_id in 1..summary.bic_ct loop -- loop in bic list pointed to by b
+						b := ptr_bic;
+						while b /= null loop
+							if b.id = bic_id then -- on bic id match
+
+								-- look ahead into receiver list to figure out if the current bic is used as receiver for this group at all
+								-- and write line header like: "set IC301 exp boundary"
+								bic_required_for_self_monitoring := false; -- for the start, we assume the current bic is not required
+								l_1:
+								for i in 1..v'last loop -- do as many loops as v has bits
+									p := ptr_memory_pin;
+									while p /= null loop
+										if p.class_pin = pin_class then -- on pin_class match
+											if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
+												p.receiver_list := p.receiver_list_last;
+												while p.receiver_list /= null loop -- loop though receiver list
+													-- on match of bic name
+													if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
+														bic_required_for_self_monitoring := true;
+														put("  set " & universal_string_type.to_string(b.name) & " exp boundary ");
+														exit l_1; -- no need to search for further occurences of bic in pin list
+													end if;
+													p.receiver_list := p.receiver_list.next;
+												end loop;
+											end if;
+										end if;
+										p := p.next;
+									end loop;	
+								end loop l_1;
+
+								if bic_required_for_self_monitoring then
+									for i in 1..v'last loop -- do as many loops as v has bits
+										p := ptr_memory_pin;
+										while p /= null loop
+											if p.class_pin = pin_class then -- on pin_class match
+												if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
+													p.receiver_list := p.receiver_list_last;
+													while p.receiver_list /= null loop
+														if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
+															case v(i) is
+																when '0' | '1' =>
+																	-- expect 0/1 addresses input cells
+																	-- assign value to input cell
+																		put(natural'image(p.receiver_list.id_cell) 
+																			& sxr_assignment_operator.assign
+																			& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
+																		);
+																when 'x' | 'X' | 'z' | 'Z' =>
+																	-- expect 0/1 addresses input cells
+																	-- assign value to input cell
+																		put(natural'image(p.receiver_list.id_cell) 
+																			& sxr_assignment_operator.assign
+																			& "x"
+																		);
+															end case;
+														end if;
+														p.receiver_list := p.receiver_list.next;
+													end loop;
+												end if;
+											end if;
+											p := p.next;
+										end loop;	
+									end loop;
+									new_line;
+								end if; -- if bic_required_for_self_monitoring
+
+							end if; -- on bic id match
+							b := b.next;
+						end loop;
+					end loop;
+
+				when expect =>
+					-- ASSIGN EXPECT PATTERN
+					for bic_id in 1..summary.bic_ct loop -- loop in bic list pointed to by b
+						b := ptr_bic;
+						while b /= null loop
+							if b.id = bic_id then -- on bic id match
+
+								-- look ahead into receiver list to figure out if the current bic is used as receiver for this group at all
+								-- and write line header like: "set IC301 exp boundary"
+								l_2:
+								for i in 1..v'last loop -- do as many loops as v has bits
+									p := ptr_memory_pin;
+									while p /= null loop
+										if p.class_pin = pin_class then -- on pin_class match
+											if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
+												p.receiver_list := p.receiver_list_last;
+												while p.receiver_list /= null loop -- loop though receiver list
+													-- on match of bic name
+													if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
+														bic_required_as_receiver := true;
+														put("  set " & universal_string_type.to_string(b.name) & " exp boundary ");
+														exit l_2; -- no need to search for further occurences of bic in pin list
+													end if;
+													p.receiver_list := p.receiver_list.next;
+												end loop;
+											end if;
+										end if;
+										p := p.next;
+									end loop;	
+								end loop l_2;
+
+								if bic_required_as_receiver then
+									for i in 1..v'last loop -- do as many loops as v has bits
+										p := ptr_memory_pin;
+										while p /= null loop
+											if p.class_pin = pin_class then -- on pin_class match
+												if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
+													p.receiver_list := p.receiver_list_last;
+													while p.receiver_list /= null loop
+														if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
+															case v(i) is
+																when '0' | '1' =>
+																	-- expect 0/1 addresses input cells
+																	-- assign value to input cell
+																		put(natural'image(p.receiver_list.id_cell) 
+																			& sxr_assignment_operator.assign
+																			& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
+																		);
+																when 'x' | 'X' | 'z' | 'Z' =>
+																	-- expect 0/1 addresses input cells
+																	-- assign value to input cell
+																		put(natural'image(p.receiver_list.id_cell) 
+																			& sxr_assignment_operator.assign
+																			& "x"
+																		);
+															end case;
+														end if;
+														p.receiver_list := p.receiver_list.next;
+													end loop;
+												end if;
+											end if;
+											p := p.next;
+										end loop;	
+									end loop;
+									new_line;
+								end if; -- if bic_required_as_receiver
+
+							end if; -- on bic id match
+							b := b.next;
+						end loop;
+					end loop;
+			end case;
+			new_line;
+		end read_value_bitwise;
 			
 		
 
 	begin
+		-- derive bit count of given group from the bus width of the target
+		-- example: if address group given and target bus with is 15bit, the bit count of the address group
+		-- is set to 15bit too.
 		case pin_class is
 			when address =>
 				value_length := ptr_target.width_address;
@@ -1999,7 +2219,8 @@ procedure mkmemcon is
 				value_length := ptr_target.width_control;
 		end case;
 
-		dont_now_yet;
+		-- process the given value bit by bit and translate it into a cell assignment
+		read_value_bitwise;
 
 
 	end assign_cells;
@@ -2034,14 +2255,12 @@ procedure mkmemcon is
 						if s.operation = operation_given then
 							-- the first step id that matches i is to be output
 							if s.step_id = i then 
-								put(" -- model step" & positive'image(s.step_id) & ":");
+								put_line(" -- model step" & positive'image(s.step_id) & ":");
 								if s.delay_value = 0.0 then -- if delay value is zero it is a regular test step (otherwise it is a delay)
 									if s.group_address.width > 0 then
-										put(" ADDR " & type_step_direction'image(s.group_address.direction));
-										
+										put("  -- ADDR " & type_step_direction'image(s.group_address.direction));
 										if s.group_address.highz then
-											put(" Z ");
-											--CS: write cell assignments here
+											put_line(" ALL Z ");
 											assign_cells(
 												pin_class 		=> address,
 												direction 		=> s.group_address.direction,
@@ -2049,53 +2268,63 @@ procedure mkmemcon is
 												value_format	=> bitwise
 												);
 										else
-											put(row_separator_0 & natural_to_string(s.group_address.value,16) & row_separator_1);
-											--CS: write cell assignments here
+											put_line(row_separator_0 & natural_to_string(s.group_address.value,16));
 											assign_cells(
 												pin_class 		=> address,
 												direction 		=> s.group_address.direction,
 												value 			=> natural'image(s.group_address.value),
 												value_format	=> number
 												);
-
 										end if;
-
 									end if;
-
 
 									if s.group_data.width > 0 then
-										put(" DATA " & type_step_direction'image(s.group_data.direction));
-
+										put("  -- DATA " & type_step_direction'image(s.group_data.direction));
 										if s.group_data.highz then
-											put(" Z ");
-											--CS: write cell assignments here
+											put_line(" ALL Z ");
+											assign_cells(
+												pin_class 		=> data,
+												direction 		=> s.group_data.direction,
+												value 			=> ptr_target.width_data * "Z",
+												value_format	=> bitwise
+												);
 										else
-											put(row_separator_0 & natural_to_string(s.group_data.value,16) & row_separator_1);
-											--CS: write cell assignments here
+											put_line(row_separator_0 & natural_to_string(s.group_data.value,16));
+											assign_cells(
+												pin_class 		=> data,
+												direction 		=> s.group_data.direction,
+												value 			=> natural'image(s.group_data.value),
+												value_format	=> number
+												);
 										end if;
-
 									end if;
 
-									--CS: write cell assignments here
-
 									if s.group_control.width > 0 then
-										put(" CTRL " & type_step_direction'image(s.group_control.direction));
-
+										put("  -- CTRL " & type_step_direction'image(s.group_control.direction));
 										if s.group_control.highz then
-											put(" Z ");
-											--CS: write cell assignments here
+											put_line(" ALL Z ");
+											assign_cells(
+												pin_class 		=> control,
+												direction 		=> s.group_control.direction,
+												value 			=> ptr_target.width_control * "Z",
+												value_format	=> bitwise
+												);
 										else
-											put(row_separator_0 & natural_to_string(
+											put_line(row_separator_0 & natural_to_string(
 												natural_in 	=> s.group_control.value,
 												base		=> 2, -- output in binary format
 												length		=> ptr_target.width_control) -- fill leading zeroes
 												); 
-											--CS: write cell assignments here
+											assign_cells(
+												pin_class 		=> control,
+												direction 		=> s.group_control.direction,
+												value 			=> natural'image(s.group_control.value),
+												value_format	=> number
+												);
 										end if;
-
 									end if;
 
-									new_line;
+									--new_line;
 								else
 									new_line;
 									put_line(row_separator_0 & prog_identifier.dely & row_separator_0 & type_delay_value'image(s.delay_value));
