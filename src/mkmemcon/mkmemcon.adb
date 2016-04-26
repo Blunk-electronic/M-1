@@ -250,23 +250,16 @@ procedure mkmemcon is
 			name_pin		: universal_string_type.bounded_string; -- like pin 75, 34, 4
 			name_port		: universal_string_type.bounded_string; -- like port A13, SDA, D15
 			name_net 		: universal_string_type.bounded_string; -- the net it is connected with (like CPU_WE)
-			name_bic_driver			: universal_string_type.bounded_string;
+			name_bic_driver				: universal_string_type.bounded_string;
 			--name_pin_driver_scratch	: universal_string_type.bounded_string;
-			id_output_cell	: natural; -- the id of the output cell of the bic that drives this pin
-			drive_cell_inverted	: boolean;
-			id_control_cell	: type_cell_info_cell_id; -- the id of the control cell cell of the bic that drives this pin -- if -1, no control cell available at driver pin
+			id_output_cell				: natural; -- the id of the output cell of the bic that drives this pin
+			drive_cell_inverted			: boolean;
+			id_control_cell				: type_cell_info_cell_id; -- the id of the control cell cell of the bic that drives this pin -- if -1, no control cell available at driver pin
 			control_cell_disable_value	: type_bit_char_class_0;
-			--id_cell_receiver	: natural;
-			receiver_list_last	: type_ptr_receiver; -- saves the pointer position of the last receiver added (required when resetting the pointer
-			receiver_list		: type_ptr_receiver; -- receiver_last)
-			direction			: type_direction;
-			-- indexing is required for address or data ports only
-			--case class_pin is
-			--	when data | address =>
-					index		: natural; -- like address 0, data 7
-			--	when others => -- like CE, WE
-			--		null;
-			--end case;
+			receiver_list_last			: type_ptr_receiver; -- saves the pointer position of the last receiver added (required when resetting the pointer
+			receiver_list				: type_ptr_receiver; -- receiver_last)
+			direction					: type_direction;
+			index						: natural; -- like address 0, data 7
 		end record;
 	ptr_memory_pin	: type_ptr_memory_pin;
 
@@ -1952,7 +1945,7 @@ procedure mkmemcon is
 			-- we create a value v that will hold the given value as a string of bits (0,1,z,Z)
 			subtype type_string_of_bit_characters_sized is type_string_of_bit_characters (1..value_length);
 			v : type_string_of_bit_characters_sized;
-			bic_in_use				: boolean := false; -- indicates if a bic is required for a cell assigment for driving
+			bic_required_as_driver				: boolean := false; -- indicates if a bic is required for a cell assigment for driving
 			bic_required_for_self_monitoring	: boolean := false; -- indicates if a bic is required self monitoring
 			bic_required_as_receiver			: boolean := false; -- indicates if a bic is required as receiver
 		begin
@@ -1987,19 +1980,13 @@ procedure mkmemcon is
 
 								-- look ahead into pin list to figure out if the current bic is used as driver for this group at all
 								-- and write line header like: "set IC301 drv boundary"
-								bic_in_use := false; -- for the start, we assume the current bic is not required
+								bic_required_as_driver := false; -- for the start, we assume the current bic is not required
 								p := ptr_memory_pin;
 								while p /= null loop
 									if p.class_pin = pin_class then
 										if universal_string_type.to_string(p.name_bic_driver) = universal_string_type.to_string(b.name) then
-											--put(" set " & universal_string_type.to_string(b.name));
-											put("  set " & universal_string_type.to_string(b.name) & " drv ");
-		-- 									case direction is 
-		-- 										when drive	=> put (" drv ");
-		-- 										when expect	=> put (" exp ");
-		-- 									end case;
-											put("boundary");
-											bic_in_use := true; -- mark bic as used for this group
+											put("  set " & universal_string_type.to_string(b.name) & " drv boundary");
+											bic_required_as_driver := true; -- mark bic as used for this group
 											exit; -- bic is used, so no more looking ahead requried
 										end if;
 									end if;
@@ -2007,7 +1994,7 @@ procedure mkmemcon is
 								end loop;
 
 								-- if bic is required for cell assignment, start reading v (the actual bit pattern) bitwise
-								if bic_in_use then
+								if bic_required_as_driver then
 									for i in 1..v'last loop -- do as many loops as v has bits
 
 										p := ptr_memory_pin; -- for every bit, loop in memory pin list
@@ -2021,53 +2008,45 @@ procedure mkmemcon is
 														-- the given direction of the group implies which cell it to be addressed
 														-- "drive" adresses an output and/or control cell only
 														-- "expect" adresses an input cell only
-														--case direction is
-														--	when drive =>
-																case v(i) is
-																	-- drive z addresses control cells and assigns them their disable value
-																	when 'z' | 'Z' => -- CS: use types here
-																		put(natural'image(p.id_control_cell) 
-																			& sxr_assignment_operator.assign
-																			& type_bit_char_class_0'image(p.control_cell_disable_value)(2) -- strip delimiters
-																		);
-																	when '0' | '1' =>
-																	-- drive 0/1 addresses output cells and implies activating the control cells
-																		-- if control cell differs from output cell, then the control cell must get its enable value
-																		if p.id_control_cell /= p.id_output_cell then
-																			put(natural'image(p.id_control_cell) 
-																				& sxr_assignment_operator.assign
-																			& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
-																			);
-																		end if;
+														case v(i) is
+															-- drive z addresses control cells and assigns them their disable value
+															when 'z' | 'Z' => -- CS: use types here
+																put(natural'image(p.id_control_cell) 
+																	& sxr_assignment_operator.assign
+																	& type_bit_char_class_0'image(p.control_cell_disable_value)(2) -- strip delimiters
+																);
+															when '0' | '1' =>
+															-- drive 0/1 addresses output cells and implies activating the control cells
+															-- if control cell differs from output cell, then the control cell must get its enable value
+																if p.id_control_cell /= p.id_output_cell then
+																	put(natural'image(p.id_control_cell) 
+																		& sxr_assignment_operator.assign
+																		& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
+																	);
+																end if;
 
-																		-- assign value to output cell
-																		put(natural'image(p.id_output_cell) 
-																			& sxr_assignment_operator.assign
-																			& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
-																		);
-																	when 'x' | 'X' =>
-																	-- drive x addresses output cells and implies activating the control cells
-																		-- if control cell differs from output cell, then the control cell must get its enable value
-																		if p.id_control_cell /= p.id_output_cell then
-																			put(natural'image(p.id_control_cell) 
-																				& sxr_assignment_operator.assign
-																			& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
-																			);
-																		end if;
+																-- assign value to output cell
+																put(natural'image(p.id_output_cell) 
+																	& sxr_assignment_operator.assign
+																	& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
+																);
 
-																		-- assign zero to output cell
-																		put(natural'image(p.id_output_cell) 
-																			& sxr_assignment_operator.assign
-																			& "0"
-																		);
-																end case;
-		-- 													when expect =>
-		-- 														p.receiver_list := p.receiver_list_last;
-		-- 														while p.receiver_list /= null loop
-		-- 															
-		-- 															p.receiver_list := p.receiver_list.next;
-		-- 														end loop;
-		-- 												end case;
+															when 'x' | 'X' =>
+															-- drive x addresses output cells and implies activating the control cells
+															-- if control cell differs from output cell, then the control cell must get its enable value
+																if p.id_control_cell /= p.id_output_cell then
+																	put(natural'image(p.id_control_cell) 
+																		& sxr_assignment_operator.assign
+																	& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
+																	);
+																end if;
+
+																-- assign zero to output cell
+																put(natural'image(p.id_output_cell) 
+																	& sxr_assignment_operator.assign
+																	& "0"
+																);
+														end case;
 
 													end if;
 												end if;
@@ -2105,7 +2084,7 @@ procedure mkmemcon is
 													-- on match of bic name
 													if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
 														bic_required_for_self_monitoring := true;
-														put("  set " & universal_string_type.to_string(b.name) & " exp boundary ");
+														put("  set " & universal_string_type.to_string(b.name) & " exp boundary");
 														exit l_1; -- no need to search for further occurences of bic in pin list
 													end if;
 													p.receiver_list := p.receiver_list.next;
@@ -2166,6 +2145,7 @@ procedure mkmemcon is
 
 								-- look ahead into receiver list to figure out if the current bic is used as receiver for this group at all
 								-- and write line header like: "set IC301 exp boundary"
+								bic_required_as_receiver := false; -- for the start, we assume the current bic is not required
 								l_2:
 								for i in 1..v'last loop -- do as many loops as v has bits
 									p := ptr_memory_pin;
@@ -2272,177 +2252,196 @@ procedure mkmemcon is
 	begin
 		new_line;
 		put_line("-- operation: " & type_step_operation'image(operation_given));
-		case operation_given is
-			-- since init and disable are straight forward blocks (no loops or branches) their steps must be sorted by id and put in the sequence file
-			when init | disable =>
-				-- sorting by step id can be achieved by searching the step list from start to end (even if not all steps are init or disable types)
-				for i in 1..ptr_target.step_count_total loop
+		-- sorting by step id can be achieved by searching the step list from start to end (even if not all steps are init or disable types)
+		for i in 1..ptr_target.step_count_total loop
+			s := ptr_step; -- set step pointer at end of step list
+			while s /= null loop -- loop though step list and filter step types as given in operation_given
+				if s.operation = operation_given then
+					-- the first step id that matches i is to be output
+					if s.step_id = i then 
+						put(" -- model step" & positive'image(s.step_id));
+						case operation_given is
+						-- since init and disable are straight forward blocks (no loops or branches) their steps must be sorted by id and put in the sequence file
+							when init | disable =>
+								put_line(":");
+							when write | read =>
+								put_line("." & trim(positive'image(lut_step_id_given),left) & ":"); -- model step 6.3
+						end case;
 
-					s := ptr_step; -- set step pointer at end of step list
-					while s /= null loop -- loop though step list and filter step types as given in operation_given
-						if s.operation = operation_given then
-							-- the first step id that matches i is to be output
-							if s.step_id = i then 
-								put_line(" -- model step" & positive'image(s.step_id) & ":");
-								if s.delay_value = 0.0 then -- if delay value is zero it is a regular test step (otherwise it is a delay)
-									if s.group_address.width > 0 then
-										put("  -- ADDR " & type_step_direction'image(s.group_address.direction));
-										if s.group_address.highz then
-											put_line(" ALL Z ");
-											assign_cells(
-												pin_class 		=> address,
-												direction 		=> s.group_address.direction,
-												value 			=> ptr_target.width_address * "Z",
-												value_format	=> bitwise
-												);
-										else
-											put_line(row_separator_0 & natural_to_string(s.group_address.value,16));
-											assign_cells(
-												pin_class 		=> address,
-												direction 		=> s.group_address.direction,
-												value 			=> natural'image(s.group_address.value),
-												value_format	=> number
-												);
-										end if;
-									end if;
-
-									if s.group_data.width > 0 then
-										put("  -- DATA " & type_step_direction'image(s.group_data.direction));
-										if s.group_data.highz then
-											put_line(" ALL Z ");
-											assign_cells(
-												pin_class 		=> data,
-												direction 		=> s.group_data.direction,
-												value 			=> ptr_target.width_data * "Z",
-												value_format	=> bitwise
-												);
-										else
-											put_line(row_separator_0 & natural_to_string(s.group_data.value,16));
-											assign_cells(
-												pin_class 		=> data,
-												direction 		=> s.group_data.direction,
-												value 			=> natural'image(s.group_data.value),
-												value_format	=> number
-												);
-										end if;
-									end if;
-
-									if s.group_control.width > 0 then
-										put("  -- CTRL " & type_step_direction'image(s.group_control.direction));
-										if s.group_control.highz then
-											put_line(" ALL Z ");
-											assign_cells(
-												pin_class 		=> control,
-												direction 		=> s.group_control.direction,
-												value 			=> ptr_target.width_control * "Z",
-												value_format	=> bitwise
-												);
-										else
-											put_line(row_separator_0 & natural_to_string(
-												natural_in 	=> s.group_control.value,
-												base		=> 2, -- output in binary format
-												length		=> ptr_target.width_control) -- fill leading zeroes
-												); 
-											assign_cells(
-												pin_class 		=> control,
-												direction 		=> s.group_control.direction,
-												value 			=> natural'image(s.group_control.value),
-												value_format	=> number
-												);
-										end if;
-									end if;
-
-									--new_line;
+						if s.delay_value = 0.0 then -- if delay value is zero it is a regular test step (otherwise it is a delay)
+							if s.group_address.width > 0 then
+								put("  -- ADDR " & type_step_direction'image(s.group_address.direction));
+								if s.group_address.atg then
+									put_line(" ATG " & natural_to_string(atg_address_given,16));
+									assign_cells(
+										pin_class 		=> address,
+										direction 		=> s.group_address.direction,
+										value 			=> natural'image(atg_address_given),
+										value_format	=> number
+										);
+								elsif s.group_address.highz then
+									put_line(" ALL Z ");
+									assign_cells(
+										pin_class 		=> address,
+										direction 		=> s.group_address.direction,
+										value 			=> ptr_target.width_address * "Z",
+										value_format	=> bitwise
+										);
 								else
-									new_line;
-									put_line(row_separator_0 & prog_identifier.dely & row_separator_0 & type_delay_value'image(s.delay_value));
+									put_line(row_separator_0 & natural_to_string(s.group_address.value,16));
+									assign_cells(
+										pin_class 		=> address,
+										direction 		=> s.group_address.direction,
+										value 			=> natural'image(s.group_address.value),
+										value_format	=> number
+										);
 								end if;
-
-								exit;
 							end if;
-						end if;
-						s := s.next;
-					end loop;
 
-				end loop;
-
-			when write | read =>
-				-- sorting by step id can be achieved by searching the step list from start to end (even if not all steps are init or disable types)
-				for i in 1..ptr_target.step_count_total loop
-
-					s := ptr_step; -- set step pointer at end of step list
-					while s /= null loop -- loop though step list and filter step types as given in operation_given
-						if s.operation = operation_given then
-							-- the first step id that matches i is to be output
-							if s.step_id = i then 
-								put(" -- model step" & positive'image(s.step_id) & "." & trim(positive'image(lut_step_id_given),left) & ":"); -- model step 6.3
-								if s.delay_value = 0.0 then -- if delay value is zero it is a regular test step (otherwise it is a delay)
-									if s.group_address.width > 0 then
-										put(" ADDR " & type_step_direction'image(s.group_address.direction));
-
-										if s.group_address.atg then
-											put(" ATG " & natural_to_string(atg_address_given,16));
-											--CS: write cell assignments here
-										elsif s.group_address.highz then
-											put(" Z ");
-											--CS: write cell assignments here
-										else
-											put(row_separator_0 & natural_to_string(s.group_address.value,16) & row_separator_1);
-											--CS: write cell assignments here
-										end if;
-									end if;
-
-									
-
-									if s.group_data.width > 0 then
-										put(" DATA " & type_step_direction'image(s.group_data.direction));
-
-										if s.group_data.atg then
-											put(" ATG " & natural_to_string(atg_data_given,16));
-											--CS: write cell assignments here
-										elsif s.group_data.highz then
-											put(" Z ");
-											--CS: write cell assignments here
-										else
-											put(row_separator_0 & natural_to_string(s.group_data.value,16) & row_separator_1);
-											--CS: write cell assignments here
-										end if;
-									end if;
-
-
-									if s.group_control.width > 0 then
-										put(" CTRL " & type_step_direction'image(s.group_control.direction));
-
-										if s.group_control.highz then
-											put(" Z ");
-											--CS: write cell assignments here
-										else
-											put(row_separator_0 & natural_to_string(
-												natural_in 	=> s.group_control.value,
-												base		=> 2, -- output in binary format
-												length		=> ptr_target.width_control) -- fill leading zeroes
-												); 
-											--CS: write cell assignments here
-										end if;
-									end if;
-
-									new_line;
+							if s.group_data.width > 0 then
+								put("  -- DATA " & type_step_direction'image(s.group_data.direction));
+								if s.group_data.atg then
+									put_line(" ATG " & natural_to_string(atg_data_given,16));
+									assign_cells(
+										pin_class 		=> data,
+										direction 		=> s.group_data.direction,
+										value 			=> natural'image(atg_data_given),
+										value_format	=> number
+										);
+								elsif s.group_data.highz then
+									put_line(" ALL Z ");
+									assign_cells(
+										pin_class 		=> data,
+										direction 		=> s.group_data.direction,
+										value 			=> ptr_target.width_data * "Z",
+										value_format	=> bitwise
+										);
 								else
-									new_line;
-									put_line(row_separator_0 & prog_identifier.dely & row_separator_0 & type_delay_value'image(s.delay_value));
+									put_line(row_separator_0 & natural_to_string(s.group_data.value,16));
+									assign_cells(
+										pin_class 		=> data,
+										direction 		=> s.group_data.direction,
+										value 			=> natural'image(s.group_data.value),
+										value_format	=> number
+										);
 								end if;
-
-								exit;
 							end if;
-						end if;
-						s := s.next;
-					end loop;
 
-				end loop;
+							if s.group_control.width > 0 then
+								put("  -- CTRL " & type_step_direction'image(s.group_control.direction));
+								if s.group_control.highz then
+									put_line(" ALL Z ");
+									assign_cells(
+										pin_class 		=> control,
+										direction 		=> s.group_control.direction,
+										value 			=> ptr_target.width_control * "Z",
+										value_format	=> bitwise
+										);
+								else
+									put_line(row_separator_0 & natural_to_string(
+										natural_in 	=> s.group_control.value,
+										base		=> 2, -- output in binary format
+										length		=> ptr_target.width_control) -- fill leading zeroes
+										); 
+									assign_cells(
+										pin_class 		=> control,
+										direction 		=> s.group_control.direction,
+										value 			=> natural'image(s.group_control.value),
+										value_format	=> number
+										);
+								end if;
+							end if;
+
+							--new_line;
+						else
+							--new_line;
+							put_line("  " & prog_identifier.dely & type_delay_value'image(s.delay_value));
+						end if;
+
+						exit;
+					end if;
+				end if;
+				s := s.next;
+			end loop;
+		end loop;
+
+-- 			when write | read =>
+-- 				sorting by step id can be achieved by searching the step list from start to end (even if not all steps are init or disable types)
+-- 				for i in 1..ptr_target.step_count_total loop
+-- 
+-- 					s := ptr_step; -- set step pointer at end of step list
+-- 					while s /= null loop -- loop though step list and filter step types as given in operation_given
+-- 						if s.operation = operation_given then
+-- 							the first step id that matches i is to be output
+-- 							if s.step_id = i then 
+-- 								put(" -- model step" & positive'image(s.step_id) & "." & trim(positive'image(lut_step_id_given),left) & ":"); -- model step 6.3
+-- 								if s.delay_value = 0.0 then -- if delay value is zero it is a regular test step (otherwise it is a delay)
+-- 									if s.group_address.width > 0 then
+-- 										put(" ADDR " & type_step_direction'image(s.group_address.direction));
+-- 
+-- 										if s.group_address.atg then
+-- 											put(" ATG " & natural_to_string(atg_address_given,16));
+-- 											CS: write cell assignments here
+-- 										elsif s.group_address.highz then
+-- 											put(" Z ");
+-- 											CS: write cell assignments here
+-- 										else
+-- 											put(row_separator_0 & natural_to_string(s.group_address.value,16) & row_separator_1);
+-- 											CS: write cell assignments here
+-- 										end if;
+-- 									end if;
+-- 
+-- 									
+-- 
+-- 									if s.group_data.width > 0 then
+-- 										put(" DATA " & type_step_direction'image(s.group_data.direction));
+-- 
+-- 										if s.group_data.atg then
+-- 											put(" ATG " & natural_to_string(atg_data_given,16));
+-- 											CS: write cell assignments here
+-- 										elsif s.group_data.highz then
+-- 											put(" Z ");
+-- 											CS: write cell assignments here
+-- 										else
+-- 											put(row_separator_0 & natural_to_string(s.group_data.value,16) & row_separator_1);
+-- 											CS: write cell assignments here
+-- 										end if;
+-- 									end if;
+-- 
+-- 
+-- 									if s.group_control.width > 0 then
+-- 										put(" CTRL " & type_step_direction'image(s.group_control.direction));
+-- 
+-- 										if s.group_control.highz then
+-- 											put(" Z ");
+-- 											CS: write cell assignments here
+-- 										else
+-- 											put(row_separator_0 & natural_to_string(
+-- 												natural_in 	=> s.group_control.value,
+-- 												base		=> 2, -- output in binary format
+-- 												length		=> ptr_target.width_control) -- fill leading zeroes
+-- 												); 
+-- 											CS: write cell assignments here
+-- 										end if;
+-- 									end if;
+-- 
+-- 									new_line;
+-- 								else
+-- 									new_line;
+-- 									put_line(row_separator_0 & prog_identifier.dely & row_separator_0 & type_delay_value'image(s.delay_value));
+-- 								end if;
+-- 
+-- 								exit;
+-- 							end if;
+-- 						end if;
+-- 						s := s.next;
+-- 					end loop;
+-- 
+-- 				end loop;
 
 
 			--when others => null;
-		end case;
+--		end case;
 	end write_operation;
 
 	procedure write_sequences is
