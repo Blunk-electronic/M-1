@@ -252,7 +252,8 @@ procedure mkmemcon is
 			name_net 		: universal_string_type.bounded_string; -- the net it is connected with (like CPU_WE)
 			name_bic_driver				: universal_string_type.bounded_string;
 			--name_pin_driver_scratch	: universal_string_type.bounded_string;
-			id_output_cell				: natural; -- the id of the output cell of the bic that drives this pin
+			output_cell_id				: natural; -- the id of the output cell of the bic that drives this pin
+			--output_cell_value			: type_bit_char_class_0;
 			drive_cell_inverted			: boolean;
 			id_control_cell				: type_cell_info_cell_id; -- the id of the control cell cell of the bic that drives this pin -- if -1, no control cell available at driver pin
 			control_cell_disable_value	: type_bit_char_class_0;
@@ -420,8 +421,9 @@ procedure mkmemcon is
 
 			-- if net not found after searching the uut net list, abort
 			if not net_found then
-				put_line("ERROR: Target device '" & universal_string_type.to_string(ptr_target.device_name) & "' not found in data base !");
-				put_line("       Make sure device exists or check spelling (case sensitive) !");
+				put_line("ERROR: Target device '" & universal_string_type.to_string(ptr_target.device_name) 
+					& "' pin '" & universal_string_type.to_string(name_pin_given) & "' not found in data base !");
+				put_line("       Make sure target and pin exists or check spelling (case sensitive) !");
 				raise constraint_error;
 			end if;
 			return net_name; -- send net name back
@@ -573,7 +575,8 @@ procedure mkmemcon is
 						name_port	=> name_port_given,
 						name_net	=> name_net_scratch,
 						name_bic_driver 			=> name_bic_driver_scratch,
-						id_output_cell				=> id_cell_driver_scratch,
+						output_cell_id				=> id_cell_driver_scratch,
+						--output_cell_value			=> '0',
 						drive_cell_inverted			=> drive_cell_inverted_scratch,
 						id_control_cell		 		=> id_control_cell_driver_scratch,
 						control_cell_disable_value	=> control_cell_disable_value_driver_scratch,
@@ -591,7 +594,8 @@ procedure mkmemcon is
 						name_port	=> name_port_given,
 						name_net	=> name_net_scratch,
 						name_bic_driver 			=> name_bic_driver_scratch,
-						id_output_cell				=> id_cell_driver_scratch,
+						output_cell_id				=> id_cell_driver_scratch,
+						--output_cell_value			=> '0',
 						drive_cell_inverted			=> drive_cell_inverted_scratch,
 						id_control_cell		 		=> id_control_cell_driver_scratch,
 						control_cell_disable_value 	=> control_cell_disable_value_driver_scratch,
@@ -609,7 +613,8 @@ procedure mkmemcon is
 						name_port	=> name_port_given,
 						name_net	=> name_net_scratch,
 						name_bic_driver 			=> name_bic_driver_scratch,
-						id_output_cell				=> id_cell_driver_scratch,
+						output_cell_id				=> id_cell_driver_scratch,
+						--output_cell_value			=> '0',
 						drive_cell_inverted			=> drive_cell_inverted_scratch,
 						id_control_cell		 		=> id_control_cell_driver_scratch,
 						control_cell_disable_value 	=> control_cell_disable_value_driver_scratch,
@@ -1350,7 +1355,19 @@ procedure mkmemcon is
 								prog_position := 2150;
 								scratch_port_name_frac := fraction_port_name(universal_string_type.to_string(scratch_port_name));
 
-								-- CS: make sure address and data are vectored, control non-vectored 
+								-- make sure address and data are vectored, control non-vectored 
+								case scratch_pin_class is
+									when address | data =>
+										if scratch_port_name_frac.msb = 0 and scratch_port_name_frac.lsb = 0 then
+											put_line("ERROR: Discrete address or data pins not allowed ! Use vectored form like D[7:0] !");
+											raise constraint_error;
+										end if;
+									when control =>
+										if scratch_port_name_frac.msb > scratch_port_name_frac.lsb then
+											put_line("ERROR: Vectored control pins not allowed ! Control pins must be specified discretely !");
+											raise constraint_error;
+										end if;
+								end case;
 
 								if debug_level >= 100 then
 									prog_position := 2160;
@@ -1852,7 +1869,7 @@ procedure mkmemcon is
 						put(row_separator_0 & universal_string_type.to_string(p.name_pin)
 							& row_separator_0 & universal_string_type.to_string(p.name_net)
 							& row_separator_1 & universal_string_type.to_string(p.name_bic_driver)
-							& natural'image(p.id_output_cell)
+							& natural'image(p.output_cell_id)
 							);
 						put(row_separator_0 & boolean'image(p.drive_cell_inverted) & row_separator_1);
 						put(type_cell_info_cell_id'image(p.id_control_cell) & row_separator_0
@@ -2018,23 +2035,29 @@ procedure mkmemcon is
 															when '0' | '1' =>
 															-- drive 0/1 addresses output cells and implies activating the control cells
 															-- if control cell differs from output cell, then the control cell must get its enable value
-																if p.id_control_cell /= p.id_output_cell then
+															-- the enable value is to be derived from the disable value (by negating)
+																if p.id_control_cell /= p.output_cell_id then
 																	put(natural'image(p.id_control_cell) 
 																		& sxr_assignment_operator.assign
 																		& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
 																	);
 																end if;
 
-																-- assign value to output cell
-																put(natural'image(p.id_output_cell) 
-																	& sxr_assignment_operator.assign
-																	& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
-																);
+																-- assign value to output cell, negate v(i) if drive cell is to be inverted
+																put(natural'image(p.output_cell_id) & sxr_assignment_operator.assign);
+																if p.drive_cell_inverted then
+																	put(type_bit_char_class_2'image(negate_bit_character_class_0(v(i)))(2) -- strip delimiters
+																	);
+																else
+																	put(type_bit_char_class_2'image(v(i))(2) -- strip delimiters
+																	);
+																end if;
+
 
 															when 'x' | 'X' =>
 															-- drive x addresses output cells and implies activating the control cells
 															-- if control cell differs from output cell, then the control cell must get its enable value
-																if p.id_control_cell /= p.id_output_cell then
+																if p.id_control_cell /= p.output_cell_id then
 																	put(natural'image(p.id_control_cell) 
 																		& sxr_assignment_operator.assign
 																	& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
@@ -2042,7 +2065,7 @@ procedure mkmemcon is
 																end if;
 
 																-- assign zero to output cell
-																put(natural'image(p.id_output_cell) 
+																put(natural'image(p.output_cell_id) 
 																	& sxr_assignment_operator.assign
 																	& "0"
 																);
