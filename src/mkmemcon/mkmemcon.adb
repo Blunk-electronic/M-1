@@ -661,6 +661,7 @@ procedure mkmemcon is
 	end gather_pin_data;
 
 	-- TYPES AND OBJECTS RELATED TO SECTION "PROG"
+	type type_value_format is (bitwise, number);
 	type type_step_operation is ( INIT, WRITE, READ, DISABLE);
 	type type_step_direction is ( DRIVE, EXPECT );
 	type type_step_group (width : natural := 0) is
@@ -668,10 +669,12 @@ procedure mkmemcon is
 			case width is
 				when 0 => null;
 				when others =>
-					direction	: type_step_direction;
-					value		: natural := 0; -- CS: limit value to (2**width) -1
-					atg			: boolean := false;
-					highz		: boolean := false;
+					direction		: type_step_direction;
+					value_natural	: natural := 0; -- CS: limit value to (2**width) -1
+					atg				: boolean := false;
+					all_highz		: boolean := false; -- indicates if whole group is to drive highz
+					value_string	: universal_string_type.bounded_string;
+					value_format	: type_value_format := number;
 			end case;
 		end record;
 
@@ -771,13 +774,14 @@ procedure mkmemcon is
 
 		-- creates temporarily objects group_address/data/control with discriminant "width_address/data/control"
 		-- "width_address/data/control" is taken from object "target"
-		-- those temporarily objects are finally passed to procedure "add_to_step_list" to be added to step list
+		-- those temporarily objects are finally passed to procedure "add_to_step_list" which adds them to the step list
 
 			field_ct 		: positive;
 			field_ct_max	: positive := 11;
 			atg_address		: boolean := false;
 			atg_data		: boolean := false;
-			scratch_value	: natural; -- holds drive/expect value before being range checked
+			scratch_value_as_natural: natural; -- holds drive/expect value before being range checked
+			scratch_value_as_string	: universal_string_type.bounded_string;
 
 			-- according to bus width taken from object "target", the range for the address/data/control value is set
 			-- and used to create a subtype that finally holds the value
@@ -801,6 +805,90 @@ procedure mkmemcon is
 			-- as long as no delay commmand found, the delay defaults to zero
 			delay_value		: type_delay_value := 0.0;
 
+			function check_for_bit_character (text_in : string ; search_item : type_bit_character) return boolean is
+			-- returns "true" if given string contains the search_item (0,1, x, X, Z, z).
+			-- CS: move to m1_internal.ads
+				length_to_check	: positive := text_in'last-1; -- to exclude the trailing format indicator (b)
+
+				-- converts given string (except trailing format indicator) to a type_string_of_bit_characters of class 2
+				scratch_text	: type_string_of_bit_characters := to_binary(
+									text_in => text_in(text_in'first..length_to_check),
+									length	=> length_to_check,
+									class	=> class_2);
+				item_found		: boolean := false;
+			begin
+				-- examine scratch_text bit by bit and return "bitwise" on first occurence of 0
+				if search_item in type_bit_character_0 then
+					for b in 1..length_to_check loop
+	 					if scratch_text(b) in type_bit_character_0 then
+	 						item_found := true;
+							exit;
+	 					end if;
+					end loop;
+				end if;
+
+				-- examine scratch_text bit by bit and return "bitwise" on first occurence of 1
+				if search_item in type_bit_character_1 then
+					for b in 1..length_to_check loop
+	 					if scratch_text(b) in type_bit_character_1 then
+	 						item_found := true;
+							exit;
+	 					end if;
+					end loop;
+				end if;
+
+				-- examine scratch_text bit by bit and return "bitwise" on first occurence of x
+				if search_item in type_bit_character_x then
+					for b in 1..length_to_check loop
+	 					if scratch_text(b) in type_bit_character_x then
+	 						item_found := true;
+							exit;
+	 					end if;
+					end loop;
+				end if;
+
+				-- examine scratch_text bit by bit and return "bitwise" on first occurence of z
+				if search_item in type_bit_character_z then
+					for b in 1..length_to_check loop
+	 					if scratch_text(b) in type_bit_character_z then
+	 						item_found := true;
+							exit;
+	 					end if;
+					end loop;
+				end if;
+
+				if item_found then 
+					return true;
+				else
+					return false;
+				end if;
+
+			end check_for_bit_character;
+
+			function format_is(text_in : string ; format_indicator : type_format_indicator) return boolean is
+			-- returns true if given text_in ends in a valid format indicator (like d,b,h)
+			-- CS: move to m1_internal.ads
+				pos_of_format_indicator	: positive := text_in'last;
+			begin
+				--put_line(text_in & " " & type_format_indicator'image(format_indicator)(2));
+				if text_in(pos_of_format_indicator) = type_format_indicator'image(format_indicator)(2) then
+					-- NOTE: delimiters must be stripped (2) from type_format_indicator'image
+					return true;
+				end if;
+				return false;
+			end format_is;
+
+			function strip_format_indicator(text_in : string) return string is
+				pos_of_format_indicator	: positive := text_in'last;
+				text_out				: string (1..pos_of_format_indicator-1);
+			begin
+				--if type_format_indicator'value(text_in(pos_of_format_indicator)) in type_format_indicator then
+				--CS: make sure the format indicator is valid
+				text_out := text_in(text_in'first..pos_of_format_indicator-1);
+				--end if;
+				return text_out;
+			end strip_format_indicator;
+
 		begin
 			-- process line like: step 1  ADDR  drive ATG  DATA drive HIGHZ  CTRL drive 011
 			-- on match of "step"
@@ -823,10 +911,11 @@ procedure mkmemcon is
 					else
 					-- if field count ok then
 						-- test fields for identifier addr, data or ctrl. 
-						-- if no address, data or control ports defined by port_pin_map abort if group specified yet
+						-- if no address, data or control ports defined by port_pin_map -> abort. if group specified yet
 						-- then read subsequent fields
 						for f in 3..field_ct loop
 
+							-- READ ADDRESS GROUP
 							-- if identifier address found
 							if to_lower(get_field_from_line(line_of_file,f)) = prog_identifier.addr then
 								if ptr_target.width_address /= 0 then -- if bus width greater zero (means if there are address pins)
@@ -834,59 +923,90 @@ procedure mkmemcon is
 									-- get direction (expect, drive) from next field
 									group_address.direction := type_step_direction'value(get_field_from_line(line_of_file,f+1));
 
-									-- if direction is "expect" the drivers must be disabled
-									if group_address.direction = expect then
-										group_address.highz := true;
-									end if;
-
 									-- get atg or value field from next field
 									if to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.atg then
 										group_address.atg := true;
 
 									-- in case of a drive command, highz is allowed like
-									-- step 5  ADDR  drive highz  DATA drive 45h  CTRL drive 11b
-									-- NOTE: highz applies for the whole group. bitwise assignment not supported yet CS
+									-- step 5  ADDR  drive highz  DATA drive 45h  CTRL drive 11b -- all address drivers go highz
+									-- step 5  ADDR  drive 001z1b  DATA drive 45h  CTRL drive 11b -- one address driver goes highz
 									elsif group_address.direction = drive and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
-										group_address.highz := true;
+										group_address.all_highz := true;
+
+									-- expect highz is not allowed:
+									elsif group_address.direction = expect and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
+										put_line("ERROR: Expect 'highz' not allowed in address group !");
+										raise constraint_error;
 									else
-										-- the value might be given as hex, dec or binary number
-										scratch_value := string_to_natural(get_field_from_line(line_of_file,f+2));
-										if scratch_value in type_value_address then
-
-											-- if option_address_min is given (greater -1), check if scratch_value is less then option_address_min
-											-- and output error message
-											if ptr_target.option_address_min /= -1 then
-												if scratch_value < ptr_target.option_address_min then
-													put_line("ERROR: Address must be greater than the value specified in model by '" 
-														& port_pin_map_identifier.option & row_separator_0 & port_pin_map_identifier.address 
-														& row_separator_0 & port_pin_map_identifier.min
-														& natural'image(ptr_target.option_address_min) & " ("
-														& natural_to_string(ptr_target.option_address_min,16) & ")' !");
+										-- check if value is given bitwise (with x and z) like 001001x00zb
+										-- take the value field and test if format indicator is 'b' (bitwise assigment does work with binary format only)
+										-- then search for letters x and z in value. if x or z found, set group_address.value_format bit to "bitwise"
+										scratch_value_as_string := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,f+2));
+										if format_is(universal_string_type.to_string(scratch_value_as_string),'b') then
+											-- if format is ok, ensure there is no 'z' within an expect value
+											if group_address.direction = expect then
+												if check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'z') then
+													put_line("ERROR: Expect 'z' not allowed in address group !");
 													raise constraint_error;
 												end if;
 											end if;
-
-											-- if option_address_max is given (greater -1), check if scratch_value is greater then option_address_max
-											-- and output error message
-											if ptr_target.option_address_max /= -1 then
-												if scratch_value > ptr_target.option_address_max then
-													put_line("ERROR: Address must be less than the value specified in model by '" 
-														& port_pin_map_identifier.option & row_separator_0 & port_pin_map_identifier.address 
-														& row_separator_0 & port_pin_map_identifier.max
-														& natural'image(ptr_target.option_address_max) & " ("
-														& natural_to_string(ptr_target.option_address_max,16) & ")' !");
-													raise constraint_error;
-												end if;
+											-- if x or z occurs in value, it can be regareded as "bitwise" formated
+											-- the value is to be saved in group_address.value_string
+											if	check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'z') or
+												check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'x') then
+													group_address.value_format := bitwise; -- overwrites default "number"
+													if strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))'last = ptr_target.width_address then
+														group_address.value_string := universal_string_type.to_bounded_string(strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))); 
+														-- CS: range check
+														put_line("WARNING: Line" & natural'image(line_counter) & ": Address specified may be outside the allowed address range !");
+													else
+														put_line("ERROR: Expected" & positive'image(ptr_target.width_address) & " characters for bitwise assigment !");
+														raise constraint_error;
+													end if;
 											end if;
-
-											--and scratch_value <= ptr_target.option_address_max then
-											group_address.value := string_to_natural(get_field_from_line(line_of_file,f+2));
-										else
-											put_line("ERROR: Address must not be greater than" 
-												& natural'image(address_max) & " ("
-												& natural_to_string(address_max,16) & ") !");
-											raise constraint_error;
 										end if;
+
+										-- if value not given bitwise, it is to be regarded as number
+										-- the value might be given as hex, dec or binary number
+										if group_address.value_format = number then
+											scratch_value_as_natural := string_to_natural(get_field_from_line(line_of_file,f+2));
+											if scratch_value_as_natural in type_value_address then
+
+												-- if option_address_min is given (greater -1), check if scratch_value is less then option_address_min
+												-- and output error message
+												if ptr_target.option_address_min /= -1 then
+													if scratch_value_as_natural < ptr_target.option_address_min then
+														put_line("ERROR: Address must be greater than the value specified in model by '" 
+															& port_pin_map_identifier.option & row_separator_0 & port_pin_map_identifier.address 
+															& row_separator_0 & port_pin_map_identifier.min
+															& natural'image(ptr_target.option_address_min) & " ("
+															& natural_to_string(ptr_target.option_address_min,16) & ")' !");
+														raise constraint_error;
+													end if;
+												end if;
+
+												-- if option_address_max is given (greater -1), check if scratch_value is greater then option_address_max
+												-- and output error message
+												if ptr_target.option_address_max /= -1 then
+													if scratch_value_as_natural > ptr_target.option_address_max then
+														put_line("ERROR: Address must be less than the value specified in model by '" 
+															& port_pin_map_identifier.option & row_separator_0 & port_pin_map_identifier.address 
+															& row_separator_0 & port_pin_map_identifier.max
+															& natural'image(ptr_target.option_address_max) & " ("
+															& natural_to_string(ptr_target.option_address_max,16) & ")' !");
+														raise constraint_error;
+													end if;
+												end if;
+
+												--and scratch_value <= ptr_target.option_address_max then
+												group_address.value_natural := string_to_natural(get_field_from_line(line_of_file,f+2));
+											else
+												put_line("ERROR: Address must not be greater than" 
+													& natural'image(address_max) & " ("
+													& natural_to_string(address_max,16) & ") !");
+												raise constraint_error;
+											end if;
+										end if; -- if group_address.value_format = number
 									end if;
 								else 
 									-- if group specified but no address port specified in port_pin_map abort
@@ -895,7 +1015,7 @@ procedure mkmemcon is
 									raise constraint_error;
 								end if;
 
-
+							-- READ DATA GROUP
 							elsif -- if identifier data found 
 								to_lower(get_field_from_line(line_of_file,f)) = prog_identifier.data then
 								if ptr_target.width_data /= 0 then -- if bus width greater zero (means if there are data pins)
@@ -903,30 +1023,64 @@ procedure mkmemcon is
 									-- get direction (expect, drive) from next field
 									group_data.direction := type_step_direction'value(get_field_from_line(line_of_file,f+1));
 
-									-- if direction is "expect" the drivers must be disabled
-									if group_data.direction = expect then
-										group_data.highz := true;
-									end if;
-
 									-- get atg or value field from next field
 									if to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.atg then
 										group_data.atg := true;
 
 									-- in case of a drive command, highz is allowed like
-									-- step 5  ADDR  drive ATG  DATA drive HIGHZ  CTRL drive 11b
-									-- NOTE: highz applies for the whole group. bitwise assignment not supported yet CS
+									-- step 5  ADDR  drive highz  DATA drive 45h  CTRL drive 11b -- all address drivers go highz
+									-- step 5  ADDR  drive 001z1b  DATA drive 45h  CTRL drive 11b -- one address driver goes highz
 									elsif group_data.direction = drive and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
-										group_data.highz := true;
+										group_data.all_highz := true;
+
+									-- expect highz is not allowed:
+									elsif group_data.direction = expect and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
+										put_line("ERROR: Expect 'highz' not allowed in data group !");
+										raise constraint_error;
 									else
+										-- check if value is given bitwise (with x and z) like 001001x00zb
+										-- take the value field and test if format indicator is 'b' (bitwise assigment does work with binary format only)
+										-- then search for letters x and z in value. if x or z found, set group_address.value_format bit to "bitwise"
+										scratch_value_as_string := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,f+2));
+										if format_is(universal_string_type.to_string(scratch_value_as_string),'b') then
+											-- if format is ok, ensure there is no 'z' within an expect value
+											if group_data.direction = expect then
+												if check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'z') then
+													put_line("ERROR: Expect 'z' not allowed in data group !");
+													raise constraint_error;
+												end if;
+											end if;
+											-- if x or z occurs in value, it can be regareded as "bitwise" formated
+											-- the value is to be saved in group_data.value_string
+											if	check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'z') or
+												check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'x') then
+													group_data.value_format := bitwise; -- overwrites default "number"
+													if strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))'last = ptr_target.width_data then
+														group_data.value_string := universal_string_type.to_bounded_string(strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))); 
+														-- CS: no need yet for range check or warning, as data has no upper or lower boundary
+														--put_line("WARNING: Line" & natural'image(line_counter) & ": Data specified may be outside the allowed address range !");
+													else
+														put_line("ERROR: Expected" & positive'image(ptr_target.width_data) & " characters for bitwise assigment !");
+														raise constraint_error;
+													end if;
+											end if;
+										end if;
+
+										-- if value not given bitwise, it is to be regarded as number
 										-- the value might be given as hex, dec or binary number
-										scratch_value := string_to_natural(get_field_from_line(line_of_file,f+2));
-										if scratch_value in type_value_address then
-											group_data.value := string_to_natural(get_field_from_line(line_of_file,f+2));
-										else
-											put_line("ERROR: Data value must not be greater than" 
-												& natural'image(data_max) & " or "
-												& natural_to_string(data_max,16) & " !");
-											raise constraint_error;
+										if group_data.value_format = number then
+
+											-- the value might be given as hex, dec or binary number
+											scratch_value_as_natural := string_to_natural(get_field_from_line(line_of_file,f+2));
+											if scratch_value_as_natural in type_value_data then
+												group_data.value_natural := string_to_natural(get_field_from_line(line_of_file,f+2));
+											else
+												put_line("ERROR: Data value must not be greater than" 
+													& natural'image(data_max) & " or "
+													& natural_to_string(data_max,16) & " !");
+												raise constraint_error;
+											end if;
+
 										end if;
 									end if;
 								else 
@@ -936,7 +1090,7 @@ procedure mkmemcon is
 									raise constraint_error;
 								end if;
 
-
+							-- READ CONTROL GROUP
 							elsif -- if identifier control found
 								to_lower(get_field_from_line(line_of_file,f)) = prog_identifier.ctrl then
 								if ptr_target.width_control /= 0 then -- if bus width greater zero (means if there are control pins)
@@ -944,23 +1098,65 @@ procedure mkmemcon is
 									-- get direction (expect, drive) from next field
 									group_control.direction := type_step_direction'value(get_field_from_line(line_of_file,f+1));
 
-									-- CS: if direction is "expect" the drivers must be disabled
--- 									if direction_control = expect then
--- 										highz_control := true;
--- 									end if;
+									-- ATG is not allowed in control group
+									if to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.atg then
+										put_line("ERROR: ATG not allowed in control group !");
+										raise constraint_error;
+									end if;
 
-									-- get value field from next field
-									-- NOTE: ATG not available for control pins (CS: could be useful in the future)
-									-- NOTE: HIGHZ not available for control pins (CS: could be useful in the future)
-									-- the value might be given as hex, dec or binary number
-										scratch_value := string_to_natural(get_field_from_line(line_of_file,f+2));
-										if scratch_value in type_value_control then
-											group_control.value := string_to_natural(get_field_from_line(line_of_file,f+2));
-										else
-											put_line("ERROR: Control value must not be greater than " 
-												& natural_to_string(control_max,2) & " !");
-											raise constraint_error;
+									-- in case of a drive command, highz is allowed like
+									-- step 5  ADDR  drive highz  DATA drive 45h  CTRL drive highz -- all control drivers go highz
+									-- step 5  ADDR  drive 001z1b  DATA drive 45h  CTRL drive z1b -- one control driver goes highz
+									if group_control.direction = drive and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
+										group_control.all_highz := true;
+
+									-- expect highz is not allowed:
+									elsif group_control.direction = expect and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
+										put_line("ERROR: Expect 'highz' not allowed in control group !");
+										raise constraint_error;
+									else
+										-- check if value is given bitwise (with x and z) like 001001x00zb
+										-- take the value field and test if format indicator is 'b' (bitwise assigment does work with binary format only)
+										-- then search for letters x and z in value. if x or z found, set group_control.value_format bit to "bitwise"
+										scratch_value_as_string := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,f+2));
+										if format_is(universal_string_type.to_string(scratch_value_as_string),'b') then
+											-- if format is ok, ensure there is no 'z' within an expect value
+											if group_control.direction = expect then
+												if check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'z') then
+													put_line("ERROR: Expect 'z' not allowed in control group !");
+													raise constraint_error;
+												end if;
+											end if;
+											-- if x or z occurs in value, it can be regareded as "bitwise" formated
+											-- the value is to be saved in group_control.value_string
+											if	check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'z') or
+												check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'x') then
+													group_control.value_format := bitwise; -- overwrites default "number"
+													if strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))'last = ptr_target.width_control then
+														group_control.value_string := universal_string_type.to_bounded_string(strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))); 
+														-- CS: no need yet for range check or warning, as control has no upper or lower boundary
+													else
+														put_line("ERROR: Expected" & positive'image(ptr_target.width_control) & " characters for bitwise assigment !");
+														raise constraint_error;
+													end if;
+											end if;
 										end if;
+
+										-- if value not given bitwise, it is to be regarded as number
+										-- the value might be given as hex, dec or binary number
+										if group_data.value_format = number then
+
+											-- the value might be given as hex, dec or binary number
+											scratch_value_as_natural := string_to_natural(get_field_from_line(line_of_file,f+2));
+											if scratch_value_as_natural in type_value_control then
+												group_control.value_natural := string_to_natural(get_field_from_line(line_of_file,f+2));
+											else
+												put_line("ERROR: Control value must not be greater than " 
+													& natural_to_string(control_max,2) & " !");
+												raise constraint_error;
+											end if;
+										end if;
+									end if;
 								else 
 									-- if group specified but no control port specified in port_pin_map abort
 									put_line("ERROR: Target has no control port as specified in section '" & section_name.port_pin_map & ".");
@@ -1935,13 +2131,12 @@ procedure mkmemcon is
 
 	--type type_cell_assignment_group is (address, data, control);
 	--type type_cell_assignment_direction is (drive, expect);
-	type type_value_format is (bitwise, number);
 
 	procedure assign_cells(
 	-- for a given pin_class (like address, data, control) writes lines like "set IC301 drv boundary 21=1 24=1 27=1 30=1 33=1 42=1 48=1 51=0"
 	-- direction defines the "drv" or "exp" identifier
 	-- value is the value to be assigned to the cells
-	-- value_format tells whether the value comes as number or as bitwise assigment (like 001z110)
+	-- value_format tells whether the value comes as number or as bitwise assigment (like 001z110) WITHOUT trailing format indicator !
 
 	-- it starts writing the cell assigment of the bic with id 1. if a bic is a driver of the group, it appears as new line
 	-- like "set IC304 drv boundary 42=1 48=1 51=0"
@@ -2302,8 +2497,8 @@ procedure mkmemcon is
 										value 			=> natural'image(atg_address_given),
 										value_format	=> number
 										);
-								elsif s.group_address.highz then
-									put_line(" ALL Z ");
+								elsif s.group_address.all_highz then
+									put_line(" ALL HIGHZ ");
 									assign_cells(
 										pin_class 		=> address,
 										direction 		=> s.group_address.direction,
@@ -2311,13 +2506,24 @@ procedure mkmemcon is
 										value_format	=> bitwise
 										);
 								else
-									put_line(row_separator_0 & natural_to_string(s.group_address.value,16));
-									assign_cells(
-										pin_class 		=> address,
-										direction 		=> s.group_address.direction,
-										value 			=> natural'image(s.group_address.value),
-										value_format	=> number
-										);
+									case s.group_address.value_format is
+										when number =>
+											put_line(row_separator_0 & natural_to_string(s.group_address.value_natural,16));
+											assign_cells(
+												pin_class 		=> address,
+												direction 		=> s.group_address.direction,
+												value 			=> natural'image(s.group_address.value_natural),
+												value_format	=> number
+												);
+										when bitwise =>
+											put_line(row_separator_0 & universal_string_type.to_string(s.group_address.value_string));
+											assign_cells(
+												pin_class 		=> address,
+												direction 		=> s.group_address.direction,
+												value 			=> universal_string_type.to_string(s.group_address.value_string),
+												value_format	=> bitwise
+												);
+									end case;
 								end if;
 							end if;
 
@@ -2331,8 +2537,8 @@ procedure mkmemcon is
 										value 			=> natural'image(atg_data_given),
 										value_format	=> number
 										);
-								elsif s.group_data.highz then
-									put_line(" ALL Z ");
+								elsif s.group_data.all_highz then
+									put_line(" ALL HIGHZ ");
 									assign_cells(
 										pin_class 		=> data,
 										direction 		=> s.group_data.direction,
@@ -2340,19 +2546,30 @@ procedure mkmemcon is
 										value_format	=> bitwise
 										);
 								else
-									put_line(row_separator_0 & natural_to_string(s.group_data.value,16));
-									assign_cells(
-										pin_class 		=> data,
-										direction 		=> s.group_data.direction,
-										value 			=> natural'image(s.group_data.value),
-										value_format	=> number
-										);
+									case s.group_data.value_format is
+										when number =>
+											put_line(row_separator_0 & natural_to_string(s.group_data.value_natural,16));
+											assign_cells(
+												pin_class 		=> data,
+												direction 		=> s.group_data.direction,
+												value 			=> natural'image(s.group_data.value_natural),
+												value_format	=> number
+												);
+										when bitwise =>
+											put_line(row_separator_0 & universal_string_type.to_string(s.group_data.value_string));
+											assign_cells(
+												pin_class 		=> data,
+												direction 		=> s.group_data.direction,
+												value 			=> universal_string_type.to_string(s.group_data.value_string),
+												value_format	=> bitwise
+												);
+									end case;
 								end if;
 							end if;
 
 							if s.group_control.width > 0 then
 								put("  -- CTRL " & type_step_direction'image(s.group_control.direction));
-								if s.group_control.highz then
+								if s.group_control.all_highz then
 									put_line(" ALL Z ");
 									assign_cells(
 										pin_class 		=> control,
@@ -2362,14 +2579,14 @@ procedure mkmemcon is
 										);
 								else
 									put_line(row_separator_0 & natural_to_string(
-										natural_in 	=> s.group_control.value,
+										natural_in 	=> s.group_control.value_natural,
 										base		=> 2, -- output in binary format
 										length		=> ptr_target.width_control) -- fill leading zeroes
 										); 
 									assign_cells(
 										pin_class 		=> control,
 										direction 		=> s.group_control.direction,
-										value 			=> natural'image(s.group_control.value),
+										value 			=> natural'image(s.group_control.value_natural),
 										value_format	=> number
 										);
 								end if;
