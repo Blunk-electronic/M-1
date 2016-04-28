@@ -1131,6 +1131,7 @@ procedure mkmemcon is
 											-- the value is to be saved in group_control.value_string
 											if	check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'z') or
 												check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'x') then
+													--put_line("bitwise");
 													group_control.value_format := bitwise; -- overwrites default "number"
 													if strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))'last = ptr_target.width_control then
 														group_control.value_string := universal_string_type.to_bounded_string(strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))); 
@@ -1144,8 +1145,8 @@ procedure mkmemcon is
 
 										-- if value not given bitwise, it is to be regarded as number
 										-- the value might be given as hex, dec or binary number
-										if group_data.value_format = number then
-
+										if group_control.value_format = number then
+											--put_line("number");
 											-- the value might be given as hex, dec or binary number
 											scratch_value_as_natural := string_to_natural(get_field_from_line(line_of_file,f+2));
 											if scratch_value_as_natural in type_value_control then
@@ -2570,7 +2571,7 @@ procedure mkmemcon is
 							if s.group_control.width > 0 then
 								put("  -- CTRL " & type_step_direction'image(s.group_control.direction));
 								if s.group_control.all_highz then
-									put_line(" ALL Z ");
+									put_line(" ALL HIGHZ ");
 									assign_cells(
 										pin_class 		=> control,
 										direction 		=> s.group_control.direction,
@@ -2578,17 +2579,28 @@ procedure mkmemcon is
 										value_format	=> bitwise
 										);
 								else
-									put_line(row_separator_0 & natural_to_string(
-										natural_in 	=> s.group_control.value_natural,
-										base		=> 2, -- output in binary format
-										length		=> ptr_target.width_control) -- fill leading zeroes
-										); 
-									assign_cells(
-										pin_class 		=> control,
-										direction 		=> s.group_control.direction,
-										value 			=> natural'image(s.group_control.value_natural),
-										value_format	=> number
-										);
+									case s.group_control.value_format is
+										when number =>
+											put_line(row_separator_0 & natural_to_string(
+												natural_in 	=> s.group_control.value_natural,
+												base		=> 2, -- output in binary format
+												length		=> ptr_target.width_control) -- fill leading zeroes
+												); 
+											assign_cells(
+												pin_class 		=> control,
+												direction 		=> s.group_control.direction,
+												value 			=> natural'image(s.group_control.value_natural),
+												value_format	=> number
+												);
+										when bitwise =>
+											put_line(row_separator_0 & universal_string_type.to_string(s.group_control.value_string));
+											assign_cells(
+												pin_class 		=> control,
+												direction 		=> s.group_control.direction,
+												value 			=> universal_string_type.to_string(s.group_control.value_string),
+												value_format	=> bitwise
+												);
+									end case;
 								end if;
 							end if;
 
