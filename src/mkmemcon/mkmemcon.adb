@@ -2303,6 +2303,16 @@ procedure mkmemcon is
 				end loop;
 
 				-- CS: put control cells
+				co := ptr_cc;
+				while co /= null loop
+					if not co.skip then
+						put(natural'image(co.id) 
+							& sxr_assignment_operator.assign
+							& type_bit_char_class_0'image(co.value)(2) -- strip delimiters
+						);
+					end if;
+					co := co.next;
+				end loop;
 
 				ptr_cc := null;
 				--new_line(standard_output);
@@ -2371,10 +2381,10 @@ procedure mkmemcon is
 														case v(i) is
 															-- drive z addresses control cells and assigns them their disable value
 															when 'z' | 'Z' => -- CS: use types here
-																put(natural'image(p.id_control_cell) 
-																	& sxr_assignment_operator.assign
-																	& type_bit_char_class_0'image(p.control_cell_disable_value)(2) -- strip delimiters
-																);
+-- 																put(natural'image(p.id_control_cell) 
+-- 																	& sxr_assignment_operator.assign
+-- 																	& type_bit_char_class_0'image(p.control_cell_disable_value)(2) -- strip delimiters
+-- 																);
 
 																-- record control cell assigments for later detection shared control cell conflicts 
 																add_to_record_of_control_cells(ptr_cc, p.id_control_cell, p.control_cell_disable_value);
@@ -2384,10 +2394,10 @@ procedure mkmemcon is
 															-- if control cell differs from output cell, then the control cell must get its enable value
 															-- the enable value is to be derived from the disable value (by negating)
 																if p.id_control_cell /= p.output_cell_id then
-																	put(natural'image(p.id_control_cell) 
-																		& sxr_assignment_operator.assign
-																		& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
-																	);
+-- 																	put(natural'image(p.id_control_cell) 
+-- 																		& sxr_assignment_operator.assign
+-- 																		& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
+-- 																	);
 
 																	-- record control cell assigments for later detection shared control cell conflicts 
 																	add_to_record_of_control_cells(ptr_cc, p.id_control_cell, negate_bit_character_class_0(p.control_cell_disable_value));
@@ -2408,10 +2418,10 @@ procedure mkmemcon is
 															-- drive x addresses output cells and implies activating the control cells
 															-- if control cell differs from output cell, then the control cell must get its enable value
 																if p.id_control_cell /= p.output_cell_id then
-																	put(natural'image(p.id_control_cell) 
-																		& sxr_assignment_operator.assign
-																	& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
-																	);
+-- 																	put(natural'image(p.id_control_cell) 
+-- 																		& sxr_assignment_operator.assign
+-- 																	& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
+-- 																	);
 
 																	-- record control cell assigments for later detection shared control cell conflicts 
 																	add_to_record_of_control_cells(ptr_cc, p.id_control_cell, negate_bit_character_class_0(p.control_cell_disable_value));
@@ -2432,9 +2442,10 @@ procedure mkmemcon is
 										end loop;
 
 									end loop;
-									new_line;
-									put_line(standard_output,"bic: " & universal_string_type.to_string(b.name));
+									--new_line;
+									--put_line(standard_output,"bic: " & universal_string_type.to_string(b.name));
 									evaluate_record_of_control_cells;
+									new_line;
 								end if;
 							end if;
 							b := b.next;
