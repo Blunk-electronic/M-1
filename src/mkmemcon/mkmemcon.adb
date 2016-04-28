@@ -244,7 +244,7 @@ procedure mkmemcon is
 	type type_ptr_memory_pin is access all type_memory_pin;
 	type type_pin_class is ( data, address, control);
 	type type_direction is ( input, output, inout);
-	type type_memory_pin (class_pin : type_pin_class) is
+	type type_memory_pin (class_pin : type_pin_class; has_receivers : boolean) is
 		record
 			next			: type_ptr_memory_pin;
 			name_pin		: universal_string_type.bounded_string; -- like pin 75, 34, 4
@@ -255,12 +255,16 @@ procedure mkmemcon is
 			output_cell_id				: natural; -- the id of the output cell of the bic that drives this pin
 			--output_cell_value			: type_bit_char_class_0;
 			drive_cell_inverted			: boolean;
-			id_control_cell				: type_cell_info_cell_id; -- the id of the control cell cell of the bic that drives this pin -- if -1, no control cell available at driver pin
+			id_control_cell				: type_cell_info_cell_id; -- the id of the control cell cell of the bic that drives this pin -- if -1, no control cell available for that driver pin
 			control_cell_disable_value	: type_bit_char_class_0;
-			receiver_list_last			: type_ptr_receiver; -- saves the pointer position of the last receiver added (required when resetting the pointer
-			receiver_list				: type_ptr_receiver; -- receiver_last)
 			direction					: type_direction;
 			index						: natural; -- like address 0, data 7
+			case has_receivers is
+				when false => null;
+				when true =>
+					receiver_list_last			: type_ptr_receiver; -- saves the pointer position of the last receiver added (required when resetting the pointer
+					receiver_list				: type_ptr_receiver; -- receiver_last)
+			end case;
 		end record;
 	ptr_memory_pin	: type_ptr_memory_pin;
 
@@ -440,6 +444,7 @@ procedure mkmemcon is
  		name_net_secondary 			: universal_string_type.bounded_string;
 		list_of_secondary_nets		: type_list_of_secondary_net_names;
 		number_of_secondary_nets	: natural;
+		has_receivers				: boolean := false;
 
 		procedure get_bic_driver is
 		-- searches in atg drive cell list for the driver of the net given in name_net_primary
@@ -491,11 +496,12 @@ procedure mkmemcon is
 											end case;
 											-- check for shared control cell and put warning CS: repeat this check but put error when assigning cell values
 											if is_shared(c1.device,c1.cell) then
-												put_line("WARNING: Shared control cell found:");
-												put_line("         - primary net: " & universal_string_type.to_string(name_net_primary));
-												put_line("         - driver     : " & universal_string_type.to_string(c.device));
-												put_line("         - pin        : " & universal_string_type.to_string(c.pin));
-												put_line("         - cell       :" & natural'image(c.cell));
+												put("WARNING: Shared control cell with ID" & natural'image(c1.cell) & " found: ");
+												put("primary net: " & universal_string_type.to_string(name_net_primary));
+												put(row_separator_1 & "driver: " & universal_string_type.to_string(c.device));
+												put(row_separator_1 & "pin: " & universal_string_type.to_string(c.pin));
+												put(row_separator_1 & "output cell:" & natural'image(c.cell));
+												new_line;
 											end if;
 										end if;
 									end if;
@@ -545,6 +551,7 @@ procedure mkmemcon is
 		begin
 			while c /= null loop
 				if universal_string_type.to_string(c.net) = universal_string_type.to_string(name_net) then
+					has_receivers := true;
 					add_to_receiver_list( list => ptr_receiver, name_bic_given => c.device, id_cell_given => c.cell);
 -- 					put_line(standard_output,universal_string_type.to_string(c.net) & row_separator_0
 -- 						& universal_string_type.to_string(c.device)
@@ -556,74 +563,145 @@ procedure mkmemcon is
 		end get_bic_receivers;
 
 		procedure add_to_pin_list is
-		-- adds a pin incl. driver and receiver_list to list pointed to by ptr_memory_pin
-		-- the receiver_list (pointed to by ptr_receiver) is copied to pointer s, which in turn becomes a part of the pin
+		-- adds a pin incl. driver to list pointed to by ptr_memory_pin
+		-- if receivers present, add them also
 	
-			subtype ptr_scratch is not null type_ptr_receiver;
-			s : ptr_scratch := ptr_receiver; -- s points now to the end of the receiver_list
-		begin
-			s.all := ptr_receiver.all; -- copy receiver_list to s, which later will be part of the pin 
+			procedure add_with_receivers is
+			-- the receiver_list (pointed to by ptr_receiver) is copied to pointer s, which in turn becomes a part of the pin
+				subtype ptr_scratch is not null type_ptr_receiver;
+				s : ptr_scratch := ptr_receiver; -- s points now to the end of the receiver_list
+			begin
+				s.all := ptr_receiver.all; -- copy receiver_list to s, which later will be part of the pin 
 
-			-- in depence of the given pin class, add the given pin to the pin list
-			case pin_class_given is
-				when data =>
-					scratch_width_data := scratch_width_data + 1;
-					list := new type_memory_pin'(
-						next		=> list,
-						class_pin	=> data,
-						name_pin	=> name_pin_given,
-						name_port	=> name_port_given,
-						name_net	=> name_net_scratch,
-						name_bic_driver 			=> name_bic_driver_scratch,
-						output_cell_id				=> id_cell_driver_scratch,
-						--output_cell_value			=> '0',
-						drive_cell_inverted			=> drive_cell_inverted_scratch,
-						id_control_cell		 		=> id_control_cell_driver_scratch,
-						control_cell_disable_value	=> control_cell_disable_value_driver_scratch,
-						receiver_list_last	=> s, -- backup position of last receiver
-						receiver_list		=> s,
-						direction	=> direction_given,
-						index		=> index_given
-						);
-				when address =>
-					scratch_width_address := scratch_width_address + 1;
-					list := new type_memory_pin'(
-						next		=> list,
-						class_pin	=> address,
-						name_pin	=> name_pin_given,
-						name_port	=> name_port_given,
-						name_net	=> name_net_scratch,
-						name_bic_driver 			=> name_bic_driver_scratch,
-						output_cell_id				=> id_cell_driver_scratch,
-						--output_cell_value			=> '0',
-						drive_cell_inverted			=> drive_cell_inverted_scratch,
-						id_control_cell		 		=> id_control_cell_driver_scratch,
-						control_cell_disable_value 	=> control_cell_disable_value_driver_scratch,
-						receiver_list_last	=> s,
-						receiver_list		=> s,
-						direction	=> direction_given,
-						index		=> index_given
-						);
-				when control =>
-					scratch_width_control := scratch_width_control + 1;
-					list := new type_memory_pin'(
-						next		=> list,
-						class_pin	=> control,
-						name_pin	=> name_pin_given,
-						name_port	=> name_port_given,
-						name_net	=> name_net_scratch,
-						name_bic_driver 			=> name_bic_driver_scratch,
-						output_cell_id				=> id_cell_driver_scratch,
-						--output_cell_value			=> '0',
-						drive_cell_inverted			=> drive_cell_inverted_scratch,
-						id_control_cell		 		=> id_control_cell_driver_scratch,
-						control_cell_disable_value 	=> control_cell_disable_value_driver_scratch,
-						receiver_list_last	=> s,
-						receiver_list		=> s,
-						direction	=> direction_given,
-						index		=> index_given
-						);
-			end case;
+				-- in depence of the given pin class, add the given pin to the pin list
+				case pin_class_given is
+					when data =>
+						scratch_width_data := scratch_width_data + 1;
+						list := new type_memory_pin'(
+							next		=> list,
+							class_pin	=> data,
+							name_pin	=> name_pin_given,
+							name_port	=> name_port_given,
+							name_net	=> name_net_scratch,
+							name_bic_driver 			=> name_bic_driver_scratch,
+							output_cell_id				=> id_cell_driver_scratch,
+							--output_cell_value			=> '0',
+							drive_cell_inverted			=> drive_cell_inverted_scratch,
+							id_control_cell		 		=> id_control_cell_driver_scratch,
+							control_cell_disable_value	=> control_cell_disable_value_driver_scratch,
+							has_receivers		=> true,
+							receiver_list_last	=> s, -- backup position of last receiver
+							receiver_list		=> s,
+							direction	=> direction_given,
+							index		=> index_given
+							);
+					when address =>
+						scratch_width_address := scratch_width_address + 1;
+						list := new type_memory_pin'(
+							next		=> list,
+							class_pin	=> address,
+							name_pin	=> name_pin_given,
+							name_port	=> name_port_given,
+							name_net	=> name_net_scratch,
+							name_bic_driver 			=> name_bic_driver_scratch,
+							output_cell_id				=> id_cell_driver_scratch,
+							--output_cell_value			=> '0',
+							drive_cell_inverted			=> drive_cell_inverted_scratch,
+							id_control_cell		 		=> id_control_cell_driver_scratch,
+							control_cell_disable_value 	=> control_cell_disable_value_driver_scratch,
+							has_receivers		=> true,
+							receiver_list_last	=> s,
+							receiver_list		=> s,
+							direction	=> direction_given,
+							index		=> index_given
+							);
+					when control =>
+						scratch_width_control := scratch_width_control + 1;
+						list := new type_memory_pin'(
+							next		=> list,
+							class_pin	=> control,
+							name_pin	=> name_pin_given,
+							name_port	=> name_port_given,
+							name_net	=> name_net_scratch,
+							name_bic_driver 			=> name_bic_driver_scratch,
+							output_cell_id				=> id_cell_driver_scratch,
+							--output_cell_value			=> '0',
+							drive_cell_inverted			=> drive_cell_inverted_scratch,
+							id_control_cell		 		=> id_control_cell_driver_scratch,
+							control_cell_disable_value 	=> control_cell_disable_value_driver_scratch,
+							has_receivers		=> true,
+							receiver_list_last	=> s,
+							receiver_list		=> s,
+							direction	=> direction_given,
+							index		=> index_given
+							);
+				end case;
+			end add_with_receivers;
+
+		begin
+			if has_receivers then
+				add_with_receivers;
+			else
+
+				-- in depence of the given pin class, add the given pin to the pin list
+				case pin_class_given is
+					when data =>
+						scratch_width_data := scratch_width_data + 1;
+						list := new type_memory_pin'(
+							next		=> list,
+							class_pin	=> data,
+							name_pin	=> name_pin_given,
+							name_port	=> name_port_given,
+							name_net	=> name_net_scratch,
+							name_bic_driver 			=> name_bic_driver_scratch,
+							output_cell_id				=> id_cell_driver_scratch,
+							--output_cell_value			=> '0',
+							drive_cell_inverted			=> drive_cell_inverted_scratch,
+							id_control_cell		 		=> id_control_cell_driver_scratch,
+							control_cell_disable_value	=> control_cell_disable_value_driver_scratch,
+							has_receivers		=> false,
+							direction	=> direction_given,
+							index		=> index_given
+							);
+					when address =>
+						scratch_width_address := scratch_width_address + 1;
+						list := new type_memory_pin'(
+							next		=> list,
+							class_pin	=> address,
+							name_pin	=> name_pin_given,
+							name_port	=> name_port_given,
+							name_net	=> name_net_scratch,
+							name_bic_driver 			=> name_bic_driver_scratch,
+							output_cell_id				=> id_cell_driver_scratch,
+							--output_cell_value			=> '0',
+							drive_cell_inverted			=> drive_cell_inverted_scratch,
+							id_control_cell		 		=> id_control_cell_driver_scratch,
+							control_cell_disable_value 	=> control_cell_disable_value_driver_scratch,
+							has_receivers		=> false,
+							direction	=> direction_given,
+							index		=> index_given
+							);
+					when control =>
+						scratch_width_control := scratch_width_control + 1;
+						list := new type_memory_pin'(
+							next		=> list,
+							class_pin	=> control,
+							name_pin	=> name_pin_given,
+							name_port	=> name_port_given,
+							name_net	=> name_net_scratch,
+							name_bic_driver 			=> name_bic_driver_scratch,
+							output_cell_id				=> id_cell_driver_scratch,
+							--output_cell_value			=> '0',
+							drive_cell_inverted			=> drive_cell_inverted_scratch,
+							id_control_cell		 		=> id_control_cell_driver_scratch,
+							control_cell_disable_value 	=> control_cell_disable_value_driver_scratch,
+							has_receivers		=> false,
+							direction	=> direction_given,
+							index		=> index_given
+							);
+				end case;
+			end if;
+
 		end add_to_pin_list;
 
 	begin -- gather_pin_data
@@ -2062,6 +2140,7 @@ procedure mkmemcon is
 							when control =>
 								null;
 						end case;
+
 						-- put driver
 						put(row_separator_0 & universal_string_type.to_string(p.name_pin)
 							& row_separator_0 & universal_string_type.to_string(p.name_net)
@@ -2071,15 +2150,18 @@ procedure mkmemcon is
 						put(row_separator_0 & boolean'image(p.drive_cell_inverted) & row_separator_1);
 						put(type_cell_info_cell_id'image(p.id_control_cell) & row_separator_0
 							& type_bit_char_class_0'image(p.control_cell_disable_value)(2) & row_separator_1);
-						-- put receivers
-						p.receiver_list := p.receiver_list_last; -- reset pointer receiver_list to the end of the list
-						while p.receiver_list /= null loop
-							put(universal_string_type.to_string(p.receiver_list.name_bic)
-								& natural'image(p.receiver_list.id_cell)
-								& row_separator_0
-							);
-							p.receiver_list := p.receiver_list.next;
-						end loop;
+
+						-- put receivers (if any)
+						if p.has_receivers then
+							p.receiver_list := p.receiver_list_last; -- reset pointer receiver_list to the end of the list
+							while p.receiver_list /= null loop
+								put(universal_string_type.to_string(p.receiver_list.name_bic)
+									& natural'image(p.receiver_list.id_cell)
+									& row_separator_0
+								);
+								p.receiver_list := p.receiver_list.next;
+							end loop;
+						end if;
 						new_line;
 					end if;
 					p := p.next;
@@ -2161,6 +2243,71 @@ procedure mkmemcon is
 			bic_required_as_driver				: boolean := false; -- indicates if a bic is required for a cell assigment for driving
 			bic_required_for_self_monitoring	: boolean := false; -- indicates if a bic is required self monitoring
 			bic_required_as_receiver			: boolean := false; -- indicates if a bic is required as receiver
+
+			-- FOR DETECTING SHARED CONTROL CELL CONFLICTS BEGIN
+			type type_cc;
+			type type_ptr_cc is access all type_cc;
+			type type_cc is
+				record
+					next		: type_ptr_cc;
+					id			: natural;
+					value		: type_bit_char_class_0;
+					skip 		: boolean;
+				end record;
+			ptr_cc : type_ptr_cc;
+
+			procedure add_to_record_of_control_cells(
+				list		: in out type_ptr_cc;
+				id_given	: natural;
+				value_given	: type_bit_char_class_0
+				) is
+			begin
+				list := new type_cc'(
+					next		=> list,
+					id			=> id_given,
+					value		=> value_given,
+					skip		=> false
+					);
+			end add_to_record_of_control_cells;
+
+			procedure evaluate_record_of_control_cells is
+			-- tests if a control cell occurs multiple times in the control cell record
+			-- all occurences (but the first one) are marked as "skip"
+			-- if values of cells differ, a shared control cell conflict is found
+				co : type_ptr_cc := ptr_cc; -- outer loop
+				ci : type_ptr_cc; -- inner loop
+			begin
+				--put_line(standard_output,"evaluating record of control cells ...");
+				while co /= null loop
+					--	put_line(standard_output," cc id:" & natural'image(co.id) & " " & type_bit_char_class_0'image(co.value));
+
+						-- inner loop begin
+						ci := co; -- set ci where co points to (current position)
+						ci := ci.next; -- advance ci by one position
+						while ci /= null loop -- loop in cell record and check further occurences of the same cell
+							if ci.id = co.id then -- if cell found
+								--put_line(standard_output," - cc id:" & natural'image(ci.id));
+								if ci.value = co.value then -- if value is the same, mark cell to be skipped
+									co.skip := true;
+								else -- if values differ, we have a control cell conflict
+									put_line(standard_output,"ERROR: Shared control cell conflict !");
+									raise constraint_error;
+								end if;
+							end if;
+							ci := ci.next;
+						end loop;
+						-- inner loop end
+
+
+					co := co.next; -- advance pointer in outer loop
+				end loop;
+
+				-- CS: put control cells
+
+				ptr_cc := null;
+				--new_line(standard_output);
+			end evaluate_record_of_control_cells;
+			
 		begin
 			-- translate the given value into a string of bit characters of (0,1,z,Z) held by variable v
 			case value_format is
@@ -2181,7 +2328,7 @@ procedure mkmemcon is
 							);
 			end case;
 
-			-- start searching of affected bic with the one of the lowest id
+			-- start searching of affected bic with the one having the lowest id
 			case direction is
 				when drive =>
 					-- ASSIGN DRIVE PATTERN:
@@ -2228,6 +2375,10 @@ procedure mkmemcon is
 																	& sxr_assignment_operator.assign
 																	& type_bit_char_class_0'image(p.control_cell_disable_value)(2) -- strip delimiters
 																);
+
+																-- record control cell assigments for later detection shared control cell conflicts 
+																add_to_record_of_control_cells(ptr_cc, p.id_control_cell, p.control_cell_disable_value);
+
 															when '0' | '1' =>
 															-- drive 0/1 addresses output cells and implies activating the control cells
 															-- if control cell differs from output cell, then the control cell must get its enable value
@@ -2237,6 +2388,9 @@ procedure mkmemcon is
 																		& sxr_assignment_operator.assign
 																		& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
 																	);
+
+																	-- record control cell assigments for later detection shared control cell conflicts 
+																	add_to_record_of_control_cells(ptr_cc, p.id_control_cell, negate_bit_character_class_0(p.control_cell_disable_value));
 																end if;
 
 																-- assign value to output cell, negate v(i) if drive cell is to be inverted
@@ -2258,6 +2412,9 @@ procedure mkmemcon is
 																		& sxr_assignment_operator.assign
 																	& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
 																	);
+
+																	-- record control cell assigments for later detection shared control cell conflicts 
+																	add_to_record_of_control_cells(ptr_cc, p.id_control_cell, negate_bit_character_class_0(p.control_cell_disable_value));
 																end if;
 
 																-- assign zero to output cell
@@ -2276,6 +2433,8 @@ procedure mkmemcon is
 
 									end loop;
 									new_line;
+									put_line(standard_output,"bic: " & universal_string_type.to_string(b.name));
+									evaluate_record_of_control_cells;
 								end if;
 							end if;
 							b := b.next;
@@ -2296,20 +2455,22 @@ procedure mkmemcon is
 								for i in 1..v'last loop -- do as many loops as v has bits
 									p := ptr_memory_pin;
 									while p /= null loop
-										if p.class_pin = pin_class then -- on pin_class match
-											if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
-												p.receiver_list := p.receiver_list_last;
-												while p.receiver_list /= null loop -- loop though receiver list
-													-- on match of bic name
-													if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
-														bic_required_for_self_monitoring := true;
-														put("  set " & universal_string_type.to_string(b.name) & " exp boundary");
-														exit l_1; -- no need to search for further occurences of bic in pin list
-													end if;
-													p.receiver_list := p.receiver_list.next;
-												end loop;
+										if p.has_receivers then -- if there are receivers connected at all
+											if p.class_pin = pin_class then -- on pin_class match
+												if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
+													p.receiver_list := p.receiver_list_last;
+													while p.receiver_list /= null loop -- loop though receiver list
+														-- on match of bic name
+														if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
+															bic_required_for_self_monitoring := true;
+															put("  set " & universal_string_type.to_string(b.name) & " exp boundary");
+															exit l_1; -- no need to search for further occurences of bic in pin list
+														end if;
+														p.receiver_list := p.receiver_list.next;
+													end loop;
+												end if;
 											end if;
-										end if;
+										end if; -- if there are receivers at all
 										p := p.next;
 									end loop;	
 								end loop l_1;
@@ -2318,32 +2479,34 @@ procedure mkmemcon is
 									for i in 1..v'last loop -- do as many loops as v has bits
 										p := ptr_memory_pin;
 										while p /= null loop
-											if p.class_pin = pin_class then -- on pin_class match
-												if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
-													p.receiver_list := p.receiver_list_last;
-													while p.receiver_list /= null loop
-														if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
-															case v(i) is
-																when '0' | '1' =>
-																	-- expect 0/1 addresses input cells
-																	-- assign value to input cell
-																		put(natural'image(p.receiver_list.id_cell) 
-																			& sxr_assignment_operator.assign
-																			& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
-																		);
-																when 'x' | 'X' | 'z' | 'Z' =>
-																	-- expect 0/1 addresses input cells
-																	-- assign value to input cell
-																		put(natural'image(p.receiver_list.id_cell) 
-																			& sxr_assignment_operator.assign
-																			& "x"
-																		);
-															end case;
-														end if;
-														p.receiver_list := p.receiver_list.next;
-													end loop;
+											if p.has_receivers then -- if there are receivers connected at all
+												if p.class_pin = pin_class then -- on pin_class match
+													if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
+														p.receiver_list := p.receiver_list_last;
+														while p.receiver_list /= null loop
+															if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
+																case v(i) is
+																	when '0' | '1' =>
+																		-- expect 0/1 addresses input cells
+																		-- assign value to input cell
+																			put(natural'image(p.receiver_list.id_cell) 
+																				& sxr_assignment_operator.assign
+																				& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
+																			);
+																	when 'x' | 'X' | 'z' | 'Z' =>
+																		-- expect 0/1 addresses input cells
+																		-- assign value to input cell
+																			put(natural'image(p.receiver_list.id_cell) 
+																				& sxr_assignment_operator.assign
+																				& "x"
+																			);
+																end case;
+															end if;
+															p.receiver_list := p.receiver_list.next;
+														end loop;
+													end if;
 												end if;
-											end if;
+											end if; -- if there are receivers at all
 											p := p.next;
 										end loop;	
 									end loop;
@@ -2369,20 +2532,22 @@ procedure mkmemcon is
 								for i in 1..v'last loop -- do as many loops as v has bits
 									p := ptr_memory_pin;
 									while p /= null loop
-										if p.class_pin = pin_class then -- on pin_class match
-											if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
-												p.receiver_list := p.receiver_list_last;
-												while p.receiver_list /= null loop -- loop though receiver list
-													-- on match of bic name
-													if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
-														bic_required_as_receiver := true;
-														put("  set " & universal_string_type.to_string(b.name) & " exp boundary ");
-														exit l_2; -- no need to search for further occurences of bic in pin list
-													end if;
-													p.receiver_list := p.receiver_list.next;
-												end loop;
+										if p.has_receivers then -- if there are receivers connected at all
+											if p.class_pin = pin_class then -- on pin_class match
+												if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
+													p.receiver_list := p.receiver_list_last;
+													while p.receiver_list /= null loop -- loop though receiver list
+														-- on match of bic name
+														if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
+															bic_required_as_receiver := true;
+															put("  set " & universal_string_type.to_string(b.name) & " exp boundary ");
+															exit l_2; -- no need to search for further occurences of bic in pin list
+														end if;
+														p.receiver_list := p.receiver_list.next;
+													end loop;
+												end if;
 											end if;
-										end if;
+										end if; -- if there are receivers connected at all
 										p := p.next;
 									end loop;	
 								end loop l_2;
@@ -2391,32 +2556,34 @@ procedure mkmemcon is
 									for i in 1..v'last loop -- do as many loops as v has bits
 										p := ptr_memory_pin;
 										while p /= null loop
-											if p.class_pin = pin_class then -- on pin_class match
-												if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
-													p.receiver_list := p.receiver_list_last;
-													while p.receiver_list /= null loop
-														if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
-															case v(i) is
-																when '0' | '1' =>
-																	-- expect 0/1 addresses input cells
-																	-- assign value to input cell
-																		put(natural'image(p.receiver_list.id_cell) 
-																			& sxr_assignment_operator.assign
-																			& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
-																		);
-																when 'x' | 'X' | 'z' | 'Z' =>
-																	-- expect 0/1 addresses input cells
-																	-- assign value to input cell
-																		put(natural'image(p.receiver_list.id_cell) 
-																			& sxr_assignment_operator.assign
-																			& "x"
-																		);
-															end case;
-														end if;
-														p.receiver_list := p.receiver_list.next;
-													end loop;
+											if p.has_receivers then -- if there are receivers connected at all
+												if p.class_pin = pin_class then -- on pin_class match
+													if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
+														p.receiver_list := p.receiver_list_last;
+														while p.receiver_list /= null loop
+															if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
+																case v(i) is
+																	when '0' | '1' =>
+																		-- expect 0/1 addresses input cells
+																		-- assign value to input cell
+																			put(natural'image(p.receiver_list.id_cell) 
+																				& sxr_assignment_operator.assign
+																				& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
+																			);
+																	when 'x' | 'X' | 'z' | 'Z' =>
+																		-- expect 0/1 addresses input cells
+																		-- assign value to input cell
+																			put(natural'image(p.receiver_list.id_cell) 
+																				& sxr_assignment_operator.assign
+																				& "x"
+																			);
+																end case;
+															end if;
+															p.receiver_list := p.receiver_list.next;
+														end loop;
+													end if;
 												end if;
-											end if;
+											end if; -- if there are receivers connected at all
 											p := p.next;
 										end loop;	
 									end loop;
