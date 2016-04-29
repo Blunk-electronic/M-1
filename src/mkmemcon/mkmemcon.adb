@@ -502,6 +502,7 @@ procedure mkmemcon is
 												put(row_separator_1 & "pin: " & universal_string_type.to_string(c.pin));
 												put(row_separator_1 & "output cell:" & natural'image(c.cell));
 												new_line;
+												-- CS: refine output: show affected drivers and nets
 											end if;
 										end if;
 									end if;
@@ -769,6 +770,7 @@ procedure mkmemcon is
 			group_data		: type_step_group;
 			group_control	: type_step_group;
 			delay_value		: type_delay_value;
+			line_number		: positive;
 		end record;
 	ptr_step : type_ptr_step;
 
@@ -780,7 +782,8 @@ procedure mkmemcon is
 		group_address_given	: type_step_group;
 		group_data_given	: type_step_group;
 		group_control_given	: type_step_group;
-		delay_value_given	: type_delay_value
+		delay_value_given	: type_delay_value;
+		line_number_given	: positive
 		) is
 	begin -- add_to_step_list
 		-- check if step already in list ?
@@ -791,7 +794,8 @@ procedure mkmemcon is
 			group_address	=> group_address_given,
 			group_data		=> group_data_given,
 			group_control	=> group_control_given,
-			delay_value		=> delay_value_given
+			delay_value		=> delay_value_given,
+			line_number		=> line_number_given
 			);
 
 		-- count steps by their type of operation and update total step count
@@ -1272,7 +1276,8 @@ procedure mkmemcon is
 				group_address_given	=> group_address,
 				group_data_given	=> group_data,
 				group_control_given	=> group_control,
-				delay_value_given	=> delay_value	-- if delay non-zero, this step is regarded as delay (address, data, control don't care)
+				delay_value_given	=> delay_value,	-- if delay non-zero, this step is regarded as delay (address, data, control don't care)
+				line_number_given	=> line_counter
 				);
 		end get_groups_from_line;
 
@@ -2227,7 +2232,8 @@ procedure mkmemcon is
 		pin_class	: type_pin_class;
 		direction	: type_step_direction;
 		value		: string;
-		value_format: type_value_format := number
+		value_format: type_value_format;
+		line_number	: positive
 		) is
 		b	: type_bscan_ic_ptr := ptr_bic;
 		p	: type_ptr_memory_pin := ptr_memory_pin;
@@ -2250,13 +2256,14 @@ procedure mkmemcon is
 			type type_cc is
 				record
 					next		: type_ptr_cc;
-					id			: natural;
-					value		: type_bit_char_class_0;
-					skip 		: boolean;
+					id			: natural;		-- holds the control cell id
+					value		: type_bit_char_class_0; -- holds the control cell value
+					skip 		: boolean; -- indicates that this cell occured earlier and can be skipped
 				end record;
-			ptr_cc : type_ptr_cc;
+			ptr_cc : type_ptr_cc; -- points to a list of control cells
 
 			procedure add_to_record_of_control_cells(
+			-- adds a control cell to a list of type_cc, accessed by ptr_cc
 				list		: in out type_ptr_cc;
 				id_given	: natural;
 				value_given	: type_bit_char_class_0
@@ -2271,52 +2278,63 @@ procedure mkmemcon is
 			end add_to_record_of_control_cells;
 
 			procedure evaluate_record_of_control_cells is
+			-- reads the list of control cells (recorded in list pointed to by ptr_cc)
 			-- tests if a control cell occurs multiple times in the control cell record
-			-- all occurences (but the first one) are marked as "skip"
-			-- if values of cells differ, a shared control cell conflict is found
+			-- all occurences (but the first one) are marked as "skip" (later, when reading the list, those entries are skipped
+			-- to avoid multiple and confusing assigments)
+			-- if values of cells differ, a shared control cell conflict exists -> abort
 				co : type_ptr_cc := ptr_cc; -- outer loop
 				ci : type_ptr_cc; -- inner loop
 			begin
-				--put_line(standard_output,"evaluating record of control cells ...");
+				-- outer loop begin
 				while co /= null loop
 					--	put_line(standard_output," cc id:" & natural'image(co.id) & " " & type_bit_char_class_0'image(co.value));
 
 						-- inner loop begin
 						ci := co; -- set ci where co points to (current position)
-						ci := ci.next; -- advance ci by one position
+						ci := ci.next; -- advance ci by one position so that ci points to next cell after co
+
 						while ci /= null loop -- loop in cell record and check further occurences of the same cell
 							if ci.id = co.id then -- if cell found
 								--put_line(standard_output," - cc id:" & natural'image(ci.id));
 								if ci.value = co.value then -- if value is the same, mark cell to be skipped
 									co.skip := true;
 								else -- if values differ, we have a control cell conflict
-									put_line(standard_output,"ERROR: Shared control cell conflict !");
+									put_line(standard_output,"ERROR:"
+										& "line" & positive'image(line_number) & ":"
+										& " Shared control cell conflict in" 
+										& row_separator_0 & type_pin_class'image(pin_class) 
+										& " group !");
+									-- CS: refine output by line number
 									raise constraint_error;
 								end if;
 							end if;
-							ci := ci.next;
+							ci := ci.next; -- advance inner pointer to next cell
 						end loop;
 						-- inner loop end
-
 
 					co := co.next; -- advance pointer in outer loop
 				end loop;
 
-				-- CS: put control cells
-				co := ptr_cc;
-				while co /= null loop
+				-- read list of control cells and write them in sequence file
+				-- cells marked as "skip" are ignored
+				co := ptr_cc; -- reset co at end of list
+				while co /= null loop -- loop through control cell list
 					if not co.skip then
-						put(natural'image(co.id) 
+						put(natural'image(co.id) -- write control cell id
 							& sxr_assignment_operator.assign
-							& type_bit_char_class_0'image(co.value)(2) -- strip delimiters
+							& type_bit_char_class_0'image(co.value)(2) -- strip delimiters of value and write value
 						);
 					end if;
-					co := co.next;
+					co := co.next; -- advance cell pointer
 				end loop;
 
+				-- clear cell list pointer for next recording
 				ptr_cc := null;
-				--new_line(standard_output);
+
 			end evaluate_record_of_control_cells;
+			-- FOR DETECTING SHARED CONTROL CELL CONFLICTS BEGIN
+
 			
 		begin
 			-- translate the given value into a string of bit characters of (0,1,z,Z) held by variable v
@@ -2381,11 +2399,7 @@ procedure mkmemcon is
 														case v(i) is
 															-- drive z addresses control cells and assigns them their disable value
 															when 'z' | 'Z' => -- CS: use types here
--- 																put(natural'image(p.id_control_cell) 
--- 																	& sxr_assignment_operator.assign
--- 																	& type_bit_char_class_0'image(p.control_cell_disable_value)(2) -- strip delimiters
--- 																);
-
+																-- control cells are not written right away but recorded first
 																-- record control cell assigments for later detection shared control cell conflicts 
 																add_to_record_of_control_cells(ptr_cc, p.id_control_cell, p.control_cell_disable_value);
 
@@ -2394,11 +2408,7 @@ procedure mkmemcon is
 															-- if control cell differs from output cell, then the control cell must get its enable value
 															-- the enable value is to be derived from the disable value (by negating)
 																if p.id_control_cell /= p.output_cell_id then
--- 																	put(natural'image(p.id_control_cell) 
--- 																		& sxr_assignment_operator.assign
--- 																		& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
--- 																	);
-
+																	-- control cells are not written right away but recorded first
 																	-- record control cell assigments for later detection shared control cell conflicts 
 																	add_to_record_of_control_cells(ptr_cc, p.id_control_cell, negate_bit_character_class_0(p.control_cell_disable_value));
 																end if;
@@ -2418,11 +2428,7 @@ procedure mkmemcon is
 															-- drive x addresses output cells and implies activating the control cells
 															-- if control cell differs from output cell, then the control cell must get its enable value
 																if p.id_control_cell /= p.output_cell_id then
--- 																	put(natural'image(p.id_control_cell) 
--- 																		& sxr_assignment_operator.assign
--- 																	& type_bit_char_class_0'image(negate_bit_character_class_0(p.control_cell_disable_value))(2) -- strip delimiters
--- 																	);
-
+																	-- control cells are not written right away but recorded first
 																	-- record control cell assigments for later detection shared control cell conflicts 
 																	add_to_record_of_control_cells(ptr_cc, p.id_control_cell, negate_bit_character_class_0(p.control_cell_disable_value));
 																end if;
@@ -2442,7 +2448,10 @@ procedure mkmemcon is
 										end loop;
 
 									end loop;
-									--new_line;
+
+									-- now that all output cells have been written in the sequence file, the record of control cells
+									-- must be evaluated in order to optimize multiple occurences of contol cells 
+									-- and to detect shared control cell conflicts
 									--put_line(standard_output,"bic: " & universal_string_type.to_string(b.name));
 									evaluate_record_of_control_cells;
 									new_line;
@@ -2626,8 +2635,6 @@ procedure mkmemcon is
 
 		-- process the given value bit by bit and translate it into a cell assignment
 		read_value_bitwise;
-
-
 	end assign_cells;
 
 	procedure write_operation(
@@ -2674,7 +2681,8 @@ procedure mkmemcon is
 										pin_class 		=> address,
 										direction 		=> s.group_address.direction,
 										value 			=> natural'image(atg_address_given),
-										value_format	=> number
+										value_format	=> number,
+										line_number		=> s.line_number
 										);
 								elsif s.group_address.all_highz then
 									put_line(" ALL HIGHZ ");
@@ -2682,7 +2690,8 @@ procedure mkmemcon is
 										pin_class 		=> address,
 										direction 		=> s.group_address.direction,
 										value 			=> ptr_target.width_address * "Z",
-										value_format	=> bitwise
+										value_format	=> bitwise,
+										line_number		=> s.line_number
 										);
 								else
 									case s.group_address.value_format is
@@ -2692,7 +2701,8 @@ procedure mkmemcon is
 												pin_class 		=> address,
 												direction 		=> s.group_address.direction,
 												value 			=> natural'image(s.group_address.value_natural),
-												value_format	=> number
+												value_format	=> number,
+												line_number		=> s.line_number
 												);
 										when bitwise =>
 											put_line(row_separator_0 & universal_string_type.to_string(s.group_address.value_string));
@@ -2700,7 +2710,8 @@ procedure mkmemcon is
 												pin_class 		=> address,
 												direction 		=> s.group_address.direction,
 												value 			=> universal_string_type.to_string(s.group_address.value_string),
-												value_format	=> bitwise
+												value_format	=> bitwise,
+												line_number		=> s.line_number
 												);
 									end case;
 								end if;
@@ -2714,7 +2725,8 @@ procedure mkmemcon is
 										pin_class 		=> data,
 										direction 		=> s.group_data.direction,
 										value 			=> natural'image(atg_data_given),
-										value_format	=> number
+										value_format	=> number,
+										line_number		=> s.line_number
 										);
 								elsif s.group_data.all_highz then
 									put_line(" ALL HIGHZ ");
@@ -2722,7 +2734,8 @@ procedure mkmemcon is
 										pin_class 		=> data,
 										direction 		=> s.group_data.direction,
 										value 			=> ptr_target.width_data * "Z",
-										value_format	=> bitwise
+										value_format	=> bitwise,
+										line_number		=> s.line_number
 										);
 								else
 									case s.group_data.value_format is
@@ -2732,7 +2745,8 @@ procedure mkmemcon is
 												pin_class 		=> data,
 												direction 		=> s.group_data.direction,
 												value 			=> natural'image(s.group_data.value_natural),
-												value_format	=> number
+												value_format	=> number,
+												line_number		=> s.line_number
 												);
 										when bitwise =>
 											put_line(row_separator_0 & universal_string_type.to_string(s.group_data.value_string));
@@ -2740,7 +2754,8 @@ procedure mkmemcon is
 												pin_class 		=> data,
 												direction 		=> s.group_data.direction,
 												value 			=> universal_string_type.to_string(s.group_data.value_string),
-												value_format	=> bitwise
+												value_format	=> bitwise,
+												line_number		=> s.line_number
 												);
 									end case;
 								end if;
@@ -2754,7 +2769,8 @@ procedure mkmemcon is
 										pin_class 		=> control,
 										direction 		=> s.group_control.direction,
 										value 			=> ptr_target.width_control * "Z",
-										value_format	=> bitwise
+										value_format	=> bitwise,
+										line_number		=> s.line_number
 										);
 								else
 									case s.group_control.value_format is
@@ -2768,7 +2784,8 @@ procedure mkmemcon is
 												pin_class 		=> control,
 												direction 		=> s.group_control.direction,
 												value 			=> natural'image(s.group_control.value_natural),
-												value_format	=> number
+												value_format	=> number,
+												line_number		=> s.line_number
 												);
 										when bitwise =>
 											put_line(row_separator_0 & universal_string_type.to_string(s.group_control.value_string));
@@ -2776,7 +2793,8 @@ procedure mkmemcon is
 												pin_class 		=> control,
 												direction 		=> s.group_control.direction,
 												value 			=> universal_string_type.to_string(s.group_control.value_string),
-												value_format	=> bitwise
+												value_format	=> bitwise,
+												line_number		=> s.line_number
 												);
 									end case;
 								end if;
@@ -2794,85 +2812,8 @@ procedure mkmemcon is
 				s := s.next;
 			end loop;
 		end loop;
-
--- 			when write | read =>
--- 				sorting by step id can be achieved by searching the step list from start to end (even if not all steps are init or disable types)
--- 				for i in 1..ptr_target.step_count_total loop
--- 
--- 					s := ptr_step; -- set step pointer at end of step list
--- 					while s /= null loop -- loop though step list and filter step types as given in operation_given
--- 						if s.operation = operation_given then
--- 							the first step id that matches i is to be output
--- 							if s.step_id = i then 
--- 								put(" -- model step" & positive'image(s.step_id) & "." & trim(positive'image(lut_step_id_given),left) & ":"); -- model step 6.3
--- 								if s.delay_value = 0.0 then -- if delay value is zero it is a regular test step (otherwise it is a delay)
--- 									if s.group_address.width > 0 then
--- 										put(" ADDR " & type_step_direction'image(s.group_address.direction));
--- 
--- 										if s.group_address.atg then
--- 											put(" ATG " & natural_to_string(atg_address_given,16));
--- 											CS: write cell assignments here
--- 										elsif s.group_address.highz then
--- 											put(" Z ");
--- 											CS: write cell assignments here
--- 										else
--- 											put(row_separator_0 & natural_to_string(s.group_address.value,16) & row_separator_1);
--- 											CS: write cell assignments here
--- 										end if;
--- 									end if;
--- 
--- 									
--- 
--- 									if s.group_data.width > 0 then
--- 										put(" DATA " & type_step_direction'image(s.group_data.direction));
--- 
--- 										if s.group_data.atg then
--- 											put(" ATG " & natural_to_string(atg_data_given,16));
--- 											CS: write cell assignments here
--- 										elsif s.group_data.highz then
--- 											put(" Z ");
--- 											CS: write cell assignments here
--- 										else
--- 											put(row_separator_0 & natural_to_string(s.group_data.value,16) & row_separator_1);
--- 											CS: write cell assignments here
--- 										end if;
--- 									end if;
--- 
--- 
--- 									if s.group_control.width > 0 then
--- 										put(" CTRL " & type_step_direction'image(s.group_control.direction));
--- 
--- 										if s.group_control.highz then
--- 											put(" Z ");
--- 											CS: write cell assignments here
--- 										else
--- 											put(row_separator_0 & natural_to_string(
--- 												natural_in 	=> s.group_control.value,
--- 												base		=> 2, -- output in binary format
--- 												length		=> ptr_target.width_control) -- fill leading zeroes
--- 												); 
--- 											CS: write cell assignments here
--- 										end if;
--- 									end if;
--- 
--- 									new_line;
--- 								else
--- 									new_line;
--- 									put_line(row_separator_0 & prog_identifier.dely & row_separator_0 & type_delay_value'image(s.delay_value));
--- 								end if;
--- 
--- 								exit;
--- 							end if;
--- 						end if;
--- 						s := s.next;
--- 					end loop;
--- 
--- 				end loop;
-
-
-			--when others => null;
---		end case;
 	end write_operation;
+
 
 	procedure write_sequences is
 		lut_step_id		: positive;
