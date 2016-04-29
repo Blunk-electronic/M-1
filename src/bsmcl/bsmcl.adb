@@ -49,15 +49,18 @@
 -- V021
 -- opt file and net routing file bear the same name as the udb by default
 
+-- V023
+-- fixed path to cad import scripts and binaries
+
 with Ada.Text_IO;		use Ada.Text_IO;
-with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
-with Ada.Sequential_IO;
+--with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
+--with Ada.Sequential_IO;
 --with System.OS_Lib;   use System.OS_Lib;
 with Ada.Strings; 			use Ada.Strings;
 with Ada.Strings.Bounded; 	use Ada.Strings.Bounded;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
-with Ada.Task_Identification;  use Ada.Task_Identification;
+--with Ada.Task_Identification;  use Ada.Task_Identification;
 with Ada.Exceptions; use Ada.Exceptions;
  
 with GNAT.OS_Lib;   	use GNAT.OS_Lib;
@@ -72,7 +75,7 @@ with m1;
 with m1_internal; use m1_internal;
 
 procedure bsmcl is
-	Version			: String (1..3) := "022";
+	Version			: String (1..3) := "023";
 	--bin_dir			: String := "/opt/m-1/bin/"; -- CS: need to adapt it to the customers machine ?
 --	bin_dir			: String := "/home/luno/cad/projects/m-1/bin/"; -- CS: need to adapt it to the customers machine ? -- mod v017 -- rm v020
 
@@ -599,7 +602,7 @@ begin
 				new_line;
 				Spawn 
 					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/cad_import/imporcad",
+					Program_Name           => to_string(directory_of_binary_files) & "/imporcad",
 					Args                   => 	(
 												1=> new String'(Argument(3))
 --												2=> new String'(Argument(4))
@@ -631,7 +634,7 @@ begin
 				new_line;
 				Spawn 
 					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/cad_import/impaltium",
+					Program_Name           => to_string(directory_of_binary_files) & "/impaltium",
 					Args                   => 	(
 												1=> new String'(Argument(3))
 --												2=> new String'(Argument(4))
@@ -665,7 +668,7 @@ begin
 				new_line;
 				Spawn 
 					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/cad_import/impzuken",
+					Program_Name           => to_string(directory_of_binary_files) & "/impzuken",
 					Args                   => 	(
 												1=> new String'(Argument(3))
 --												2=> new String'(Argument(4))
@@ -708,7 +711,7 @@ begin
 				new_line;
 				Spawn 
 					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/cad_import/impeagle6x",
+					Program_Name           => to_string(directory_of_binary_files) & "/impeagle6x",
 					Args                   => 	(
 												1=> new String'(Argument(3)),
 												2=> new String'(Argument(4))
