@@ -62,7 +62,7 @@ procedure_copy_script impeagle6x
 procedure_copy_script imporcad
 #procedure_copy_script mkinfra
 procedure_copy_script mkclock
-procedure_copy_script mkmemcon
+#procedure_copy_script mkmemcon
 procedure_copy_script open_report
 procedure_copy_script run_and_log_sequence
 procedure_copy_script clrram
@@ -115,6 +115,7 @@ procedure_make impzuken
 procedure_make joinnetlist
 procedure_make mkinfra
 procedure_make mkintercon
+procedure_make mkmemcon
 procedure_make mknets
 procedure_make mkoptions
 procedure_make mktoggle
