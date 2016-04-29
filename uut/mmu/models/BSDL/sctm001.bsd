@@ -6,12 +6,13 @@
 --  Created by    : Texas Instruments Incorporated                           --
 --  Documentation : SN74BCT8240A Data Sheet (SCBS067)                        --
 --  Product Status: Released to Production (RTP)                             --
---  BSDL revision : 2.1                                                      --
+--  BSDL revision : 2.2                                                      --
 --  BSDL status   : Production                                               --
 --  Date created  : 05/01/94                                                 --
---  Last modified : 07/26/97                                                 --
+--  Last modified : 2016-04-29 /Blunk electronic                             --
 --  Modification history -                                                   --
 --      - misc clean-up, cosmetic only                                       --
+--  - safe value for control cell #17 changed from x to 1 / MBL              --
 -------------------------------------------------------------------------------
 --                                                                           --
 --                             IMPORTANT NOTICE                              --
@@ -153,6 +154,6 @@ entity sn74bct8240a is
     "16 (BC_1, OE_NEG2, input, X)," &
     "16 (BC_1, *, control, 1),"     &
     "17 (BC_1, OE_NEG1, input, 1)," &
-    "17 (BC_1, *, control, x)" ;
+    "17 (BC_1, *, control, 1)" ;
 
 end sn74bct8240a;

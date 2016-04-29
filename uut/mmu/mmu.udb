@@ -31,7 +31,7 @@ Section scanpath_configuration
 
 		IC301 pc44 models/BSDL/xc9536_pc44.bsd
         IC300 pc44 models/BSDL/xc9536_pc44.bsd
-        IC303 dw models/BSDL/sctm001.bsm
+        IC303 dw models/BSDL/sctm001.bsd
 
 	--UUT_TDO_1 / BSC_TDI_1
  EndSubSection
