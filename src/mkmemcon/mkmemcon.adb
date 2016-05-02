@@ -137,21 +137,26 @@ procedure mkmemcon is
 		end record;
 	port_pin_map_identifier : type_port_pin_map_identifier;
 
+
+
 	-- items to be found in section "info" of memory model
 	type type_info_item is
 		record
-			value			: string (1..5)  := "value";
-			compatibles		: string (1..11) := "compatibles";
-			date			: string (1..4)  := "date";
-			version			: string (1..7)  := "version";
-			status			: string (1..6)  := "status";
-			author			: string (1..6)  := "author";
-			manufacturer	: string (1..12) := "manufacturer";
-			class			: string (1..5)  := "class";
-			write_protect	: string (1..13) := "write_protect";
-			protocol		: string (1..8)  := "protocol";
-			ram_type		: string (1..8)  := "ram_type";
-			rom_type		: string (1..8)  := "rom_type";
+			test_profile	: type_test_profile	:= memconnect;
+			end_sdr			: type_end_sxr		:= PDR; -- pause dr
+			end_sir			: type_end_sxr		:= RTI; -- run-test/idle
+			value			: string (1..5) 	:= "value";
+			compatibles		: string (1..11) 	:= "compatibles";
+			date			: string (1..4) 	:= "date";
+			version			: string (1..7) 	:= "version";
+			status			: string (1..6) 	:= "status";
+			author			: string (1..6) 	:= "author";
+			manufacturer	: string (1..12)	:= "manufacturer";
+			class			: string (1..5)  	:= "class";
+			write_protect	: string (1..13) 	:= "write_protect";
+			protocol		: string (1..8)  	:= "protocol";
+			ram_type		: string (1..8)  	:= "ram_type";
+			rom_type		: string (1..8)  	:= "rom_type";
 		end record;
 	info_item : type_info_item;
 
@@ -2200,6 +2205,9 @@ procedure mkmemcon is
 		put_line(" date             : " & m1.date_now);
 		put_line(" data base        : " & universal_string_type.to_string(ptr_target.data_base));
 		put_line(" test name        : " & universal_string_type.to_string(ptr_target.test_name));
+		put_line(" test profile     : " & type_test_profile'image(info_item.test_profile));
+		put_line(" end sdr          : " & type_end_sxr'image(info_item.end_sdr));
+		put_line(" end sir          : " & type_end_sxr'image(info_item.end_sir));
 		put_line(" target name      : " & universal_string_type.to_string(ptr_target.device_name));
 		put_line(" target class     : " & type_target_class'image(ptr_target.class_target));
 		case ptr_target.class_target is 
@@ -2814,6 +2822,7 @@ procedure mkmemcon is
 								end if;
 							end if;
 
+							write_sdr;
 							--new_line;
 						else
 							--new_line;
@@ -2837,10 +2846,19 @@ procedure mkmemcon is
 
 		all_in(sample);
 		write_ir_capture;
+		write_sir; new_line;
+
 		load_safe_values;
+		write_sdr; new_line;
+		load_safe_values;
+		write_sdr; new_line;
+
 		all_in(extest);
+		write_sir; new_line;
+
 		load_static_drive_values;
 		load_static_expect_values;
+		write_sdr; new_line;
 
 		write_operation(init);
 		--write_operation(write,1000,10);
@@ -2864,6 +2882,8 @@ procedure mkmemcon is
 		end loop;
 
 		write_operation(disable);
+
+		write_end_of_test;
 
 	end write_sequences;
 
