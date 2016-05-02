@@ -859,9 +859,9 @@ procedure mkmemcon is
 		-- those temporarily objects are finally passed to procedure "add_to_step_list" which adds them to the step list
 
 			field_ct 		: positive;
-			field_ct_max	: positive := 11;
-			atg_address		: boolean := false;
-			atg_data		: boolean := false;
+			field_ct_max	: positive := 11; -- this is the max. number of fields in such a line
+			--atg_address		: boolean := false;
+			--atg_data		: boolean := false;
 			scratch_value_as_natural: natural; -- holds drive/expect value before being range checked
 			scratch_value_as_string	: universal_string_type.bounded_string;
 
@@ -1007,7 +1007,14 @@ procedure mkmemcon is
 
 									-- get atg or value field from next field
 									if to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.atg then
-										group_address.atg := true;
+										case operation is
+											when write | read =>
+												group_address.atg := true;
+											when others =>
+												put_line("ERROR: '" & to_upper(prog_identifier.atg) & "' not allowed in " 
+													& type_step_operation'image(operation) & " step !");
+												raise constraint_error;
+										end case;
 
 									-- in case of a drive command, highz is allowed like
 									-- step 5  ADDR  drive highz  DATA drive 45h  CTRL drive 11b -- all address drivers go highz
@@ -1107,7 +1114,14 @@ procedure mkmemcon is
 
 									-- get atg or value field from next field
 									if to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.atg then
-										group_data.atg := true;
+										case operation is
+											when write | read =>
+												group_data.atg := true;
+											when others =>
+												put_line("ERROR: '" & to_upper(prog_identifier.atg) & "' not allowed in " 
+													& type_step_operation'image(operation) & " step !");
+												raise constraint_error;
+										end case;
 
 									-- in case of a drive command, highz is allowed like
 									-- step 5  ADDR  drive highz  DATA drive 45h  CTRL drive 11b -- all address drivers go highz
