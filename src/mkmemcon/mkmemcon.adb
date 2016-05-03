@@ -143,8 +143,8 @@ procedure mkmemcon is
 	type type_info_item is
 		record
 			test_profile	: type_test_profile	:= memconnect;
-			end_sdr			: type_end_sxr		:= PDR; -- pause dr
-			end_sir			: type_end_sxr		:= RTI; -- run-test/idle
+			end_sdr			: type_end_sxr		:= PDR; -- pause dr  -- CS: wrong placed. this is not part of the model file !
+			end_sir			: type_end_sxr		:= RTI; -- run-test/idle -- CS: wrong placed. this is not part of the model file !
 			value			: string (1..5) 	:= "value";
 			compatibles		: string (1..11) 	:= "compatibles";
 			date			: string (1..4) 	:= "date";
@@ -2127,25 +2127,25 @@ procedure mkmemcon is
 			-- writes optionally given min/max addresses
 			p 	: type_ptr_memory_pin;
 		begin
-			put_line(" bus width");
+			put_line(" bus_width");
 			put_line("  address         :" & natural'image(ptr_target.width_address));
 			put_line("  data            :" & natural'image(ptr_target.width_data));
 			put_line("  control         :" & natural'image(ptr_target.width_control));
 
 			if ptr_target.option_address_min /= -1 then
 				--put_line(" option addr min  :" & natural'image(ptr_target.option_address_min));
-				put_line(" option addr min  : " & natural_to_string(
+				put_line(" option_addr_min  : " & natural_to_string(
 					natural_in => ptr_target.option_address_min,
 					base => 16));
 			end if;
 			if ptr_target.option_address_max /= -1 then
-				put_line(" option addr max  : " & natural_to_string(
+				put_line(" option_addr_max  : " & natural_to_string(
 					natural_in => ptr_target.option_address_max,
 					base => 16));
 			end if;
 
 
-			put_line(" port-pin-net mapping");
+			put_line(" port_pin_net_map");
 			put_line("  -- legend: class direction port pin net | driver cell inverted | ctrl_cell disable_val | receiver cell [receiver cell]");
 			for c in 0..type_pin_class'pos( type_pin_class'last ) loop -- loop for each kind of pin class: address, data, control
 				p := ptr_memory_pin; -- reset pin pointer to end of list
@@ -2203,13 +2203,13 @@ procedure mkmemcon is
 		put_line("Section " & section_name.info);
 		put_line(" created by memory/module connections test generator version "& version);
 		put_line(" date             : " & m1.date_now);
-		put_line(" data base        : " & universal_string_type.to_string(ptr_target.data_base));
-		put_line(" test name        : " & universal_string_type.to_string(ptr_target.test_name));
-		put_line(" test profile     : " & type_test_profile'image(info_item.test_profile));
-		put_line(" end sdr          : " & type_end_sxr'image(info_item.end_sdr));
-		put_line(" end sir          : " & type_end_sxr'image(info_item.end_sir));
-		put_line(" target name      : " & universal_string_type.to_string(ptr_target.device_name));
-		put_line(" target class     : " & type_target_class'image(ptr_target.class_target));
+		put_line(" data_base        : " & universal_string_type.to_string(ptr_target.data_base));
+		put_line(" test_name        : " & universal_string_type.to_string(ptr_target.test_name));
+		put_line(" test_profile     : " & type_test_profile'image(info_item.test_profile));
+		put_line(" end_sdr          : " & type_end_sxr'image(info_item.end_sdr));
+		put_line(" end_sir          : " & type_end_sxr'image(info_item.end_sir));
+		put_line(" target_name      : " & universal_string_type.to_string(ptr_target.device_name));
+		put_line(" target_class     : " & type_target_class'image(ptr_target.class_target));
 		case ptr_target.class_target is 
 			when RAM | ROM =>
 				put_line(" package          : " & universal_string_type.to_string(ptr_target.device_package));
@@ -2218,15 +2218,15 @@ procedure mkmemcon is
 				put_line(" manufacturer     : " & universal_string_type.to_string(ptr_target.manufacturer));
 				put_line(" protocol         : " & type_protocol'image(ptr_target.protocol));
 				put_line(" algorithm        : " & type_algorithm'image(ptr_target.algorithm));
-				put_line(" write protect    : " & type_write_protect'image(ptr_target.write_protect));
+				put_line(" write_protect    : " & type_write_protect'image(ptr_target.write_protect));
 			when others => null;
 		end case;
-		put_line(" model file       : " & universal_string_type.to_string(ptr_target.model_file));
-		put_line(" model version    : " & universal_string_type.to_string(ptr_target.version));
-		put_line(" model author     : " & universal_string_type.to_string(ptr_target.author));
-		put_line(" model status     : " & type_model_status'image(ptr_target.status));
+		put_line(" model_file       : " & universal_string_type.to_string(ptr_target.model_file));
+		put_line(" model_version    : " & universal_string_type.to_string(ptr_target.version));
+		put_line(" model_author     : " & universal_string_type.to_string(ptr_target.author));
+		put_line(" model_status     : " & type_model_status'image(ptr_target.status));
 
-		put_line(" step count by model");
+		put_line(" step_count_by_model");
 		put_line("  init            :" & natural'image(ptr_target.step_count_init));
 		put_line("  read            :" & natural'image(ptr_target.step_count_read));
 		put_line("  write           :" & natural'image(ptr_target.step_count_write));
