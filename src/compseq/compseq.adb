@@ -51,7 +51,7 @@ with interfaces;			use interfaces;
 --with Ada.Numerics;			use Ada.Numerics;
 --with Ada.Numerics.Elementary_Functions;	use Ada.Numerics.Elementary_Functions;
 
-with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
+--with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
 --with Ada.Task_Identification;  use Ada.Task_Identification;
 with Ada.Exceptions; use Ada.Exceptions;
  
@@ -65,22 +65,24 @@ with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
 
 procedure compseq is
 
-	version			: string (1..7) := "005.000";
+	compseq_version	: string (1..7) := "005.000";
 	prog_position 	: natural := 0;
 
 --	vector_file_head: seq_io_unsigned_byte.file_type;
 	journal			: string (1..17) := "setup/journal.txt";
 	file_journal	: ada.text_io.file_type;
 
-	size_of_vec_file	: natural := 0;
+	size_of_vector_file	: natural := 0;
 
 	mem_size			: natural := integer'Value("16#0FFFFF#"); -- BSC RAM size
 	destination_address	: natural;
 
-	line_counter		: natural := 0; -- line counter in sequence file
+	line_counter		: natural := 0; -- line counter in sequence file (global counter !)
 
 	test_info			: type_test_info;
 	scanpath_options	: type_scanpath_options;
+
+	sequence_count		: positive := 1;
 
 ------------------------------------------
 	
@@ -145,7 +147,6 @@ procedure compseq is
 -- 	ubyte_scratch2	: unsigned_8 := 0;
 -- 	byte_scratch	: unsigned_8 := 0;
 -- 	u2byte_scratch	: unsigned_16 := 0;
--- 	u4byte_scratch	: unsigned_32 := 0;
 -- 	unb_scratch		: unbounded_string;
 -- 	int_scratch		: integer := 0;
 -- 	nat_scratch		: natural := 0;
@@ -170,7 +171,7 @@ procedure compseq is
 -- 	journal_file_tmp: Ada.Text_IO.File_Type;
 -- 	chain_file 		: Ada.Text_IO.File_Type;
 -- --	sequence_file	: Ada.Text_IO.File_Type;
--- 	reg_file 		: Ada.Text_IO.File_Type;
+
 -- 
 -- 
 -- 	chain_ct		: natural := 0;
@@ -230,77 +231,9 @@ procedure compseq is
 -- 	max_member_ct_per_chain	: constant natural := 100;
 -- 	type type_all_members_of_a_single_chain is array (natural range 1..max_member_ct_per_chain) of type_single_member;
 -- 
--- 	type type_single_chain is
--- 		record
--- 			name		: unbounded_string;
--- 			mem_ct		: natural := 0;
--- 			members		: type_all_members_of_a_single_chain;
--- 			irl_total	: natural := 0;
--- 			drl_total	: natural := 0;
--- 			ir_drv_all	: unbounded_string; -- MSB left !!!
--- 			ir_exp_all	: unbounded_string; -- MSB left !!!
--- 			dr_drv_all	: unbounded_string; -- MSB left !!!
--- 			dr_exp_all	: unbounded_string; -- MSB left !!!
--- 			reg_file	: Ada.Text_IO.File_Type;
--- 		end record;
--- 
--- 	max_chain_ct	: constant natural := 2;
--- 	type type_all_chains is array (natural range 1..max_chain_ct) of type_single_chain;
--- 
--- 	type chain_mem_map is
--- 		record
--- 			offset		: natural;
--- 			size		: natural;
--- 		end record;
--- 
--- 	type all_chain_mem_maps is array (natural range 1..max_chain_ct) of chain_mem_map;
--- 
--- 	chain	: type_all_chains;
--- 	mem_map	: all_chain_mem_maps;
 -- 
 -- 
--- 	procedure write_base_address is
--- 	begin
--- 		-- get current size of vectorfile
--- 		scratch := test_name;
--- 		scratch := scratch & "/" & scratch & ".vec";
--- 		size_of_vec_file := Natural'Value(file_size'image(size(to_string(scratch))));
--- 
--- 		-- add offset due to header size (one byte is chain_count, 4 byte start address per chain)
--- 		size_of_vec_file := (chain_ct * 4)+1 + size_of_vec_file + next_dest_addr;
--- 		mem_map(chain_pt).offset := (chain_ct * 4) + 1; -- save chain offset -- CS: why ?
--- 		mem_map(chain_pt).size := size_of_vec_file; -- save size_of_vec_file -- CS: what for ?
--- 		-- write size_of_vec_file byte per byte in vec_header (lowbyte first)
--- 		u4byte_scratch := unsigned_32(size_of_vec_file);
--- 		--u4byte_scratch := 16#11223344#;
--- 
---  		u4byte_scratch := (shift_left(u4byte_scratch,3*8)); -- clear bits 31..8 by shift left 24 bits
---  		u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
--- 		ubyte_scratch := unsigned_8(u4byte_scratch); -- take lowbyte
--- 		seq_io_unsigned_byte.write(VectorFileHead,ubyte_scratch); -- write bits 7..0 in file
--- 
--- 		-- reload size_of_vec_file
--- 		u4byte_scratch := unsigned_32(size_of_vec_file);
---  		u4byte_scratch := (shift_left(u4byte_scratch,2*8)); -- clear bits 31..16 by shift left 16 bit
---  		u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
--- 		ubyte_scratch := unsigned_8(u4byte_scratch);
--- 		seq_io_unsigned_byte.write(VectorFileHead,ubyte_scratch); -- write bits 15..8 in file
--- 
--- 		-- reload size_of_vec_file
--- 		u4byte_scratch := unsigned_32(size_of_vec_file);
---  		u4byte_scratch := (shift_left(u4byte_scratch,8)); -- clear bits 31..24 by shift left 8 bit
---  		u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
--- 		ubyte_scratch := unsigned_8(u4byte_scratch);
--- 		seq_io_unsigned_byte.write(VectorFileHead,ubyte_scratch); -- write bits 23..16 in file
--- 
--- 		-- reload size_of_vec_file
--- 		u4byte_scratch := unsigned_32(size_of_vec_file);
---  		--u4byte_scratch := (shift_left(u4byte_scratch,2*8)); -- clear bits 31..16 by shift left 16 bit
---  		u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift right by 24 bits
--- 		ubyte_scratch := unsigned_8(u4byte_scratch); -- take highbyte
--- 		seq_io_unsigned_byte.write(VectorFileHead,ubyte_scratch); -- write bits 31..24 in file
--- 
--- 	end write_base_address;
+
 -- 
 -- 
 -- 	procedure write_llc
@@ -1364,6 +1297,8 @@ procedure compseq is
 		section_entered		: boolean := false;
 		line_of_file		: extended_string.bounded_string;
 	begin
+		reset(sequence_file);
+		line_counter := 0;
 		while not end_of_file
 			loop
 				line_counter := line_counter + 1; -- count lines in sequence file
@@ -1448,9 +1383,11 @@ procedure compseq is
 		line_of_file		: extended_string.bounded_string;
 		scratch_float		: float;
 	begin
+		reset(sequence_file);
+		line_counter := 0;
 		while not end_of_file
 			loop
-				line_counter := line_counter + 1; -- count lines in sequence file
+				line_counter := line_counter + 1; -- count lines in sequence file (global counter !)
 				line_of_file := extended_string.to_bounded_string(get_line);
 				line_of_file := remove_comment_from_line(line_of_file);
 
@@ -1606,15 +1543,15 @@ procedure compseq is
 			-- CS: depends on transeiver hardware
 			-- driver voltages:
 			scratch_float := (float(so.voltage_out_port_1) * 255.0)/3.3;
-			so.voltage_out_port_1_unsigned_8 := m1_internal.unsigned_8(natural(scratch_float));
+			so.voltage_out_port_1_unsigned_8 := unsigned_8(natural(scratch_float));
 			scratch_float := (float(so.voltage_out_port_2) * 255.0)/3.3;
-			so.voltage_out_port_2_unsigned_8 := m1_internal.unsigned_8(natural(scratch_float));
+			so.voltage_out_port_2_unsigned_8 := unsigned_8(natural(scratch_float));
 
 			-- input threshold voltages
 			scratch_float := (float(so.threshold_tdi_port_1) * 255.0)/3.3;
-			so.threshold_tdi_port_1_unsigned_8 := m1_internal.unsigned_8(natural(scratch_float));
+			so.threshold_tdi_port_1_unsigned_8 := unsigned_8(natural(scratch_float));
 			scratch_float := (float(so.threshold_tdi_port_2) * 255.0)/3.3;
-			so.threshold_tdi_port_2_unsigned_8 := m1_internal.unsigned_8(natural(scratch_float));
+			so.threshold_tdi_port_2_unsigned_8 := unsigned_8(natural(scratch_float));
 
 			-- convert driver characteristics to unsigned_8
 			-- port 1:
@@ -1696,7 +1633,281 @@ procedure compseq is
 
 		return so;
 	end get_scanpath_options;
-		
+
+
+	function count_sequences return positive is
+	-- returns number of sequences in sequence file
+	-- CS: sequence id check
+		sequence_count	: natural := 0;
+		section_entered	: boolean := false;
+		line_of_file	: extended_string.bounded_string;
+	begin
+		reset(sequence_file);
+		line_counter := 0;
+		while not end_of_file
+			loop
+				line_counter := line_counter + 1; -- count lines in sequence file (global counter !)
+				line_of_file := extended_string.to_bounded_string(get_line);
+				line_of_file := remove_comment_from_line(line_of_file);
+
+				if get_field_count(extended_string.to_string(line_of_file)) > 0 then -- if line contains anything
+
+					if section_entered then
+
+						-- once inside section "sequence", wait for end of section mark
+						if get_field_from_line(line_of_file,1) = section_mark.endsection then -- when endsection found
+							section_entered := false; -- reset section entered flag
+							-- SECTION "SEQUENCE" READING DONE.
+
+							sequence_count := sequence_count + 1;
+							--exit;
+							-- CS: check sequence id, make sure ids do not repeat
+
+						else
+							-- PROCESSING SECTION OPTIONS BEGIN
+							null;
+							--put_line(extended_string.to_string(line_of_file));
+						end if;
+
+					else
+						-- wait for section "sequence" begin mark
+						if get_field_from_line(line_of_file,1) = section_mark.section then
+							if get_field_from_line(line_of_file,2) = test_section.sequence then
+								section_entered := true; -- set section enterd "flag"
+							end if;
+						end if;
+					end if;
+				end if;
+
+			end loop;
+
+		if sequence_count = 0 then
+			put_line("ERROR: No valid sequence found !");
+			raise constraint_error;
+		else
+			put_line("found" & positive'image(sequence_count) & " sequence(s) ...");
+		end if;
+
+		return sequence_count;
+	end count_sequences;
+	
+
+	procedure write_in_vector_file (byte : unsigned_8) is
+	-- writes a given byte into vector_file
+	-- counts bytes and updates size_of_vector_file
+	begin
+		seq_io_unsigned_byte.write(vector_file, byte);
+		size_of_vector_file := size_of_vector_file + 1;
+	end write_in_vector_file;
+
+	procedure write_vector_file_header is
+		nat_scratch : natural;
+	begin
+		seq_io_unsigned_byte.create( vector_file_header, seq_io_unsigned_byte.out_file, name => temp_directory & "/vec_header.tmp");
+
+		--separate major and minor compiler version and write them in header
+		nat_scratch := natural'value(compseq_version(1..3)); -- major number is the three digits before "."
+    	seq_io_unsigned_byte.write(vector_file_header,unsigned_8(nat_scratch));
+ 
+		nat_scratch := natural'value(compseq_version(5..7)); -- minor number is the three digits after "."
+    	seq_io_unsigned_byte.write(vector_file_header,unsigned_8(nat_scratch));
+
+		-- write vector file format, CS: not supported yet, default is 00h each
+    	seq_io_unsigned_byte.write(vector_file_header,16#00#); -- vector file format major number
+    	seq_io_unsigned_byte.write(vector_file_header,16#00#); -- vector file format minor number
+ 
+		-- write scanpath count -- CS: should be a (16bit) number that indicates active scanpaths
+		seq_io_unsigned_byte.write(vector_file_header, unsigned_8(summary.scanpath_ct));
+	end write_vector_file_header;
+	
+
+	procedure unknown_yet is
+
+
+		-- GLOBAL ARRAY THAT DESCRIBES ALL PHYICAL AVAILABLE SCANPATHS
+		-- non-active scanpaths have an irl_total of zero
+		-- irl_total is the sum of all instuction registers in that scanpath
+		-- irl_total is computed when creating register files
+		type type_single_chain is
+			record
+		-- 			name		: unbounded_string;
+		-- 			mem_ct		: natural := 0;
+		-- 			members		: type_all_members_of_a_single_chain;
+		 		irl_total	: natural := 0;
+		-- 			drl_total	: natural := 0;
+		-- 			ir_drv_all	: unbounded_string; -- MSB left !!!
+		-- 			ir_exp_all	: unbounded_string; -- MSB left !!!
+		-- 			dr_drv_all	: unbounded_string; -- MSB left !!!
+		-- 			dr_exp_all	: unbounded_string; -- MSB left !!!
+				register_file	: ada.text_io.file_type;
+			end record;
+		type type_all_chains is array (natural range 1..scanport_count_max) of type_single_chain;
+
+
+	 	procedure write_base_address is
+		-- writes base address of current scanpath in vector_file_header
+			u4byte_scratch	: unsigned_32 := 0;
+			ubyte_scratch	: unsigned_8 := 0;
+	 	begin
+ 
+			-- add offset due to header size (one byte is chain_count, 4 byte start address per chain) -- CS: unclear !!
+			size_of_vector_file := size_of_vector_file + (summary.scanpath_ct * 4)+1 + destination_address;
+
+			-- write size_of_vector_file byte per byte in vec_header (lowbyte first)
+	 		u4byte_scratch := unsigned_32(size_of_vector_file);
+
+			u4byte_scratch := (shift_left(u4byte_scratch,3*8)); -- clear bits 31..8 by shift left 24 bits
+			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
+	 		ubyte_scratch := unsigned_8(u4byte_scratch); -- take lowbyte
+			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 7..0 in file
+
+			u4byte_scratch := unsigned_32(size_of_vector_file);
+			u4byte_scratch := (shift_left(u4byte_scratch,2*8)); -- clear bits 31..16 by shift left 16 bit
+			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
+			ubyte_scratch := unsigned_8(u4byte_scratch);
+			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 15..8 in file
+
+			u4byte_scratch := unsigned_32(size_of_vector_file);
+			u4byte_scratch := (shift_left(u4byte_scratch,8)); -- clear bits 31..24 by shift left 8 bit
+			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
+	 		ubyte_scratch := unsigned_8(u4byte_scratch);
+			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 23..16 in file
+
+			u4byte_scratch := unsigned_32(size_of_vector_file);
+			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift right by 24 bits
+			ubyte_scratch := unsigned_8(u4byte_scratch); -- take highbyte
+			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 31..24 in file
+
+		end write_base_address;
+
+
+		procedure read_sequence(id : positive) is
+		-- reads sequence specified by id
+			section_entered		: boolean := false;
+			section_processed	: boolean := false;  -- indicates if sequence has been found and processed successfully
+			line_of_file		: extended_string.bounded_string;
+		begin
+			put_line(standard_output,"compiling sequence" & positive'image(id) & " ...");
+			reset(sequence_file);
+			line_counter := 0;
+			while not end_of_file
+				loop
+					line_counter := line_counter + 1; -- count lines in sequence file (global counter !)
+					line_of_file := extended_string.to_bounded_string(get_line);
+					line_of_file := remove_comment_from_line(line_of_file);
+
+					if get_field_count(extended_string.to_string(line_of_file)) > 0 then -- if line contains anything
+						if section_entered then
+
+							-- once inside section "sequence", wait for end of section mark
+							if get_field_from_line(line_of_file,1) = section_mark.endsection then -- when endsection found
+								section_entered := false; -- reset section entered flag
+								section_processed := true;
+								-- SECTION "SEQUENCE" READING DONE.
+								exit;
+							else
+								-- PROCESSING SECTION SEQUENCE BEGIN
+								write_base_address;
+
+								null;
+								--put_line(standard_output,extended_string.to_string(line_of_file));
+								-- PROCESSING SECTION SEQUENCE DONE
+							end if;
+
+						else
+							-- wait for "section sequence id" begin mark
+							if get_field_from_line(line_of_file,1) = section_mark.section then
+								if get_field_from_line(line_of_file,2) = test_section.sequence then
+									--put_line(standard_output,extended_string.to_string(line_of_file));
+									if get_field_count(extended_string.to_string(line_of_file)) = 3 then
+										--put_line(standard_output,extended_string.to_string(line_of_file));
+										--put_line(standard_output,"-" & get_field_from_line(line_of_file,3) & "-");
+										if get_field_from_line(line_of_file,3) = trim(positive'image(id),left) then
+											--put_line(standard_output,"test");
+											section_entered := true; -- set section enterd "flag"
+										end if;
+									end if;
+								end if;
+							end if;
+						end if;
+					end if;
+
+				end loop;
+
+			if not section_processed then 
+				put_line("ERROR: Sequence" & positive'image(id) & " not found !");
+				raise constraint_error;
+			end if;
+
+		end read_sequence;
+	
+
+
+
+		chain	: type_all_chains;
+		-- 	mem_map	: all_chain_mem_maps;
+
+		b : type_bscan_ic_ptr;
+
+	begin
+		--	set_output(standard_output);
+		put_line("found" & natural'image(summary.scanpath_ct) & " scan paths(s) ...");
+
+		for sp in 1..scanport_count_max loop
+			--put_line("sp" & natural'image(sp) );
+
+			-- delete all stale register files
+			if exists(universal_string_type.to_string(test_name) 
+				& "/" & universal_string_type.to_string(test_name) & "_" & trim(positive'image(sp),left) & ".reg") then 
+					delete_file(universal_string_type.to_string(test_name) & "/" 
+					& universal_string_type.to_string(test_name) & "_" & trim(positive'image(sp),left) & ".reg"); 
+			end if;
+
+			-- create register file (members_x.reg) for active scanpaths only
+			-- write something like: "device 1 IC301 irl 8 bsl 108" in the reg file
+ 			if is_scanport_active(sp) then
+				--put_line("active" & natural'image(sp) );
+ 
+				create( 
+					file => chain(sp).register_file,
+					name => (universal_string_type.to_string(test_name) & "/members_" & trim(natural'image(sp), side => left) & ".reg")
+					);
+ 
+				-- search for bic in the scanpath being processed
+				for p in 1..summary.bic_ct loop -- loop here for as much as bics are present. 
+				-- position search starts with position 1, that is the device closes to BSC TDO (first in subsection chain x)
+					b := ptr_bic; -- set bic pointer at end of bic list
+					while b /= null loop
+						if b.chain = sp then -- on match of scanpath id
+							if b.position = p then -- on match of position 
+								-- write in register file something like "device 1 IC301 irl 8 bsl 108" in the reg file"
+								put_line(chain(sp).register_file,"device" & natural'image(p)
+									& row_separator_0 & universal_string_type.to_string(b.name)
+									& row_separator_0 & "irl" & positive'image(b.len_ir)
+									& row_separator_0 & "bsl" & positive'image(b.len_bsr)
+									);
+
+								-- sum up irl of chain members to calculate the irl_total for that scanpath
+								-- CS: assumption is that no device is bypassed or added/inserted in the chain later
+								chain(sp).irl_total := chain(sp).irl_total + b.len_ir;
+							end if;
+						end if;
+						b := b.next;
+					end loop;
+				end loop;
+ 			end if;
+
+		end loop;
+
+		-- process sequences one by one
+		for s in 1..sequence_count loop
+			read_sequence(s);
+		end loop;
+
+	end unknown_yet;
+
+
+
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
@@ -1711,11 +1922,6 @@ begin
  	test_name:= universal_string_type.to_bounded_string(Argument(2));
  	put_line ("test name      : " & universal_string_type.to_string(test_name));
 
-	-- clean up test_directory and delete stale register file
-	if exists(universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".reg") then 
-		delete_file(universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".reg"); 
-	end if;
-
 
 	-- create vectorfile
 	seq_io_unsigned_byte.create(
@@ -1723,9 +1929,9 @@ begin
 		mode	=> seq_io_unsigned_byte.out_file, 
 		name 	=> universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".vec"
 		);
-	size_of_vec_file := natural'value(
-		file_size'image(size(universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".vec"))
-		);
+	--size_of_vec_file := natural'value(
+	--	file_size'image(size(universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".vec"))
+	--	);
 	--put (size_of_vec_file);
 
 	read_data_base;
@@ -1745,136 +1951,44 @@ begin
 	put_line("reading sequence file ...");
 	test_info := get_test_info;
 	scanpath_options := get_scanpath_options;
+	sequence_count := count_sequences;
 
+	write_vector_file_header;
 
-
-	-- write options in vec file
-	seq_io_unsigned_byte.write(vector_file, scanpath_options.frequency_prescaler);
-	seq_io_unsigned_byte.write(vector_file, scanpath_options.threshold_tdi_port_1_unsigned_8);
-	seq_io_unsigned_byte.write(vector_file, scanpath_options.threshold_tdi_port_2_unsigned_8);
-
-	seq_io_unsigned_byte.write(vector_file, scanpath_options.voltage_out_port_1_unsigned_8);
-	seq_io_unsigned_byte.write(vector_file, scanpath_options.voltage_out_port_2_unsigned_8);
+	-- WRITE OPTIONS IN VEC FILE
+	-- frequency
+	write_in_vector_file(scanpath_options.frequency_prescaler);
+	-- threshold
+	write_in_vector_file(scanpath_options.threshold_tdi_port_1_unsigned_8);
+	write_in_vector_file(scanpath_options.threshold_tdi_port_2_unsigned_8);
+	-- output voltage
+	write_in_vector_file(scanpath_options.voltage_out_port_1_unsigned_8);
+	write_in_vector_file(scanpath_options.voltage_out_port_2_unsigned_8);
 
 	-- port 1: sum up drv characteristics of tck an tms to a single byte
-	seq_io_unsigned_byte.write(vector_file, 
-		scanpath_options.tck_driver_port_1_unsigned_8 + scanpath_options.tms_driver_port_1_unsigned_8);
+	write_in_vector_file(scanpath_options.tck_driver_port_1_unsigned_8 + scanpath_options.tms_driver_port_1_unsigned_8);
 
 	-- port 1: sum up drv characteristics of tdo an trst to a single byte
-	seq_io_unsigned_byte.write(vector_file,
-		scanpath_options.tdo_driver_port_1_unsigned_8 + scanpath_options.trst_driver_port_1_unsigned_8);
+	write_in_vector_file(scanpath_options.tdo_driver_port_1_unsigned_8 + scanpath_options.trst_driver_port_1_unsigned_8);
 
 	-- port 2: sum up drv characteristics of tck an tms to a single byte
-	seq_io_unsigned_byte.write(vector_file, 
-		scanpath_options.tck_driver_port_2_unsigned_8 + scanpath_options.tms_driver_port_2_unsigned_8);
+	write_in_vector_file(scanpath_options.tck_driver_port_2_unsigned_8 + scanpath_options.tms_driver_port_2_unsigned_8);
 
 	-- port 1: sum up drv characteristics of tdo an trst to a single byte
-	seq_io_unsigned_byte.write(vector_file,
-		scanpath_options.tdo_driver_port_2_unsigned_8 + scanpath_options.trst_driver_port_2_unsigned_8);
+	write_in_vector_file(scanpath_options.tdo_driver_port_2_unsigned_8 + scanpath_options.trst_driver_port_2_unsigned_8);
 
 	-- port 1 all scanport relays off, CS: ignored by executor
-	seq_io_unsigned_byte.write(vector_file, 16#FF#);
-	-- port 2 all scanport relays off, ignored by executor
-   	seq_io_unsigned_byte.write(vector_file, 16#FF#); 
+	write_in_vector_file(16#FF#);
+	-- port 2 all scanport relays off, CS: ignored by executor
+   	write_in_vector_file(16#FF#); 
 
  	seq_io_unsigned_byte.close(vector_file);
  	-- options writing done
 
 
+	unknown_yet;
  
-	-- create reg files in test_directory
-	-- CS: where to write the chain name ?
-	set_output(standard_output);
-	put_line("found" & natural'image(chain_ct) & " scan chain(s) ...");
-	nat_scratch := 1; -- points to chain being processed
-	while nat_scratch <= chain_ct
-	loop
-		-- create members_x.reg file for each chain
---		Create( tmp_file, Name => (to_string(test_name) & "/members_" & trim(natural'image(nat_scratch), side => left) & ".reg"));
-		Create( chain(nat_scratch).reg_file, Name => (to_string(test_name) & "/members_" & trim(natural'image(nat_scratch), side => left) & ".reg"));
-		Set_Output(chain(nat_scratch).reg_file);
-		--put_line("test");
 
-		-- write device and register info in current members_x.reg file
-		nat_scratch2 := 1;
-		while nat_scratch2 <= chain(nat_scratch).mem_ct -- get the members count to process from chain(chain_ct).mem_ct
-		loop
-			-- write something like: "device 1 IC301 irl 8 bsl 108" in the reg file
-			put_line("device" & natural'image(nat_scratch2) & " " & chain(nat_scratch).members(nat_scratch2).device & " irl" & natural'image(chain(nat_scratch).members(nat_scratch2).irl) & " bsl" & natural'image(chain(nat_scratch).members(nat_scratch2).bsl));
-			-- sum up irl of chain members , CS: assumption is that no device is bypassed or added in the chain later
-			chain(nat_scratch).irl_total := chain(nat_scratch).irl_total + chain(nat_scratch).members(nat_scratch2).irl;
-			nat_scratch2 := nat_scratch2 + 1; -- go to next member of current chain
-		end loop;
-		--close (tmp_file); -- close current reg file
-
-		nat_scratch := nat_scratch + 1; -- go to next chain
-	end loop;
--- 
--- 
--- 	-- remove comments from seq file
--- 	set_output(standard_output);
--- 	set_input(standard_input);
--- 	remove_comments_from_file(to_string(test_name) & "/" & to_string(test_name) & ".seq","tmp/seq_no_comments.tmp");
--- 
--- 	-- extract sequences from seq file
---  	Open( 
---  		File => tmp_file,
---  		Mode => in_file,
---  		Name => "tmp/seq_no_comments.tmp"
---  		);
--- 	set_input(tmp_file);
--- 	
--- 	-- count sequences in seq file
--- 	while not end_of_file
--- 	loop
--- 		line := get_line;
--- 		if get_field(line,1) = "Section" and get_field(line,2) = "sequence" then
--- 			sequence_ct := sequence_ct + 1;
--- 		end if;
--- 	end loop;
--- 	put_line("found" & natural'image(sequence_ct) & " sequence(s) ...");
--- 	set_input(standard_input);
--- 	close(tmp_file);
--- 
--- 	-- extract sequences in sequence_x.tmp file
--- 	nat_scratch := 1;
--- 	while nat_scratch <= sequence_ct
--- 	loop
--- 		extract_section
--- 			(
--- 			"tmp/seq_no_comments.tmp", -- input file
--- 			"tmp/sequence_" & trim(natural'image(nat_scratch), side => left) & ".tmp", -- output file i.e. tmp/sequence_1.tmp
--- 			section_begin_1 => "Section",
--- 			section_begin_2 => "sequence",
--- 			section_begin_3 => trim(natural'image(nat_scratch), side => left), -- start line is i.e. "Section sequence 1"
--- 			section_end_1 => "EndSection"
--- 			);
--- 		nat_scratch := nat_scratch + 1; -- go to next sequence
--- 	end loop;
--- 
--- 
--- 	-- write vector file header
---  
---  	put("compiling chain");
--- 
--- 	seq_io_unsigned_byte.Create( VectorFileHead, seq_io_unsigned_byte.out_file, Name => "tmp/vec_header.tmp");
--- 
--- 	--separate major and minor compiler version and write in VectorFileHead
--- 	nat_scratch := natural'value(get_field(to_unbounded_string(version),1,'.')); -- major number
--- 	ubyte_scratch := unsigned_8(nat_scratch);
---    	seq_io_unsigned_byte.write(VectorFileHead,ubyte_scratch);
--- 
--- 	nat_scratch := natural'value(get_field(to_unbounded_string(version),2,'.')); -- minor number
--- 	ubyte_scratch := unsigned_8(nat_scratch);
---    	seq_io_unsigned_byte.write(VectorFileHead,ubyte_scratch);
--- 
--- 	-- write vector file format, CS: not supported yet, default is 00h each
---    	seq_io_unsigned_byte.write(VectorFileHead,16#00#); -- vector file format major number
---    	seq_io_unsigned_byte.write(VectorFileHead,16#00#); -- vector file format minor number
--- 
--- 	-- write chain count
--- 	ubyte_scratch := unsigned_8(chain_ct);
---    	seq_io_unsigned_byte.write(VectorFileHead,ubyte_scratch);
 -- 
 -- 	-- process seq file line by line
 -- 	while chain_pt <= chain_ct
