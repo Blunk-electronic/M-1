@@ -89,19 +89,8 @@ procedure compseq is
 -- 	type unsigned_3 is mod 8;
 -- 	bit_pt	: unsigned_3 := 0;
 -- 
--- 	power_channel_ct: natural := 3; -- number of available power monitor channels
--- 	subtype type_power_channel is natural range 1..power_channel_ct;
--- 	power_channel	: type_power_channel; -- power channel being processed
 -- 
--- 	imax			: float := 5.0; -- Amps
--- 	subtype type_imax is float range 0.1..imax;
--- 	imax_wanted		: type_imax;  --CS: default ?
 --  
--- 	imax_timeout_max : float := 5.0; -- seconds
--- 	imax_timeout_min : float := 0.02; -- seconds
--- 	timeout_resolution : float := 0.02; -- seconds
--- 	subtype type_imax_timeout is float range imax_timeout_min..imax_timeout_max;
--- 	imax_timeout	: type_imax_timeout; --CS: default ?
 -- 
 -- 	delay_max		: float := 25.0; -- seconds
 -- 	delay_min		: float := 0.1; -- seconds
@@ -234,38 +223,39 @@ procedure compseq is
 -- 
 -- 
 
--- 
--- 
--- 	procedure write_llc
--- 		(
--- 		llct	:	unsigned_8; -- low level command type
--- 		llcc	:	unsigned_8  -- low level command itself
--- 		) is
--- 	begin
--- --		put_line("llct" & unsigned_byte'image(16#llct#));
--- 		-- write ID -- a conf. word has ID 0000h
---  		seq_io_unsigned_byte.write(vectorfile,16#00#); 	
---  		seq_io_unsigned_byte.write(vectorfile,16#00#);
--- 
--- 		-- write llct
---  		seq_io_unsigned_byte.write(vectorfile,llct); --write low level command type
--- 
--- 		-- write chain pt
--- 		-- write chain number in vec file. NOTE: chain number is ignored by executor
---  		seq_io_unsigned_byte.write(vectorfile,unsigned_8(chain_pt)); 
---  		seq_io_unsigned_byte.write(vectorfile,llcc); -- write low level command itself
--- 	end write_llc;
--- 
--- 
--- 	procedure write_byte_in_vec_file
--- 		(
--- 		byte	: unsigned_8
--- 		) is
--- 	begin
--- 		seq_io_unsigned_byte.write(vectorfile,byte); -- write a single byte in file
--- 	end write_byte_in_vec_file;
--- 
--- 
+	procedure write_in_vector_file (byte : unsigned_8) is
+	-- writes a given byte into vector_file
+	-- counts bytes and updates size_of_vector_file
+	begin
+		seq_io_unsigned_byte.write(vector_file, byte);
+		size_of_vector_file := size_of_vector_file + 1;
+	end write_in_vector_file;
+
+
+
+	procedure write_llc
+	-- writes a low level command
+		(
+		llct	:	unsigned_8; -- low level command type
+		llcc	:	unsigned_8  -- low level command itself
+		) is
+	begin
+		-- write ID -- a conf. word has ID 0000h
+		write_in_vector_file(16#00#);
+		write_in_vector_file(16#00#);
+
+		--write low level command type
+		write_in_vector_file(llct);
+
+		-- write chain pt
+		-- write chain number in vec file. CS: chain number is ignored by executor
+ 		write_in_vector_file(16#00#); 
+
+		-- write low level command itself
+ 		write_in_vector_file(llcc); 
+	end write_llc;
+
+
 -- 	procedure write_word_in_vec_file
 -- 		(
 -- 		word	: unsigned_16
@@ -585,151 +575,251 @@ procedure compseq is
 -- 	end check_option_retry;
 -- 
 -- 
--- 	procedure read_sequence_file is
--- 	line_ct  : natural := 0;
--- 	field_pt : natural := 0;
--- 	field_ct : natural := 0;
--- 	cell_pt  : natural := 0;
+ 	procedure compile_command (cmd : extended_string.bounded_string) is
+		field_pt : positive := 1;
+		field_ct : positive := get_field_count(extended_string.to_string(cmd));
+		ubyte_scratch  : unsigned_8;
+		ubyte_scratch2 : unsigned_8;
+
+--	 	cell_pt  : natural := 0;
 -- 	cell_content : string (1..1);
--- 				
--- 	begin
--- 		while not end_of_file
--- 		loop
--- 			line := get_line; line_ct := line_ct + 1;
--- 
--- 			-- if a "trst" command in sequence found
--- 			if get_field(line,1) = "trst"  then write_llc(16#30#,16#80#); end if;  --hard+soft trst (default)
--- 			if get_field(line,1) = "strst" then write_llc(16#30#,16#81#); end if;  --only soft trst
--- 			if get_field(line,1) = "htrst" then write_llc(16#30#,16#82#); end if;  --only hard trst
--- 
--- 			-- if a "scanpath" command found
--- 			if get_field(line,1) = "scanpath" then
--- 				if get_field(line,2) = "reset"   then write_llc(16#30#,16#83#); end if; --go to tlr
--- 				if get_field(line,2) = "idle"    then write_llc(16#30#,16#84#); end if; --go to idle
--- 				if get_field(line,2) = "drpause" then write_llc(16#30#,16#85#); end if; --go to drpause
--- 				if get_field(line,2) = "irpause" then write_llc(16#30#,16#86#); end if; --go to irpause
--- 			end if;
--- 
--- 			-- if a "connect" command found
--- 			if get_field(line,1) = "connect" then
--- 				if get_field(line,2) = "port" then 
--- 					if get_field(line,3) = "1" then write_llc(16#40#,16#81#); end if; -- gnd 1, tap 1 relay on #CS: dio, aio ?
--- 					if get_field(line,3) = "2" then write_llc(16#40#,16#82#); end if; -- gnd 2, tap 2 relay on #CS: dio, aio ?
--- 				end if;
--- 			end if;
--- 
--- 			-- if a "disconnect" command found
--- 			if get_field(line,1) = "disconnect" then
--- 				if get_field(line,2) = "port" then 
--- 					if get_field(line,3) = "1" then write_llc(16#40#,16#01#); end if; -- all port 1 relays off
--- 					if get_field(line,3) = "2" then write_llc(16#40#,16#02#); end if; -- all port 2 realys off
--- 				end if;
--- 			end if;
--- 
--- 			-- if a "power up" command found
--- 			if get_field(line,1) = "power" then
--- 				if get_field(line,2) = "up" then
--- 					write_llc(16#40#,16#12#); -- set i2c muxer sub bus 2  # 14,13,11 ack error
--- 					if get_field(line,3) = "1"   then write_llc(16#40#,16#83#); end if; -- pwr relay 1 on
--- 					if get_field(line,3) = "2"   then write_llc(16#40#,16#84#); end if; -- pwr relay 2 on
--- 					if get_field(line,3) = "3"   then write_llc(16#40#,16#85#); end if; -- pwr relay 3 on
--- 					if get_field(line,3) = "all" then write_llc(16#40#,16#86#); end if; -- all pwr relays on
--- 					if get_field(line,3) = "gnd" then write_llc(16#40#,16#87#); end if; -- gnd pwr relay on
--- 				end if;
--- 			end if;
--- 
--- 			-- if a "power down" command found
--- 			if get_field(line,1) = "power" then
--- 				if get_field(line,2) = "down" then
--- 					write_llc(16#40#,16#12#); -- set i2c muxer sub bus 2  # 14,13,11 ack error
--- 					if get_field(line,3) = "1"   then write_llc(16#40#,16#03#); end if; -- pwr relay 1 off
--- 					if get_field(line,3) = "2"   then write_llc(16#40#,16#04#); end if; -- pwr relay 2 off
--- 					if get_field(line,3) = "3"   then write_llc(16#40#,16#05#); end if; -- pwr relay 3 off
--- 					if get_field(line,3) = "all" then write_llc(16#40#,16#06#); end if; -- all pwr relays off
--- 					if get_field(line,3) = "gnd" then write_llc(16#40#,16#07#); end if; -- gnd pwr relay off
--- 				end if;
--- 			end if;
--- 
--- 			-- if a "imax" command found
--- 			if get_field(line,1) = "imax" then -- CS: check field count
--- 				write_llc(16#40#,16#13#); -- set i2c muxer sub bus 3
--- 				prog_position := "IM1";
--- 				power_channel := natural'value(get_field(line,2)); -- get power channel parameter with range check
--- 				prog_position := "IM2"; 
--- 				imax_wanted := float'value(get_field(line,3)); -- get imax parameter with range check
--- 				--put(imax_wanted); new_line;
--- 				ubyte_scratch := unsigned_8(natural(22.4 * (5.7 + imax_wanted))); -- cal. 8bit DAC value
--- 				ubyte_scratch2 := 16#40# + unsigned_8(power_channel);
--- 				-- write llc (40+pwr channel , imax_wanted)
--- 				write_llc(ubyte_scratch2, ubyte_scratch); -- this is an extended I2C operation with data destination imax dac channel x (40+pwr_channel)
--- 				prog_position := "IM3"; 
--- 				--new_line; put("imax ");put(float'value(get_field(line,4))); new_line;
--- 				if get_field(line,4) = "timeout" then imax_timeout := float'value(get_field(line,5)); end if; -- get timeout parameter with range check
+
+		procedure put_example(instruction : string) is
+		begin
+			put_line("       Example: " & sequence_instruction_set.imax & row_separator_0 
+				& positive'image(type_power_channel_id'first) & row_separator_0
+				& float'image(type_current_max'first) & row_separator_0
+				& timeout_identifier & row_separator_0 & float'image(type_overload_timeout'first)
+				);
+			put_line("       Currently" & positive'image(power_channel_ct) & " power channels for power supervising are supported !");
+		end put_example;
+ 				
+ 	begin
+
+		--hard+soft trst (default)
+		if get_field_from_line(cmd,1) = sequence_instruction_set.trst then
+			write_llc(16#30#,16#80#); 
+		--only soft trst
+		elsif get_field_from_line(cmd,1) = sequence_instruction_set.strst then
+			write_llc(16#30#,16#81#);
+		--only hard trst
+		elsif get_field_from_line(cmd,1) = sequence_instruction_set.htrst then
+			write_llc(16#30#,16#82#); 
+
+		-- "scanpath" (example: tap_state test-logic-reset, tap_state pause-dr)
+		elsif get_field_from_line(cmd,1) = sequence_instruction_set.tap_state then
+			if get_field_from_line(cmd,2) = tap_state.test_logic_reset then
+				write_llc(16#30#,16#83#); 
+			elsif get_field_from_line(cmd,2) = tap_state.run_test_idle then
+				write_llc(16#30#,16#84#); 
+			elsif get_field_from_line(cmd,2) = tap_state.pause_dr then
+				write_llc(16#30#,16#85#); 
+			elsif get_field_from_line(cmd,2) = tap_state.pause_ir then 
+				write_llc(16#30#,16#86#); 
+			else
+				put_line("ERROR: TAP state not supported for low level operation !");
+				raise constraint_error;
+			end if;
+
+		-- "connect" (example: connect port 1)
+		elsif get_field_from_line(cmd,1) = sequence_instruction_set.connect then
+			if get_field_from_line(cmd,2) = scanport_identifier.port then 
+				if get_field_from_line(cmd,3) = "1" then
+					write_llc(16#40#,16#81#); -- gnd 1, tap 1 relay on #CS: dio, aio ?
+				elsif get_field_from_line(cmd,3) = "2" then 
+					write_llc(16#40#,16#82#); -- gnd 2, tap 2 relay on #CS: dio, aio ?
+				else
+					put_line("ERROR: Expected a valid scanport id. Example: " 
+						& sequence_instruction_set.connect & row_separator_0
+						& scanport_identifier.port & row_separator_0
+						& "1");
+					put_line("       Currently maximal" & positive'image(scanport_count_max) & " scanports are supported."); 
+					raise constraint_error;
+				end if;
+			else
+				put_line("ERROR: Expected keyword '" & scanport_identifier.port & "' after command '" & sequence_instruction_set.connect & "' !");
+				raise constraint_error;
+			end if;
+ 
+		-- "disconnect" (example: disconnect port 1)
+		elsif get_field_from_line(cmd,1) = sequence_instruction_set.disconnect then
+			if get_field_from_line(cmd,2) = scanport_identifier.port then 
+				if get_field_from_line(cmd,3) = "1" then
+					write_llc(16#40#,16#01#); -- gnd 1, tap 1 relay on #CS: dio, aio ?
+				elsif get_field_from_line(cmd,3) = "2" then 
+					write_llc(16#40#,16#02#); -- gnd 2, tap 2 relay on #CS: dio, aio ?
+				else
+					put_line("ERROR: Expected a valid scanport id. Example: " 
+						& sequence_instruction_set.disconnect & row_separator_0
+						& scanport_identifier.port & row_separator_0
+						& "1");
+					put_line("       Currently maximal" & positive'image(scanport_count_max) & " scanports are supported."); 
+					raise constraint_error;
+				end if;
+			else
+				put_line("ERROR: Expected keyword '" & scanport_identifier.port & "' after command '" & sequence_instruction_set.disconnect & "' !");
+				raise constraint_error;
+			end if;
+ 
+		-- "power" example: power up 1, power down all
+		elsif get_field_from_line(cmd,1) = sequence_instruction_set.power then
+			write_llc(16#40#,16#12#); -- set i2c muxer sub bus 2  # 14,13,11 ack error
+
+			if get_field_from_line(cmd,2) = power_cycle_identifier.up then
+
+				-- pwr relay 1 on
+				if get_field_from_line(cmd,3) = "1" then
+					write_llc(16#40#,16#83#);
+				-- pwr relay 2 on
+				elsif get_field_from_line(cmd,3) = "2" then
+					write_llc(16#40#,16#84#); 
+				-- pwr relay 3 on
+				elsif get_field_from_line(cmd,3) = "3" then
+					write_llc(16#40#,16#85#);
+				-- all pwr relays on
+				elsif get_field_from_line(cmd,3) = power_channel_name.all_channels then 
+					write_llc(16#40#,16#86#);
+				-- gnd pwr relay on
+				elsif get_field_from_line(cmd,3) = power_channel_name.gnd then
+					write_llc(16#40#,16#87#);
+				else
+					put_line("ERROR: Expected power channel id as positive integer or keyword '" 
+						& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !");
+					put_line("       Example: " & sequence_instruction_set.power & row_separator_0 & power_cycle_identifier.up 
+						& row_separator_0 & power_channel_name.all_channels);
+					put_line("       Currently" & positive'image(power_channel_ct) & " power channels for power supervising are supported !");
+					put_line("       Additionally channel '" & power_channel_name.gnd & "' can be switched (without supervising feature) !");
+					raise constraint_error;
+				end if;
+
+			elsif get_field_from_line(cmd,2) = power_cycle_identifier.down then
+
+				-- pwr relay 1 off
+				if get_field_from_line(cmd,3) = "1" then
+					write_llc(16#40#,16#03#);
+				-- pwr relay 2 off
+				elsif get_field_from_line(cmd,3) = "2" then
+					write_llc(16#40#,16#04#); 
+				-- pwr relay 3 off
+				elsif get_field_from_line(cmd,3) = "3" then
+					write_llc(16#40#,16#05#);
+				-- all pwr relays off
+				elsif get_field_from_line(cmd,3) = power_channel_name.all_channels then 
+					write_llc(16#40#,16#06#);
+				-- gnd pwr relay off
+				elsif get_field_from_line(cmd,3) = power_channel_name.gnd then
+					write_llc(16#40#,16#07#);
+				else
+					put_line("ERROR: Expected power channel id as positive integer or keyword '" 
+						& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !");
+					put_line("       Example: " & sequence_instruction_set.power & row_separator_0 & power_cycle_identifier.down
+						& row_separator_0 & power_channel_name.all_channels);
+					raise constraint_error;
+				end if;
+
+			else
+				put_line("ERROR: Expected keyword '" & power_cycle_identifier.up & "' or '" & power_cycle_identifier.down 
+					& "' after command '" & sequence_instruction_set.power & "' !");
+				put_line("       Example: " & sequence_instruction_set.power & row_separator_0 & power_cycle_identifier.up 
+					& row_separator_0 & power_channel_name.all_channels);
+				put_line("       Currently" & positive'image(power_channel_ct) & " power channels for power supervising are supported !");
+				put_line("       Additionally channel '" & power_channel_name.gnd & "' can be switched (without supervising feature) !");
+				raise constraint_error;
+			end if;
+
+
+		-- "imax" example: imax 2 1 timeout 0.2 (means channel 2, max. current 1A, timeout to shutdown 0.2s)
+		elsif get_field_from_line(cmd,1) = sequence_instruction_set.imax then -- CS: check field count
+			-- set i2c muxer sub bus 3
+			write_llc(16#40#,16#13#); 
+
+			if positive'value(get_field_from_line(cmd,2)) in type_power_channel_id then
+				power_channel_name.id := positive'value(get_field_from_line(cmd,2)); -- get power channel
+			else
+				put_line("ERROR: Expected power channel id after command '" & sequence_instruction_set.imax & "' !");
+				put_example(sequence_instruction_set.imax);
+				raise constraint_error;
+			end if;
+
+			-- get imax (as set by operator) and calculate 8 bit DAC value
+			-- write llc (40h + pwr channel , current_limit_set_by_operator) as extended I2C operation
+			current_limit_set_by_operator := float'value(get_field_from_line(cmd,3)); 
+			ubyte_scratch := unsigned_8(natural(22.4 * (5.7 + current_limit_set_by_operator)));
+			ubyte_scratch2 := 16#40# + unsigned_8(power_channel_name.id);
+			write_llc(ubyte_scratch2, ubyte_scratch); 
+
+			-- get timeout
+			if get_field_from_line(cmd,4) = timeout_identifier then 
+				overload_timeout := float'value(get_field_from_line(cmd,5));
+--			end if;
 -- 				write_llc(16#40#,16#12#); -- set i2c muxer sub bus 2
 -- 				ubyte_scratch := unsigned_8(natural(imax_timeout/timeout_resolution)); -- cal. 8bit timeout value
 -- 				ubyte_scratch2 := 16#43# + unsigned_8(power_channel);
 -- 				write_llc(ubyte_scratch2, ubyte_scratch); -- this is an extended I2C operation with data destination imax timeout channel x (43+pwr_channel)
--- 			end if;
+			else
+				put_line("ERROR: Expected keyword '" & timeout_identifier & "' after current value !");
+			end if;
+		end if;
 -- 
 -- 			-- if a "delay" command found
--- 			if get_field(line,1) = "delay" then -- CS: check field count
+-- 			if get_field_from_line(cmd,1) = "delay" then -- CS: check field count
 -- 				prog_position := "DE1";
--- 				delay_wanted := float'value(get_field(line,2));
+-- 				delay_wanted := float'value(get_field_from_line(cmd,2));
 -- 				ubyte_scratch := unsigned_8(natural(delay_wanted/delay_resolution)); -- calc. 8 bit delay value
 -- 				write_llc(16#20#, ubyte_scratch); -- this is a time operation
 -- 			end if;
 -- 
 -- 			-- if a "set" command found
--- 			if get_field(line,1) = "set" then -- CS: check filed count
--- 				if get_field(line,4) = "ir" then -- if "ir" found
--- 					if get_field(line,3) = "drv" then -- if "drv" found
+-- 			if get_field_from_line(cmd,1) = "set" then -- CS: check filed count
+-- 				if get_field_from_line(cmd,4) = "ir" then -- if "ir" found
+-- 					if get_field_from_line(cmd,3) = "drv" then -- if "drv" found
 -- 						--position 1 is closest to BSC TDO !
 -- 						nat_scratch := 1; -- points to device in current chain
 -- 						while nat_scratch <= chain(chain_pt).mem_ct
 -- 						loop
 -- 							-- if the device name from sequence matches the device name in chain
--- 							if get_field(line,2) = chain(chain_pt).members(nat_scratch).device then
+-- 							if get_field_from_line(cmd,2) = chain(chain_pt).members(nat_scratch).device then
 -- 								-- sir drv found
 -- 								--put_line(chain(chain_pt).members(nat_scratch).device);
 -- 								-- check for register-wise assignment of drv value
 -- 								prog_position := "ID1";
--- 								if get_field(line,6) /= "downto" then raise constraint_error; end if;
+-- 								if get_field_from_line(cmd,6) /= "downto" then raise constraint_error; end if;
 -- 
 -- 								-- check length of ir drv pattern
 -- 								prog_position := "ID2";
--- 								if length(to_unbounded_string(get_field(line,9))) /= chain(chain_pt).members(nat_scratch).irl then raise constraint_error; end if;
+-- 								if length(to_unbounded_string(get_field_from_line(cmd,9))) /= chain(chain_pt).members(nat_scratch).irl then raise constraint_error; end if;
 -- 
 -- 								-- save ir drv pattern of particular device
--- 								chain(chain_pt).members(nat_scratch).ir_drv := to_unbounded_string(get_field(line,9));
+-- 								chain(chain_pt).members(nat_scratch).ir_drv := to_unbounded_string(get_field_from_line(cmd,9));
 -- 
 -- 								-- save instruction name of particular device
--- 								chain(chain_pt).members(nat_scratch).instruction := to_unbounded_string(get_field(line,10));
+-- 								chain(chain_pt).members(nat_scratch).instruction := to_unbounded_string(get_field_from_line(cmd,10));
 -- 
 -- 							end if;
 -- 						nat_scratch := nat_scratch + 1; -- go to next member in chain
 -- 						end loop;
 -- 					end if; -- if "drv" found
 -- 
--- 					if get_field(line,3) = "exp" then -- if "exp" found
+-- 					if get_field_from_line(cmd,3) = "exp" then -- if "exp" found
 -- 						-- position 1 is closest to BSC TDO !
 -- 						nat_scratch := 1; -- points to device in current chain
 -- 						while nat_scratch <= chain(chain_pt).mem_ct
 -- 						loop
 -- 
 -- 							-- if the device name from sequence matches the device name in chain
--- 							if get_field(line,2) = chain(chain_pt).members(nat_scratch).device then
+-- 							if get_field_from_line(cmd,2) = chain(chain_pt).members(nat_scratch).device then
 -- 								-- sir exp found
 -- 
 -- 								-- check for register-wise assignment of exp value
 -- 								prog_position := "IE1";
--- 								if get_field(line,6) /= "downto" then raise constraint_error; end if;
+-- 								if get_field_from_line(cmd,6) /= "downto" then raise constraint_error; end if;
 -- 
 -- 								-- check length of ir exp pattern
 -- 								prog_position := "IE2";
--- 								if length(to_unbounded_string(get_field(line,9))) /= chain(chain_pt).members(nat_scratch).irl then raise constraint_error; end if;
+-- 								if length(to_unbounded_string(get_field_from_line(cmd,9))) /= chain(chain_pt).members(nat_scratch).irl then raise constraint_error; end if;
 -- 
 -- 								-- save ir exp pattern of particular device
--- 								chain(chain_pt).members(nat_scratch).ir_exp := to_unbounded_string(get_field(line,9));
+-- 								chain(chain_pt).members(nat_scratch).ir_exp := to_unbounded_string(get_field_from_line(cmd,9));
 -- 							end if;
 -- 						nat_scratch := nat_scratch + 1; -- go to next member in chain
 -- 						end loop;
@@ -738,102 +828,102 @@ procedure compseq is
 -- 				end if; -- if "ir" found
 -- 
 -- 				-- if data register found
--- 				if get_field(line,4) = "bypass" or get_field(line,4) = "idcode" or get_field(line,4) = "usercode" or get_field(line,4) = "boundary" then
--- 					if get_field(line,3) = "drv" then -- if "drv" found
+-- 				if get_field_from_line(cmd,4) = "bypass" or get_field_from_line(cmd,4) = "idcode" or get_field_from_line(cmd,4) = "usercode" or get_field_from_line(cmd,4) = "boundary" then
+-- 					if get_field_from_line(cmd,3) = "drv" then -- if "drv" found
 -- 						--position 1 is closest to BSC TDO !
 -- 						nat_scratch := 1; -- points to device in current chain
 -- 						while nat_scratch <= chain(chain_pt).mem_ct
 -- 						loop
 -- 
 -- 							-- if the device name from sequence matches the device name in chain
--- 							if get_field(line,2) = chain(chain_pt).members(nat_scratch).device then
+-- 							if get_field_from_line(cmd,2) = chain(chain_pt).members(nat_scratch).device then
 -- 								-- sdr drv found
 -- 		
 -- 								-- what data register is it about ?
 -- 								
 -- 								-- if bypass register addressed
--- 								if get_field(line,4) = "bypass" then
+-- 								if get_field_from_line(cmd,4) = "bypass" then
 -- 
 -- 									-- make sure there is no downto-assignment
 -- 									prog_position := "BY1";
--- 									if get_field(line,6) = "downto" then raise constraint_error; end if;
+-- 									if get_field_from_line(cmd,6) = "downto" then raise constraint_error; end if;
 -- 
 -- 									-- get bypass drv bit of particular device
 -- 									prog_position := "BY2";
--- 									if    get_field(line,5) = "0=0" then chain(chain_pt).members(nat_scratch).byp_drv := '0';
--- 									elsif get_field(line,5) = "0=1" then chain(chain_pt).members(nat_scratch).byp_drv := '1';
+-- 									if    get_field_from_line(cmd,5) = "0=0" then chain(chain_pt).members(nat_scratch).byp_drv := '0';
+-- 									elsif get_field_from_line(cmd,5) = "0=1" then chain(chain_pt).members(nat_scratch).byp_drv := '1';
 -- 									else raise constraint_error;
 -- 									end if;
 -- 
 -- 								end if;
 -- 
 -- 								-- if idcode register addressed
--- 								if get_field(line,4) = "idcode" then
+-- 								if get_field_from_line(cmd,4) = "idcode" then
 -- 									-- make sure there IS a downto-assignment
 -- 									prog_position := "IC1";
--- 									if get_field(line,6) /= "downto" then raise constraint_error; end if;
+-- 									if get_field_from_line(cmd,6) /= "downto" then raise constraint_error; end if;
 -- 
 -- 									-- check length of id drv pattern
 -- 									prog_position := "IC2";
--- 									if length(to_unbounded_string(get_field(line,9))) = 1 then
+-- 									if length(to_unbounded_string(get_field_from_line(cmd,9))) = 1 then
 -- 										-- if a one char pattern found, scale it to desired length, then save it
--- 										chain(chain_pt).members(nat_scratch).idc_drv := to_unbounded_string(scale_pattern(get_field(line,9),idc_length));
+-- 										chain(chain_pt).members(nat_scratch).idc_drv := to_unbounded_string(scale_pattern(get_field_from_line(cmd,9),idc_length));
 -- 									-- if pattern is unequal idc_length, raise error
--- 									elsif length(to_unbounded_string(get_field(line,9))) /= idc_length then raise constraint_error;
+-- 									elsif length(to_unbounded_string(get_field_from_line(cmd,9))) /= idc_length then raise constraint_error;
 -- 									-- otherwise the pattern is specified at full length
--- 									else chain(chain_pt).members(nat_scratch).idc_drv := to_unbounded_string(get_field(line,9)); -- save pattern
+-- 									else chain(chain_pt).members(nat_scratch).idc_drv := to_unbounded_string(get_field_from_line(cmd,9)); -- save pattern
 -- 									end if;
 -- 								end if;
 -- 
 -- 								-- if usercode register addressed
--- 								if get_field(line,4) = "usercode" then
+-- 								if get_field_from_line(cmd,4) = "usercode" then
 -- 									-- make sure there IS a downto-assignment
 -- 									prog_position := "UC1";
--- 									if get_field(line,6) /= "downto" then raise constraint_error; end if;
+-- 									if get_field_from_line(cmd,6) /= "downto" then raise constraint_error; end if;
 -- 
 -- 									-- check length of drv pattern
 -- 									prog_position := "UC2";
--- 									if length(to_unbounded_string(get_field(line,9))) = 1 then
+-- 									if length(to_unbounded_string(get_field_from_line(cmd,9))) = 1 then
 -- 										-- if a one char pattern found, scale it to desired length, then save it
--- 										chain(chain_pt).members(nat_scratch).usc_drv := to_unbounded_string(scale_pattern(get_field(line,9),usc_length));
+-- 										chain(chain_pt).members(nat_scratch).usc_drv := to_unbounded_string(scale_pattern(get_field_from_line(cmd,9),usc_length));
 -- 									-- if pattern is unequal usc_length, raise error
--- 									elsif length(to_unbounded_string(get_field(line,9))) /= usc_length then raise constraint_error;
+-- 									elsif length(to_unbounded_string(get_field_from_line(cmd,9))) /= usc_length then raise constraint_error;
 -- 									-- otherwise the pattern is specified at full length
--- 									else chain(chain_pt).members(nat_scratch).usc_drv := to_unbounded_string(get_field(line,9)); -- save pattern
+-- 									else chain(chain_pt).members(nat_scratch).usc_drv := to_unbounded_string(get_field_from_line(cmd,9)); -- save pattern
 -- 									end if;
 -- 								end if;
 -- 
 -- 								-- if boundary register addressed
--- 								if get_field(line,4) = "boundary" then
+-- 								if get_field_from_line(cmd,4) = "boundary" then
 -- 									-- if there is a downto-assignment
 -- 									prog_position := "BO1";
--- 									if get_field(line,6) = "downto" then
+-- 									if get_field_from_line(cmd,6) = "downto" then
 -- 
 -- 										-- check length of drv pattern
 -- 										prog_position := "BO2";
--- 										if length(to_unbounded_string(get_field(line,9))) = 1 then
+-- 										if length(to_unbounded_string(get_field_from_line(cmd,9))) = 1 then
 -- 											-- if a one char pattern found, scale it to length of particular bsr, then save it
--- 											chain(chain_pt).members(nat_scratch).bsr_drv := to_unbounded_string(scale_pattern(get_field(line,9),chain(chain_pt).members(nat_scratch).bsl));
+-- 											chain(chain_pt).members(nat_scratch).bsr_drv := to_unbounded_string(scale_pattern(get_field_from_line(cmd,9),chain(chain_pt).members(nat_scratch).bsl));
 -- 										-- if pattern is unequal length or particular bsr, raise error
--- 										elsif length(to_unbounded_string(get_field(line,9))) /= chain(chain_pt).members(nat_scratch).bsl then raise constraint_error;
+-- 										elsif length(to_unbounded_string(get_field_from_line(cmd,9))) /= chain(chain_pt).members(nat_scratch).bsl then raise constraint_error;
 -- 										-- otherwise the pattern is specified at full length
--- 										else chain(chain_pt).members(nat_scratch).bsr_drv := to_unbounded_string(get_field(line,9)); -- save pattern
+-- 										else chain(chain_pt).members(nat_scratch).bsr_drv := to_unbounded_string(get_field_from_line(cmd,9)); -- save pattern
 -- 										end if;
 -- 									else
 -- 									-- if bitwise assignment found
 -- 									-- read assigments starting from field 5
 -- 									field_pt := 5;
--- 									field_ct := get_field_count(line);
+-- 									field_ct := get_field_from_line_count(line);
 -- 									while field_pt <= field_ct
 -- 									loop
 -- 										-- get cell number to address
--- 										cell_pt := natural'value ( get_field ( to_unbounded_string(get_field(line,field_pt)) ,1,'=') );
+-- 										cell_pt := natural'value ( get_field_from_line ( to_unbounded_string(get_field_from_line(cmd,field_pt)) ,1,'=') );
 -- 										prog_position := "BO3";
 -- 										cell_pt := chain(chain_pt).members(nat_scratch).bsl - cell_pt; -- mirror cell pointer (bsl - cell_pt)
 -- 
 -- 										-- get cell value
 -- 										prog_position := "BO4";
--- 										cell_content := ( get_field ( to_unbounded_string(get_field(line,field_pt)) ,2,'=') );
+-- 										cell_content := ( get_field_from_line ( to_unbounded_string(get_field_from_line(cmd,field_pt)) ,2,'=') );
 -- 										-- check cell value
 -- 										if is_in( cell_content(cell_content'first), bit_char ) = false then raise constraint_error; end if;
 -- 
@@ -851,100 +941,100 @@ procedure compseq is
 -- 						end loop;
 -- 					end if; -- if "drv" found
 -- 
--- 					if get_field(line,3) = "exp" then -- if "exp" found
+-- 					if get_field_from_line(cmd,3) = "exp" then -- if "exp" found
 -- 						--position 1 is closest to BSC TDO !
 -- 						nat_scratch := 1; -- points to device in current chain
 -- 						while nat_scratch <= chain(chain_pt).mem_ct
 -- 						loop
 -- 
 -- 							-- if the device name from sequence matches the device name in chain
--- 							if get_field(line,2) = chain(chain_pt).members(nat_scratch).device then
+-- 							if get_field_from_line(cmd,2) = chain(chain_pt).members(nat_scratch).device then
 -- 								-- sdr exp found
 -- 								-- what data register is it about ?
 -- 								
 -- 								-- if bypass register addressed
--- 								if get_field(line,4) = "bypass" then
+-- 								if get_field_from_line(cmd,4) = "bypass" then
 -- 
 -- 									-- make sure there is no downto-assignment
 -- 									prog_position := "BY5";
--- 									if get_field(line,6) = "downto" then raise constraint_error; end if;
+-- 									if get_field_from_line(cmd,6) = "downto" then raise constraint_error; end if;
 -- 
 -- 									-- get bypass exp bit of particular device
 -- 									prog_position := "BY6";
--- 									if    get_field(line,5) = "0=0" then chain(chain_pt).members(nat_scratch).byp_exp := '0'; --put_line("exp");
--- 									elsif get_field(line,5) = "0=1" then chain(chain_pt).members(nat_scratch).byp_exp := '1';
+-- 									if    get_field_from_line(cmd,5) = "0=0" then chain(chain_pt).members(nat_scratch).byp_exp := '0'; --put_line("exp");
+-- 									elsif get_field_from_line(cmd,5) = "0=1" then chain(chain_pt).members(nat_scratch).byp_exp := '1';
 -- 									else raise constraint_error;
 -- 									end if;
 -- 
 -- 								end if;
 -- 
 -- 								-- if idcode register addressed
--- 								if get_field(line,4) = "idcode" then
+-- 								if get_field_from_line(cmd,4) = "idcode" then
 -- 									-- make sure there IS a downto-assignment
 -- 									prog_position := "IC5";
--- 									if get_field(line,6) /= "downto" then raise constraint_error; end if;
+-- 									if get_field_from_line(cmd,6) /= "downto" then raise constraint_error; end if;
 -- 
 -- 									-- check length of id exp pattern
 -- 									prog_position := "IC6";
--- 									if length(to_unbounded_string(get_field(line,9))) = 1 then
+-- 									if length(to_unbounded_string(get_field_from_line(cmd,9))) = 1 then
 -- 										-- if a one char pattern found, scale it to desired length, then save it
--- 										chain(chain_pt).members(nat_scratch).idc_exp := to_unbounded_string(scale_pattern(get_field(line,9),idc_length));
+-- 										chain(chain_pt).members(nat_scratch).idc_exp := to_unbounded_string(scale_pattern(get_field_from_line(cmd,9),idc_length));
 -- 									-- if pattern is unequal idc_length, raise error
--- 									elsif length(to_unbounded_string(get_field(line,9))) /= idc_length then raise constraint_error;
+-- 									elsif length(to_unbounded_string(get_field_from_line(cmd,9))) /= idc_length then raise constraint_error;
 -- 									-- otherwise the pattern is specified at full length
--- 									else chain(chain_pt).members(nat_scratch).idc_exp := to_unbounded_string(get_field(line,9)); -- save pattern
+-- 									else chain(chain_pt).members(nat_scratch).idc_exp := to_unbounded_string(get_field_from_line(cmd,9)); -- save pattern
 -- 									end if;
 -- 								end if;
 -- 
 -- 								-- if usercode register addressed
--- 								if get_field(line,4) = "usercode" then
+-- 								if get_field_from_line(cmd,4) = "usercode" then
 -- 									-- make sure there IS a downto-assignment
 -- 									prog_position := "UC5";
--- 									if get_field(line,6) /= "downto" then raise constraint_error; end if;
+-- 									if get_field_from_line(cmd,6) /= "downto" then raise constraint_error; end if;
 -- 
 -- 									-- check length of exp pattern
 -- 									prog_position := "UC6";
--- 									if length(to_unbounded_string(get_field(line,9))) = 1 then
+-- 									if length(to_unbounded_string(get_field_from_line(cmd,9))) = 1 then
 -- 										-- if a one char pattern found, scale it to desired length, then save it
--- 										chain(chain_pt).members(nat_scratch).usc_exp := to_unbounded_string(scale_pattern(get_field(line,9),usc_length));
+-- 										chain(chain_pt).members(nat_scratch).usc_exp := to_unbounded_string(scale_pattern(get_field_from_line(cmd,9),usc_length));
 -- 									-- if pattern is unequal usc_length, raise error
--- 									elsif length(to_unbounded_string(get_field(line,9))) /= usc_length then raise constraint_error;
+-- 									elsif length(to_unbounded_string(get_field_from_line(cmd,9))) /= usc_length then raise constraint_error;
 -- 									-- otherwise the pattern is specified at full length
--- 									else chain(chain_pt).members(nat_scratch).usc_exp := to_unbounded_string(get_field(line,9)); -- save pattern
+-- 									else chain(chain_pt).members(nat_scratch).usc_exp := to_unbounded_string(get_field_from_line(cmd,9)); -- save pattern
 -- 									end if;
 -- 								end if;
 -- 
 -- 								-- if boundary register addressed
--- 								if get_field(line,4) = "boundary" then
+-- 								if get_field_from_line(cmd,4) = "boundary" then
 -- 									-- if there is a downto-assignment
 -- 									prog_position := "BO5";
--- 									if get_field(line,6) = "downto" then
+-- 									if get_field_from_line(cmd,6) = "downto" then
 -- 
 -- 										-- check length of exp pattern
 -- 										prog_position := "BO6";
--- 										if length(to_unbounded_string(get_field(line,9))) = 1 then
+-- 										if length(to_unbounded_string(get_field_from_line(cmd,9))) = 1 then
 -- 											-- if a one char pattern found, scale it to length of particular bsr, then save it
--- 											chain(chain_pt).members(nat_scratch).bsr_exp := to_unbounded_string(scale_pattern(get_field(line,9),chain(chain_pt).members(nat_scratch).bsl));
+-- 											chain(chain_pt).members(nat_scratch).bsr_exp := to_unbounded_string(scale_pattern(get_field_from_line(cmd,9),chain(chain_pt).members(nat_scratch).bsl));
 -- 										-- if pattern is unequal length or particular bsr, raise error
--- 										elsif length(to_unbounded_string(get_field(line,9))) /= chain(chain_pt).members(nat_scratch).bsl then raise constraint_error;
+-- 										elsif length(to_unbounded_string(get_field_from_line(cmd,9))) /= chain(chain_pt).members(nat_scratch).bsl then raise constraint_error;
 -- 										-- otherwise the pattern is specified at full length
--- 										else chain(chain_pt).members(nat_scratch).bsr_exp := to_unbounded_string(get_field(line,9)); -- save pattern
+-- 										else chain(chain_pt).members(nat_scratch).bsr_exp := to_unbounded_string(get_field_from_line(cmd,9)); -- save pattern
 -- 										end if;
 -- 									else
 -- 									-- if bitwise assignment found
 -- 									-- read assigments starting from field 5
 -- 									field_pt := 5;
--- 									field_ct := get_field_count(line);
+-- 									field_ct := get_field_from_line_count(line);
 -- 									while field_pt <= field_ct
 -- 									loop
 -- 										-- get cell number to address
--- 										cell_pt := natural'value ( get_field ( to_unbounded_string(get_field(line,field_pt)) ,1,'=') );
+-- 										cell_pt := natural'value ( get_field_from_line ( to_unbounded_string(get_field_from_line(cmd,field_pt)) ,1,'=') );
 -- 										prog_position := "BO7";
 -- 										cell_pt := chain(chain_pt).members(nat_scratch).bsl - cell_pt; -- mirror cell pointer (bsl - cell_pt)
 -- 
 -- 										-- get cell value
 -- 										prog_position := "BO8";
--- 										cell_content := ( get_field ( to_unbounded_string(get_field(line,field_pt)) ,2,'=') );
+-- 										cell_content := ( get_field_from_line ( to_unbounded_string(get_field_from_line(cmd,field_pt)) ,2,'=') );
 -- 										-- check cell value
 -- 										if is_in( cell_content(cell_content'first), bit_char ) = false then raise constraint_error; end if;
 -- 
@@ -966,8 +1056,8 @@ procedure compseq is
 -- 			end if; -- if "set" command found
 -- 
 -- 			-- if sir found
--- 			if get_field(line,1) = "sir" then -- CS: check id ?
--- 				vector_id := vector_id_type(natural'value(get_field(line,3)));
+-- 			if get_field_from_line(cmd,1) = "sir" then -- CS: check id ?
+-- 				vector_id := vector_id_type(natural'value(get_field_from_line(cmd,3)));
 -- 
 -- 				-- reset chain ir drv image
 -- 				chain(chain_pt).ir_drv_all := to_unbounded_string("");
@@ -1021,8 +1111,8 @@ procedure compseq is
 -- 
 -- 
 -- 			-- if sdr found
--- 			if get_field(line,1) = "sdr" then -- CS: check id ?
--- 				vector_id := vector_id_type(natural'value(get_field(line,3)));
+-- 			if get_field_from_line(cmd,1) = "sdr" then -- CS: check id ?
+-- 				vector_id := vector_id_type(natural'value(get_field_from_line(cmd,3)));
 -- 
 -- 				-- reset chain dr drv image
 -- 				chain(chain_pt).dr_drv_all := to_unbounded_string("");
@@ -1190,10 +1280,10 @@ procedure compseq is
 -- 			end if;
 -- 			if prog_position = "BO3" or prog_position = "BO7" then 
 -- 				put_line("Invalid cell number !");
--- 				put_line("BOUNDARY register cell " & get_field ( to_unbounded_string(get_field(line,field_pt)) ,1,'=') & " does not exist !");
+-- 				put_line("BOUNDARY register cell " & get_field_from_line ( to_unbounded_string(get_field_from_line(cmd,field_pt)) ,1,'=') & " does not exist !");
 -- 			end if;
 -- 			if prog_position = "BO4" or prog_position = "BO8" then 
--- 				put_line("Invalid BOUNDARY register cell assignment: " & get_field(line,field_pt));
+-- 				put_line("Invalid BOUNDARY register cell assignment: " & get_field_from_line(cmd,field_pt));
 -- 				put_line("Values to assign are: 0,1 or x");
 -- 			end if;
 -- 			if prog_position = "SC1" then
@@ -1214,8 +1304,8 @@ procedure compseq is
 -- 			raise constraint_error; -- propagate exception to mainline program
 -- 
 -- 				--put_line("ERROR  : There are only" & natural'image(power_channel_ct) & "channels available for current watch/monitoring.");
--- 	end read_sequence_file;
--- 
+ 	end compile_command;
+
 -----------------
 	function get_destination_address_from_journal return natural is
 	-- reads the latest entry of the journal and calculates the next available destination address
@@ -1692,14 +1782,6 @@ procedure compseq is
 	end count_sequences;
 	
 
-	procedure write_in_vector_file (byte : unsigned_8) is
-	-- writes a given byte into vector_file
-	-- counts bytes and updates size_of_vector_file
-	begin
-		seq_io_unsigned_byte.write(vector_file, byte);
-		size_of_vector_file := size_of_vector_file + 1;
-	end write_in_vector_file;
-
 	procedure write_vector_file_header is
 		nat_scratch : natural;
 	begin
@@ -1751,7 +1833,9 @@ procedure compseq is
 	 	begin
  
 			-- add offset due to header size (one byte is chain_count, 4 byte start address per chain) -- CS: unclear !!
-			size_of_vector_file := size_of_vector_file + (summary.scanpath_ct * 4)+1 + destination_address;
+			--size_of_vector_file := size_of_vector_file + (summary.scanpath_ct * 4)+1 + destination_address;
+			size_of_vector_file := destination_address + size_of_vector_file + (summary.scanpath_ct * 4) +1;
+			--size_of_vector_file := destination_address + 5 + size_of_vector_file + (summary.scanpath_ct * 4);
 
 			-- write size_of_vector_file byte per byte in vec_header (lowbyte first)
 	 		u4byte_scratch := unsigned_32(size_of_vector_file);
@@ -1787,7 +1871,7 @@ procedure compseq is
 			section_processed	: boolean := false;  -- indicates if sequence has been found and processed successfully
 			line_of_file		: extended_string.bounded_string;
 		begin
-			put_line(standard_output,"compiling sequence" & positive'image(id) & " ...");
+			put_line(standard_output," - sequence" & positive'image(id) & " ...");
 			reset(sequence_file);
 			line_counter := 0;
 			while not end_of_file
@@ -1807,8 +1891,7 @@ procedure compseq is
 								exit;
 							else
 								-- PROCESSING SECTION SEQUENCE BEGIN
-								write_base_address;
-
+								compile_command(line_of_file);
 								null;
 								--put_line(standard_output,extended_string.to_string(line_of_file));
 								-- PROCESSING SECTION SEQUENCE DONE
@@ -1849,12 +1932,11 @@ procedure compseq is
 
 		b : type_bscan_ic_ptr;
 
-	begin
+	begin -- unknown_yet
 		--	set_output(standard_output);
 		put_line("found" & natural'image(summary.scanpath_ct) & " scan paths(s) ...");
 
 		for sp in 1..scanport_count_max loop
-			--put_line("sp" & natural'image(sp) );
 
 			-- delete all stale register files
 			if exists(universal_string_type.to_string(test_name) 
@@ -1863,12 +1945,14 @@ procedure compseq is
 					& universal_string_type.to_string(test_name) & "_" & trim(positive'image(sp),left) & ".reg"); 
 			end if;
 
-			-- create register file (members_x.reg) for active scanpaths only
-			-- write something like: "device 1 IC301 irl 8 bsl 108" in the reg file
+			-- process active scanpaths only
  			if is_scanport_active(sp) then
+				put_line("compiling scanpath" & natural'image(sp));
 				--put_line("active" & natural'image(sp) );
- 
-				create( 
+
+				-- CREATE REGISTER FILE (members_x.reg)
+				-- write something like: "device 1 IC301 irl 8 bsl 108" in the reg file
+ 				create( 
 					file => chain(sp).register_file,
 					name => (universal_string_type.to_string(test_name) & "/members_" & trim(natural'image(sp), side => left) & ".reg")
 					);
@@ -1895,13 +1979,19 @@ procedure compseq is
 						b := b.next;
 					end loop;
 				end loop;
+
+				-- WRITE BASE ADDRESS OF CURRENT SCANPATH
+				write_base_address;
+
+				-- PROCESS SEQUENCES one by one
+				for s in 1..sequence_count loop
+					read_sequence(s);
+				end loop;
+
+				-- CLOSE REGISER FILE
+				close ( chain(sp).register_file);
  			end if;
 
-		end loop;
-
-		-- process sequences one by one
-		for s in 1..sequence_count loop
-			read_sequence(s);
 		end loop;
 
 	end unknown_yet;
@@ -1989,41 +2079,7 @@ begin
 	unknown_yet;
  
 
--- 
--- 	-- process seq file line by line
--- 	while chain_pt <= chain_ct
--- 	loop
--- 		new_line; put(natural'image(chain_pt)); -- output chain number being processed
--- 
--- 		write_base_address; -- write base address of current chain in vec_header
--- 
--- 		scratch := test_name;
--- 		scratch := scratch & "/" & scratch & ".vec";
--- 		seq_io_unsigned_byte.open( VectorFile, seq_io_unsigned_byte.append_file, Name => to_string(scratch));
--- 
--- 		-- process sequence by sequence
--- 		sequence_pt := 1; -- CS: check if there is a sequence 1, 2, 3,...
--- 		while sequence_pt <= sequence_ct
--- 		loop
--- 			Open( 
--- 				File => sequence_file,
--- 				Mode => In_File,
--- 				Name => "tmp/sequence_" & trim(natural'image(sequence_pt) ,side => left) & ".tmp"
--- 				);
--- 			Set_Input(sequence_file);
--- 
--- 			read_sequence_file;
--- 
--- 			close(sequence_file);
--- 			sequence_pt := sequence_pt + 1; -- go to next sequence
--- 		end loop;
--- 
--- 		seq_io_unsigned_byte.close(vectorfile);
--- 		--set_output(standard_output);
--- 		chain_pt := chain_pt + 1; -- go to next chain
--- 	end loop;
--- 	new_line;
--- 
+ 
 -- 	-- open vector file one last time for write append
 -- 	-- write test end marker in vector file
 -- 	scratch := test_name;
