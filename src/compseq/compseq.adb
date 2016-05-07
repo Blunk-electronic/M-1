@@ -72,31 +72,23 @@ procedure compseq is
 	journal			: string (1..17) := "setup/journal.txt";
 	file_journal	: ada.text_io.file_type;
 
-	size_of_vector_file	: natural := 0;
+	size_of_vector_file		: natural := 0;
 
-	mem_size			: natural := integer'Value("16#0FFFFF#"); -- BSC RAM size
-	destination_address	: natural;
+	mem_size				: natural := integer'Value("16#0FFFFF#"); -- BSC RAM size
+	destination_address		: natural;
 
-	line_counter		: natural := 0; -- line counter in sequence file (global counter !)
+	line_counter			: natural := 0; -- line counter in sequence file (global counter !)
 
-	test_info			: type_test_info;
-	scanpath_options	: type_scanpath_options;
+	test_info				: type_test_info;
+	scanpath_options		: type_scanpath_options;
 
-	sequence_count		: positive := 1;
-
+	sequence_count			: positive := 1;
+	scanpath_being_compiled	: positive;
 ------------------------------------------
 	
 -- 	type unsigned_3 is mod 8;
 -- 	bit_pt	: unsigned_3 := 0;
--- 
--- 
---  
--- 
--- 	delay_max		: float := 25.0; -- seconds
--- 	delay_min		: float := 0.1; -- seconds
--- 	delay_resolution: float := 0.1; -- seconds
--- 	subtype type_delay is float range delay_min..delay_max;
--- 	delay_wanted	: type_delay; -- CS: default ?
+
 -- 
 -- 	vectors_max		: constant natural := 1000;
 -- 	subtype vector_id_type is natural range 1..vectors_max;
@@ -105,82 +97,11 @@ procedure compseq is
 -- 	vector_length_max	: constant natural := 5000;
 -- 	subtype type_vector_length is natural range 1..vector_length_max;
 -- 
--- 	frequency_max	: natural := 4; -- Mhz
--- 	frequency_dec	: natural := 0;
--- 
--- -- 	trailer_ir		: unsigned_8 := 2#1100101#;
--- -- 	trailer_dr		: unsigned_8 := 2#1100101#;
--- 	length_trailer_ir	: constant natural := 8;
--- 	length_trailer_dr	: constant natural := 8;
--- 	trailer_ir		: string (1..length_trailer_ir) := "11001010"; -- CAh
--- 	trailer_dr		: string (1..length_trailer_dr) := "11001010"; -- CAh
--- 
--- 	on_fail			: unbounded_string := to_unbounded_string("power_down");
--- 	frequency_hex	: unsigned_8 := 0;
--- 	vcc_1			: unsigned_8 := 0;
--- 	vcc_2			: unsigned_8 := 0;
--- 	thi_1			: unsigned_8 := 0; -- default to 0.8V ?
--- 	thi_2			: unsigned_8 := 0; -- default to 0.8V ?
--- 	tck1_drv_char	: unsigned_8 := 16#06#; -- default push-pull characteristic
--- 	tck2_drv_char	: unsigned_8 := 16#06#; -- default push-pull characteristic
--- 	tms1_drv_char	: unsigned_8 := 16#30#; -- default push-pull characteristic
--- 	tms2_drv_char	: unsigned_8 := 16#30#; -- default push-pull characteristic
--- 	tdo1_drv_char	: unsigned_8 := 16#06#; -- default push-pull characteristics
--- 	tdo2_drv_char	: unsigned_8 := 16#06#; -- default push-pull characteristic
--- 	trst1_drv_char	: unsigned_8 := 16#30#; -- default push-pull characteristic
--- 	trst2_drv_char	: unsigned_8 := 16#30#; -- default push-pull characteristic
--- 
--- 	--string8_scratch	: string (1..8);
--- 	char_scratch 	: character;
--- 	ubyte_scratch	: unsigned_8 := 0;
--- 	ubyte_scratch2	: unsigned_8 := 0;
--- 	byte_scratch	: unsigned_8 := 0;
--- 	u2byte_scratch	: unsigned_16 := 0;
 -- 	unb_scratch		: unbounded_string;
 -- 	int_scratch		: integer := 0;
 -- 	nat_scratch		: natural := 0;
 -- 	nat_scratch2	: natural := 0;
--- 
--- 	vcc				: float := 0.0;
--- 	vcc_min			: float := 1.8;
--- 	vcc_max			: float := 3.3;
--- 	thi				: float := 0.8;
--- 	thi_max			: float := 3.3;
--- 	
--- 	device   		: Unbounded_string;
--- 
--- 	line_ct			: Natural:=0;
--- 
--- 	Previous_Output	: File_Type renames Current_Output;
--- 
--- --	DataBase 		: Ada.Text_IO.File_Type;
--- --	SeqFile  		: Ada.Text_IO.File_Type;
--- 	optionsfile		: Ada.Text_IO.File_Type;
--- 
--- 	journal_file_tmp: Ada.Text_IO.File_Type;
--- 	chain_file 		: Ada.Text_IO.File_Type;
--- --	sequence_file	: Ada.Text_IO.File_Type;
 
--- 
--- 
--- 	chain_ct		: natural := 0;
--- 	chain_pt		: natural := 1;
--- 	sequence_ct		: natural := 0;
--- 	sequence_pt		: natural := 1;
--- 
--- 	test_name		: Unbounded_string;
--- 	data_base		: Unbounded_string;
--- 	scratch			: Unbounded_string;
--- 	Line			: Unbounded_string;
--- 	reg_line		: Unbounded_string;
--- 	hex_number_as_string	: Unbounded_string;
--- 
--- --	dummy			: Integer;
--- 
--- --	lp				: natural; -- line pointer
--- 	bit_char	 : character_set := to_set("01xX");
--- --	type string_ is array (Positive range <>) of My_Character;
--- 
 -- 	retry_ct_max	: natural := 100;
 -- 	retry_delay_max	: float := 25.5; -- sec.
 -- 	subtype type_retries is natural range 0..retry_ct_max;
@@ -189,11 +110,6 @@ procedure compseq is
 -- 	retry_delay : type_retry_delay;
 -- 
 -- 
--- 	chain_section_entered 			: boolean := false;
--- 	device_register_section_entered : boolean := false;
--- 
--- 	idc_length	: constant natural := 32;
--- 	usc_length	: constant natural := 32;
 -- 
 -- 	type type_single_member is
 -- 		record
@@ -219,9 +135,7 @@ procedure compseq is
 -- 
 -- 	max_member_ct_per_chain	: constant natural := 100;
 -- 	type type_all_members_of_a_single_chain is array (natural range 1..max_member_ct_per_chain) of type_single_member;
--- 
--- 
--- 
+
 
 	procedure write_in_vector_file (byte : unsigned_8) is
 	-- writes a given byte into vector_file
@@ -576,10 +490,15 @@ procedure compseq is
 -- 
 -- 
  	procedure compile_command (cmd : extended_string.bounded_string) is
-		field_pt : positive := 1;
-		field_ct : positive := get_field_count(extended_string.to_string(cmd));
-		ubyte_scratch  : unsigned_8;
-		ubyte_scratch2 : unsigned_8;
+		field_pt 				: positive := 1;
+		field_ct 				: positive := get_field_count(extended_string.to_string(cmd));
+		ubyte_scratch  			: unsigned_8;
+		ubyte_scratch2		 	: unsigned_8;
+		bic_name				: universal_string_type.bounded_string;
+		bic_coordinates			: type_bic_coordinates;
+		set_direction		 	: type_set_direction;
+		set_register			: type_set_register;
+		set_assignment_method	: type_set_assigment_method;
 
 --	 	cell_pt  : natural := 0;
 -- 	cell_content : string (1..1);
@@ -664,7 +583,6 @@ procedure compseq is
 		-- "power" example: power up 1, power down all
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.power then
 			write_llc(16#40#,16#12#); -- set i2c muxer sub bus 2  # 14,13,11 ack error
-
 			if get_field_from_line(cmd,2) = power_cycle_identifier.up then
 
 				-- pwr relay 1 on
@@ -727,12 +645,10 @@ procedure compseq is
 				raise constraint_error;
 			end if;
 
-
 		-- "imax" example: imax 2 1 timeout 0.2 (means channel 2, max. current 1A, timeout to shutdown 0.2s)
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.imax then -- CS: check field count
 			-- set i2c muxer sub bus 3
 			write_llc(16#40#,16#13#); 
-
 			if positive'value(get_field_from_line(cmd,2)) in type_power_channel_id then
 				power_channel_name.id := positive'value(get_field_from_line(cmd,2)); -- get power channel
 			else
@@ -750,7 +666,7 @@ procedure compseq is
 
 			-- get timeout
 			if get_field_from_line(cmd,4) = timeout_identifier then
-				if type_overload_timeout'value(get_field_from_line(cmd,4)) in type_overload_timeout then
+				if float'value(get_field_from_line(cmd,4)) in type_overload_timeout then
 					overload_timeout := float'value(get_field_from_line(cmd,5));
 					-- set i2c muxer sub bus 2
 					write_llc(16#40#,16#12#); 
@@ -761,54 +677,143 @@ procedure compseq is
 					write_llc(ubyte_scratch2, ubyte_scratch);
 				else
 					put_line("ERROR: Timeout value invalid !");
-					put_line("       Provide a number between" & type_delay_value'image(type_delay_value'first) 
-						& " and " & type_delay_value'image(type_delay_value'last) & ". Unit is 'seconds' !");
+					put_line("       Provide a number between" & type_overload_timeout'image(type_overload_timeout'first) 
+						& " and " & type_overload_timeout'image(type_overload_timeout'last) & ". Unit is 'seconds' !");
+					put_example(sequence_instruction_set.imax);
 				end if;
 			else
 				put_line("ERROR: Expected keyword '" & timeout_identifier & "' after current value !");
 			end if;
-		end if;
--- 
--- 			-- if a "delay" command found
--- 			if get_field_from_line(cmd,1) = "delay" then -- CS: check field count
--- 				prog_position := "DE1";
--- 				delay_wanted := float'value(get_field_from_line(cmd,2));
--- 				ubyte_scratch := unsigned_8(natural(delay_wanted/delay_resolution)); -- calc. 8 bit delay value
--- 				write_llc(16#20#, ubyte_scratch); -- this is a time operation
--- 			end if;
--- 
--- 			-- if a "set" command found
--- 			if get_field_from_line(cmd,1) = "set" then -- CS: check filed count
--- 				if get_field_from_line(cmd,4) = "ir" then -- if "ir" found
--- 					if get_field_from_line(cmd,3) = "drv" then -- if "drv" found
--- 						--position 1 is closest to BSC TDO !
--- 						nat_scratch := 1; -- points to device in current chain
--- 						while nat_scratch <= chain(chain_pt).mem_ct
--- 						loop
--- 							-- if the device name from sequence matches the device name in chain
--- 							if get_field_from_line(cmd,2) = chain(chain_pt).members(nat_scratch).device then
--- 								-- sir drv found
--- 								--put_line(chain(chain_pt).members(nat_scratch).device);
--- 								-- check for register-wise assignment of drv value
--- 								prog_position := "ID1";
--- 								if get_field_from_line(cmd,6) /= "downto" then raise constraint_error; end if;
--- 
+
+ 
+		-- "delay" example: delay 0.5 (means: pause for 0.5 seconds)
+ 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.dely then -- CS: check field count
+			if float'value(get_field_from_line(cmd,2)) in type_delay_value then
+
+				-- calc. 8 bit delay value and write llc as time operation
+				delay_set_by_operator := float'value(get_field_from_line(cmd,2));
+ 				ubyte_scratch := unsigned_8(natural(delay_set_by_operator/delay_resolution));
+ 				write_llc(16#20#, ubyte_scratch); 
+			else
+				put_line("ERROR: Delay value invalid !");
+				put_line("       Provide a number between" & type_delay_value'image(type_delay_value'first) 
+					& " and " & type_delay_value'image(type_delay_value'last) & ". Unit is 'seconds' !");
+				put_line("       Example: " & sequence_instruction_set.dely & row_separator_0 & type_delay_value'image(type_delay_value'last));
+			end if;
+
+
+		-- "set" 
+		-- examples: 
+		-- set IC301 drv ir 7 downto 0 = 00000001 sample
+		-- set IC301 exp ir 7 downto 0 = 000xxx01 instruction_capture
+		-- set IC303 drv boundary 17 downto 0 = x1xxxxxxxxxxxxxxxx safebits
+		-- set IC301 exp boundary 107 downto 0 = x
+		-- set IC303 drv boundary 16=0 16=0 16=0 16=0 17=0 17=0 17=0 17=0
+		elsif get_field_from_line(cmd,1) = sequence_instruction_set.set then -- CS: check field count
+
+			-- check if given device is a bic and get its coordinates
+			bic_name := universal_string_type.to_bounded_string(get_field_from_line(cmd,2));
+			bic_coordinates := get_bic_coordinates(bic_name);
+
+			if bic_coordinates.present then
+
+				-- set set_direction flag
+				if get_field_from_line(cmd,3) = sxr_io_identifier.drive then -- if "drv" found
+					set_direction := drv;
+				elsif get_field_from_line(cmd,3) = sxr_io_identifier.expect then -- if "drv" found
+					set_direction := exp;
+				else
+					put_line("ERROR: Expected keyword '" & sxr_io_identifier.drive & "' or '" & sxr_io_identifier.expect & "' after device name !");
+					raise constraint_error;
+				end if;
+
+				-- set target register
+				if get_field_from_line(cmd,4) = sir_target_register.ir then
+					set_register := ir;
+				elsif get_field_from_line(cmd,4) = sdr_target_register.boundary then
+					set_register := boundary;
+				elsif get_field_from_line(cmd,4) = sdr_target_register.bypass then
+					set_register := bypass;
+				elsif get_field_from_line(cmd,4) = sdr_target_register.idcode then
+					set_register := idcode;
+				elsif get_field_from_line(cmd,4) = sdr_target_register.usercode then
+					set_register := usercode;
+				else
+					put_line("ERROR: Invalid register name found ! Supported registers are:");
+					for r in 0..type_set_register'pos(type_set_register'last) loop
+						put(row_separator_0 & to_lower(type_set_register'image(type_set_register'val(r))));
+					end loop;
+					raise constraint_error;
+				end if;
+
+				-- set assignment method (bit-wise or register-wise)
+				-- if "downto" found in field 6, the assignment method is assumed as "registe-wise"
+				-- if no "downto" found in field 6, we assume bit-wise assignment
+				if get_field_from_line(cmd,6) = sxr_vector_direction.downto then
+					set_assignment_method := register_wise;
+				elsif get_field_from_line(cmd,6) = sxr_vector_direction.to then
+					--set_assignment_method := register_wise;
+					put_line("ERROR: Register-wise assignment not supported with identifier '" & sxr_vector_direction.to & "' !");
+					put_line("       Check MSB, LSB and use '" & sxr_vector_direction.downto & "' instead !");
+					raise constraint_error;
+					-- CS: should be supported
+				else
+					set_assignment_method := bit_wise;
+				end if;
+
+				--raise constraint_error; end if;
+
+				for p in 1..summary.bic_ct loop
+				-- p points to device in current chain. position 1 is closest to BSC TDO !
+
+					-- scanpath_being_compiled holds the id of the current scanpath.
+					-- we care for a device in that scanpath. if not in scanpath it is skipped.
+
+					if bic_coordinates.scanpath = scanpath_being_compiled then -- if the device is in scanpath being compiled
+
+						-- for a certain target register, special assignments are allowed:
+						case set_register is
+
+							-- instruction register requires register-wise assigment
+							when ir | idcode | usercode => 
+								if set_assignment_method = register_wise then
+									null;
 -- 								-- check length of ir drv pattern
 -- 								prog_position := "ID2";
--- 								if length(to_unbounded_string(get_field_from_line(cmd,9))) /= chain(chain_pt).members(nat_scratch).irl then raise constraint_error; end if;
+									--if length(to_unbounded_string(get_field_from_line(cmd,9))) /= chain(chain_pt).members(nat_scratch).irl then raise constraint_error; end if;
+									
+-- 									case set_direction is
+-- 										when drive =>
 -- 
 -- 								-- save ir drv pattern of particular device
 -- 								chain(chain_pt).members(nat_scratch).ir_drv := to_unbounded_string(get_field_from_line(cmd,9));
 -- 
 -- 								-- save instruction name of particular device
 -- 								chain(chain_pt).members(nat_scratch).instruction := to_unbounded_string(get_field_from_line(cmd,10));
--- 
--- 							end if;
--- 						nat_scratch := nat_scratch + 1; -- go to next member in chain
--- 						end loop;
--- 					end if; -- if "drv" found
--- 
--- 					if get_field_from_line(cmd,3) = "exp" then -- if "exp" found
+
+								else
+									put_line("ERROR: Bit-wise assignment not allowed for this target register !");
+									-- CS: should be supported
+								end if;
+
+							-- other registers like boundary and bypass require bit-wise assigment
+							when others =>
+								if set_assignment_method = bit_wise then
+									null;
+								else
+									put_line("ERROR: Register-wise assignment not allowed for this target register !");
+									-- CS: should be supported
+								end if;
+
+
+						end case;
+					end if;
+
+				end loop;
+
+--		elsif get_field_from_line(cmd,3) = sxr_io_identifier.expect then -- if "exp" found
+
+
 -- 						-- position 1 is closest to BSC TDO !
 -- 						nat_scratch := 1; -- points to device in current chain
 -- 						while nat_scratch <= chain(chain_pt).mem_ct
@@ -831,9 +836,14 @@ procedure compseq is
 -- 							end if;
 -- 						nat_scratch := nat_scratch + 1; -- go to next member in chain
 -- 						end loop;
--- 					end if; -- if "exp" found
--- 
--- 				end if; -- if "ir" found
+--	end if; -- if "exp" found
+--
+
+			else -- if device is not a bic
+				put_line("ERROR: Device '" & universal_string_type.to_string(bic_name) & "' is not part of any scanpath ! Check name and capitalization !)");
+				raise constraint_error;
+			end if; -- if device is a bic
+
 -- 
 -- 				-- if data register found
 -- 				if get_field_from_line(cmd,4) = "bypass" or get_field_from_line(cmd,4) = "idcode" or get_field_from_line(cmd,4) = "usercode" or get_field_from_line(cmd,4) = "boundary" then
@@ -1209,37 +1219,10 @@ procedure compseq is
 -- 
 -- 			end if; -- if sdr found
 -- 
--- 		end loop;
--- 		exception when constraint_error =>
--- 			new_line(2);
--- 			--put("ERROR in line" & natural'image(line_ct) & " : ");
--- 			put("ERROR in sequence" & natural'image(sequence_pt) & " : ");
--- 			--put("ERROR : ");
--- 			if prog_position = "IM1" then put_line("There are only" & natural'image(power_channel_ct) & " channels available for current watch/monitoring."); end if;
--- 			--if prog_position = "IM2" then put_line("ERROR ! 'imax' must be between 0.1 and" & float'image(imax) & " Amps !"); end if;
--- 			if prog_position = "IM2" then 
--- 				put("Parameter for 'imax' must be between 0.1 and"); put(imax, aft => 1, exp => 0); put(" Amps !"); new_line;
--- 			end if;
--- 			if prog_position = "IM3" then 
--- 				put("Parameter for 'timeout' must be between");
--- 				put(imax_timeout_min, aft => 2, exp => 0); put(" and");
--- 				put(imax_timeout_max, aft => 2, exp => 0);
--- 				put(" sec !"); new_line;
--- 			end if;
--- 			if prog_position = "DE1" then 
--- 				put("Parameter for 'delay' must be between");
--- 				put(delay_min, aft => 2, exp => 0); put(" and ");
--- 				put(delay_max, aft => 2, exp => 0);
--- 				put(" sec !"); new_line;
--- 			end if;
--- 			if prog_position = "ID1" then
--- 				put_line("Bitwise assignments for INSTRUCTION register drive not supported !");
--- 			end if;
+ 		end if;
+
 -- 			if prog_position = "ID2" then 
 -- 				put_line("Instruction drive pattern length mismatch !"); 
--- 			end if;
--- 			if prog_position = "IE1" then
--- 				put_line("Bitwise assignments for INSTRUCTION register capture not supported !");
 -- 			end if;
 -- 			if prog_position = "IE2" then 
 -- 				put_line("Instruction capture pattern length mismatch !"); 
@@ -1956,6 +1939,7 @@ procedure compseq is
 			-- process active scanpaths only
  			if is_scanport_active(sp) then
 				put_line("compiling scanpath" & natural'image(sp));
+				scanpath_being_compiled := sp;
 				--put_line("active" & natural'image(sp) );
 
 				-- CREATE REGISTER FILE (members_x.reg)
