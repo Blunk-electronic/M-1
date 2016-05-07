@@ -749,13 +749,21 @@ procedure compseq is
 			write_llc(ubyte_scratch2, ubyte_scratch); 
 
 			-- get timeout
-			if get_field_from_line(cmd,4) = timeout_identifier then 
-				overload_timeout := float'value(get_field_from_line(cmd,5));
---			end if;
--- 				write_llc(16#40#,16#12#); -- set i2c muxer sub bus 2
--- 				ubyte_scratch := unsigned_8(natural(imax_timeout/timeout_resolution)); -- cal. 8bit timeout value
--- 				ubyte_scratch2 := 16#43# + unsigned_8(power_channel);
--- 				write_llc(ubyte_scratch2, ubyte_scratch); -- this is an extended I2C operation with data destination imax timeout channel x (43+pwr_channel)
+			if get_field_from_line(cmd,4) = timeout_identifier then
+				if type_overload_timeout'value(get_field_from_line(cmd,4)) in type_overload_timeout then
+					overload_timeout := float'value(get_field_from_line(cmd,5));
+					-- set i2c muxer sub bus 2
+					write_llc(16#40#,16#12#); 
+					-- cal. 8bit timeout value
+					-- write llc (43h + pwr_channel) as extended I2C operation
+					ubyte_scratch := unsigned_8(natural(overload_timeout/overload_timeout_resolution)); 
+					ubyte_scratch2 := 16#43# + unsigned_8(power_channel_name.id);
+					write_llc(ubyte_scratch2, ubyte_scratch);
+				else
+					put_line("ERROR: Timeout value invalid !");
+					put_line("       Provide a number between" & type_delay_value'image(type_delay_value'first) 
+						& " and " & type_delay_value'image(type_delay_value'last) & ". Unit is 'seconds' !");
+				end if;
 			else
 				put_line("ERROR: Expected keyword '" & timeout_identifier & "' after current value !");
 			end if;
