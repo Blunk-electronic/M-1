@@ -495,13 +495,22 @@ procedure compseq is
 		ubyte_scratch  			: unsigned_8;
 		ubyte_scratch2		 	: unsigned_8;
 		bic_name				: universal_string_type.bounded_string;
-		bic_coordinates			: type_bic_coordinates;
+		bic_coordinates			: type_bscan_ic_ptr;
 		set_direction		 	: type_set_direction;
-		set_register			: type_set_register;
+		target_register			: type_set_target_register;
 		set_assignment_method	: type_set_assigment_method;
 
+		-- for cell id check. the highest id allowed is defined by the length of the targeted register
+		cell_id_max				: natural; -- holds the id of the MSB cell in targeted register
+
+		-- for upper and lower end check of register wise assigments
+		-- example: set IC301 drv ir 4 downto 2 = 110
+		-- cell_id_upper_end is 4, cell_id_lower_end is 2
+		cell_id_upper_end		: natural := 0; -- holds the id of the upper bit in register wise assigments
+		cell_id_lower_end		: natural := 0; -- holds the id of the lower bit in register wise assigments
 --	 	cell_pt  : natural := 0;
 -- 	cell_content : string (1..1);
+		set_vector_orientation	: type_set_vector_orientation;
 
 		procedure put_example(instruction : string) is
 		begin
@@ -512,8 +521,74 @@ procedure compseq is
 				);
 			put_line("       Currently" & positive'image(power_channel_ct) & " power channels for power supervising are supported !");
 		end put_example;
+
+		function update_pattern(
+		-- overwrites bit positions specified in range cell_pos_low..cell_pos_high with text_in
+			pattern_old 	: type_string_of_bit_characters_class_0;
+			length_total 	: positive;
+			cell_pos_high	: positive;
+			cell_pos_low	: positive;
+			pattern_in		: string;
+			orientation		: type_set_vector_orientation;
+			direction		: type_set_direction := drv) return type_string_of_bit_characters_class_0 is
+
+			pattern_in_length	: positive := cell_pos_high - cell_pos_low + 1;
+
+			subtype type_pattern_1 is type_string_of_bit_characters_class_1 (1..pattern_in_length);
+			pattern_in_class_1	: type_pattern_1;
+
+			subtype type_pattern is type_string_of_bit_characters_class_0 (cell_pos_low..cell_pos_high);
+			pattern_new			: type_pattern;
+
+			whole_pattern_is_dont_care : boolean := false; -- used for exceptional case when expect pattern contains only one x
+			-- example: set IC202 exp boundary 16 downto 0 = x
+
+		begin
+			prog_position	:= 500;
+			-- if this is an expect pattern of length 1 and value x -> assume all bits of this pattern are don't cares
+			-- example: set IC202 exp boundary 16 downto 0 = x
+			if direction = exp then
+				if pattern_in'last = 1 then -- means if pattern_in is just one character
+					if pattern_in(pattern_in'first) = 'x' or pattern_in(pattern_in'first) = 'X' then
+					-- CS: use type type_bit_character_x
+						whole_pattern_is_dont_care := true;
+					end if;
+				end if;
+			end if;
+
+			prog_position	:= 510;
+			if whole_pattern_is_dont_care then
+				-- fill pattern_in_class_1 with as much x as specified by cell_pos_high and cell_pos_low
+				pattern_in_class_1	:= to_binary_class_1(  to_binary( pattern_in_length * 'x', pattern_in_length , class_1)  );
+			else
+				-- convert string given in pattern_in to string of bit characters class 1
+				-- load result in text_in_class_1
+				pattern_in_class_1	:= to_binary_class_1(  to_binary(pattern_in, pattern_in_length , class_1)  );
+			end if;
+
+
+			-- replace x (don't cares) in pattern_1 by zeroes
+			-- load result in pattern_new
+			prog_position	:= 520;
+			pattern_new		:= replace_dont_care(pattern_in_class_1);
+
+			prog_position	:= 530;
+			if pattern_in_length = length_total then
+				null;
+			else
+				put_line("ERROR: Assigning discrete ranges not supported yet !"); -- CS
+				raise constraint_error;
+-- 				for b in 1..length_total loop
+-- 					--if b >= cell_pos_low
+-- 					null;
+-- 				end loop;
+			end if;
+			return pattern_new;
+		end update_pattern;
+
  				
  	begin
+		prog_position	:= 400;
 
 		--hard+soft trst (default)
 		if get_field_from_line(cmd,1) = sequence_instruction_set.trst then
@@ -525,6 +600,7 @@ procedure compseq is
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.htrst then
 			write_llc(16#30#,16#82#); 
 
+		prog_position	:= 420;
 		-- "scanpath" (example: tap_state test-logic-reset, tap_state pause-dr)
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.tap_state then
 			if get_field_from_line(cmd,2) = tap_state.test_logic_reset then
@@ -666,7 +742,7 @@ procedure compseq is
 
 			-- get timeout
 			if get_field_from_line(cmd,4) = timeout_identifier then
-				if float'value(get_field_from_line(cmd,4)) in type_overload_timeout then
+				if float'value(get_field_from_line(cmd,5)) in type_overload_timeout then
 					overload_timeout := float'value(get_field_from_line(cmd,5));
 					-- set i2c muxer sub bus 2
 					write_llc(16#40#,16#12#); 
@@ -683,6 +759,7 @@ procedure compseq is
 				end if;
 			else
 				put_line("ERROR: Expected keyword '" & timeout_identifier & "' after current value !");
+				raise constraint_error;
 			end if;
 
  
@@ -715,7 +792,7 @@ procedure compseq is
 			bic_name := universal_string_type.to_bounded_string(get_field_from_line(cmd,2));
 			bic_coordinates := get_bic_coordinates(bic_name);
 
-			if bic_coordinates.present then
+			if bic_coordinates /= null then
 
 				-- set set_direction flag
 				if get_field_from_line(cmd,3) = sxr_io_identifier.drive then -- if "drv" found
@@ -727,34 +804,69 @@ procedure compseq is
 					raise constraint_error;
 				end if;
 
-				-- set target register
+				-- set target register and set cell_id_max for later checking the cell id
+				-- CS: do something more professional like
+-- 						case set_register is
+-- 							when ir 		=> 
+-- 							when idcode 	=> 
+-- 							when usercode	=> 
+-- 							when boundary	=> 
+-- 							when bypass 	=> 
+-- 						end case;
 				if get_field_from_line(cmd,4) = sir_target_register.ir then
-					set_register := ir;
+					target_register := ir;
+					cell_id_max := bic_coordinates.len_ir - 1;
 				elsif get_field_from_line(cmd,4) = sdr_target_register.boundary then
-					set_register := boundary;
+					target_register := boundary;
+					cell_id_max := bic_coordinates.len_bsr - 1;
 				elsif get_field_from_line(cmd,4) = sdr_target_register.bypass then
-					set_register := bypass;
+					target_register := bypass;
+					cell_id_max := bic_bypass_register_length - 1;
 				elsif get_field_from_line(cmd,4) = sdr_target_register.idcode then
-					set_register := idcode;
+					target_register := idcode;
+					cell_id_max := bic_idcode_register_length - 1;
 				elsif get_field_from_line(cmd,4) = sdr_target_register.usercode then
-					set_register := usercode;
+					target_register := usercode;
+					cell_id_max := bic_usercode_register_length - 1;
 				else
 					put_line("ERROR: Invalid register name found ! Supported registers are:");
-					for r in 0..type_set_register'pos(type_set_register'last) loop
-						put(row_separator_0 & to_lower(type_set_register'image(type_set_register'val(r))));
+					for r in 0..type_set_target_register'pos(type_set_target_register'last) loop
+						put(row_separator_0 & to_lower(type_set_target_register'image(type_set_target_register'val(r))));
 					end loop;
 					raise constraint_error;
 				end if;
 
 				-- set assignment method (bit-wise or register-wise)
-				-- if "downto" found in field 6, the assignment method is assumed as "registe-wise"
-				-- if no "downto" found in field 6, we assume bit-wise assignment
-				if get_field_from_line(cmd,6) = sxr_vector_direction.downto then
-					set_assignment_method := register_wise;
-				elsif get_field_from_line(cmd,6) = sxr_vector_direction.to then
-					--set_assignment_method := register_wise;
-					put_line("ERROR: Register-wise assignment not supported with identifier '" & sxr_vector_direction.to & "' !");
-					put_line("       Check MSB, LSB and use '" & sxr_vector_direction.downto & "' instead !");
+				-- if "downto" found in field 6, the assignment method is assumed as "register-wise"
+				-- if no "downto" found in field 6, we assume "bit-wise" assignment
+				if get_field_from_line(cmd,6) = sxr_vector_orientation.downto then
+					set_assignment_method 	:= register_wise;
+					set_vector_orientation	:= downto;
+
+					-- check if upper cell id is within targeted register
+					-- and save cell id as cell_id_upper_end
+					if natural'value(get_field_from_line(cmd,5)) <= cell_id_max then
+						cell_id_upper_end := natural'value(get_field_from_line(cmd,5));
+					else
+						put_line("ERROR: Upper end cell id must be below or equal" & natural'image(cell_id_max) & " for this register !");
+						raise constraint_error;
+					end if;
+
+					-- check if lower cell id is below cell_id_upper_end
+					-- and save cell id as cell_id_lower_end
+					if natural'value(get_field_from_line(cmd,7)) <= cell_id_upper_end then
+						cell_id_lower_end := natural'value(get_field_from_line(cmd,7));
+					else
+						put_line("ERROR: Lower end cell id must be below or equal" & natural'image(cell_id_upper_end) & " for this register !");
+						raise constraint_error;
+					end if;
+
+
+				elsif get_field_from_line(cmd,6) = sxr_vector_orientation.to then
+					set_assignment_method 	:= register_wise;
+					set_vector_orientation	:= to;
+					put_line("ERROR: Register-wise assignment not supported with identifier '" & sxr_vector_orientation.to & "' !");
+					put_line("       Check MSB, LSB and use '" & sxr_vector_orientation.downto & "' instead !");
 					raise constraint_error;
 					-- CS: should be supported
 				else
@@ -769,165 +881,132 @@ procedure compseq is
 					-- scanpath_being_compiled holds the id of the current scanpath.
 					-- we care for a device in that scanpath. if not in scanpath it is skipped.
 
-					if bic_coordinates.scanpath = scanpath_being_compiled then -- if the device is in scanpath being compiled
+					if bic_coordinates.chain = scanpath_being_compiled then -- if the device is in scanpath being compiled
 
-						-- for a certain target register, special assignments are allowed:
-						case set_register is
+						case set_assignment_method is
+							when register_wise =>
+								case set_direction is
+									when drv =>
+										case target_register is
+											when ir =>
+												bic_coordinates.pattern_last_ir_drive := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_ir_drive,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation
+													);
+											when boundary =>
+												bic_coordinates.pattern_last_boundary_drive := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_boundary_drive,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation
+													);
+											when bypass =>
+												bic_coordinates.pattern_last_bypass_drive := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_bypass_drive,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation
+													);
+											when idcode =>
+												bic_coordinates.pattern_last_idcode_drive := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_idcode_drive,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation
+													);
+											when usercode =>
+												bic_coordinates.pattern_last_usercode_drive := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_usercode_drive,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation
+													);
+										end case;
 
-							-- instruction register requires register-wise assigment
-							when ir | idcode | usercode => 
-								if set_assignment_method = register_wise then
-									null;
--- 								-- check length of ir drv pattern
--- 								prog_position := "ID2";
-									--if length(to_unbounded_string(get_field_from_line(cmd,9))) /= chain(chain_pt).members(nat_scratch).irl then raise constraint_error; end if;
-									
--- 									case set_direction is
--- 										when drive =>
--- 
--- 								-- save ir drv pattern of particular device
--- 								chain(chain_pt).members(nat_scratch).ir_drv := to_unbounded_string(get_field_from_line(cmd,9));
--- 
--- 								-- save instruction name of particular device
--- 								chain(chain_pt).members(nat_scratch).instruction := to_unbounded_string(get_field_from_line(cmd,10));
 
-								else
-									put_line("ERROR: Bit-wise assignment not allowed for this target register !");
-									-- CS: should be supported
-								end if;
+									when exp =>
+										case target_register is
+											when ir =>
+												bic_coordinates.pattern_last_ir_expect := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_ir_expect,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation,
+													direction			=> set_direction
+													);
+											when boundary =>
+												bic_coordinates.pattern_last_boundary_expect := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_boundary_expect,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation,
+													direction			=> set_direction
+													);
+											when bypass =>
+												bic_coordinates.pattern_last_bypass_expect := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_bypass_expect,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation,
+													direction			=> set_direction
+													);
+											when idcode =>
+												bic_coordinates.pattern_last_idcode_expect := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_idcode_expect,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation,
+													direction			=> set_direction
+													);
+											when usercode =>
+												bic_coordinates.pattern_last_usercode_expect := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_usercode_expect,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation,
+													direction			=> set_direction
+													);
+										end case;
 
-							-- other registers like boundary and bypass require bit-wise assigment
-							when others =>
-								if set_assignment_method = bit_wise then
-									null;
-								else
-									put_line("ERROR: Register-wise assignment not allowed for this target register !");
-									-- CS: should be supported
-								end if;
+								end case;
 
-
+							when bit_wise =>
+								null;
 						end case;
 					end if;
 
 				end loop;
 
---		elsif get_field_from_line(cmd,3) = sxr_io_identifier.expect then -- if "exp" found
+				-- CS: field 10 not read any more -> make it a comment
 
-
--- 						-- position 1 is closest to BSC TDO !
--- 						nat_scratch := 1; -- points to device in current chain
--- 						while nat_scratch <= chain(chain_pt).mem_ct
--- 						loop
--- 
--- 							-- if the device name from sequence matches the device name in chain
--- 							if get_field_from_line(cmd,2) = chain(chain_pt).members(nat_scratch).device then
--- 								-- sir exp found
--- 
--- 								-- check for register-wise assignment of exp value
--- 								prog_position := "IE1";
--- 								if get_field_from_line(cmd,6) /= "downto" then raise constraint_error; end if;
--- 
--- 								-- check length of ir exp pattern
--- 								prog_position := "IE2";
--- 								if length(to_unbounded_string(get_field_from_line(cmd,9))) /= chain(chain_pt).members(nat_scratch).irl then raise constraint_error; end if;
--- 
--- 								-- save ir exp pattern of particular device
--- 								chain(chain_pt).members(nat_scratch).ir_exp := to_unbounded_string(get_field_from_line(cmd,9));
--- 							end if;
--- 						nat_scratch := nat_scratch + 1; -- go to next member in chain
--- 						end loop;
---	end if; -- if "exp" found
---
 
 			else -- if device is not a bic
 				put_line("ERROR: Device '" & universal_string_type.to_string(bic_name) & "' is not part of any scanpath ! Check name and capitalization !)");
 				raise constraint_error;
 			end if; -- if device is a bic
 
--- 
--- 				-- if data register found
--- 				if get_field_from_line(cmd,4) = "bypass" or get_field_from_line(cmd,4) = "idcode" or get_field_from_line(cmd,4) = "usercode" or get_field_from_line(cmd,4) = "boundary" then
--- 					if get_field_from_line(cmd,3) = "drv" then -- if "drv" found
--- 						--position 1 is closest to BSC TDO !
--- 						nat_scratch := 1; -- points to device in current chain
--- 						while nat_scratch <= chain(chain_pt).mem_ct
--- 						loop
--- 
--- 							-- if the device name from sequence matches the device name in chain
--- 							if get_field_from_line(cmd,2) = chain(chain_pt).members(nat_scratch).device then
--- 								-- sdr drv found
--- 		
--- 								-- what data register is it about ?
--- 								
--- 								-- if bypass register addressed
--- 								if get_field_from_line(cmd,4) = "bypass" then
--- 
--- 									-- make sure there is no downto-assignment
--- 									prog_position := "BY1";
--- 									if get_field_from_line(cmd,6) = "downto" then raise constraint_error; end if;
--- 
--- 									-- get bypass drv bit of particular device
--- 									prog_position := "BY2";
--- 									if    get_field_from_line(cmd,5) = "0=0" then chain(chain_pt).members(nat_scratch).byp_drv := '0';
--- 									elsif get_field_from_line(cmd,5) = "0=1" then chain(chain_pt).members(nat_scratch).byp_drv := '1';
--- 									else raise constraint_error;
--- 									end if;
--- 
--- 								end if;
--- 
--- 								-- if idcode register addressed
--- 								if get_field_from_line(cmd,4) = "idcode" then
--- 									-- make sure there IS a downto-assignment
--- 									prog_position := "IC1";
--- 									if get_field_from_line(cmd,6) /= "downto" then raise constraint_error; end if;
--- 
--- 									-- check length of id drv pattern
--- 									prog_position := "IC2";
--- 									if length(to_unbounded_string(get_field_from_line(cmd,9))) = 1 then
--- 										-- if a one char pattern found, scale it to desired length, then save it
--- 										chain(chain_pt).members(nat_scratch).idc_drv := to_unbounded_string(scale_pattern(get_field_from_line(cmd,9),idc_length));
--- 									-- if pattern is unequal idc_length, raise error
--- 									elsif length(to_unbounded_string(get_field_from_line(cmd,9))) /= idc_length then raise constraint_error;
--- 									-- otherwise the pattern is specified at full length
--- 									else chain(chain_pt).members(nat_scratch).idc_drv := to_unbounded_string(get_field_from_line(cmd,9)); -- save pattern
--- 									end if;
--- 								end if;
--- 
--- 								-- if usercode register addressed
--- 								if get_field_from_line(cmd,4) = "usercode" then
--- 									-- make sure there IS a downto-assignment
--- 									prog_position := "UC1";
--- 									if get_field_from_line(cmd,6) /= "downto" then raise constraint_error; end if;
--- 
--- 									-- check length of drv pattern
--- 									prog_position := "UC2";
--- 									if length(to_unbounded_string(get_field_from_line(cmd,9))) = 1 then
--- 										-- if a one char pattern found, scale it to desired length, then save it
--- 										chain(chain_pt).members(nat_scratch).usc_drv := to_unbounded_string(scale_pattern(get_field_from_line(cmd,9),usc_length));
--- 									-- if pattern is unequal usc_length, raise error
--- 									elsif length(to_unbounded_string(get_field_from_line(cmd,9))) /= usc_length then raise constraint_error;
--- 									-- otherwise the pattern is specified at full length
--- 									else chain(chain_pt).members(nat_scratch).usc_drv := to_unbounded_string(get_field_from_line(cmd,9)); -- save pattern
--- 									end if;
--- 								end if;
--- 
--- 								-- if boundary register addressed
--- 								if get_field_from_line(cmd,4) = "boundary" then
--- 									-- if there is a downto-assignment
--- 									prog_position := "BO1";
--- 									if get_field_from_line(cmd,6) = "downto" then
--- 
--- 										-- check length of drv pattern
--- 										prog_position := "BO2";
--- 										if length(to_unbounded_string(get_field_from_line(cmd,9))) = 1 then
--- 											-- if a one char pattern found, scale it to length of particular bsr, then save it
--- 											chain(chain_pt).members(nat_scratch).bsr_drv := to_unbounded_string(scale_pattern(get_field_from_line(cmd,9),chain(chain_pt).members(nat_scratch).bsl));
--- 										-- if pattern is unequal length or particular bsr, raise error
--- 										elsif length(to_unbounded_string(get_field_from_line(cmd,9))) /= chain(chain_pt).members(nat_scratch).bsl then raise constraint_error;
--- 										-- otherwise the pattern is specified at full length
--- 										else chain(chain_pt).members(nat_scratch).bsr_drv := to_unbounded_string(get_field_from_line(cmd,9)); -- save pattern
--- 										end if;
--- 									else
 -- 									-- if bitwise assignment found
 -- 									-- read assigments starting from field 5
 -- 									field_pt := 5;
@@ -949,96 +1028,7 @@ procedure compseq is
 -- 										replace_element (chain(chain_pt).members(nat_scratch).bsr_drv , cell_pt, cell_content(cell_content'first));
 -- 										field_pt := field_pt + 1;
 -- 									end loop;
--- 									end if;
--- 
--- 								end if; -- if boundary register addressed
--- 
--- 							end if; -- if the device name from sequence matches the device name in chain
--- 
--- 						nat_scratch := nat_scratch + 1; -- go to next member in chain
--- 						end loop;
--- 					end if; -- if "drv" found
--- 
--- 					if get_field_from_line(cmd,3) = "exp" then -- if "exp" found
--- 						--position 1 is closest to BSC TDO !
--- 						nat_scratch := 1; -- points to device in current chain
--- 						while nat_scratch <= chain(chain_pt).mem_ct
--- 						loop
--- 
--- 							-- if the device name from sequence matches the device name in chain
--- 							if get_field_from_line(cmd,2) = chain(chain_pt).members(nat_scratch).device then
--- 								-- sdr exp found
--- 								-- what data register is it about ?
--- 								
--- 								-- if bypass register addressed
--- 								if get_field_from_line(cmd,4) = "bypass" then
--- 
--- 									-- make sure there is no downto-assignment
--- 									prog_position := "BY5";
--- 									if get_field_from_line(cmd,6) = "downto" then raise constraint_error; end if;
--- 
--- 									-- get bypass exp bit of particular device
--- 									prog_position := "BY6";
--- 									if    get_field_from_line(cmd,5) = "0=0" then chain(chain_pt).members(nat_scratch).byp_exp := '0'; --put_line("exp");
--- 									elsif get_field_from_line(cmd,5) = "0=1" then chain(chain_pt).members(nat_scratch).byp_exp := '1';
--- 									else raise constraint_error;
--- 									end if;
--- 
--- 								end if;
--- 
--- 								-- if idcode register addressed
--- 								if get_field_from_line(cmd,4) = "idcode" then
--- 									-- make sure there IS a downto-assignment
--- 									prog_position := "IC5";
--- 									if get_field_from_line(cmd,6) /= "downto" then raise constraint_error; end if;
--- 
--- 									-- check length of id exp pattern
--- 									prog_position := "IC6";
--- 									if length(to_unbounded_string(get_field_from_line(cmd,9))) = 1 then
--- 										-- if a one char pattern found, scale it to desired length, then save it
--- 										chain(chain_pt).members(nat_scratch).idc_exp := to_unbounded_string(scale_pattern(get_field_from_line(cmd,9),idc_length));
--- 									-- if pattern is unequal idc_length, raise error
--- 									elsif length(to_unbounded_string(get_field_from_line(cmd,9))) /= idc_length then raise constraint_error;
--- 									-- otherwise the pattern is specified at full length
--- 									else chain(chain_pt).members(nat_scratch).idc_exp := to_unbounded_string(get_field_from_line(cmd,9)); -- save pattern
--- 									end if;
--- 								end if;
--- 
--- 								-- if usercode register addressed
--- 								if get_field_from_line(cmd,4) = "usercode" then
--- 									-- make sure there IS a downto-assignment
--- 									prog_position := "UC5";
--- 									if get_field_from_line(cmd,6) /= "downto" then raise constraint_error; end if;
--- 
--- 									-- check length of exp pattern
--- 									prog_position := "UC6";
--- 									if length(to_unbounded_string(get_field_from_line(cmd,9))) = 1 then
--- 										-- if a one char pattern found, scale it to desired length, then save it
--- 										chain(chain_pt).members(nat_scratch).usc_exp := to_unbounded_string(scale_pattern(get_field_from_line(cmd,9),usc_length));
--- 									-- if pattern is unequal usc_length, raise error
--- 									elsif length(to_unbounded_string(get_field_from_line(cmd,9))) /= usc_length then raise constraint_error;
--- 									-- otherwise the pattern is specified at full length
--- 									else chain(chain_pt).members(nat_scratch).usc_exp := to_unbounded_string(get_field_from_line(cmd,9)); -- save pattern
--- 									end if;
--- 								end if;
--- 
--- 								-- if boundary register addressed
--- 								if get_field_from_line(cmd,4) = "boundary" then
--- 									-- if there is a downto-assignment
--- 									prog_position := "BO5";
--- 									if get_field_from_line(cmd,6) = "downto" then
--- 
--- 										-- check length of exp pattern
--- 										prog_position := "BO6";
--- 										if length(to_unbounded_string(get_field_from_line(cmd,9))) = 1 then
--- 											-- if a one char pattern found, scale it to length of particular bsr, then save it
--- 											chain(chain_pt).members(nat_scratch).bsr_exp := to_unbounded_string(scale_pattern(get_field_from_line(cmd,9),chain(chain_pt).members(nat_scratch).bsl));
--- 										-- if pattern is unequal length or particular bsr, raise error
--- 										elsif length(to_unbounded_string(get_field_from_line(cmd,9))) /= chain(chain_pt).members(nat_scratch).bsl then raise constraint_error;
--- 										-- otherwise the pattern is specified at full length
--- 										else chain(chain_pt).members(nat_scratch).bsr_exp := to_unbounded_string(get_field_from_line(cmd,9)); -- save pattern
--- 										end if;
--- 									else
+
 -- 									-- if bitwise assignment found
 -- 									-- read assigments starting from field 5
 -- 									field_pt := 5;
@@ -1062,16 +1052,7 @@ procedure compseq is
 -- 									end loop;
 -- 									end if;
 -- 
--- 								end if; -- if boundary register addressed
--- 
--- 							end if; -- if the device name from sequence matches the device name in chain
--- 
--- 						nat_scratch := nat_scratch + 1; -- go to next member in chain
--- 						end loop;
--- 					end if; -- if "exp" found
--- 
--- 				end if; -- if data register found
--- 			end if; -- if "set" command found
+
 -- 
 -- 			-- if sir found
 -- 			if get_field_from_line(cmd,1) = "sir" then -- CS: check id ?
@@ -1862,8 +1843,11 @@ procedure compseq is
 			section_processed	: boolean := false;  -- indicates if sequence has been found and processed successfully
 			line_of_file		: extended_string.bounded_string;
 		begin
+			prog_position	:= 300;
 			put_line(standard_output," - sequence" & positive'image(id) & " ...");
 			reset(sequence_file);
+
+			prog_position	:= 310;
 			line_counter := 0;
 			while not end_of_file
 				loop
@@ -1871,10 +1855,12 @@ procedure compseq is
 					line_of_file := extended_string.to_bounded_string(get_line);
 					line_of_file := remove_comment_from_line(line_of_file);
 
+					prog_position	:= 320;
 					if get_field_count(extended_string.to_string(line_of_file)) > 0 then -- if line contains anything
 						if section_entered then
 
 							-- once inside section "sequence", wait for end of section mark
+							prog_position	:= 330;
 							if get_field_from_line(line_of_file,1) = section_mark.endsection then -- when endsection found
 								section_entered := false; -- reset section entered flag
 								section_processed := true;
@@ -1882,14 +1868,15 @@ procedure compseq is
 								exit;
 							else
 								-- PROCESSING SECTION SEQUENCE BEGIN
+								prog_position	:= 340;
 								compile_command(line_of_file);
-								null;
 								--put_line(standard_output,extended_string.to_string(line_of_file));
 								-- PROCESSING SECTION SEQUENCE DONE
 							end if;
 
 						else
 							-- wait for "section sequence id" begin mark
+							prog_position	:= 350;
 							if get_field_from_line(line_of_file,1) = section_mark.section then
 								if get_field_from_line(line_of_file,2) = test_section.sequence then
 									--put_line(standard_output,extended_string.to_string(line_of_file));
@@ -1927,9 +1914,11 @@ procedure compseq is
 		--	set_output(standard_output);
 		put_line("found" & natural'image(summary.scanpath_ct) & " scan paths(s) ...");
 
+		prog_position	:= 210;
 		for sp in 1..scanport_count_max loop
 
 			-- delete all stale register files
+			prog_position	:= 220;
 			if exists(universal_string_type.to_string(test_name) 
 				& "/" & universal_string_type.to_string(test_name) & "_" & trim(positive'image(sp),left) & ".reg") then 
 					delete_file(universal_string_type.to_string(test_name) & "/" 
@@ -1937,6 +1926,7 @@ procedure compseq is
 			end if;
 
 			-- process active scanpaths only
+			prog_position	:= 230;
  			if is_scanport_active(sp) then
 				put_line("compiling scanpath" & natural'image(sp));
 				scanpath_being_compiled := sp;
@@ -1944,12 +1934,14 @@ procedure compseq is
 
 				-- CREATE REGISTER FILE (members_x.reg)
 				-- write something like: "device 1 IC301 irl 8 bsl 108" in the reg file
+				prog_position	:= 240;
  				create( 
 					file => chain(sp).register_file,
 					name => (universal_string_type.to_string(test_name) & "/members_" & trim(natural'image(sp), side => left) & ".reg")
 					);
  
 				-- search for bic in the scanpath being processed
+				prog_position	:= 250;
 				for p in 1..summary.bic_ct loop -- loop here for as much as bics are present. 
 				-- position search starts with position 1, that is the device closes to BSC TDO (first in subsection chain x)
 					b := ptr_bic; -- set bic pointer at end of bic list
@@ -1973,14 +1965,17 @@ procedure compseq is
 				end loop;
 
 				-- WRITE BASE ADDRESS OF CURRENT SCANPATH
+				prog_position	:= 260;
 				write_base_address;
 
 				-- PROCESS SEQUENCES one by one
 				for s in 1..sequence_count loop
+				prog_position	:= 270;
 					read_sequence(s);
 				end loop;
 
 				-- CLOSE REGISER FILE
+				prog_position	:= 280;
 				close ( chain(sp).register_file);
  			end if;
 
@@ -2006,6 +2001,7 @@ begin
 
 
 	-- create vectorfile
+	prog_position	:= 30;
 	seq_io_unsigned_byte.create(
 		file	=> vector_file, 
 		mode	=> seq_io_unsigned_byte.out_file, 
@@ -2016,13 +2012,15 @@ begin
 	--	);
 	--put (size_of_vec_file);
 
+	prog_position	:= 40;
 	read_data_base;
 
 	-- read journal
+	prog_position	:= 50;
 	destination_address := get_destination_address_from_journal;
 	--put_line(natural'image(destination_address));
 
-	
+	prog_position	:= 60;
 	open(
 		file	=> sequence_file,
 		mode	=> in_file,
@@ -2030,14 +2028,18 @@ begin
 		);
 	set_input(sequence_file);
 
+	prog_position	:= 70;
 	put_line("reading sequence file ...");
 	test_info := get_test_info;
+	prog_position	:= 80;
 	scanpath_options := get_scanpath_options;
+	prog_position	:= 90;
 	sequence_count := count_sequences;
 
+	prog_position	:= 100;
 	write_vector_file_header;
 
-	-- WRITE OPTIONS IN VEC FILE
+	-- WRITE GLOBAL CONFIGURATION IN VEC FILE
 	-- frequency
 	write_in_vector_file(scanpath_options.frequency_prescaler);
 	-- threshold
@@ -2064,10 +2066,10 @@ begin
 	-- port 2 all scanport relays off, CS: ignored by executor
    	write_in_vector_file(16#FF#); 
 
- 	seq_io_unsigned_byte.close(vector_file);
+ 	--seq_io_unsigned_byte.close(vector_file);
  	-- options writing done
 
-
+	prog_position	:= 200;
 	unknown_yet;
  
 
