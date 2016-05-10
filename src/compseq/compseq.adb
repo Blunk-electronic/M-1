@@ -83,16 +83,36 @@ procedure compseq is
 	scanpath_options		: type_scanpath_options;
 
 	sequence_count			: positive := 1;
-	scanpath_being_compiled	: positive;
+	scanpath_being_compiled	: positive;	-- points to the scanpath being compiled
+
+	vector_id				: positive;
+
+		-- GLOBAL ARRAY THAT DESCRIBES ALL PHYICAL AVAILABLE SCANPATHS
+		-- non-active scanpaths have an irl_total of zero
+		-- irl_total is the sum of all instuction registers in that scanpath
+		-- irl_total is computed when creating register files
+		type type_single_chain is
+			record
+		-- 			name		: unbounded_string;
+		-- 			mem_ct		: natural := 0;
+		-- 			members		: type_all_members_of_a_single_chain;
+		 		irl_total	: natural := 0;
+		-- 			drl_total	: natural := 0;
+		-- 			ir_drv_all	: unbounded_string; -- MSB left !!!
+		-- 			ir_exp_all	: unbounded_string; -- MSB left !!!
+		-- 			dr_drv_all	: unbounded_string; -- MSB left !!!
+		-- 			dr_exp_all	: unbounded_string; -- MSB left !!!
+				register_file	: ada.text_io.file_type;
+			end record;
+		type type_all_chains is array (natural range 1..scanport_count_max) of type_single_chain;
+		chain	: type_all_chains;
+
 ------------------------------------------
 	
 -- 	type unsigned_3 is mod 8;
 -- 	bit_pt	: unsigned_3 := 0;
 
--- 
--- 	vectors_max		: constant natural := 1000;
--- 	subtype vector_id_type is natural range 1..vectors_max;
--- 	vector_id		: vector_id_type := 1;
+
 -- 	
 -- 	vector_length_max	: constant natural := 5000;
 -- 	subtype type_vector_length is natural range 1..vector_length_max;
@@ -508,9 +528,14 @@ procedure compseq is
 		-- cell_id_upper_end is 4, cell_id_lower_end is 2
 		cell_id_upper_end		: natural := 0; -- holds the id of the upper bit in register wise assigments
 		cell_id_lower_end		: natural := 0; -- holds the id of the lower bit in register wise assigments
---	 	cell_pt  : natural := 0;
--- 	cell_content : string (1..1);
+
 		set_vector_orientation	: type_set_vector_orientation;
+
+		cell_assignment			: type_set_cell_assignment;
+		cell_position_in_image	: positive;
+		cell_expect_mask 		: type_bit_char_class_0 := '1';
+
+		sir_length_total 		: natural := 0;
 
 		procedure put_example(instruction : string) is
 		begin
@@ -530,23 +555,25 @@ procedure compseq is
 			cell_pos_low	: positive;
 			pattern_in		: string;
 			orientation		: type_set_vector_orientation;
-			direction		: type_set_direction := drv) return type_string_of_bit_characters_class_0 is
+			direction		: type_set_direction := drv;
+			mask			: boolean := false
+			) return type_string_of_bit_characters_class_0 is
 
 			pattern_in_length	: positive := cell_pos_high - cell_pos_low + 1;
 
 			subtype type_pattern_1 is type_string_of_bit_characters_class_1 (1..pattern_in_length);
 			pattern_in_class_1	: type_pattern_1;
 
-			subtype type_pattern is type_string_of_bit_characters_class_0 (cell_pos_low..cell_pos_high);
-			pattern_new			: type_pattern;
+			subtype type_pattern_0 is type_string_of_bit_characters_class_0 (1..pattern_in_length);
+			pattern_new			: type_pattern_0;
 
 			whole_pattern_is_dont_care : boolean := false; -- used for exceptional case when expect pattern contains only one x
 			-- example: set IC202 exp boundary 16 downto 0 = x
 
-		begin
-			prog_position	:= 500;
+		begin -- update_pattern
 			-- if this is an expect pattern of length 1 and value x -> assume all bits of this pattern are don't cares
 			-- example: set IC202 exp boundary 16 downto 0 = x
+			prog_position	:= 500;
 			if direction = exp then
 				if pattern_in'last = 1 then -- means if pattern_in is just one character
 					if pattern_in(pattern_in'first) = 'x' or pattern_in(pattern_in'first) = 'X' then
@@ -556,6 +583,7 @@ procedure compseq is
 				end if;
 			end if;
 
+			-- evaluate flag "whole_pattern_is_dont_care" (means fill all bits with dont cares if required)
 			prog_position	:= 510;
 			if whole_pattern_is_dont_care then
 				-- fill pattern_in_class_1 with as much x as specified by cell_pos_high and cell_pos_low
@@ -566,12 +594,32 @@ procedure compseq is
 				pattern_in_class_1	:= to_binary_class_1(  to_binary(pattern_in, pattern_in_length , class_1)  );
 			end if;
 
-
-			-- replace x (don't cares) in pattern_1 by zeroes
-			-- load result in pattern_new
+			-- if a mask is to be created, the flag "mask" matters
 			prog_position	:= 520;
-			pattern_new		:= replace_dont_care(pattern_in_class_1);
-
+			if mask then
+				-- a mask can only be created when pattern_in is an expect value
+				-- from the expect value (pattern_in_class_1), the mask is generated:
+				-- for every dont care bit, a zero is created (means no expect value verification)
+				-- for 0/1, a one is created (means there is an expect value verification)
+				if direction = exp then
+					for m in 1..pattern_in_length loop
+						case pattern_in_class_1(m) is
+							when 'x' | 'X' => pattern_new(m) := '0'; -- no test
+							when '1' | '0' => pattern_new(m) := '1'; -- test
+						end case;
+					end loop;
+					-- pattern_new now contains the mask
+				else
+					raise constraint_error;
+				end if;
+			else
+				-- replace x (don't cares) in pattern_1 by zeroes
+				-- load result in pattern_new
+				pattern_new		:= replace_dont_care(pattern_in_class_1);
+				-- pattern_new now contains the expect value
+			end if;
+	
+			-- apply discrete ranges. CS
 			prog_position	:= 530;
 			if pattern_in_length = length_total then
 				null;
@@ -583,11 +631,51 @@ procedure compseq is
 -- 					null;
 -- 				end loop;
 			end if;
+
 			return pattern_new;
 		end update_pattern;
 
+
+	procedure concatenate_sir_images is
+	-- concatenate sir drv patterns starting with device closest to BSC TDO ! This device has position 1.
+		length_total : positive := chain(scanpath_being_compiled).irl_total;
+		subtype type_sir_image is type_string_of_bit_characters_class_0 (1..length_total);
+		sir_drive	: type_sir_image;
+		sir_expect	: type_sir_image;
+		sir_mask	: type_sir_image;
+		b : type_bscan_ic_ptr;
+
+		pos_start	: positive := 1;
+		pos_end		: positive;
+		
+	begin
+		for p in 1..summary.bic_ct loop -- p defines the position
+			b := ptr_bic;
+			while b /= null loop -- loop in bic list
+				if b.position = p then -- on position match
+					if b.chain = scanpath_being_compiled then -- on scanpath match
+
+						-- start pos initiated already
+						-- calculate end position to place bic-image
+						pos_end := (pos_start + b.len_ir) - 1;
+
+						sir_drive(pos_start..pos_end) 	:= b.pattern_last_ir_drive;
+						sir_expect(pos_start..pos_end)	:= b.pattern_last_ir_expect;
+						sir_mask(pos_start..pos_end)	:= b.pattern_last_ir_mask;
+
+						put_line(chain(scanpath_being_compiled).register_file, "step" 
+							& positive'image(vector_id) & " device" & positive'image(p) & " ir");
+
+						-- calculate start position to place next image
+						pos_start := pos_end + 1;
+					end if;
+				end if;
+				b := b.next;
+			end loop;
+		end loop;
+	end concatenate_sir_images;
  				
- 	begin
+ 	begin -- compile_command
 		prog_position	:= 400;
 
 		--hard+soft trst (default)
@@ -873,8 +961,6 @@ procedure compseq is
 					set_assignment_method := bit_wise;
 				end if;
 
-				--raise constraint_error; end if;
-
 				for p in 1..summary.bic_ct loop
 				-- p points to device in current chain. position 1 is closest to BSC TDO !
 
@@ -887,6 +973,7 @@ procedure compseq is
 							when register_wise =>
 								case set_direction is
 									when drv =>
+										-- update drive image
 										case target_register is
 											when ir =>
 												bic_coordinates.pattern_last_ir_drive := update_pattern(
@@ -937,6 +1024,7 @@ procedure compseq is
 
 
 									when exp =>
+										-- update expect and mask image
 										case target_register is
 											when ir =>
 												bic_coordinates.pattern_last_ir_expect := update_pattern(
@@ -948,6 +1036,17 @@ procedure compseq is
 													orientation			=> set_vector_orientation,
 													direction			=> set_direction
 													);
+												bic_coordinates.pattern_last_ir_mask := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_ir_mask,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation,
+													direction			=> set_direction,
+													mask				=> true
+													);
+
 											when boundary =>
 												bic_coordinates.pattern_last_boundary_expect := update_pattern(
 													pattern_old 		=> bic_coordinates.pattern_last_boundary_expect,
@@ -958,6 +1057,17 @@ procedure compseq is
 													orientation			=> set_vector_orientation,
 													direction			=> set_direction
 													);
+												bic_coordinates.pattern_last_boundary_mask := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_boundary_mask,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation,
+													direction			=> set_direction,
+													mask				=> true
+													);
+
 											when bypass =>
 												bic_coordinates.pattern_last_bypass_expect := update_pattern(
 													pattern_old 		=> bic_coordinates.pattern_last_bypass_expect,
@@ -968,6 +1078,17 @@ procedure compseq is
 													orientation			=> set_vector_orientation,
 													direction			=> set_direction
 													);
+												bic_coordinates.pattern_last_bypass_mask := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_bypass_mask,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation,
+													direction			=> set_direction,
+													mask				=> true
+													);
+
 											when idcode =>
 												bic_coordinates.pattern_last_idcode_expect := update_pattern(
 													pattern_old 		=> bic_coordinates.pattern_last_idcode_expect,
@@ -978,6 +1099,17 @@ procedure compseq is
 													orientation			=> set_vector_orientation,
 													direction			=> set_direction
 													);
+												bic_coordinates.pattern_last_idcode_mask := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_idcode_mask,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation,
+													direction			=> set_direction,
+													mask				=> true
+													);
+
 											when usercode =>
 												bic_coordinates.pattern_last_usercode_expect := update_pattern(
 													pattern_old 		=> bic_coordinates.pattern_last_usercode_expect,
@@ -988,12 +1120,79 @@ procedure compseq is
 													orientation			=> set_vector_orientation,
 													direction			=> set_direction
 													);
+												bic_coordinates.pattern_last_usercode_mask := update_pattern(
+													pattern_old 		=> bic_coordinates.pattern_last_usercode_mask,
+													length_total 		=> cell_id_max + 1,
+													cell_pos_high		=> cell_id_upper_end + 1,
+													cell_pos_low		=> cell_id_lower_end + 1,
+													pattern_in			=> get_field_from_line(cmd,9),
+													orientation			=> set_vector_orientation,
+													direction			=> set_direction,
+													mask				=> true
+													);
+
 										end case;
 
 								end case;
 
 							when bit_wise =>
-								null;
+								for c in 5..field_ct loop
+									cell_assignment := get_cell_assignment(get_field_from_line(cmd,c));
+									-- get cell id from assignment and check range
+									-- cell_id_max has been set earlier according to the targeted register
+									if cell_assignment.cell_id <= cell_id_max then
+										-- the cell id must be converted (mirrored) to the position in the targeted image (drive, expect or mask)
+										-- example: register length = 8, assignment 7=x: cell_position_in_image = 1
+										cell_position_in_image := cell_id_max + 1 - cell_assignment.cell_id;
+										case set_direction is
+											when drv => 
+												case target_register is
+													when ir =>
+														bic_coordinates.pattern_last_ir_drive(cell_position_in_image) := cell_assignment.value;
+													when boundary =>
+														bic_coordinates.pattern_last_boundary_drive(cell_position_in_image) := cell_assignment.value;
+													when bypass =>
+														bic_coordinates.pattern_last_bypass_drive(cell_position_in_image) := cell_assignment.value;
+													when idcode =>
+														bic_coordinates.pattern_last_idcode_drive(cell_position_in_image) := cell_assignment.value;
+													when usercode =>
+														bic_coordinates.pattern_last_usercode_drive(cell_position_in_image) := cell_assignment.value;
+												end case;
+											when exp =>
+												-- if the value to be assigned is don't care (x), 
+												-- the value to be assigned is replaced by zero
+												-- further-on: the mask bit for this position is to be cleared
+												-- in order not disable the check here
+												cell_expect_mask := '1'; -- per default the check is enabled
+												if cell_assignment.value = 'x' or cell_assignment.value = 'X' then
+													cell_assignment.value := '0';
+													cell_expect_mask := '0';
+												end if;
+
+												-- update the targeted register at position cell_position_in_image
+												case target_register is
+													when ir =>
+														bic_coordinates.pattern_last_ir_expect(cell_position_in_image) := cell_assignment.value;
+														bic_coordinates.pattern_last_ir_mask(cell_position_in_image) := cell_expect_mask;
+													when boundary =>
+														bic_coordinates.pattern_last_boundary_expect(cell_position_in_image) := cell_assignment.value;
+														bic_coordinates.pattern_last_boundary_mask(cell_position_in_image) := cell_expect_mask;
+													when bypass =>
+														bic_coordinates.pattern_last_bypass_expect(cell_position_in_image) := cell_assignment.value;
+														bic_coordinates.pattern_last_bypass_mask(cell_position_in_image) := cell_expect_mask;
+													when idcode =>
+														bic_coordinates.pattern_last_idcode_expect(cell_position_in_image) := cell_assignment.value;
+														bic_coordinates.pattern_last_idcode_mask(cell_position_in_image) := cell_expect_mask;
+													when usercode =>
+														bic_coordinates.pattern_last_usercode_expect(cell_position_in_image) := cell_assignment.value;
+														bic_coordinates.pattern_last_usercode_mask(cell_position_in_image) := cell_expect_mask;
+												end case;
+										end case;
+									else
+										put_line("ERROR: Cell id must be below or equal" & natural'image(cell_id_max) & " for this register !");
+										raise constraint_error;
+									end if;
+								end loop;
 						end case;
 					end if;
 
@@ -1007,78 +1206,13 @@ procedure compseq is
 				raise constraint_error;
 			end if; -- if device is a bic
 
--- 									-- if bitwise assignment found
--- 									-- read assigments starting from field 5
--- 									field_pt := 5;
--- 									field_ct := get_field_from_line_count(line);
--- 									while field_pt <= field_ct
--- 									loop
--- 										-- get cell number to address
--- 										cell_pt := natural'value ( get_field_from_line ( to_unbounded_string(get_field_from_line(cmd,field_pt)) ,1,'=') );
--- 										prog_position := "BO3";
--- 										cell_pt := chain(chain_pt).members(nat_scratch).bsl - cell_pt; -- mirror cell pointer (bsl - cell_pt)
--- 
--- 										-- get cell value
--- 										prog_position := "BO4";
--- 										cell_content := ( get_field_from_line ( to_unbounded_string(get_field_from_line(cmd,field_pt)) ,2,'=') );
--- 										-- check cell value
--- 										if is_in( cell_content(cell_content'first), bit_char ) = false then raise constraint_error; end if;
--- 
--- 										-- save cell value at position of bsr of current device
--- 										replace_element (chain(chain_pt).members(nat_scratch).bsr_drv , cell_pt, cell_content(cell_content'first));
--- 										field_pt := field_pt + 1;
--- 									end loop;
+ 
+		-- "sir"
+ 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.sir then -- CS: check id ?
+			vector_id := natural'value(get_field_from_line(cmd,3));
 
--- 									-- if bitwise assignment found
--- 									-- read assigments starting from field 5
--- 									field_pt := 5;
--- 									field_ct := get_field_from_line_count(line);
--- 									while field_pt <= field_ct
--- 									loop
--- 										-- get cell number to address
--- 										cell_pt := natural'value ( get_field_from_line ( to_unbounded_string(get_field_from_line(cmd,field_pt)) ,1,'=') );
--- 										prog_position := "BO7";
--- 										cell_pt := chain(chain_pt).members(nat_scratch).bsl - cell_pt; -- mirror cell pointer (bsl - cell_pt)
--- 
--- 										-- get cell value
--- 										prog_position := "BO8";
--- 										cell_content := ( get_field_from_line ( to_unbounded_string(get_field_from_line(cmd,field_pt)) ,2,'=') );
--- 										-- check cell value
--- 										if is_in( cell_content(cell_content'first), bit_char ) = false then raise constraint_error; end if;
--- 
--- 										-- save cell value at position of bsr of current device
--- 										replace_element (chain(chain_pt).members(nat_scratch).bsr_exp , cell_pt, cell_content(cell_content'first));
--- 										field_pt := field_pt + 1;
--- 									end loop;
--- 									end if;
--- 
-
--- 
--- 			-- if sir found
--- 			if get_field_from_line(cmd,1) = "sir" then -- CS: check id ?
--- 				vector_id := vector_id_type(natural'value(get_field_from_line(cmd,3)));
--- 
--- 				-- reset chain ir drv image
--- 				chain(chain_pt).ir_drv_all := to_unbounded_string("");
--- 				-- reset chain ir exp image
--- 				chain(chain_pt).ir_exp_all := to_unbounded_string("");
--- 
--- 				-- chaining sir drv patterns starting with device closest to BSC TDO !
--- 				nat_scratch := 1;
--- 				while nat_scratch <= chain(chain_pt).mem_ct -- process number of devices in current chain
--- 				loop
--- 					-- chain up ir drv patterns
--- 					chain(chain_pt).ir_drv_all := chain(chain_pt).ir_drv_all & chain(chain_pt).members(nat_scratch).ir_drv;
--- 
--- 					-- chain up ir exp patterns
--- 					chain(chain_pt).ir_exp_all := chain(chain_pt).ir_exp_all & chain(chain_pt).members(nat_scratch).ir_exp;
--- 
--- 					Set_Output(chain(chain_pt).reg_file);
--- 					put_line("step" & natural'image(vector_id) & " device" & natural'image(nat_scratch) & " ir");
--- 					Set_Output(standard_output);
--- 
--- 					nat_scratch := nat_scratch + 1; -- go to next member in chain
--- 				end loop;
+			-- concatenate sir drive, expect and mask images to a single large image
+			concatenate_sir_images;
 -- 
 -- 				-- check option "retry"
 -- 				check_option_retry;
@@ -1202,80 +1336,12 @@ procedure compseq is
 -- 
  		end if;
 
--- 			if prog_position = "ID2" then 
--- 				put_line("Instruction drive pattern length mismatch !"); 
--- 			end if;
--- 			if prog_position = "IE2" then 
--- 				put_line("Instruction capture pattern length mismatch !"); 
--- 			end if;
--- 			if prog_position = "BY1" then 
--- 				put_line("Downto-assignments for BYPASS register drive not allowed !");
--- 			end if;
--- 			if prog_position = "BY2" then 
--- 				put_line("Missing or illegal BYPASS register drive assignment !");
--- 			end if;
--- 			if prog_position = "BY5" then 
--- 				put_line("Downto-assignments for BYPASS register expect not allowed !");
--- 			end if;
--- 			if prog_position = "BY6" then 
--- 				put_line("Missing or illegal BYPASS register expect assignment !");
--- 			end if;
--- 			if prog_position = "IC1" then 
--- 				put_line("Downto-assignment required for IDCODE register drive !");
--- 			end if;
--- 			if prog_position = "IC2" then 
--- 				put_line("IDCODE register drive pattern length mismatch !");
--- 			end if;
--- 			if prog_position = "IC5" then 
--- 				put_line("Downto-assignment required for IDCODE register expect !");
--- 			end if;
--- 			if prog_position = "IC6" then 
--- 				put_line("IDCODE register expect pattern length mismatch !");
--- 			end if;
--- 			if prog_position = "UC1" then 
--- 				put_line("Downto-assignment required for USERCODE register drive !");
--- 			end if;
--- 			if prog_position = "UC2" then 
--- 				put_line("USERCODE register drive pattern length mismatch !");
--- 			end if;
--- 			if prog_position = "UC5" then 
--- 				put_line("Downto-assignment required for USERCODE register expect !");
--- 			end if;
--- 			if prog_position = "UC6" then 
--- 				put_line("USERCODE register expect pattern length mismatch !");
--- 			end if;
--- 			if prog_position = "BO2" then 
--- 				put_line("BOUNDARY register drive pattern length mismatch !");
--- 			end if;
--- 			if prog_position = "BO6" then 
--- 				put_line("BOUNDARY register expect pattern length mismatch !");
--- 			end if;
--- 			if prog_position = "BO3" or prog_position = "BO7" then 
--- 				put_line("Invalid cell number !");
--- 				put_line("BOUNDARY register cell " & get_field_from_line ( to_unbounded_string(get_field_from_line(cmd,field_pt)) ,1,'=') & " does not exist !");
--- 			end if;
--- 			if prog_position = "BO4" or prog_position = "BO8" then 
--- 				put_line("Invalid BOUNDARY register cell assignment: " & get_field_from_line(cmd,field_pt));
--- 				put_line("Values to assign are: 0,1 or x");
--- 			end if;
--- 			if prog_position = "SC1" then
--- 				put_line("Illegal character found. Allowed are 0,1,x");
--- 			end if;
--- 			if prog_position = "SC2" then
--- 				put_line("Only one character allowed for pattern scaling !");
--- 			end if;
 -- 			if prog_position = "RE1" then
 -- 				put_line("Retry specification invalid !");
 -- 				put_line("Max. retry count is" & natural'image(retry_ct_max));
 -- 				put("Max. delay is "); put(retry_delay_max, exp => 0 , aft => 1); put(" sec"); new_line;
 -- 				put_line("Example for an sir with ID 7, 3 retries with 0.5sec delay inbetween: sir 7 option retry 3 delay 0.5");
 -- 			end if;
--- 
--- 
--- 			put_line("Affected line reads: " & line);
--- 			raise constraint_error; -- propagate exception to mainline program
--- 
--- 				--put_line("ERROR  : There are only" & natural'image(power_channel_ct) & "channels available for current watch/monitoring.");
  	end compile_command;
 
 -----------------
@@ -1778,24 +1844,24 @@ procedure compseq is
 	procedure unknown_yet is
 
 
-		-- GLOBAL ARRAY THAT DESCRIBES ALL PHYICAL AVAILABLE SCANPATHS
-		-- non-active scanpaths have an irl_total of zero
-		-- irl_total is the sum of all instuction registers in that scanpath
-		-- irl_total is computed when creating register files
-		type type_single_chain is
-			record
-		-- 			name		: unbounded_string;
-		-- 			mem_ct		: natural := 0;
-		-- 			members		: type_all_members_of_a_single_chain;
-		 		irl_total	: natural := 0;
-		-- 			drl_total	: natural := 0;
-		-- 			ir_drv_all	: unbounded_string; -- MSB left !!!
-		-- 			ir_exp_all	: unbounded_string; -- MSB left !!!
-		-- 			dr_drv_all	: unbounded_string; -- MSB left !!!
-		-- 			dr_exp_all	: unbounded_string; -- MSB left !!!
-				register_file	: ada.text_io.file_type;
-			end record;
-		type type_all_chains is array (natural range 1..scanport_count_max) of type_single_chain;
+-- 		-- GLOBAL ARRAY THAT DESCRIBES ALL PHYICAL AVAILABLE SCANPATHS
+-- 		-- non-active scanpaths have an irl_total of zero
+-- 		-- irl_total is the sum of all instuction registers in that scanpath
+-- 		-- irl_total is computed when creating register files
+-- 		type type_single_chain is
+-- 			record
+-- 		-- 			name		: unbounded_string;
+-- 		-- 			mem_ct		: natural := 0;
+-- 		-- 			members		: type_all_members_of_a_single_chain;
+-- 		 		irl_total	: natural := 0;
+-- 		-- 			drl_total	: natural := 0;
+-- 		-- 			ir_drv_all	: unbounded_string; -- MSB left !!!
+-- 		-- 			ir_exp_all	: unbounded_string; -- MSB left !!!
+-- 		-- 			dr_drv_all	: unbounded_string; -- MSB left !!!
+-- 		-- 			dr_exp_all	: unbounded_string; -- MSB left !!!
+-- 				register_file	: ada.text_io.file_type;
+-- 			end record;
+-- 		type type_all_chains is array (natural range 1..scanport_count_max) of type_single_chain;
 
 
 	 	procedure write_base_address is
@@ -1905,7 +1971,7 @@ procedure compseq is
 
 
 
-		chain	: type_all_chains;
+-- 		chain	: type_all_chains;
 		-- 	mem_map	: all_chain_mem_maps;
 
 		b : type_bscan_ic_ptr;
