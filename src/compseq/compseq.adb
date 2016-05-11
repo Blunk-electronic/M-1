@@ -87,25 +87,25 @@ procedure compseq is
 
 	vector_id				: positive;
 
-		-- GLOBAL ARRAY THAT DESCRIBES ALL PHYICAL AVAILABLE SCANPATHS
-		-- non-active scanpaths have an irl_total of zero
-		-- irl_total is the sum of all instuction registers in that scanpath
-		-- irl_total is computed when creating register files
-		type type_single_chain is
-			record
-		-- 			name		: unbounded_string;
-		-- 			mem_ct		: natural := 0;
-		-- 			members		: type_all_members_of_a_single_chain;
-		 		irl_total	: natural := 0;
-		-- 			drl_total	: natural := 0;
-		-- 			ir_drv_all	: unbounded_string; -- MSB left !!!
-		-- 			ir_exp_all	: unbounded_string; -- MSB left !!!
-		-- 			dr_drv_all	: unbounded_string; -- MSB left !!!
-		-- 			dr_exp_all	: unbounded_string; -- MSB left !!!
-				register_file	: ada.text_io.file_type;
-			end record;
-		type type_all_chains is array (natural range 1..scanport_count_max) of type_single_chain;
-		chain	: type_all_chains;
+	-- GLOBAL ARRAY THAT DESCRIBES ALL PHYSICAL AVAILABLE SCANPATHS
+	-- non-active scanpaths have an irl_total of zero
+	-- irl_total is the sum of all instuction registers in that scanpath + trailer length
+	-- irl_total is computed when creating register files
+	type type_single_scanport is
+		record
+	-- 			name		: unbounded_string;
+	-- 			mem_ct		: natural := 0;
+	-- 			members		: type_all_members_of_a_single_chain;
+	 		irl_total	: natural := 0;
+	-- 			drl_total	: natural := 0;
+	-- 			ir_drv_all	: unbounded_string; -- MSB left !!!
+	-- 			ir_exp_all	: unbounded_string; -- MSB left !!!
+	-- 			dr_drv_all	: unbounded_string; -- MSB left !!!
+	-- 			dr_exp_all	: unbounded_string; -- MSB left !!!
+			register_file	: ada.text_io.file_type;
+		end record;
+	type type_all_scanports is array (natural range 1..scanport_count_max) of type_single_scanport;
+	scanport	: type_all_scanports;
 
 ------------------------------------------
 	
@@ -517,6 +517,9 @@ procedure compseq is
 
 		sir_length_total 		: natural := 0;
 
+		sxr_retry_delay_unsigned_8	: unsigned_8;
+		sxr_retries_unsigned_8		: unsigned_8;
+
 		procedure put_example(instruction : string) is
 		begin
 			put_line("       Example: " & sequence_instruction_set.imax & row_separator_0 
@@ -616,9 +619,53 @@ procedure compseq is
 		end update_pattern;
 
 
+		procedure check_option_retry is
+		begin
+			-- check option "retry" -- example: sdr id 4 option retry 10 delay 1
+			-- CS: check other options here
+			if field_ct > 3 then
+				if get_field_from_line(cmd,4) = sxr_option.option then
+					if get_field_from_line(cmd,5) = sxr_option.retry then
+						if positive'value(get_field_from_line(cmd,6)) in type_sxr_retries then
+							sxr_retries := positive'value(get_field_from_line(cmd,6));
+							if get_field_from_line(cmd,7) = sxr_option.dely then
+								if float'value(get_field_from_line(cmd,8)) in type_delay_value then
+									sxr_retry_delay := float'value(get_field_from_line(cmd,8));
+
+										sxr_retry_delay_unsigned_8	:= unsigned_8(natural(sxr_retry_delay * 10.0)); -- CS: why multiply by 10 ?
+										sxr_retries_unsigned_8		:= unsigned_8(sxr_retries);
+
+									if field_ct > 8 then
+										put_warning_on_too_many_parameters(line_counter);
+									end if;
+								else
+									put_line("ERROR: Maximum delay is" & float'image(delay_max) & " !");
+									raise constraint_error;
+								end if;
+							else
+								put_line("ERROR: Expected keyword '" & sxr_option.dely & "' !");
+								raise constraint_error;
+							end if;
+						else
+							put_line("ERROR: Retry count exceeded ! Max value is" & positive'image(sxr_retries_max) & " !");
+							raise constraint_error;
+						end if;
+					else
+						put_line("ERROR: Expected keyword '" & sxr_option.retry & "' !");
+						-- CS: put other availabe options 
+						raise constraint_error;
+					end if;
+				else
+					put_line("ERROR: Expected keyword '" & sxr_option.option & "' after sxr id !");
+					raise constraint_error;
+				end if;
+			end if;
+	end check_option_retry;
+
+
 	procedure concatenate_sir_images is
-	-- concatenate sir drv patterns starting with device closest to BSC TDO ! This device has position 1.
-		length_total : positive := chain(scanpath_being_compiled).irl_total;
+	-- concatenate sir images starting with device closest to BSC TDO ! This device has position 1.
+		length_total : positive := scanport(scanpath_being_compiled).irl_total;
 		subtype type_sir_image is type_string_of_bit_characters_class_0 (1..length_total);
 		sir_drive	: type_sir_image;
 		sir_expect	: type_sir_image;
@@ -629,6 +676,7 @@ procedure compseq is
 		pos_end		: positive;
 		
 	begin
+		-- CS: add sir trailer
 		for p in 1..summary.bic_ct loop -- p defines the position
 			b := ptr_bic;
 			while b /= null loop -- loop in bic list
@@ -643,7 +691,7 @@ procedure compseq is
 						sir_expect(pos_start..pos_end)	:= b.pattern_last_ir_expect;
 						sir_mask(pos_start..pos_end)	:= b.pattern_last_ir_mask;
 
-						put_line(chain(scanpath_being_compiled).register_file, "step" 
+						put_line(scanport(scanpath_being_compiled).register_file, "step" 
 							& positive'image(vector_id) & " device" & positive'image(p) & " ir");
 
 						-- calculate start position to place next image
@@ -653,7 +701,262 @@ procedure compseq is
 				b := b.next;
 			end loop;
 		end loop;
+
+		check_option_retry;
+
+-- 				-- make binary drive vector
+-- 				-- debug new_line; put_line("sir drv: " & chain(chain_pt).ir_drv_all & " " & trailer_ir);
+-- 				make_binary_vector
+-- 					(
+-- 					sir_sdr =>"sir",
+-- 					drv_exp => "drv",
+-- 					id => vector_id,
+-- 					vector_string => chain(chain_pt).ir_drv_all & trailer_ir, -- trailer must be attached to the lower end of a drv vector
+-- 					-- NOTE: vector_string is mirrored: LSB left, MSB right
+-- 					retries => ubyte_scratch,
+-- 					retry_delay => ubyte_scratch2
+-- 					);
+-- 
+-- 				-- make binary expect and mask vector
+-- 				-- debug new_line; put_line("sir exp: " & trailer_ir & " " & chain(chain_pt).ir_exp_all);
+-- 				make_binary_vector
+-- 					(
+-- 					sir_sdr =>"sir",
+-- 					drv_exp => "exp",
+-- 					vector_string => trailer_ir & chain(chain_pt).ir_exp_all -- trailer must be attached to the upper end of a expect vector
+-- 					-- NOTE: vector_string is mirrored: LSB left, MSB right
+-- 					);
+-- 
+-- 			end if; -- if sir found
+-- 
+
 	end concatenate_sir_images;
+
+
+	procedure concatenate_sdr_images is
+		length_total 	: natural := trailer_length; -- the trailer is always included
+		b 				: type_bscan_ic_ptr;
+
+		procedure build_sdr_image is
+			subtype type_sdr_image is type_string_of_bit_characters_class_0 (1..length_total);
+			sdr_drive	: type_sdr_image;
+			sdr_expect	: type_sdr_image;
+			sdr_mask	: type_sdr_image;
+			b : type_bscan_ic_ptr;
+
+			pos_start	: positive := 1;
+			pos_end		: positive;
+		begin
+			-- CS: add sdr trailer
+			for p in 1..summary.bic_ct loop -- p defines the position
+				b := ptr_bic;
+				while b /= null loop -- loop in bic list
+					if b.position = p then -- on position match
+						if b.chain = scanpath_being_compiled then -- on scanpath match
+
+							-- if last instruction was BYPASS
+							if b.pattern_last_ir_drive = replace_dont_care(b.opc_bypass) then
+								-- calculate end position to place bic-image
+								pos_end := (pos_start + bic_bypass_register_length) - 1;
+
+								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_bypass_drive;
+								sdr_expect(pos_start..pos_end)	:= b.pattern_last_bypass_expect;
+								sdr_mask(pos_start..pos_end)	:= b.pattern_last_bypass_mask;
+
+								put_line(scanport(scanpath_being_compiled).register_file, "step" 
+									& natural'image(vector_id) 
+									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+
+							-- if last instruction was EXTEST
+							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_extest) then
+								-- calculate end position to place bic-image
+								pos_end := (pos_start + b.len_bsr) - 1;
+
+								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_boundary_drive;
+								sdr_expect(pos_start..pos_end)	:= b.pattern_last_boundary_expect;
+								sdr_mask(pos_start..pos_end)	:= b.pattern_last_boundary_mask;
+
+								put_line(scanport(scanpath_being_compiled).register_file, "step" 
+									& natural'image(vector_id) 
+									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+
+							-- if last instruction was SAMPLE
+							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_sample) then
+								-- calculate end position to place bic-image
+								pos_end := (pos_start + b.len_bsr) - 1;
+
+								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_boundary_drive;
+								sdr_expect(pos_start..pos_end)	:= b.pattern_last_boundary_expect;
+								sdr_mask(pos_start..pos_end)	:= b.pattern_last_boundary_mask;
+
+								put_line(scanport(scanpath_being_compiled).register_file, "step" 
+									& natural'image(vector_id) 
+									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+
+							-- if last instruction was PRELOAD
+							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_preload) then
+								-- calculate end position to place bic-image
+								pos_end := (pos_start + b.len_bsr) - 1;
+
+								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_boundary_drive;
+								sdr_expect(pos_start..pos_end)	:= b.pattern_last_boundary_expect;
+								sdr_mask(pos_start..pos_end)	:= b.pattern_last_boundary_mask;
+
+								put_line(scanport(scanpath_being_compiled).register_file, "step" 
+									& natural'image(vector_id) 
+									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+
+							-- if last instruction was HIGHZ
+							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_highz) then
+								-- calculate end position to place bic-image
+								pos_end := (pos_start + b.len_bsr) - 1;
+
+								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_bypass_drive;
+								sdr_expect(pos_start..pos_end)	:= b.pattern_last_bypass_expect;
+								sdr_mask(pos_start..pos_end)	:= b.pattern_last_bypass_mask;
+
+								put_line(scanport(scanpath_being_compiled).register_file, "step" 
+									& natural'image(vector_id) 
+									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+
+							-- if last instruction was CLAMP
+							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_clamp) then
+								-- calculate end position to place bic-image
+								pos_end := (pos_start + b.len_bsr) - 1;
+
+								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_bypass_drive;
+								sdr_expect(pos_start..pos_end)	:= b.pattern_last_bypass_expect;
+								sdr_mask(pos_start..pos_end)	:= b.pattern_last_bypass_mask;
+
+								put_line(scanport(scanpath_being_compiled).register_file, "step" 
+									& natural'image(vector_id) 
+									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+
+							-- if last instruction was IDCODE
+							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_idcode) then
+								-- calculate end position to place bic-image
+								pos_end := (pos_start + b.len_bsr) - 1;
+
+								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_idcode_drive;
+								sdr_expect(pos_start..pos_end)	:= b.pattern_last_idcode_expect;
+								sdr_mask(pos_start..pos_end)	:= b.pattern_last_idcode_mask;
+
+								put_line(scanport(scanpath_being_compiled).register_file, "step" 
+									& natural'image(vector_id) 
+									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(IDCODE)));
+
+							-- if last instruction was USERCODE
+							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_usercode) then
+								-- calculate end position to place bic-image
+								pos_end := (pos_start + b.len_bsr) - 1;
+
+								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_usercode_drive;
+								sdr_expect(pos_start..pos_end)	:= b.pattern_last_usercode_expect;
+								sdr_mask(pos_start..pos_end)	:= b.pattern_last_usercode_mask;
+
+								put_line(scanport(scanpath_being_compiled).register_file, "step" 
+									& natural'image(vector_id) 
+									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(USERCODE)));
+
+							-- if last instruction was INTEST
+							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_intest) then
+								-- calculate end position to place bic-image
+								pos_end := (pos_start + b.len_bsr) - 1;
+
+								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_boundary_drive;
+								sdr_expect(pos_start..pos_end)	:= b.pattern_last_boundary_expect;
+								sdr_mask(pos_start..pos_end)	:= b.pattern_last_boundary_mask;
+
+								put_line(scanport(scanpath_being_compiled).register_file, "step" 
+									& natural'image(vector_id) 
+									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+
+							end if;
+
+
+							-- calculate start position to place next image
+							pos_start := pos_end + 1;
+						end if;
+					end if;
+					b := b.next;
+				end loop;
+			end loop;
+
+
+			check_option_retry;
+
+-- 				-- make binary drive vector
+-- 				make_binary_vector
+-- 					(
+-- 					sir_sdr =>"sdr",
+-- 					drv_exp => "drv",
+-- 					id => vector_id,
+-- 					vector_string => chain(chain_pt).dr_drv_all & trailer_dr, -- trailer must be attached to the lower end of a drv vector
+-- 					-- NOTE: vector_string is mirrored: LSB left, MSB right
+-- 					retries => ubyte_scratch,
+-- 					retry_delay => ubyte_scratch2
+-- 					);
+-- 
+-- 				-- make binary expect and mask vector
+-- 				make_binary_vector
+-- 					(
+-- 					sir_sdr =>"sdr",
+-- 					drv_exp => "exp",
+-- 					vector_string => trailer_dr & chain(chain_pt).dr_exp_all -- trailer must be attached to the upper end of a expect vector
+-- 					-- NOTE: vector_string is mirrored: LSB left, MSB right
+-- 					);
+
+
+
+		end build_sdr_image;
+
+	begin
+		-- calculate total length of sdr image depending on latest loaded instructions
+		for p in 1..summary.bic_ct loop -- p defines the position
+			b := ptr_bic;
+			while b /= null loop -- loop in bic list
+				if b.position = p then -- on position match
+					if b.chain = scanpath_being_compiled then -- on scanpath match
+
+						-- chaining sdr drv and exp patterns starting with device closest to BSC TDO !
+						-- use drv pattern depending on latest loaded instruction of particular device
+
+						if b.pattern_last_ir_drive = replace_dont_care(b.opc_bypass) then
+							length_total := length_total + bic_bypass_register_length;
+						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_extest) then
+							length_total := length_total + b.len_bsr;
+						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_sample) then
+							length_total := length_total + b.len_bsr;
+						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_preload) then
+							length_total := length_total + b.len_bsr;
+						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_highz) then
+							length_total := length_total + bic_bypass_register_length;
+						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_clamp) then
+							length_total := length_total + bic_bypass_register_length;
+						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_idcode) then
+							length_total := length_total + bic_idcode_register_length;
+						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_usercode) then
+							length_total := length_total + bic_usercode_register_length;
+						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_intest) then
+							length_total := length_total + b.len_bsr;
+						else
+							put_line("ERROR: Instruction opcode for device '" 
+								& universal_string_type.to_string(b.name) 
+								& "' does not match any instruction covered in Std. " & bscan_standard_1 );
+							raise constraint_error;
+						end if;
+
+					end if;
+				end if;
+				b := b.next;
+			end loop;
+		end loop;
+
+		-- length_total now contains the length of the sdr image
+		build_sdr_image;
+	end concatenate_sdr_images;
+
+	
  				
  	begin -- compile_command
 		prog_position	:= 400;
@@ -964,6 +1267,7 @@ procedure compseq is
 													pattern_in			=> get_field_from_line(cmd,9),
 													orientation			=> set_vector_orientation
 													);
+												-- CS: verify the update yielded a valid instruction !
 											when boundary =>
 												bic_coordinates.pattern_last_boundary_drive := update_pattern(
 													pattern_old 		=> bic_coordinates.pattern_last_boundary_drive,
@@ -1173,6 +1477,7 @@ procedure compseq is
 										raise constraint_error;
 									end if;
 								end loop;
+								-- CS: verify the instruction is valid !
 						end case;
 					end if;
 
@@ -1188,163 +1493,18 @@ procedure compseq is
 
  
 		-- "sir"
- 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.sir then -- CS: check id ?
+ 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.sir then -- CS: check id keyword and id itself ?
 			vector_id := natural'value(get_field_from_line(cmd,3));
 
 			-- concatenate sir drive, expect and mask images to a single large image
 			concatenate_sir_images;
 
-			-- check option "retry" -- example: sdr id 4 option retry 10 delay 1
-			if field_ct = 8 then
-				if get_field_from_line(cmd,4) = sxr_option.option then
-					if get_field_from_line(cmd,5) = sxr_option.retry then
-						if positive'value(get_field_from_line(cmd,6)) in type_sxr_retries then
-							sxr_retries := positive'value(get_field_from_line(cmd,6));
-						end if;
-					end if;
-				end if;
-			end if;
--- 	procedure check_option_retry is
--- 	begin
--- 		ubyte_scratch := 0;
--- 		ubyte_scratch2 := 0;
--- 		if get_field(line,4) = "option" then
--- 			if get_field(line,5) = "retry" then
--- 				prog_position := "RE1";
--- 				if get_field_count(line) = 8 then -- expect 8 fields in line
--- 					retries := natural'value(get_field(line,6));
--- 					if get_field(line,7) = "delay" then
--- 						retry_delay := float'value(get_field(line,8));
--- 						ubyte_scratch2 := unsigned_8(natural(retry_delay * 10.0));
--- 						ubyte_scratch := unsigned_8(retries);
--- 					else raise constraint_error;
--- 					end if; -- if "delay" found
--- 				else raise constraint_error;
--- 				end if;
--- 			end if; -- if "retry" found
--- 		end if; -- if "option" found
--- 	end check_option_retry;
+		-- "sdr"
+ 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.sdr then -- CS: check id keyword and id itself ?
+			vector_id := natural'value(get_field_from_line(cmd,3));
 
+			concatenate_sdr_images;
 
-
- 
--- 				-- make binary drive vector
--- 				-- debug new_line; put_line("sir drv: " & chain(chain_pt).ir_drv_all & " " & trailer_ir);
--- 				make_binary_vector
--- 					(
--- 					sir_sdr =>"sir",
--- 					drv_exp => "drv",
--- 					id => vector_id,
--- 					vector_string => chain(chain_pt).ir_drv_all & trailer_ir, -- trailer must be attached to the lower end of a drv vector
--- 					-- NOTE: vector_string is mirrored: LSB left, MSB right
--- 					retries => ubyte_scratch,
--- 					retry_delay => ubyte_scratch2
--- 					);
--- 
--- 				-- make binary expect and mask vector
--- 				-- debug new_line; put_line("sir exp: " & trailer_ir & " " & chain(chain_pt).ir_exp_all);
--- 				make_binary_vector
--- 					(
--- 					sir_sdr =>"sir",
--- 					drv_exp => "exp",
--- 					vector_string => trailer_ir & chain(chain_pt).ir_exp_all -- trailer must be attached to the upper end of a expect vector
--- 					-- NOTE: vector_string is mirrored: LSB left, MSB right
--- 					);
--- 
--- 			end if; -- if sir found
--- 
--- 
--- 			-- if sdr found
--- 			if get_field_from_line(cmd,1) = "sdr" then -- CS: check id ?
--- 				vector_id := vector_id_type(natural'value(get_field_from_line(cmd,3)));
--- 
--- 				-- reset chain dr drv image
--- 				chain(chain_pt).dr_drv_all := to_unbounded_string("");
--- 				-- reset chain dr exp image
--- 				chain(chain_pt).dr_exp_all := to_unbounded_string("");
--- 
--- 				-- chaining sdr drv and exp patterns starting with device closest to BSC TDO !
--- 				-- use drv pattern depending on latest loaded instruction of particular device
--- 				nat_scratch := 1;
--- 				while nat_scratch <= chain(chain_pt).mem_ct -- process number of devices in current chain
--- 				loop
--- 					-- chain up dr drv/exp patterns
--- 					if chain(chain_pt).members(nat_scratch).instruction = "bypass" then
--- 						chain(chain_pt).dr_drv_all := chain(chain_pt).dr_drv_all & chain(chain_pt).members(nat_scratch).byp_drv;
--- 						chain(chain_pt).dr_exp_all := chain(chain_pt).dr_exp_all & chain(chain_pt).members(nat_scratch).byp_exp;
--- 
--- 						Set_Output(chain(chain_pt).reg_file);
--- 						put_line("step" & natural'image(vector_id) & " device" & natural'image(nat_scratch) & " bypass");
--- 						Set_Output(standard_output);
--- 					end if;
--- 
--- 					if chain(chain_pt).members(nat_scratch).instruction = "idcode" then
--- 						chain(chain_pt).dr_drv_all := chain(chain_pt).dr_drv_all & chain(chain_pt).members(nat_scratch).idc_drv;
--- 						chain(chain_pt).dr_exp_all := chain(chain_pt).dr_exp_all & chain(chain_pt).members(nat_scratch).idc_exp;
--- 
--- 						Set_Output(chain(chain_pt).reg_file);
--- 						put_line("step" & natural'image(vector_id) & " device" & natural'image(nat_scratch) & " idcode");
--- 						Set_Output(standard_output);
--- 					end if;
--- 
--- 					if chain(chain_pt).members(nat_scratch).instruction = "usercode" then
--- 						chain(chain_pt).dr_drv_all := chain(chain_pt).dr_drv_all & chain(chain_pt).members(nat_scratch).usc_drv;
--- 						chain(chain_pt).dr_exp_all := chain(chain_pt).dr_exp_all & chain(chain_pt).members(nat_scratch).usc_exp;
--- 
--- 						Set_Output(chain(chain_pt).reg_file);
--- 						put_line("step" & natural'image(vector_id) & " device" & natural'image(nat_scratch) & " usercode");
--- 						Set_Output(standard_output);
--- 					end if;
--- 
--- 					if chain(chain_pt).members(nat_scratch).instruction = "sample" then
--- 						chain(chain_pt).dr_drv_all := chain(chain_pt).dr_drv_all & chain(chain_pt).members(nat_scratch).bsr_drv;
--- 						chain(chain_pt).dr_exp_all := chain(chain_pt).dr_exp_all & chain(chain_pt).members(nat_scratch).bsr_exp;
--- 
--- 						Set_Output(chain(chain_pt).reg_file);
--- 						put_line("step" & natural'image(vector_id) & " device" & natural'image(nat_scratch) & " boundary");
--- 						Set_Output(standard_output);
--- 					end if;
--- 
--- 					if chain(chain_pt).members(nat_scratch).instruction = "extest" then
--- 						chain(chain_pt).dr_drv_all := chain(chain_pt).dr_drv_all & chain(chain_pt).members(nat_scratch).bsr_drv;
--- 						chain(chain_pt).dr_exp_all := chain(chain_pt).dr_exp_all & chain(chain_pt).members(nat_scratch).bsr_exp;
--- 
--- 						Set_Output(chain(chain_pt).reg_file);
--- 						put_line("step" & natural'image(vector_id) & " device" & natural'image(nat_scratch) & " boundary");
--- 						Set_Output(standard_output);
--- 					end if;
--- 
--- 					nat_scratch := nat_scratch + 1; -- go to next member in chain
--- 				end loop;
--- 
--- 				-- check option "retry"
--- 				check_option_retry;
--- 
--- 				--make_binary_vector sdr drv ${chain_pt} ${seq[2]} $sdr_drv$trailer_dr $retries $retry_delay #ins V3.5
--- 
--- 				-- make binary drive vector
--- 				make_binary_vector
--- 					(
--- 					sir_sdr =>"sdr",
--- 					drv_exp => "drv",
--- 					id => vector_id,
--- 					vector_string => chain(chain_pt).dr_drv_all & trailer_dr, -- trailer must be attached to the lower end of a drv vector
--- 					-- NOTE: vector_string is mirrored: LSB left, MSB right
--- 					retries => ubyte_scratch,
--- 					retry_delay => ubyte_scratch2
--- 					);
--- 
--- 				-- make binary expect and mask vector
--- 				make_binary_vector
--- 					(
--- 					sir_sdr =>"sdr",
--- 					drv_exp => "exp",
--- 					vector_string => trailer_dr & chain(chain_pt).dr_exp_all -- trailer must be attached to the upper end of a expect vector
--- 					-- NOTE: vector_string is mirrored: LSB left, MSB right
--- 					);
--- 
--- 			end if; -- if sdr found
--- 
  		end if;
 
 -- 			if prog_position = "RE1" then
@@ -1853,27 +2013,7 @@ procedure compseq is
 	
 
 	procedure unknown_yet is
-
-
--- 		-- GLOBAL ARRAY THAT DESCRIBES ALL PHYICAL AVAILABLE SCANPATHS
--- 		-- non-active scanpaths have an irl_total of zero
--- 		-- irl_total is the sum of all instuction registers in that scanpath
--- 		-- irl_total is computed when creating register files
--- 		type type_single_chain is
--- 			record
--- 		-- 			name		: unbounded_string;
--- 		-- 			mem_ct		: natural := 0;
--- 		-- 			members		: type_all_members_of_a_single_chain;
--- 		 		irl_total	: natural := 0;
--- 		-- 			drl_total	: natural := 0;
--- 		-- 			ir_drv_all	: unbounded_string; -- MSB left !!!
--- 		-- 			ir_exp_all	: unbounded_string; -- MSB left !!!
--- 		-- 			dr_drv_all	: unbounded_string; -- MSB left !!!
--- 		-- 			dr_exp_all	: unbounded_string; -- MSB left !!!
--- 				register_file	: ada.text_io.file_type;
--- 			end record;
--- 		type type_all_chains is array (natural range 1..scanport_count_max) of type_single_chain;
-
+		b : type_bscan_ic_ptr;
 
 	 	procedure write_base_address is
 		-- writes base address of current scanpath in vector_file_header
@@ -1978,21 +2118,14 @@ procedure compseq is
 			end if;
 
 		end read_sequence;
-	
-
-
-
--- 		chain	: type_all_chains;
-		-- 	mem_map	: all_chain_mem_maps;
-
-		b : type_bscan_ic_ptr;
 
 	begin -- unknown_yet
 		--	set_output(standard_output);
 		put_line("found" & natural'image(summary.scanpath_ct) & " scan paths(s) ...");
 
 		prog_position	:= 210;
-		for sp in 1..scanport_count_max loop
+		for sp in 1..scanport_count_max loop -- loop for every physical available scanport (regardless if it is active or not)
+			-- sp points to scanport
 
 			-- delete all stale register files
 			prog_position	:= 220;
@@ -2006,14 +2139,14 @@ procedure compseq is
 			prog_position	:= 230;
  			if is_scanport_active(sp) then
 				put_line("compiling scanpath" & natural'image(sp));
-				scanpath_being_compiled := sp;
+				scanpath_being_compiled := sp; -- set global variable scanpath_being_compiled to active scanport (pointed to by sp)
 				--put_line("active" & natural'image(sp) );
 
 				-- CREATE REGISTER FILE (members_x.reg)
 				-- write something like: "device 1 IC301 irl 8 bsl 108" in the reg file
 				prog_position	:= 240;
  				create( 
-					file => chain(sp).register_file,
+					file => scanport(sp).register_file,
 					name => (universal_string_type.to_string(test_name) & "/members_" & trim(natural'image(sp), side => left) & ".reg")
 					);
  
@@ -2026,15 +2159,15 @@ procedure compseq is
 						if b.chain = sp then -- on match of scanpath id
 							if b.position = p then -- on match of position 
 								-- write in register file something like "device 1 IC301 irl 8 bsl 108" in the reg file"
-								put_line(chain(sp).register_file,"device" & natural'image(p)
+								put_line(scanport(sp).register_file,"device" & natural'image(p)
 									& row_separator_0 & universal_string_type.to_string(b.name)
 									& row_separator_0 & "irl" & positive'image(b.len_ir)
 									& row_separator_0 & "bsl" & positive'image(b.len_bsr)
 									);
 
-								-- sum up irl of chain members to calculate the irl_total for that scanpath
+								-- sum up irl of chain members and trailer length to calculate the irl_total for that scanpath
 								-- CS: assumption is that no device is bypassed or added/inserted in the chain later
-								chain(sp).irl_total := chain(sp).irl_total + b.len_ir;
+								scanport(sp).irl_total := scanport(sp).irl_total + b.len_ir + trailer_length ;
 							end if;
 						end if;
 						b := b.next;
@@ -2053,7 +2186,7 @@ procedure compseq is
 
 				-- CLOSE REGISER FILE
 				prog_position	:= 280;
-				close ( chain(sp).register_file);
+				close ( scanport(sp).register_file);
  			end if;
 
 		end loop;
