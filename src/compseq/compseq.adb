@@ -107,54 +107,42 @@ procedure compseq is
 	type type_all_scanports is array (natural range 1..scanport_count_max) of type_single_scanport;
 	scanport	: type_all_scanports;
 
+	type type_test_step_pre;
+	type ptr_type_test_step_pre is access all type_test_step_pre;
+	type type_test_step_pre ( length_total : positive) is 
+		record
+			next		: ptr_type_test_step_pre;
+			vector_id	: positive;
+			img_drive	: type_string_of_bit_characters_class_0(1..length_total);
+			img_expect	: type_string_of_bit_characters_class_0(1..length_total);
+			img_mask	: type_string_of_bit_characters_class_0(1..length_total);
+		end record;
+	ptr_test_step_pre	: ptr_type_test_step_pre;
+
+	procedure add_to_step_list_pre(
+		list				: in out ptr_type_test_step_pre;
+		vector_id_given		: positive;
+		length_total_given	: positive;
+		img_drive_given		: type_string_of_bit_characters_class_0;
+		img_expect_given	: type_string_of_bit_characters_class_0;
+		img_mask_given		: type_string_of_bit_characters_class_0
+		) is
+	begin
+		list := new type_test_step_pre'(
+			next 			=> list,
+			vector_id		=> vector_id_given,
+			length_total	=> length_total_given,
+			img_drive		=> img_drive_given,
+			img_expect		=> img_expect_given,
+			img_mask		=> img_mask_given
+			);
+	end;
+
 ------------------------------------------
 	
 -- 	type unsigned_3 is mod 8;
 -- 	bit_pt	: unsigned_3 := 0;
 
-
--- 	
--- 	vector_length_max	: constant natural := 5000;
--- 	subtype type_vector_length is natural range 1..vector_length_max;
--- 
--- 	unb_scratch		: unbounded_string;
--- 	int_scratch		: integer := 0;
--- 	nat_scratch		: natural := 0;
--- 	nat_scratch2	: natural := 0;
-
--- 	retry_ct_max	: natural := 100;
--- 	retry_delay_max	: float := 25.5; -- sec.
--- 	subtype type_retries is natural range 0..retry_ct_max;
--- 	subtype type_retry_delay is float range 0.0..retry_delay_max;
--- 	retries		: type_retries;
--- 	retry_delay : type_retry_delay;
--- 
--- 
--- 
--- 	type type_single_member is
--- 		record
--- 			device	: unbounded_string;
--- 			irl		: natural;
--- 			bsl		: natural;
--- 			ir_drv	: unbounded_string;		-- holds opcode of latest instruction loaded
--- 			instruction	: unbounded_string; -- holds name of latest instruction loaded
--- 
--- 			byp_drv	: character;
--- 			bsr_drv	: unbounded_string;
--- 			idc_drv	: unbounded_string;
--- 			usc_drv	: unbounded_string;
--- 
--- 			byp_exp	: character;
--- 			bsr_exp	: unbounded_string;
--- 			idc_exp	: unbounded_string;
--- 			usc_exp	: unbounded_string;
--- 
--- 			ir_exp	: unbounded_string;
--- --			dr_drv	: unbounded_string;
--- 		end record;
--- 
--- 	max_member_ct_per_chain	: constant natural := 100;
--- 	type type_all_members_of_a_single_chain is array (natural range 1..max_member_ct_per_chain) of type_single_member;
 
 
 	procedure write_in_vector_file (byte : unsigned_8) is
@@ -703,6 +691,16 @@ procedure compseq is
 		end loop;
 
 		check_option_retry;
+
+		add_to_step_list_pre(
+			list				=> ptr_test_step_pre,
+			
+			vector_id_given		=> vector_id,
+			length_total_given	=> length_total,
+			img_drive_given		=> sir_drive,
+			img_expect_given	=> sir_expect,
+			img_mask_given		=> sir_mask);
+
 
 -- 				-- make binary drive vector
 -- 				-- debug new_line; put_line("sir drv: " & chain(chain_pt).ir_drv_all & " " & trailer_ir);
