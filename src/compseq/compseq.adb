@@ -487,26 +487,6 @@ procedure compseq is
 -- 	end scale_pattern;
 -- 
 -- 
--- 	procedure check_option_retry is
--- 	begin
--- 		ubyte_scratch := 0;
--- 		ubyte_scratch2 := 0;
--- 		if get_field(line,4) = "option" then
--- 			if get_field(line,5) = "retry" then
--- 				prog_position := "RE1";
--- 				if get_field_count(line) = 8 then -- expect 8 fields in line
--- 					retries := natural'value(get_field(line,6));
--- 					if get_field(line,7) = "delay" then
--- 						retry_delay := float'value(get_field(line,8));
--- 						ubyte_scratch2 := unsigned_8(natural(retry_delay * 10.0));
--- 						ubyte_scratch := unsigned_8(retries);
--- 					else raise constraint_error;
--- 					end if; -- if "delay" found
--- 				else raise constraint_error;
--- 				end if;
--- 			end if; -- if "retry" found
--- 		end if; -- if "option" found
--- 	end check_option_retry;
 -- 
 -- 
  	procedure compile_command (cmd : extended_string.bounded_string) is
@@ -1213,10 +1193,41 @@ procedure compseq is
 
 			-- concatenate sir drive, expect and mask images to a single large image
 			concatenate_sir_images;
--- 
--- 				-- check option "retry"
--- 				check_option_retry;
--- 
+
+			-- check option "retry" -- example: sdr id 4 option retry 10 delay 1
+			if field_ct = 8 then
+				if get_field_from_line(cmd,4) = sxr_option.option then
+					if get_field_from_line(cmd,5) = sxr_option.retry then
+						if positive'value(get_field_from_line(cmd,6)) in type_sxr_retries then
+							sxr_retries := positive'value(get_field_from_line(cmd,6));
+						end if;
+					end if;
+				end if;
+			end if;
+-- 	procedure check_option_retry is
+-- 	begin
+-- 		ubyte_scratch := 0;
+-- 		ubyte_scratch2 := 0;
+-- 		if get_field(line,4) = "option" then
+-- 			if get_field(line,5) = "retry" then
+-- 				prog_position := "RE1";
+-- 				if get_field_count(line) = 8 then -- expect 8 fields in line
+-- 					retries := natural'value(get_field(line,6));
+-- 					if get_field(line,7) = "delay" then
+-- 						retry_delay := float'value(get_field(line,8));
+-- 						ubyte_scratch2 := unsigned_8(natural(retry_delay * 10.0));
+-- 						ubyte_scratch := unsigned_8(retries);
+-- 					else raise constraint_error;
+-- 					end if; -- if "delay" found
+-- 				else raise constraint_error;
+-- 				end if;
+-- 			end if; -- if "retry" found
+-- 		end if; -- if "option" found
+-- 	end check_option_retry;
+
+
+
+ 
 -- 				-- make binary drive vector
 -- 				-- debug new_line; put_line("sir drv: " & chain(chain_pt).ir_drv_all & " " & trailer_ir);
 -- 				make_binary_vector
