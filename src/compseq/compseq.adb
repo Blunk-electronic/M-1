@@ -41,6 +41,7 @@ with ada.characters.conversions;	use ada.characters.conversions;
 
 with m1; --use m1;
 with m1_internal; use m1_internal;
+with m1_firmware; use m1_firmware;
 
 --with System.OS_Lib;   use System.OS_Lib;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
@@ -112,29 +113,38 @@ procedure compseq is
 	type type_test_step_pre ( length_total : positive) is 
 		record
 			next		: ptr_type_test_step_pre;
+			scan		: type_scan;
 			vector_id	: positive;
-			img_drive	: type_string_of_bit_characters_class_0(1..length_total);
-			img_expect	: type_string_of_bit_characters_class_0(1..length_total);
-			img_mask	: type_string_of_bit_characters_class_0(1..length_total);
+			img_drive	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
+			img_expect	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
+			img_mask	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
+			retry_count	: unsigned_8;
+			retry_delay	: unsigned_8;
 		end record;
 	ptr_test_step_pre	: ptr_type_test_step_pre;
 
 	procedure add_to_step_list_pre(
 		list				: in out ptr_type_test_step_pre;
+		scan_given			: type_scan; -- SIR or SDR
 		vector_id_given		: positive;
 		length_total_given	: positive;
-		img_drive_given		: type_string_of_bit_characters_class_0;
-		img_expect_given	: type_string_of_bit_characters_class_0;
-		img_mask_given		: type_string_of_bit_characters_class_0
+		img_drive_given		: type_string_of_bit_characters_class_0;	-- LSB left (pos 1)
+		img_expect_given	: type_string_of_bit_characters_class_0;	-- LSB left (pos 1)
+		img_mask_given		: type_string_of_bit_characters_class_0;	-- LSB left (pos 1)
+		retry_count_given	: unsigned_8;
+		retry_delay_given	: unsigned_8
 		) is
 	begin
 		list := new type_test_step_pre'(
 			next 			=> list,
+			scan			=> scan_given,
 			vector_id		=> vector_id_given,
 			length_total	=> length_total_given,
-			img_drive		=> img_drive_given,
-			img_expect		=> img_expect_given,
-			img_mask		=> img_mask_given
+			img_drive		=> img_drive_given,		-- LSB left (pos 1)
+			img_expect		=> img_expect_given,	-- LSB left (pos 1)
+			img_mask		=> img_mask_given,		-- LSB left (pos 1)
+			retry_count		=> retry_count_given,
+			retry_delay		=> retry_delay_given
 			);
 	end;
 
@@ -145,13 +155,61 @@ procedure compseq is
 
 
 
-	procedure write_in_vector_file (byte : unsigned_8) is
+	procedure write_byte_in_vector_file (byte : unsigned_8) is
 	-- writes a given byte into vector_file
 	-- counts bytes and updates size_of_vector_file
 	begin
 		seq_io_unsigned_byte.write(vector_file, byte);
 		size_of_vector_file := size_of_vector_file + 1;
-	end write_in_vector_file;
+	end write_byte_in_vector_file;
+
+	procedure write_word_in_vec_file (word	: unsigned_16) is
+		ubyte_scratch  : unsigned_8;
+		u2byte_scratch : unsigned_16;
+	begin
+		-- lowbyte first
+		u2byte_scratch := word;
+ 		u2byte_scratch := (shift_left(u2byte_scratch,8)); -- clear bits 15..8 by shift left 8 bit
+ 		u2byte_scratch := (shift_right(u2byte_scratch,8)); -- shift back by 8 bits
+		ubyte_scratch := unsigned_8(u2byte_scratch); -- take lowbyte
+		write_byte_in_vector_file(ubyte_scratch); -- write lowbyte in file
+
+		-- highbyte
+		u2byte_scratch := word;
+ 		u2byte_scratch := (shift_right(u2byte_scratch,8)); -- shift right by 8 bits
+		ubyte_scratch := unsigned_8(u2byte_scratch); -- take highbyte
+		write_byte_in_vector_file(ubyte_scratch); -- write highbyte in file
+	end write_word_in_vec_file;
+
+	procedure write_double_word_in_vec_file (dword	: unsigned_32) is
+		ubyte_scratch  : unsigned_8;
+		u4byte_scratch : unsigned_32;
+	begin
+		-- lowbyte first
+		u4byte_scratch := dword;
+ 		u4byte_scratch := (shift_left(u4byte_scratch,3*8)); -- clear bits 31..8 by shift left 24 bit
+ 		u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
+		ubyte_scratch := unsigned_8(u4byte_scratch); -- take lowbyte
+		write_byte_in_vector_file(ubyte_scratch); -- write lowbyte in file
+
+		u4byte_scratch := dword;
+ 		u4byte_scratch := (shift_left(u4byte_scratch,2*8)); -- clear bits 31..16 by shift left 16 bit
+ 		u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
+		ubyte_scratch := unsigned_8(u4byte_scratch);
+		write_byte_in_vector_file(ubyte_scratch);
+
+		u4byte_scratch := dword;
+ 		u4byte_scratch := (shift_left(u4byte_scratch,1*8)); -- clear bits 31..24 by shift left 8 bit
+ 		u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
+		ubyte_scratch := unsigned_8(u4byte_scratch);
+		write_byte_in_vector_file(ubyte_scratch);
+
+		-- highbyte
+		u4byte_scratch := dword;
+ 		u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift right by 8 bits
+		ubyte_scratch := unsigned_8(u4byte_scratch); -- take lowbyte
+		write_byte_in_vector_file(ubyte_scratch); -- write highbyte in file
+	end write_double_word_in_vec_file;
 
 
 
@@ -163,143 +221,23 @@ procedure compseq is
 		) is
 	begin
 		-- write ID -- a conf. word has ID 0000h
-		write_in_vector_file(16#00#);
-		write_in_vector_file(16#00#);
+		write_byte_in_vector_file(16#00#);
+		write_byte_in_vector_file(16#00#);
 
 		--write low level command type
-		write_in_vector_file(llct);
+		write_byte_in_vector_file(llct);
 
 		-- write chain pt
 		-- write chain number in vec file. CS: chain number is ignored by executor
- 		write_in_vector_file(16#00#); 
+ 		write_byte_in_vector_file(16#00#); 
 
 		-- write low level command itself
- 		write_in_vector_file(llcc); 
+ 		write_byte_in_vector_file(llcc); 
 	end write_llc;
 
 
--- 	procedure write_word_in_vec_file
--- 		(
--- 		word	: unsigned_16
--- 		) is
--- 		ubyte_scratch  : unsigned_8;
--- 		u2byte_scratch : unsigned_16;
--- 	begin
--- 		-- lowbyte first
--- 		u2byte_scratch := word;
---  		u2byte_scratch := (shift_left(u2byte_scratch,8)); -- clear bits 15..8 by shift left 8 bit
---  		u2byte_scratch := (shift_right(u2byte_scratch,8)); -- shift back by 8 bits
--- 		ubyte_scratch := unsigned_8(u2byte_scratch); -- take lowbyte
--- 		seq_io_unsigned_byte.write(vectorfile,ubyte_scratch); -- write lowbyte in file
--- 
--- 		-- highbyte
--- 		u2byte_scratch := word;
---  		u2byte_scratch := (shift_right(u2byte_scratch,8)); -- shift right by 8 bits
--- 		ubyte_scratch := unsigned_8(u2byte_scratch); -- take highbyte
--- 		seq_io_unsigned_byte.write(vectorfile,ubyte_scratch); -- write highbyte in file
--- 	end write_word_in_vec_file;
--- 
--- 
--- 	procedure write_double_word_in_vec_file
--- 		(
--- 		dword	: unsigned_32
--- 		) is
--- 		ubyte_scratch  : unsigned_8;
--- 		u4byte_scratch : unsigned_32;
--- 	begin
--- 		-- lowbyte first
--- 		u4byte_scratch := dword;
---  		u4byte_scratch := (shift_left(u4byte_scratch,3*8)); -- clear bits 31..8 by shift left 24 bit
---  		u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
--- 		ubyte_scratch := unsigned_8(u4byte_scratch); -- take lowbyte
--- 		seq_io_unsigned_byte.write(vectorfile,ubyte_scratch); -- write lowbyte in file
--- 
--- 		u4byte_scratch := dword;
---  		u4byte_scratch := (shift_left(u4byte_scratch,2*8)); -- clear bits 31..16 by shift left 16 bit
---  		u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
--- 		ubyte_scratch := unsigned_8(u4byte_scratch);
--- 		seq_io_unsigned_byte.write(vectorfile,ubyte_scratch);
--- 
--- 		u4byte_scratch := dword;
---  		u4byte_scratch := (shift_left(u4byte_scratch,1*8)); -- clear bits 31..24 by shift left 8 bit
---  		u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
--- 		ubyte_scratch := unsigned_8(u4byte_scratch);
--- 		seq_io_unsigned_byte.write(vectorfile,ubyte_scratch);
--- 
--- 		-- highbyte
--- 		u4byte_scratch := dword;
---  		u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift right by 8 bits
--- 		ubyte_scratch := unsigned_8(u4byte_scratch); -- take lowbyte
--- 		seq_io_unsigned_byte.write(vectorfile,ubyte_scratch); -- write highbyte in file
--- 	end write_double_word_in_vec_file;
--- 
--- 
 -- 	procedure make_binary_vector
--- 		(
--- 		sir_sdr	: string; -- "sir"
--- 		drv_exp	: string; -- "drv"
--- 		id 		: vector_id_type := 1; -- required for drive vector only
--- 		vector_string 	: unbounded_string; -- vector as string like 00xx11101x
--- 		retries			: unsigned_8 := 0; -- required for dirve vector only
--- 		retry_delay 	: unsigned_8 := 0  -- required for dirve vector only
--- 		) is
--- 		vector_length : type_vector_length := length(vector_string);
--- 
--- 	begin
--- 		-- vector format is:  
--- 		-- 16 bit ID , 8 bit SIR/SDR marker, (retries, retry_delay) , 8 bit scan path number, 32 bit vector length , drv data, mask data, exp data
--- 		put(".");
--- 
--- 		-- build drive vector
--- 		if drv_exp = "drv" then
--- 			write_word_in_vec_file(unsigned_16(id)); -- write vector id in vector file
--- 
--- 			-- write sdr/sir marker in vec file
--- 			if on_fail = "hstrst" then 
--- 				if sir_sdr = "sdr" then
--- 					if retries = 0 then seq_io_unsigned_byte.write(vectorfile,16#01#); end if; -- standard sdr
--- 					if retries > 0 then 
--- 						seq_io_unsigned_byte.write(vectorfile,16#05#);
--- 						seq_io_unsigned_byte.write(vectorfile,retries); 
--- 						seq_io_unsigned_byte.write(vectorfile,retry_delay);  
--- 					end if; -- sdr with retry option
--- 				end if;
--- 
--- 				if sir_sdr = "sir" then
--- 					if retries = 0 then seq_io_unsigned_byte.write(vectorfile,16#02#); end if; -- standard sir
--- 					if retries > 0 then 
--- 						seq_io_unsigned_byte.write(vectorfile,16#06#);
--- 						seq_io_unsigned_byte.write(vectorfile,retries); 
--- 						seq_io_unsigned_byte.write(vectorfile,retry_delay);  
--- 					end if; -- sdr with retry option
--- 				end if;
--- 
--- 			elsif on_fail = "power_down" then
--- 				if sir_sdr = "sdr" then
--- 					if retries = 0 then seq_io_unsigned_byte.write(vectorfile,16#03#); end if; -- standard sdr
--- 					if retries > 0 then 
--- 						seq_io_unsigned_byte.write(vectorfile,16#07#);
--- 						seq_io_unsigned_byte.write(vectorfile,retries); 
--- 						seq_io_unsigned_byte.write(vectorfile,retry_delay);  
--- 					end if; -- sdr with retry option
--- 				end if;
--- 
--- 				if sir_sdr = "sir" then
--- 					if retries = 0 then seq_io_unsigned_byte.write(vectorfile,16#04#); end if; -- standard sir
--- 					if retries > 0 then 
--- 						seq_io_unsigned_byte.write(vectorfile,16#08#);
--- 						seq_io_unsigned_byte.write(vectorfile,retries); 
--- 						seq_io_unsigned_byte.write(vectorfile,retry_delay);  
--- 					end if; -- sdr with retry option
--- 				end if;
--- 			end if;
--- 
--- 			-- write chain id in vector file
--- 			seq_io_unsigned_byte.write(vectorfile,unsigned_8(chain_pt)); 
--- 
--- 			-- write vector length in vector file
--- 			u4byte_scratch := unsigned_32(vector_length);
--- 			write_double_word_in_vec_file(u4byte_scratch);
+
 -- 
 -- 			-- write vector_string LSB first
 -- 			nat_scratch := vector_length;
@@ -505,8 +443,9 @@ procedure compseq is
 
 		sir_length_total 		: natural := 0;
 
-		sxr_retry_delay_unsigned_8	: unsigned_8;
-		sxr_retries_unsigned_8		: unsigned_8;
+		sxr_retries_unsigned_8		: unsigned_8 := 0; -- set by check_option_retry, otherwise this is default and means: no retries
+		sxr_retry_delay_unsigned_8	: unsigned_8 := 0; -- set by check_option_retry, otherwise this is default
+
 
 		procedure put_example(instruction : string) is
 		begin
@@ -524,11 +463,11 @@ procedure compseq is
 			length_total 	: positive;
 			cell_pos_high	: positive;
 			cell_pos_low	: positive;
-			pattern_in		: string;
+			pattern_in		: string; -- MSB left (pos. 1)
 			orientation		: type_set_vector_orientation;
 			direction		: type_set_direction := drv;
 			mask			: boolean := false
-			) return type_string_of_bit_characters_class_0 is
+			) return type_string_of_bit_characters_class_0 is -- MSB left (pos. 1)
 
 			pattern_in_length	: positive := cell_pos_high - cell_pos_low + 1;
 
@@ -603,7 +542,7 @@ procedure compseq is
 -- 				end loop;
 			end if;
 
-			return pattern_new;
+			return pattern_new; -- MSB left (pos 1)
 		end update_pattern;
 
 
@@ -652,7 +591,9 @@ procedure compseq is
 
 
 	procedure concatenate_sir_images is
-	-- concatenate sir images starting with device closest to BSC TDO ! This device has position 1.
+	-- concatenates sir images starting with device closest to BSC TDO ! This device has position 1.
+	-- checks retry option
+	-- adds images to list of test steps (pointed to by ptr_test_step_pre)
 		length_total : positive := scanport(scanpath_being_compiled).irl_total;
 		subtype type_sir_image is type_string_of_bit_characters_class_0 (1..length_total);
 		sir_drive	: type_sir_image;
@@ -662,9 +603,8 @@ procedure compseq is
 
 		pos_start	: positive := 1;
 		pos_end		: positive;
-		
-	begin
-		-- CS: add sir trailer
+
+	begin -- concatenate_sir_images
 		for p in 1..summary.bic_ct loop -- p defines the position
 			b := ptr_bic;
 			while b /= null loop -- loop in bic list
@@ -675,9 +615,9 @@ procedure compseq is
 						-- calculate end position to place bic-image
 						pos_end := (pos_start + b.len_ir) - 1;
 
-						sir_drive(pos_start..pos_end) 	:= b.pattern_last_ir_drive;
-						sir_expect(pos_start..pos_end)	:= b.pattern_last_ir_expect;
-						sir_mask(pos_start..pos_end)	:= b.pattern_last_ir_mask;
+						sir_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_ir_drive);
+						sir_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_ir_expect);
+						sir_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_ir_mask);
 
 						put_line(scanport(scanpath_being_compiled).register_file, "step" 
 							& positive'image(vector_id) & " device" & positive'image(p) & " ir");
@@ -690,52 +630,51 @@ procedure compseq is
 			end loop;
 		end loop;
 
+		-- insert trailer at begin of drive image (so that the trailer gets sent into the target FIRST)
+		sir_drive := shift_class_0(sir_drive,right,trailer_length);
+		sir_drive(1..trailer_length) := mirror_class_0(scanpath_options.trailer_ir);
+
+		-- insert trailer at end of expect/mask image (BSC receives trailer AFTER the target-capture values !)
+		sir_expect(length_total-trailer_length+1..length_total) := mirror_class_0(scanpath_options.trailer_ir);
+		-- mask for trailer has same position with all bits set (means all bits are checked) -- CS: disabling checking option ?
+		-- CS: when manipulating the mask, it must be mirrored. for the time being no need since all bits are set
+		sir_mask(length_total-trailer_length+1..length_total) := to_binary_class_0
+																		(
+																		to_binary( 
+																			text_in => trailer_length * '1',
+																			length	=> trailer_length,
+																			class	=> class_0
+																			)
+																		);
+
 		check_option_retry;
 
 		add_to_step_list_pre(
 			list				=> ptr_test_step_pre,
-			
+			scan_given			=> SIR,
 			vector_id_given		=> vector_id,
 			length_total_given	=> length_total,
-			img_drive_given		=> sir_drive,
-			img_expect_given	=> sir_expect,
-			img_mask_given		=> sir_mask);
-
-
--- 				-- make binary drive vector
--- 				-- debug new_line; put_line("sir drv: " & chain(chain_pt).ir_drv_all & " " & trailer_ir);
--- 				make_binary_vector
--- 					(
--- 					sir_sdr =>"sir",
--- 					drv_exp => "drv",
--- 					id => vector_id,
--- 					vector_string => chain(chain_pt).ir_drv_all & trailer_ir, -- trailer must be attached to the lower end of a drv vector
--- 					-- NOTE: vector_string is mirrored: LSB left, MSB right
--- 					retries => ubyte_scratch,
--- 					retry_delay => ubyte_scratch2
--- 					);
--- 
--- 				-- make binary expect and mask vector
--- 				-- debug new_line; put_line("sir exp: " & trailer_ir & " " & chain(chain_pt).ir_exp_all);
--- 				make_binary_vector
--- 					(
--- 					sir_sdr =>"sir",
--- 					drv_exp => "exp",
--- 					vector_string => trailer_ir & chain(chain_pt).ir_exp_all -- trailer must be attached to the upper end of a expect vector
--- 					-- NOTE: vector_string is mirrored: LSB left, MSB right
--- 					);
--- 
--- 			end if; -- if sir found
--- 
+			img_drive_given		=> sir_drive, -- LSB left (pos 1)
+			img_expect_given	=> sir_expect, -- LSB left (pos 1)
+			img_mask_given		=> sir_mask, -- LSB left (pos 1)
+			retry_count_given	=> sxr_retries_unsigned_8,
+			retry_delay_given	=> sxr_retry_delay_unsigned_8
+			);
 
 	end concatenate_sir_images;
 
 
 	procedure concatenate_sdr_images is
+	-- calculates total length of sdr image by the instructions loaded last
+	-- concatenates sir images starting with device closest to BSC TDO ! This device has position 1.
+	-- checks retry option
+	-- adds images to list of test steps (pointed to by ptr_test_step_pre)
+
 		length_total 	: natural := trailer_length; -- the trailer is always included
 		b 				: type_bscan_ic_ptr;
 
 		procedure build_sdr_image is
+		-- with the total length known, the overall sdr image can be created
 			subtype type_sdr_image is type_string_of_bit_characters_class_0 (1..length_total);
 			sdr_drive	: type_sdr_image;
 			sdr_expect	: type_sdr_image;
@@ -744,7 +683,9 @@ procedure compseq is
 
 			pos_start	: positive := 1;
 			pos_end		: positive;
-		begin
+
+		begin -- build_sdr_image
+			-- the last instruction loaded indicates the targeted data register
 			-- CS: add sdr trailer
 			for p in 1..summary.bic_ct loop -- p defines the position
 				b := ptr_bic;
@@ -757,9 +698,9 @@ procedure compseq is
 								-- calculate end position to place bic-image
 								pos_end := (pos_start + bic_bypass_register_length) - 1;
 
-								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_bypass_drive;
-								sdr_expect(pos_start..pos_end)	:= b.pattern_last_bypass_expect;
-								sdr_mask(pos_start..pos_end)	:= b.pattern_last_bypass_mask;
+								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_bypass_drive);
+								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_expect);
+								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_mask);
 
 								put_line(scanport(scanpath_being_compiled).register_file, "step" 
 									& natural'image(vector_id) 
@@ -770,9 +711,9 @@ procedure compseq is
 								-- calculate end position to place bic-image
 								pos_end := (pos_start + b.len_bsr) - 1;
 
-								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_boundary_drive;
-								sdr_expect(pos_start..pos_end)	:= b.pattern_last_boundary_expect;
-								sdr_mask(pos_start..pos_end)	:= b.pattern_last_boundary_mask;
+								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_boundary_drive);
+								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_expect);
+								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_mask);
 
 								put_line(scanport(scanpath_being_compiled).register_file, "step" 
 									& natural'image(vector_id) 
@@ -783,9 +724,9 @@ procedure compseq is
 								-- calculate end position to place bic-image
 								pos_end := (pos_start + b.len_bsr) - 1;
 
-								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_boundary_drive;
-								sdr_expect(pos_start..pos_end)	:= b.pattern_last_boundary_expect;
-								sdr_mask(pos_start..pos_end)	:= b.pattern_last_boundary_mask;
+								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_boundary_drive);
+								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_expect);
+								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_mask);
 
 								put_line(scanport(scanpath_being_compiled).register_file, "step" 
 									& natural'image(vector_id) 
@@ -796,9 +737,9 @@ procedure compseq is
 								-- calculate end position to place bic-image
 								pos_end := (pos_start + b.len_bsr) - 1;
 
-								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_boundary_drive;
-								sdr_expect(pos_start..pos_end)	:= b.pattern_last_boundary_expect;
-								sdr_mask(pos_start..pos_end)	:= b.pattern_last_boundary_mask;
+								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_boundary_drive);
+								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_expect);
+								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_mask);
 
 								put_line(scanport(scanpath_being_compiled).register_file, "step" 
 									& natural'image(vector_id) 
@@ -809,9 +750,9 @@ procedure compseq is
 								-- calculate end position to place bic-image
 								pos_end := (pos_start + b.len_bsr) - 1;
 
-								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_bypass_drive;
-								sdr_expect(pos_start..pos_end)	:= b.pattern_last_bypass_expect;
-								sdr_mask(pos_start..pos_end)	:= b.pattern_last_bypass_mask;
+								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_bypass_drive);
+								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_expect);
+								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_mask);
 
 								put_line(scanport(scanpath_being_compiled).register_file, "step" 
 									& natural'image(vector_id) 
@@ -822,9 +763,9 @@ procedure compseq is
 								-- calculate end position to place bic-image
 								pos_end := (pos_start + b.len_bsr) - 1;
 
-								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_bypass_drive;
-								sdr_expect(pos_start..pos_end)	:= b.pattern_last_bypass_expect;
-								sdr_mask(pos_start..pos_end)	:= b.pattern_last_bypass_mask;
+								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_bypass_drive);
+								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_expect);
+								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_mask);
 
 								put_line(scanport(scanpath_being_compiled).register_file, "step" 
 									& natural'image(vector_id) 
@@ -835,9 +776,9 @@ procedure compseq is
 								-- calculate end position to place bic-image
 								pos_end := (pos_start + b.len_bsr) - 1;
 
-								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_idcode_drive;
-								sdr_expect(pos_start..pos_end)	:= b.pattern_last_idcode_expect;
-								sdr_mask(pos_start..pos_end)	:= b.pattern_last_idcode_mask;
+								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_idcode_drive);
+								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_idcode_expect);
+								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_idcode_mask);
 
 								put_line(scanport(scanpath_being_compiled).register_file, "step" 
 									& natural'image(vector_id) 
@@ -848,9 +789,9 @@ procedure compseq is
 								-- calculate end position to place bic-image
 								pos_end := (pos_start + b.len_bsr) - 1;
 
-								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_usercode_drive;
-								sdr_expect(pos_start..pos_end)	:= b.pattern_last_usercode_expect;
-								sdr_mask(pos_start..pos_end)	:= b.pattern_last_usercode_mask;
+								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_usercode_drive);
+								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_usercode_expect);
+								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_usercode_mask);
 
 								put_line(scanport(scanpath_being_compiled).register_file, "step" 
 									& natural'image(vector_id) 
@@ -861,9 +802,9 @@ procedure compseq is
 								-- calculate end position to place bic-image
 								pos_end := (pos_start + b.len_bsr) - 1;
 
-								sdr_drive(pos_start..pos_end) 	:= b.pattern_last_boundary_drive;
-								sdr_expect(pos_start..pos_end)	:= b.pattern_last_boundary_expect;
-								sdr_mask(pos_start..pos_end)	:= b.pattern_last_boundary_mask;
+								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_boundary_drive);
+								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_expect);
+								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_mask);
 
 								put_line(scanport(scanpath_being_compiled).register_file, "step" 
 									& natural'image(vector_id) 
@@ -880,36 +821,43 @@ procedure compseq is
 				end loop;
 			end loop;
 
+			-- insert trailer at begin of drive image (so that the trailer gets sent into the target FIRST)
+			sdr_drive := shift_class_0(sdr_drive,right,trailer_length);
+			sdr_drive(1..trailer_length) := mirror_class_0(scanpath_options.trailer_dr);
+
+			-- insert trailer at end of expect/mask image (BSC receives trailer AFTER the target-capture values !)
+			sdr_expect(length_total-trailer_length+1..length_total) := mirror_class_0(scanpath_options.trailer_dr);
+			-- mask for trailer has same position with all bits set (means all bits are checked) -- CS: disabling checking option ?
+			-- CS: when manipulating the mask, it must be mirrored. for the time being no need since all bits are set
+			sdr_mask(length_total-trailer_length+1..length_total) := to_binary_class_0
+																			(
+																			to_binary( 
+																				text_in => trailer_length * '1',
+																				length	=> trailer_length,
+																				class	=> class_0
+																				)
+																			);
+
 
 			check_option_retry;
 
--- 				-- make binary drive vector
--- 				make_binary_vector
--- 					(
--- 					sir_sdr =>"sdr",
--- 					drv_exp => "drv",
--- 					id => vector_id,
--- 					vector_string => chain(chain_pt).dr_drv_all & trailer_dr, -- trailer must be attached to the lower end of a drv vector
--- 					-- NOTE: vector_string is mirrored: LSB left, MSB right
--- 					retries => ubyte_scratch,
--- 					retry_delay => ubyte_scratch2
--- 					);
--- 
--- 				-- make binary expect and mask vector
--- 				make_binary_vector
--- 					(
--- 					sir_sdr =>"sdr",
--- 					drv_exp => "exp",
--- 					vector_string => trailer_dr & chain(chain_pt).dr_exp_all -- trailer must be attached to the upper end of a expect vector
--- 					-- NOTE: vector_string is mirrored: LSB left, MSB right
--- 					);
-
-
+			add_to_step_list_pre(
+				list				=> ptr_test_step_pre,
+				scan_given			=> SDR,
+				vector_id_given		=> vector_id,
+				length_total_given	=> length_total,
+				img_drive_given		=> sdr_drive,	-- LSB left (pos 1)
+				img_expect_given	=> sdr_expect,	-- LSB left (pos 1)
+				img_mask_given		=> sdr_mask,	-- LSB left (pos 1)
+				retry_count_given	=> sxr_retries_unsigned_8,
+				retry_delay_given	=> sxr_retry_delay_unsigned_8
+				);
 
 		end build_sdr_image;
 
-	begin
+	begin -- concatenate_sdr_images
 		-- calculate total length of sdr image depending on latest loaded instructions
+		-- from the total sdr length, the overall sdr image can be created
 		for p in 1..summary.bic_ct loop -- p defines the position
 			b := ptr_bic;
 			while b /= null loop -- loop in bic list
@@ -950,7 +898,7 @@ procedure compseq is
 			end loop;
 		end loop;
 
-		-- length_total now contains the length of the sdr image
+		-- length_total now contains the length of the overall sdr image
 		build_sdr_image;
 	end concatenate_sdr_images;
 
@@ -1258,7 +1206,7 @@ procedure compseq is
 										case target_register is
 											when ir =>
 												bic_coordinates.pattern_last_ir_drive := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_ir_drive,
+													pattern_old 		=> bic_coordinates.pattern_last_ir_drive, -- MSB left !
 													length_total 		=> cell_id_max + 1,
 													cell_pos_high		=> cell_id_upper_end + 1,
 													cell_pos_low		=> cell_id_lower_end + 1,
@@ -1639,10 +1587,10 @@ procedure compseq is
 
 							-- search for end_sdr and end_sir. if no end_sdr/sir found default is uses (see m1_internal.ads)
 							if get_field_from_line(line_of_file,1) = section_info_item.end_sdr then
-								ti.end_sdr := type_end_sxr'value(get_field_from_line(line_of_file,3));
+								ti.end_sdr := type_end_sdr'value(get_field_from_line(line_of_file,3));
 							end if;
 							if get_field_from_line(line_of_file,1) = section_info_item.end_sir then
-								ti.end_sir := type_end_sxr'value(get_field_from_line(line_of_file,3));
+								ti.end_sir := type_end_sir'value(get_field_from_line(line_of_file,3));
 							end if;
 
 						end if;
@@ -2117,6 +2065,128 @@ procedure compseq is
 
 		end read_sequence;
 
+		procedure order_img is
+			t	: ptr_type_test_step_pre := ptr_test_step_pre;
+			offset	: unsigned_8;
+
+			procedure write_image_in_vector_file(img : type_string_of_bit_characters_class_0; length : positive) is
+				bit_pos	: positive := 1;
+				type type_bc is mod 8;
+				bc		: type_bc := 0;
+				byte	: unsigned_8;
+				i		: positive;
+			begin
+				while i <= length loop
+					-- to_natural(img(1..8);
+					bc := bc + 1;
+					if bc = 0 then
+						write_byte_in_vector_file(byte);
+					end if;
+					bit_pos := bit_pos + 1;
+				end loop;
+			end write_image_in_vector_file;
+
+		begin
+			for i in 1..vector_id loop
+
+				t := ptr_test_step_pre;
+				while t /= null loop
+					if t.vector_id = i then
+
+						-- vector format is:  
+						-- 16 bit ID , 8 bit SIR/SDR marker, (retries, retry_delay) , 8 bit scan path number, 32 bit vector length , drv data, mask data, exp data
+
+						-- WRITE VECTOR (OR STEP) ID (16 bit)
+						write_word_in_vec_file(unsigned_16(vector_id));
+
+						-- WRITE SXR MARKER (8 bit)
+						-- CS: makeshift to set sxr markers with end state "pause-xr"
+						-- if option end_sxr PXR given, add 10h to marker. otherwise the marker is unchanged according to current firmware
+						case t.scan is
+							when sir =>
+				 				case test_info.end_sir is
+									when RTI => offset := 0;
+									when PIR => offset := 16#10#;
+								end case;
+							when sdr =>
+				 				case test_info.end_sdr is
+									when RTI => offset := 0;
+									when PDR => offset := 16#10#;
+								end case;
+						end case;
+
+						case scanpath_options.on_fail is
+							when HSTRST => 
+								case t.scan is
+									when sir => 
+										case t.retry_count is
+											when 0 => 
+												write_byte_in_vector_file(mark_sir_hstrst + offset);
+											when others => 
+												write_byte_in_vector_file(mark_sir_hstrst_retry + offset);
+												write_byte_in_vector_file(t.retry_count);
+												write_byte_in_vector_file(t.retry_delay);
+										end case;
+									when sdr => 
+										case t.retry_count is
+											when 0 => 
+												write_byte_in_vector_file(mark_sdr_hstrst + offset);
+											when others => 
+												write_byte_in_vector_file(mark_sdr_hstrst_retry + offset);
+												write_byte_in_vector_file(t.retry_count);
+												write_byte_in_vector_file(t.retry_delay);
+										end case;
+								end case;
+							when POWER_DOWN =>
+								case t.scan is
+									when sir =>
+										case t.retry_count is
+											when 0 => 
+												write_byte_in_vector_file(mark_sir_pwrdown + offset);
+											when others => 
+												write_byte_in_vector_file(mark_sir_pwrdown_retry + offset);
+												write_byte_in_vector_file(t.retry_count);
+												write_byte_in_vector_file(t.retry_delay);
+										end case;
+									when sdr =>
+										case t.retry_count is
+											when 0 => 
+												write_byte_in_vector_file(mark_sdr_pwrdown + offset);
+											when others => 
+												write_byte_in_vector_file(mark_sdr_pwrdown_retry + offset);
+												write_byte_in_vector_file(t.retry_count);
+												write_byte_in_vector_file(t.retry_delay);
+										end case;
+								end case;
+-- 							when FINISH_TEST =>
+-- 								put_line("ERROR: " & type_on_fail_action'image(scanpath_options.on_fail) & 
+						end case;
+
+						-- WRITE SCANPATH ID (8 bit) -- CS: ignored ?
+						write_byte_in_vector_file(unsigned_8(scanpath_being_compiled));
+
+						-- WRITE SXR LENGTH (32 bit)
+						write_double_word_in_vec_file(unsigned_32(t.length_total));
+
+						case t.scan is
+							when sir =>
+				 				case test_info.end_sir is
+									when RTI => write_image_in_vector_file(t.img_drive, t.length_total);
+									when PIR => null;
+								end case;
+							when sdr =>
+				 				case test_info.end_sdr is
+									when RTI => null;
+									when PDR => null;
+								end case;
+						end case;
+					end if;
+					t := t.next;
+				end loop;
+
+			end loop;
+		end order_img;
+
 	begin -- unknown_yet
 		--	set_output(standard_output);
 		put_line("found" & natural'image(summary.scanpath_ct) & " scan paths(s) ...");
@@ -2181,6 +2251,9 @@ procedure compseq is
 				prog_position	:= 270;
 					read_sequence(s);
 				end loop;
+
+				-- ORDER DRV/EXP IMAGES AS SPECIFIED IN OPTION END_SDR/SIR
+				order_img;
 
 				-- CLOSE REGISER FILE
 				prog_position	:= 280;
@@ -2249,30 +2322,30 @@ begin
 
 	-- WRITE GLOBAL CONFIGURATION IN VEC FILE
 	-- frequency
-	write_in_vector_file(scanpath_options.frequency_prescaler);
+	write_byte_in_vector_file(scanpath_options.frequency_prescaler);
 	-- threshold
-	write_in_vector_file(scanpath_options.threshold_tdi_port_1_unsigned_8);
-	write_in_vector_file(scanpath_options.threshold_tdi_port_2_unsigned_8);
+	write_byte_in_vector_file(scanpath_options.threshold_tdi_port_1_unsigned_8);
+	write_byte_in_vector_file(scanpath_options.threshold_tdi_port_2_unsigned_8);
 	-- output voltage
-	write_in_vector_file(scanpath_options.voltage_out_port_1_unsigned_8);
-	write_in_vector_file(scanpath_options.voltage_out_port_2_unsigned_8);
+	write_byte_in_vector_file(scanpath_options.voltage_out_port_1_unsigned_8);
+	write_byte_in_vector_file(scanpath_options.voltage_out_port_2_unsigned_8);
 
 	-- port 1: sum up drv characteristics of tck an tms to a single byte
-	write_in_vector_file(scanpath_options.tck_driver_port_1_unsigned_8 + scanpath_options.tms_driver_port_1_unsigned_8);
+	write_byte_in_vector_file(scanpath_options.tck_driver_port_1_unsigned_8 + scanpath_options.tms_driver_port_1_unsigned_8);
 
 	-- port 1: sum up drv characteristics of tdo an trst to a single byte
-	write_in_vector_file(scanpath_options.tdo_driver_port_1_unsigned_8 + scanpath_options.trst_driver_port_1_unsigned_8);
+	write_byte_in_vector_file(scanpath_options.tdo_driver_port_1_unsigned_8 + scanpath_options.trst_driver_port_1_unsigned_8);
 
 	-- port 2: sum up drv characteristics of tck an tms to a single byte
-	write_in_vector_file(scanpath_options.tck_driver_port_2_unsigned_8 + scanpath_options.tms_driver_port_2_unsigned_8);
+	write_byte_in_vector_file(scanpath_options.tck_driver_port_2_unsigned_8 + scanpath_options.tms_driver_port_2_unsigned_8);
 
 	-- port 1: sum up drv characteristics of tdo an trst to a single byte
-	write_in_vector_file(scanpath_options.tdo_driver_port_2_unsigned_8 + scanpath_options.trst_driver_port_2_unsigned_8);
+	write_byte_in_vector_file(scanpath_options.tdo_driver_port_2_unsigned_8 + scanpath_options.trst_driver_port_2_unsigned_8);
 
 	-- port 1 all scanport relays off, CS: ignored by executor
-	write_in_vector_file(16#FF#);
+	write_byte_in_vector_file(16#FF#);
 	-- port 2 all scanport relays off, CS: ignored by executor
-   	write_in_vector_file(16#FF#); 
+   	write_byte_in_vector_file(16#FF#); 
 
  	--seq_io_unsigned_byte.close(vector_file);
  	-- options writing done
