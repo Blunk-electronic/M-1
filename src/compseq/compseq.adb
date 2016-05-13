@@ -69,11 +69,8 @@ procedure compseq is
 	compseq_version	: string (1..7) := "005.000";
 	prog_position 	: natural := 0;
 
---	vector_file_head: seq_io_unsigned_byte.file_type;
-	journal			: string (1..17) := "setup/journal.txt";
-	file_journal	: ada.text_io.file_type;
-
-	size_of_vector_file		: natural := 0;
+	size_of_vector_file		: natural := 0; -- incremented on every byte written in vector_file
+	size_of_vector_header	: natural := 0; -- incremented on every byte written in vector_file_header
 
 	mem_size				: natural := integer'Value("16#0FFFFF#"); -- BSC RAM size
 	destination_address		: natural;
@@ -87,6 +84,8 @@ procedure compseq is
 	scanpath_being_compiled	: positive;	-- points to the scanpath being compiled
 
 	vector_id				: positive;
+
+	ubyte_scratch			: unsigned_8; -- used for appending vector_file to vector_file_head
 
 	-- GLOBAL ARRAY THAT DESCRIBES ALL PHYSICAL AVAILABLE SCANPATHS
 	-- non-active scanpaths have an irl_total of zero
@@ -163,7 +162,7 @@ procedure compseq is
 		size_of_vector_file := size_of_vector_file + 1;
 	end write_byte_in_vector_file;
 
-	procedure write_word_in_vec_file (word	: unsigned_16) is
+	procedure write_word_in_vector_file (word	: unsigned_16) is
 		ubyte_scratch  : unsigned_8;
 		u2byte_scratch : unsigned_16;
 	begin
@@ -179,9 +178,9 @@ procedure compseq is
  		u2byte_scratch := (shift_right(u2byte_scratch,8)); -- shift right by 8 bits
 		ubyte_scratch := unsigned_8(u2byte_scratch); -- take highbyte
 		write_byte_in_vector_file(ubyte_scratch); -- write highbyte in file
-	end write_word_in_vec_file;
+	end write_word_in_vector_file;
 
-	procedure write_double_word_in_vec_file (dword	: unsigned_32) is
+	procedure write_double_word_in_vector_file (dword	: unsigned_32) is
 		ubyte_scratch  : unsigned_8;
 		u4byte_scratch : unsigned_32;
 	begin
@@ -209,7 +208,7 @@ procedure compseq is
  		u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift right by 8 bits
 		ubyte_scratch := unsigned_8(u4byte_scratch); -- take lowbyte
 		write_byte_in_vector_file(ubyte_scratch); -- write highbyte in file
-	end write_double_word_in_vec_file;
+	end write_double_word_in_vector_file;
 
 
 
@@ -236,185 +235,7 @@ procedure compseq is
 	end write_llc;
 
 
--- 	procedure make_binary_vector
 
--- 
--- 			-- write vector_string LSB first
--- 			nat_scratch := vector_length;
--- 			bit_pt := 0; -- bit pointer
--- 			byte_scratch := 16#FF#; -- set all bits in byte to write (default)
--- 			while nat_scratch > 0
--- 				loop
--- 					char_scratch := element(vector_string,nat_scratch);
--- 					case char_scratch is
--- 						-- clear bit position
--- 						when '0' | 'x' | 'X' =>	byte_scratch := (16#7F# and byte_scratch); -- replace x,X by 0
--- 						-- set bit position
--- 						when '1' =>				byte_scratch := (16#80# or  byte_scratch);
--- 
--- 						when others => 	prog_position := "DR1"; raise constraint_error;
--- 					end case;
--- 					
--- 					-- skip shift_right on last bit
--- 					if bit_pt < 7 then byte_scratch := shift_right(byte_scratch,1); end if;
--- 					bit_pt := bit_pt + 1; -- go to next bit
--- 			
--- 					-- check if byte complete
--- 					if bit_pt = 0 then
--- 						write_byte_in_vec_file(byte_scratch);
--- 						byte_scratch := 16#FF#; -- set all bits in byte to write (default)
--- 					end if;
--- 					nat_scratch := nat_scratch - 1;
--- 				end loop;
--- 
--- 			-- if all bits of vector_string processed but byte incomplete, fill remaining bits with 0
--- 			while bit_pt /= 0
--- 				loop
--- 					byte_scratch := (16#7F# and byte_scratch); -- write 0
--- 
--- 					-- skip shift_right on last bit
--- 					if bit_pt < 7 then byte_scratch := shift_right(byte_scratch,1); end if;
--- 					bit_pt := bit_pt + 1; -- go to next bit
--- 
--- 					-- check if byte complete
--- 					if bit_pt = 0 then
--- 						write_byte_in_vec_file(byte_scratch);
--- 					end if;
--- 				end loop;
--- 
--- 		end if; -- build drive vector
--- 
--- 
--- 		-- build mask and expect vector
--- 		if drv_exp = "exp" then
--- 
--- 			-- mask vector
--- 			-- write vector_string LSB first
--- 			nat_scratch := vector_length;
--- 			bit_pt := 0; -- bit pointer
--- 			byte_scratch := 16#00#; -- clear all bits in byte to write (default)
--- 			while nat_scratch > 0
--- 				loop
--- 					char_scratch := element(vector_string,nat_scratch);
--- 					case char_scratch is
--- 						-- set bit position where to expect something
--- 						when '0' | '1' =>	byte_scratch := (16#80# or  byte_scratch); -- replace 1,0 by 1
--- 						-- clear bit position where a "don't care" is
--- 						when 'x' | 'X' =>	byte_scratch := (16#7F# and byte_scratch); -- replace x by 0
--- 
--- 						when others => 	prog_position := "MA1"; raise constraint_error;
--- 					end case;
--- 
--- 					-- skip shift_right on last bit
--- 					if bit_pt < 7 then byte_scratch := shift_right(byte_scratch,1); end if;
--- 					bit_pt := bit_pt + 1; -- go to next bit
--- 			
--- 					-- check if byte complete
--- 					if bit_pt = 0 then
--- 						write_byte_in_vec_file(byte_scratch);
--- 						byte_scratch := 16#00#; -- clear all bits in byte to write (default)
--- 					end if;
--- 					nat_scratch := nat_scratch - 1;
--- 				end loop;
--- 
--- 			-- if all bits of vector_string processed but byte still incomplete, fill remaining bits with 0
--- 			while bit_pt /= 0
--- 				loop
--- 					byte_scratch := (16#7F# and byte_scratch); -- write 0
--- 					-- skip shift_right on last bit
--- 					if bit_pt < 7 then byte_scratch := shift_right(byte_scratch,1); end if;
--- 					bit_pt := bit_pt + 1; -- go to next bit
--- 
--- 					-- check if byte complete
--- 					if bit_pt = 0 then
--- 						write_byte_in_vec_file(byte_scratch);
--- 					end if;
--- 				end loop;
--- 			-- mask vector done
--- 		
--- 
--- 			-- expect vector
--- 			-- write vector_string LSB first
--- 			nat_scratch := vector_length;
--- 			bit_pt := 0; -- bit pointer
--- 			byte_scratch := 16#00#; -- clear all bits in byte to write (default)
--- 			while nat_scratch > 0
--- 				loop
--- 					char_scratch := element(vector_string,nat_scratch);
--- 					case char_scratch is
--- 						-- set bit position where to expect 1
--- 						when '1' =>			byte_scratch := (16#80# or  byte_scratch); -- write 1
--- 						-- clear bit position where to expect 0 or where a don't care is
--- 						when '0' | 'x' | 'X' => byte_scratch := (16#7F# and byte_scratch); -- write 0, replace x by 0
--- 
--- 						when others => 	prog_position := "EX1"; raise constraint_error;
--- 					end case;
--- 
--- 					-- skip shift_right on last bit
--- 					if bit_pt < 7 then byte_scratch := shift_right(byte_scratch,1); end if;
--- 					bit_pt := bit_pt + 1; -- go to next bit
--- 			
--- 					-- check if byte complete
--- 					if bit_pt = 0 then
--- 						write_byte_in_vec_file(byte_scratch);
--- 						byte_scratch := 16#00#; -- clear all bits in byte to write (default)
--- 					end if;
--- 					nat_scratch := nat_scratch - 1;
--- 				end loop;
--- 
--- 			-- if all bits of vector_string processed but byte still incomplete, fill remaining bits with 0
--- 			while bit_pt /= 0
--- 				loop
--- 					byte_scratch := (16#7F# and byte_scratch); -- write 0
--- 					-- skip shift_right on last bit
--- 					if bit_pt < 7 then byte_scratch := shift_right(byte_scratch,1); end if;
--- 					bit_pt := bit_pt + 1; -- go to next bit
--- 
--- 					-- check if byte complete
--- 					if bit_pt = 0 then
--- 						write_byte_in_vec_file(byte_scratch);
--- 					end if;
--- 				end loop;
--- 			-- expect vector done
--- 
--- 		end if; -- build mask and expect vector
--- 
--- 	end make_binary_vector;
--- 
--- 
--- 	function scale_pattern
--- 		(
--- 		input_string	: string;
--- 		length_wanted	: natural
--- 		) return string is
--- 		
--- 		char_scratch 	: character;
--- 		scaled_pattern	: string (1..length_wanted);
--- 	begin
--- 		-- check string length. it must be 1
--- 		if length(to_unbounded_string(input_string)) = 1 then
--- 			char_scratch := input_string(input_string'first); -- read the first and only character from input string
--- 			if is_in(char_scratch,bit_char) then -- check for 0,1 or x
--- 				scaled_pattern := length_wanted * char_scratch; -- scale input char to wanted pattern
--- 				--put(char_scratch); new_line;
--- 				--put(scaled_pattern); new_line;
--- 			else
--- 				prog_position := "SC1";
--- 				raise constraint_error; -- if not 0,1 or x
--- 			end if;
--- 		else
--- 			prog_position := "SC2";
--- 			raise constraint_error; -- if length is not 1
--- 		end if;
--- 
--- 		return(scaled_pattern);
--- 		exception when constraint_error =>
--- 			raise constraint_error; -- propagate exception to mainline program
--- 	end scale_pattern;
--- 
--- 
--- 
--- 
  	procedure compile_command (cmd : extended_string.bounded_string) is
 		field_pt 				: positive := 1;
 		field_ct 				: positive := get_field_count(extended_string.to_string(cmd));
@@ -1481,19 +1302,19 @@ procedure compseq is
 
 			-- read journal until last line. values found there are taken for calculating next_dest_addr
 
-			-- example of a journal: 
+			-- example of a journal:
 
--- 				test_name   dest_addr(hex)  size(dec)  comp_version  date(yyyy:mm:dd)  time(hh:mm:ss)  UTC_offset(h)
--- 				----------------------------------------------------------------------------------------------------
--- 				infra 00000000 674 004.004 2016-04-13 14:25:46 2
--- 				intercon1 00000300 1755 004.004 2016-04-13 14:25:50 2
--- 				sram_ic202 00000A00 6906 004.004 2016-04-13 14:26:05 2
--- 				sram_ic203 00002500 6906 004.004 2016-04-13 14:26:19 2
--- 				osc 00004000 426 004.004 2016-04-13 14:26:28 2
--- 				LED_D401 00004200 2562 004.004 2016-04-13 14:26:29 2
--- 				LED_D402 00004D00 2562 004.004 2016-04-13 14:26:30 2
--- 				LED_D403 00005800 2562 004.004 2016-04-13 14:26:30 2
--- 				LED_D404 00006300 2562 004.004 2016-04-13 14:26:31 2
+-- 				test_name   dest_addr(hex)  size(dec)  comp_version  date(yyyy:mm:dd)  time(hh:mm:ss)
+-- 				-------------------------------------------------------------------------------------
+-- 				infra 00000000h 674 004.004 2016-04-13 14:25:46
+-- 				intercon1 00000300h 1755 004.004 2016-04-13 14:25:50
+-- 				sram_ic202 00000A00h 6906 004.004 2016-04-13 14:26:05
+-- 				sram_ic203 00002500h 6906 004.004 2016-04-13 14:26:19
+-- 				osc 00004000 426h 004.004 2016-04-13 14:26:28
+-- 				LED_D401 00004200h 2562 004.004 2016-04-13 14:26:29
+-- 				LED_D402 00004D00h 2562 004.004 2016-04-13 14:26:30
+-- 				LED_D403 00005800h 2562 004.004 2016-04-13 14:26:30
+-- 				LED_D404 00006300h 2562 004.004 2016-04-13 14:26:31
 
 
 			while not end_of_file
@@ -1501,12 +1322,10 @@ procedure compseq is
 					line_counter := line_counter + 1; -- count lines
 					line		 := extended_string.to_bounded_string(get_line); -- get a line from the journal
 
-					--put_line(line);
-					--Put( Integer'Image( Integer'Value("16#1A2B3C#") ) );  
-
 					if line_counter > 2 then -- header and separator must be skipped (see example above)
-						last_dest_addr := integer'value("16#" & get_field_from_line(line,2) & "#");  	-- last_dest_addr is a hex number !!!
-						last_size := integer'value(get_field_from_line(line,3));  					-- last_size is a dec number !!!
+						-- last_dest_addr is a hex number !!!
+						last_dest_addr := string_to_natural(get_field_from_line(line,2));
+						last_size := integer'value(get_field_from_line(line,3));  -- last_size is a dec number !!!
 					end if;
 				end loop;
 
@@ -1536,6 +1355,39 @@ procedure compseq is
 
 		return next_dest_addr;
 	end get_destination_address_from_journal;
+
+
+	procedure write_journal is
+	-- writes test_name, destination_address, size, date in journal
+	-- if journal not exists, create a new one. append otherwise.
+
+		procedure write_numbers is
+		-- writes something like: infra 00000000h 674 004.004 2016-04-13 14:25:46
+		begin
+			put(file_journal,universal_string_type.to_string(test_name) 
+				& row_separator_0 & natural_to_string(destination_address,16,8) 
+				& natural'image(size_of_vector_file) 
+				& row_separator_0 & compseq_version
+				& row_separator_0 & m1.date_now);
+		end write_numbers;
+
+	begin
+		if exists(journal) then 
+			open( 
+				file => file_journal,
+				mode => append_file,
+				name => journal
+				);
+			write_numbers;
+		else
+			put_line("No journal found. Creating a new one ...");
+			create(file_journal,out_file,journal);
+			put_line(file_journal,"test_name   dest_addr(hex)  size(dec)  comp_version  date(yyyy:mm:dd)  time(hh:mm:ss)");
+			put_line(file_journal,"-------------------------------------------------------------------------------------");
+			write_numbers;
+		end if;
+	end write_journal;
+
 
 	function get_test_info return type_test_info is
 		ti					: type_test_info; -- to be returned after reading the section
@@ -1940,21 +1792,25 @@ procedure compseq is
 	procedure write_vector_file_header is
 		nat_scratch : natural;
 	begin
-		seq_io_unsigned_byte.create( vector_file_header, seq_io_unsigned_byte.out_file, name => temp_directory & "/vec_header.tmp");
+		seq_io_unsigned_byte.create( vector_file_header, seq_io_unsigned_byte.out_file, name => temp_directory & '/' & vector_header_file_name);
 
 		--separate major and minor compiler version and write them in header
 		nat_scratch := natural'value(compseq_version(1..3)); -- major number is the three digits before "."
     	seq_io_unsigned_byte.write(vector_file_header,unsigned_8(nat_scratch));
+		size_of_vector_header := size_of_vector_header + 1;
  
 		nat_scratch := natural'value(compseq_version(5..7)); -- minor number is the three digits after "."
     	seq_io_unsigned_byte.write(vector_file_header,unsigned_8(nat_scratch));
+		size_of_vector_header := size_of_vector_header + 1;
 
 		-- write vector file format, CS: not supported yet, default is 00h each
     	seq_io_unsigned_byte.write(vector_file_header,16#00#); -- vector file format major number
     	seq_io_unsigned_byte.write(vector_file_header,16#00#); -- vector file format minor number
+		size_of_vector_header := size_of_vector_header + 2;
  
 		-- write scanpath count -- CS: should be a (16bit) number that indicates active scanpaths
 		seq_io_unsigned_byte.write(vector_file_header, unsigned_8(summary.scanpath_ct));
+		size_of_vector_header := size_of_vector_header + 1;
 	end write_vector_file_header;
 	
 
@@ -1966,7 +1822,8 @@ procedure compseq is
 			u4byte_scratch	: unsigned_32 := 0;
 			ubyte_scratch	: unsigned_8 := 0;
 	 	begin
- 
+			put_line("writing scanpath base address ...");
+
 			-- add offset due to header size (one byte is chain_count, 4 byte start address per chain) -- CS: unclear !!
 			--size_of_vector_file := size_of_vector_file + (summary.scanpath_ct * 4)+1 + destination_address;
 			size_of_vector_file := destination_address + size_of_vector_file + (summary.scanpath_ct * 4) +1;
@@ -1979,23 +1836,27 @@ procedure compseq is
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
 	 		ubyte_scratch := unsigned_8(u4byte_scratch); -- take lowbyte
 			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 7..0 in file
+			size_of_vector_header := size_of_vector_header + 1;
 
 			u4byte_scratch := unsigned_32(size_of_vector_file);
 			u4byte_scratch := (shift_left(u4byte_scratch,2*8)); -- clear bits 31..16 by shift left 16 bit
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
 			ubyte_scratch := unsigned_8(u4byte_scratch);
 			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 15..8 in file
+			size_of_vector_header := size_of_vector_header + 1;
 
 			u4byte_scratch := unsigned_32(size_of_vector_file);
 			u4byte_scratch := (shift_left(u4byte_scratch,8)); -- clear bits 31..24 by shift left 8 bit
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
 	 		ubyte_scratch := unsigned_8(u4byte_scratch);
 			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 23..16 in file
+			size_of_vector_header := size_of_vector_header + 1;
 
 			u4byte_scratch := unsigned_32(size_of_vector_file);
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift right by 24 bits
 			ubyte_scratch := unsigned_8(u4byte_scratch); -- take highbyte
 			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 31..24 in file
+			size_of_vector_header := size_of_vector_header + 1;
 
 		end write_base_address;
 
@@ -2070,23 +1931,63 @@ procedure compseq is
 			offset	: unsigned_8;
 
 			procedure write_image_in_vector_file(img : type_string_of_bit_characters_class_0; length : positive) is
-				bit_pos	: positive := 1;
-				type type_bc is mod 8;
-				bc		: type_bc := 0;
-				byte	: unsigned_8;
-				i		: positive;
+			-- writes the image (LSB left, pos. 1) in vector file
+
+				-- create a last_byte that holds only zeroes
+				-- left-over bits will overwrite it
+				subtype type_b is type_string_of_bit_characters_class_0 (1..8);
+				last_byte	: type_b := (others => '0');
+
+				byte	: unsigned_8; -- scratch variable
+				i		: positive := 1; -- points to first position of bit-group to process
+				w		: constant positive := 8; -- size of a byte
+
+				byte_count		: natural := length/w; -- holds number of full bytes
+				remaining_bits	: natural := length rem w; -- holds number of left-over bits
+				
 			begin
-				while i <= length loop
-					-- to_natural(img(1..8);
-					bc := bc + 1;
-					if bc = 0 then
+				prog_position := 1100;
+				-- if there are full bytes, they are processed first, ony by one (point A)
+				-- if no full bytes, but an incomplete byte, the left-over bits are proesssed at point B
+				--put_line("length, byte count, rem:" & natural'image(length) & natural'image(byte_count) & natural'image(remaining_bits));
+
+				if byte_count > 0 then
+					-- A: process all full bytes
+					prog_position := 1110;
+					for b in 1..byte_count loop
+						prog_position := 1120;
+						--put_binary_class_0(img(i..i+w-1));
+						--put_line("i:" & positive'image(i) & positive'image(i+w-1));
+						byte := unsigned_8(to_natural(binary_in => img(i..i+w-1))); -- select bits 1..8 / 9..16 / 17..24 / ...
 						write_byte_in_vector_file(byte);
+						i := i + w; -- i=9 / i=17 / i=25
+					end loop;
+
+					-- process left over bits (if any)
+					if remaining_bits > 0 then
+						prog_position := 1130;
+						-- i points to first position of left-over bits
+						-- the last bit of left-over bits is at position "length"
+						--put_line("i:" & positive'image(i) & positive'image(length) & positive'image(img'last));
+						last_byte(1..remaining_bits) := img(i..length); -- overwrite positions in last_byte with left-over bits
+						write_byte_in_vector_file( unsigned_8(to_natural(last_byte)));
 					end if;
-					bit_pos := bit_pos + 1;
-				end loop;
+				else
+					-- B: an incomplete byte is given
+					-- process left-over bits (if any)
+					if remaining_bits > 0 then
+						prog_position := 1140;
+						last_byte(1..remaining_bits) := img(i..length); -- overwrite positions in last_byte with left-over bits
+						write_byte_in_vector_file( unsigned_8(to_natural(last_byte)));
+					end if;
+
+				end if;
 			end write_image_in_vector_file;
 
+
+
 		begin
+			prog_position := 1000;
 			for i in 1..vector_id loop
 
 				t := ptr_test_step_pre;
@@ -2097,7 +1998,7 @@ procedure compseq is
 						-- 16 bit ID , 8 bit SIR/SDR marker, (retries, retry_delay) , 8 bit scan path number, 32 bit vector length , drv data, mask data, exp data
 
 						-- WRITE VECTOR (OR STEP) ID (16 bit)
-						write_word_in_vec_file(unsigned_16(vector_id));
+						write_word_in_vector_file(unsigned_16(vector_id));
 
 						-- WRITE SXR MARKER (8 bit)
 						-- CS: makeshift to set sxr markers with end state "pause-xr"
@@ -2106,12 +2007,12 @@ procedure compseq is
 							when sir =>
 				 				case test_info.end_sir is
 									when RTI => offset := 0;
-									when PIR => offset := 16#10#;
+									when PIR => offset := mark_sxr_offset;
 								end case;
 							when sdr =>
 				 				case test_info.end_sdr is
 									when RTI => offset := 0;
-									when PDR => offset := 16#10#;
+									when PDR => offset := mark_sxr_offset;
 								end case;
 						end case;
 
@@ -2166,17 +2067,25 @@ procedure compseq is
 						write_byte_in_vector_file(unsigned_8(scanpath_being_compiled));
 
 						-- WRITE SXR LENGTH (32 bit)
-						write_double_word_in_vec_file(unsigned_32(t.length_total));
+						write_double_word_in_vector_file(unsigned_32(t.length_total));
 
 						case t.scan is
 							when sir =>
+								--put("sir ");
 				 				case test_info.end_sir is
-									when RTI => write_image_in_vector_file(t.img_drive, t.length_total);
+									when RTI => 
+										write_image_in_vector_file(t.img_drive,		t.length_total);
+										write_image_in_vector_file(t.img_mask,		t.length_total);
+										write_image_in_vector_file(t.img_expect,	t.length_total);
 									when PIR => null;
 								end case;
 							when sdr =>
+								--put("sdr ");
 				 				case test_info.end_sdr is
-									when RTI => null;
+									when RTI =>
+										write_image_in_vector_file(t.img_drive,		t.length_total);
+										write_image_in_vector_file(t.img_mask,		t.length_total);
+										write_image_in_vector_file(t.img_expect,	t.length_total);
 									when PDR => null;
 								end case;
 						end case;
@@ -2233,14 +2142,17 @@ procedure compseq is
 									& row_separator_0 & "bsl" & positive'image(b.len_bsr)
 									);
 
-								-- sum up irl of chain members and trailer length to calculate the irl_total for that scanpath
+								-- sum up irl of chain members of that scanpath
 								-- CS: assumption is that no device is bypassed or added/inserted in the chain later
-								scanport(sp).irl_total := scanport(sp).irl_total + b.len_ir + trailer_length ;
+								--scanport(sp).irl_total := scanport(sp).irl_total + b.len_ir + trailer_length ;
+								scanport(sp).irl_total := scanport(sp).irl_total + b.len_ir;
 							end if;
 						end if;
 						b := b.next;
 					end loop;
 				end loop;
+				-- add trailer length to obtain the total sir length
+				scanport(sp).irl_total := scanport(sp).irl_total + trailer_length;
 
 				-- WRITE BASE ADDRESS OF CURRENT SCANPATH
 				prog_position	:= 260;
@@ -2263,6 +2175,7 @@ procedure compseq is
 		end loop;
 
 	end unknown_yet;
+
 
 
 
@@ -2316,6 +2229,10 @@ begin
 	scanpath_options := get_scanpath_options;
 	prog_position	:= 90;
 	sequence_count := count_sequences;
+	if sequence_count > sequence_count_max then
+		put_line("ERROR: Currently maximal" & positive'image(sequence_count_max) & " sequences supported !");
+		raise constraint_error;
+	end if;
 
 	prog_position	:= 100;
 	write_vector_file_header;
@@ -2354,61 +2271,57 @@ begin
 	unknown_yet;
  
 
+	-- write test end marker in vector file
+	prog_position	:= 2000;
+ 	write_word_in_vector_file(id_configuration);
+ 	write_byte_in_vector_file(mark_end_of_test);
+ 	write_byte_in_vector_file(16#02#);	-- 02h indicates virtual begin of chain 2 data -- CS: ?
+
+	-- append vector file to header file byte per byte
+	prog_position	:= 2010;
+	seq_io_unsigned_byte.reset(
+		file 	=> vector_file,
+		mode	=> seq_io_unsigned_byte.in_file);
+	prog_position	:= 2020;
+	--put_line("size of vec file:" & natural'image(size_of_vector_file));
+	--put_line("size of vec head:" & natural'image(size_of_vector_header));
+ 	while not seq_io_unsigned_byte.end_of_file(vector_file) loop
+ 		seq_io_unsigned_byte.read(vector_file,ubyte_scratch);
+		seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch);
+		size_of_vector_header := size_of_vector_header + 1;
+ 	end loop;
+	prog_position	:= 2030;
+ 	seq_io_unsigned_byte.close(vector_file);
+	seq_io_unsigned_byte.close(vector_file_header);
+
+	-- make final vector file in test directory (overwrite old vector file by the final one)
+	prog_position	:= 2040;
+	copy_file(
+		temp_directory & '/' & vector_header_file_name, -- from here
+		universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".vec"); -- to here
  
--- 	-- open vector file one last time for write append
--- 	-- write test end marker in vector file
--- 	scratch := test_name;
--- 	scratch := scratch & "/" & scratch & ".vec";
--- 	seq_io_unsigned_byte.open( VectorFile, seq_io_unsigned_byte.append_file, Name => to_string(scratch));
--- 	write_word_in_vec_file(16#0000#); 	-- a conf. word has ID 0000h
--- 	write_byte_in_vec_file(16#77#);		-- 77h indicates end of test
--- 	write_byte_in_vec_file(16#02#);		-- 02h indicates virtual begin of chain 2 data
--- 	seq_io_unsigned_byte.close(vectorfile);
--- 
--- 	-- append vector file to header file byte per byte
--- 	seq_io_unsigned_byte.open( VectorFile, seq_io_unsigned_byte.in_file, Name => to_string(scratch));
--- 	while not seq_io_unsigned_byte.end_of_file(VectorFile)
--- 	loop
--- 		seq_io_unsigned_byte.read(VectorFile,ubyte_scratch);
--- 		seq_io_unsigned_byte.write(VectorFileHead,ubyte_scratch);
--- 	end loop;
--- 	seq_io_unsigned_byte.close(vectorfile);
--- 	seq_io_unsigned_byte.close(VectorFileHead);
--- 
--- 	-- make final vector file in test directory
--- 	copy_file("tmp/vec_header.tmp",to_string(scratch));
--- 
---     -- write journal
--- 	scratch := test_name;
--- 	scratch := scratch & "/" & scratch & ".vec";
--- 	size_of_vec_file := Natural'Value(file_size'image(size(to_string(scratch))));
--- 
--- 	prog_position := "JO3";
--- 	if exists("setup/journal.txt") then
--- 		 -->> setup/journal.txt	
--- 		Open( 
--- 			File => tmp_file,
--- 			Mode => append_File,
--- 			Name => "setup/journal.txt"
--- 			);
--- 		set_output(tmp_file);
--- 		put(test_name & " " & hex_print(next_dest_addr,8) & natural'image(size_of_vec_file) & " " & version & " ");
--- 		put(Image(clock) & " "); put(Integer(UTC_Time_Offset/60),1); new_line;
--- 		set_output(standard_output);
--- 	else
--- 		put_line("No journal found. Creating a new one ...");
--- 		create(tmp_file,out_file,"setup/journal.txt");
--- 		set_output(tmp_file);
--- 		put_line("test_name   dest_addr(hex)  size(dec)  comp_version  date(yyyy:mm:dd)  time(hh:mm:ss)  UTC_offset(h)");
--- 		put_line("----------------------------------------------------------------------------------------------------");
--- 		put(test_name & " " & hex_print(next_dest_addr,8) & natural'image(size_of_vec_file) & " " & version & " ");
--- 		put(Image(clock) & " "); put(Integer(UTC_Time_Offset/60),1); new_line;
--- 		set_output(standard_output);
--- 	end if;
+
+	-- size_of_vector_header now contains the total size of the vector file 
+	prog_position := 2050;
+	size_of_vector_file := size_of_vector_header;
+	-- do a cross checking of the file size: it must match the size returned by function "size"
+	if size_of_vector_file = natural(
+		size(universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".vec")
+		) then null;
+	else
+		put_line("ERROR: Vector file size error !");
+		raise constraint_error;
+	end if;
+
+    -- write journal 
+	prog_position := 2060;
+	write_journal;
 
 
 	exception
 		when event: others =>
+			set_exit_status(failure);
+
 			set_output(standard_output);
 			case prog_position is
 				when 0 => null;
@@ -2419,22 +2332,5 @@ begin
 					put_line("error in sequence file in line :" & natural'image(line_counter));
 					put_line("program error at position " & natural'image(prog_position));
 			end case;
--- 	--		if prog_position = "MEM" then
--- 			if prog_position = "JO1" then
--- 				put_line("Journal corrupted or empty !");
--- 			end if;
--- 			if prog_position = "TI1" then
--- 				put_line("Pattern for trailer_ir incorrect !");
--- 				put_line("Please use an 8 bit pattern consisting of characters 0 or 1. Example 00110101");
---  				put_line("Affected line reads : " & line);
--- 			end if;
--- 			if prog_position = "TD1" then
--- 				put_line("Pattern for trailer_dr incorrect !");
--- 				put_line("Please use an 8 bit pattern consisting of characters 0 or 1. Example 00110101");
---  				put_line("Affected line reads : " & line);
--- 			end if;
-
-
---			Set_Exit_Status(Failure);		
 
 end compseq;
