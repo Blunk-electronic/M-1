@@ -228,7 +228,8 @@ procedure compseq is
 
 		-- write chain pt
 		-- write chain number in vec file. CS: chain number is ignored by executor
- 		write_byte_in_vector_file(16#00#); 
+ 		--write_byte_in_vector_file(16#00#);
+		write_byte_in_vector_file(unsigned_8(scanpath_being_compiled));  
 
 		-- write low level command itself
  		write_byte_in_vector_file(llcc); 
@@ -279,6 +280,7 @@ procedure compseq is
 		end put_example;
 
 		function update_pattern(
+		-- if assigment is register_wise !
 		-- overwrites bit positions specified in range cell_pos_low..cell_pos_high with text_in
 			pattern_old 	: type_string_of_bit_characters_class_0;
 			length_total 	: positive;
@@ -298,32 +300,36 @@ procedure compseq is
 			subtype type_pattern_0 is type_string_of_bit_characters_class_0 (1..pattern_in_length);
 			pattern_new			: type_pattern_0;
 
-			whole_pattern_is_dont_care : boolean := false; -- used for exceptional case when expect pattern contains only one x
+			--whole_pattern_is_dont_care : boolean := false; -- used for exceptional case when pattern contains only one x
+			--whole_pattern_is	: type_bit_char_class_1; -- x,0,1
 			-- example: set IC202 exp boundary 16 downto 0 = x
 
 		begin -- update_pattern
-			-- if this is an expect pattern of length 1 and value x -> assume all bits of this pattern are don't cares
+
+			-- if this is a pattern of length 1 and value x,0 or 1 -> assume all bits of this pattern have the same value
 			-- example: set IC202 exp boundary 16 downto 0 = x
 			prog_position	:= 500;
-			if direction = exp then
-				if pattern_in'last = 1 then -- means if pattern_in is just one character
-					if pattern_in(pattern_in'first) = 'x' or pattern_in(pattern_in'first) = 'X' then
-					-- CS: use type type_bit_character_x
-						whole_pattern_is_dont_care := true;
-					end if;
-				end if;
-			end if;
-
-			-- evaluate flag "whole_pattern_is_dont_care" (means fill all bits with dont cares if required)
-			prog_position	:= 510;
-			if whole_pattern_is_dont_care then
-				-- fill pattern_in_class_1 with as much x as specified by cell_pos_high and cell_pos_low
-				pattern_in_class_1	:= to_binary_class_1(  to_binary( pattern_in_length * 'x', pattern_in_length , class_1)  );
+			if pattern_in'last = 1 then -- means if pattern_in is just one character
+				case pattern_in(pattern_in'first) is
+					when 'x' | 'X' =>
+						-- fill pattern_in_class_1 with as much x as specified by cell_pos_high and cell_pos_low
+						pattern_in_class_1	:= to_binary_class_1(  to_binary( pattern_in_length * 'x', pattern_in_length , class_1)  );
+					when '0' =>
+						-- fill pattern_in_class_1 with as much x as specified by cell_pos_high and cell_pos_low
+						pattern_in_class_1	:= to_binary_class_1(  to_binary( pattern_in_length * '0', pattern_in_length , class_1)  );
+					when '1' =>
+						-- fill pattern_in_class_1 with as much x as specified by cell_pos_high and cell_pos_low
+						pattern_in_class_1	:= to_binary_class_1(  to_binary( pattern_in_length * '1', pattern_in_length , class_1)  );
+					when others =>
+						put_line(standard_output,"ERROR: Invalid character for cell calue found !");
+						raise constraint_error;
+				end case;
 			else
-				-- convert string given in pattern_in to string of bit characters class 1
+				--convert string given in pattern_in to string of bit characters class 1
 				-- load result in text_in_class_1
 				pattern_in_class_1	:= to_binary_class_1(  to_binary(pattern_in, pattern_in_length , class_1)  );
 			end if;
+
 
 			-- if a mask is to be created, the flag "mask" matters
 			prog_position	:= 520;
@@ -569,7 +575,7 @@ procedure compseq is
 							-- if last instruction was HIGHZ
 							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_highz) then
 								-- calculate end position to place bic-image
-								pos_end := (pos_start + b.len_bsr) - 1;
+								pos_end := (pos_start + bic_bypass_register_length) - 1;
 
 								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_bypass_drive);
 								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_expect);
@@ -582,7 +588,7 @@ procedure compseq is
 							-- if last instruction was CLAMP
 							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_clamp) then
 								-- calculate end position to place bic-image
-								pos_end := (pos_start + b.len_bsr) - 1;
+								pos_end := (pos_start + bic_bypass_register_length) - 1;
 
 								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_bypass_drive);
 								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_expect);
@@ -595,7 +601,7 @@ procedure compseq is
 							-- if last instruction was IDCODE
 							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_idcode) then
 								-- calculate end position to place bic-image
-								pos_end := (pos_start + b.len_bsr) - 1;
+								pos_end := (pos_start + bic_idcode_register_length) - 1;
 
 								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_idcode_drive);
 								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_idcode_expect);
@@ -608,7 +614,7 @@ procedure compseq is
 							-- if last instruction was USERCODE
 							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_usercode) then
 								-- calculate end position to place bic-image
-								pos_end := (pos_start + b.len_bsr) - 1;
+								pos_end := (pos_start + bic_usercode_register_length) - 1;
 
 								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_usercode_drive);
 								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_usercode_expect);
