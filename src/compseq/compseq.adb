@@ -66,7 +66,9 @@ with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
 
 procedure compseq is
 
-	compseq_version	: string (1..7) := "005.000";
+	compseq_version			: string (1..7) := "005.000";
+	vector_format_version	: string (1..7) := "000.000";
+
 	prog_position 	: natural := 0;
 
 	size_of_vector_file		: natural := 0; -- incremented on every byte written in vector_file
@@ -152,7 +154,52 @@ procedure compseq is
 -- 	type unsigned_3 is mod 8;
 -- 	bit_pt	: unsigned_3 := 0;
 
+	listing_offset 	: positive;
+	listing_address	: positive;
+	procedure write_listing_header is
+	begin
+		put_line(compile_listing,"M-1 Compiler Compseq Version " & compseq_version & " listing/report");
+		put_line(compile_listing,"date: " & m1.date_now);
+		put_line(compile_listing,"source file: " 
+			& universal_string_type.to_string(test_name) 
+			& "/" & universal_string_type.to_string(test_name) & ".seq");
+		new_line(compile_listing);
+		--put_line(compile_listing,"LOC(hex)       LINE    SOURCE CODE" );
+		put_line(compile_listing,"LOC(hex)       OBJ_CODE       SOURCE_CODE/MEANING" );
+		put_line(compile_listing,column_separator_0);
+	end write_listing_header;
 
+	type type_list_item is ( LOCATION, OBJECT_CODE, LINE_NUMBER, SOURCE_CODE);
+	subtype type_object_code is string (1..3);
+	procedure write_listing (
+		item 		: type_list_item;
+		loc		 	: natural := 0;
+		obj_code 	: type_object_code := "00h";
+		line 		: natural := 0;
+		src_code 	: string := "") is
+	begin
+		case item is
+			when LOCATION =>
+				put(compile_listing,natural_to_string(loc,16,8));
+				put(compile_listing,6 * row_separator_0);
+			when LINE_NUMBER =>
+				put(compile_listing,natural'image(line));
+				put(compile_listing,row_separator_0);
+			when OBJECT_CODE =>
+				put(compile_listing,obj_code(obj_code'first..obj_code'last-1)); -- strip format indicator 
+				put(compile_listing,row_separator_0);
+			when SOURCE_CODE => -- CS: improve formating !
+				put(compile_listing,9 * row_separator_0);
+				--Set_Col(20);
+				--put(compile_listing,src_code);
+				--Set_Col(1);
+				put_line(compile_listing,src_code);
+			when others => null;
+		end case;
+	end write_listing;
+
+
+	-- CS: procedure write_byte_in_vector_header ?
 
 	procedure write_byte_in_vector_file (byte : unsigned_8) is
 	-- writes a given byte into vector_file
@@ -219,20 +266,29 @@ procedure compseq is
 		llcc	:	unsigned_8  -- low level command itself
 		) is
 	begin
-		-- write ID -- a conf. word has ID 0000h
-		write_byte_in_vector_file(16#00#);
-		write_byte_in_vector_file(16#00#);
+		-- write ID, which is always id_configuration
+		write_listing(item => location, loc => listing_address);
+		write_word_in_vector_file(id_configuration); -- id_configuration is 16bit wide
+		write_listing(item => object_code, obj_code => natural_to_string(natural(unsigned_8(id_configuration)),16,2)); -- write lowbyte
+		write_listing(item => object_code, obj_code => natural_to_string(natural(unsigned_8(id_configuration/256)),16,2)); -- write highbyte (shift right 8 bits)
 
 		--write low level command type
+		--write_listing(item => location, loc => size_of_vector_file + listing_offset);
 		write_byte_in_vector_file(llct);
+		write_listing(item => object_code, obj_code => natural_to_string(natural(unsigned_8(llct)),16,2)); -- write llct
 
 		-- write chain pt
 		-- write chain number in vec file. CS: chain number is ignored by executor
  		--write_byte_in_vector_file(16#00#);
+		--write_listing(item => location, loc => size_of_vector_file + listing_offset);
 		write_byte_in_vector_file(unsigned_8(scanpath_being_compiled));  
+		write_listing(item => object_code, obj_code => natural_to_string(natural(unsigned_8(scanpath_being_compiled)),16,2)); -- write scanpath_being_compiled
 
 		-- write low level command itself
  		write_byte_in_vector_file(llcc); 
+		write_listing(item => object_code, obj_code => natural_to_string(natural(unsigned_8(llcc)),16,2)); -- write llcc
+
+		listing_address := listing_address + 5;
 	end write_llc;
 
 
@@ -729,32 +785,38 @@ procedure compseq is
 		build_sdr_image;
 	end concatenate_sdr_images;
 
-	
- 				
+
  	begin -- compile_command
 		prog_position	:= 400;
 
 		--hard+soft trst (default)
 		if get_field_from_line(cmd,1) = sequence_instruction_set.trst then
-			write_llc(16#30#,16#80#); 
+			write_llc(llc_head,llc_cmd_trst); 
+			write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 		--only soft trst
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.strst then
-			write_llc(16#30#,16#81#);
+			write_llc(llc_head,llc_cmd_strst);
+			write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 		--only hard trst
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.htrst then
-			write_llc(16#30#,16#82#); 
+			write_llc(llc_head,llc_cmd_strst);
+			write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 
 		prog_position	:= 420;
 		-- "scanpath" (example: tap_state test-logic-reset, tap_state pause-dr)
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.tap_state then
 			if get_field_from_line(cmd,2) = tap_state.test_logic_reset then
-				write_llc(16#30#,16#83#); 
+				write_llc(16#30#,16#83#);
+				write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 			elsif get_field_from_line(cmd,2) = tap_state.run_test_idle then
 				write_llc(16#30#,16#84#); 
+				write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 			elsif get_field_from_line(cmd,2) = tap_state.pause_dr then
 				write_llc(16#30#,16#85#); 
+				write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 			elsif get_field_from_line(cmd,2) = tap_state.pause_ir then 
 				write_llc(16#30#,16#86#); 
+				write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 			else
 				put_line("ERROR: TAP state not supported for low level operation !");
 				raise constraint_error;
@@ -765,8 +827,10 @@ procedure compseq is
 			if get_field_from_line(cmd,2) = scanport_identifier.port then 
 				if get_field_from_line(cmd,3) = "1" then
 					write_llc(16#40#,16#81#); -- gnd 1, tap 1 relay on #CS: dio, aio ?
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				elsif get_field_from_line(cmd,3) = "2" then 
 					write_llc(16#40#,16#82#); -- gnd 2, tap 2 relay on #CS: dio, aio ?
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				else
 					put_line("ERROR: Expected a valid scanport id. Example: " 
 						& sequence_instruction_set.connect & row_separator_0
@@ -785,8 +849,10 @@ procedure compseq is
 			if get_field_from_line(cmd,2) = scanport_identifier.port then 
 				if get_field_from_line(cmd,3) = "1" then
 					write_llc(16#40#,16#01#); -- gnd 1, tap 1 relay on #CS: dio, aio ?
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				elsif get_field_from_line(cmd,3) = "2" then 
 					write_llc(16#40#,16#02#); -- gnd 2, tap 2 relay on #CS: dio, aio ?
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				else
 					put_line("ERROR: Expected a valid scanport id. Example: " 
 						& sequence_instruction_set.disconnect & row_separator_0
@@ -803,23 +869,29 @@ procedure compseq is
 		-- "power" example: power up 1, power down all
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.power then
 			write_llc(16#40#,16#12#); -- set i2c muxer sub bus 2  # 14,13,11 ack error
+			write_listing(item => source_code, src_code => "internal: set i2c mux sub bus 2");
 			if get_field_from_line(cmd,2) = power_cycle_identifier.up then
 
 				-- pwr relay 1 on
 				if get_field_from_line(cmd,3) = "1" then
 					write_llc(16#40#,16#83#);
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				-- pwr relay 2 on
 				elsif get_field_from_line(cmd,3) = "2" then
 					write_llc(16#40#,16#84#); 
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				-- pwr relay 3 on
 				elsif get_field_from_line(cmd,3) = "3" then
 					write_llc(16#40#,16#85#);
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				-- all pwr relays on
 				elsif get_field_from_line(cmd,3) = power_channel_name.all_channels then 
 					write_llc(16#40#,16#86#);
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				-- gnd pwr relay on
 				elsif get_field_from_line(cmd,3) = power_channel_name.gnd then
 					write_llc(16#40#,16#87#);
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				else
 					put_line("ERROR: Expected power channel id as positive integer or keyword '" 
 						& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !");
@@ -835,18 +907,23 @@ procedure compseq is
 				-- pwr relay 1 off
 				if get_field_from_line(cmd,3) = "1" then
 					write_llc(16#40#,16#03#);
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				-- pwr relay 2 off
 				elsif get_field_from_line(cmd,3) = "2" then
 					write_llc(16#40#,16#04#); 
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				-- pwr relay 3 off
 				elsif get_field_from_line(cmd,3) = "3" then
 					write_llc(16#40#,16#05#);
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				-- all pwr relays off
 				elsif get_field_from_line(cmd,3) = power_channel_name.all_channels then 
 					write_llc(16#40#,16#06#);
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				-- gnd pwr relay off
 				elsif get_field_from_line(cmd,3) = power_channel_name.gnd then
 					write_llc(16#40#,16#07#);
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				else
 					put_line("ERROR: Expected power channel id as positive integer or keyword '" 
 						& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !");
@@ -869,6 +946,7 @@ procedure compseq is
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.imax then -- CS: check field count
 			-- set i2c muxer sub bus 3
 			write_llc(16#40#,16#13#); 
+			write_listing(item => source_code, src_code => "internal: set i2c mux sub bus 3");
 			if positive'value(get_field_from_line(cmd,2)) in type_power_channel_id then
 				power_channel_name.id := positive'value(get_field_from_line(cmd,2)); -- get power channel
 			else
@@ -883,6 +961,9 @@ procedure compseq is
 			ubyte_scratch := unsigned_8(natural(22.4 * (5.7 + current_limit_set_by_operator)));
 			ubyte_scratch2 := 16#40# + unsigned_8(power_channel_name.id);
 			write_llc(ubyte_scratch2, ubyte_scratch); 
+			write_listing(item => source_code, src_code => 
+				"internal: pwr channel " & natural_to_string(natural(ubyte_scratch2),16,2) & row_separator_0
+				& "current limit " & natural_to_string(natural(ubyte_scratch),16,2));
 
 			-- get timeout
 			if get_field_from_line(cmd,4) = timeout_identifier then
@@ -890,11 +971,14 @@ procedure compseq is
 					overload_timeout := float'value(get_field_from_line(cmd,5));
 					-- set i2c muxer sub bus 2
 					write_llc(16#40#,16#12#); 
+					write_listing(item => source_code, src_code => "internal: set i2c mux sub bus 2");
+
 					-- cal. 8bit timeout value
 					-- write llc (43h + pwr_channel) as extended I2C operation
 					ubyte_scratch := unsigned_8(natural(overload_timeout/overload_timeout_resolution)); 
 					ubyte_scratch2 := 16#43# + unsigned_8(power_channel_name.id);
 					write_llc(ubyte_scratch2, ubyte_scratch);
+					write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 				else
 					put_line("ERROR: Timeout value invalid !");
 					put_line("       Provide a number between" & type_overload_timeout'image(type_overload_timeout'first) 
@@ -915,6 +999,7 @@ procedure compseq is
 				delay_set_by_operator := float'value(get_field_from_line(cmd,2));
  				ubyte_scratch := unsigned_8(natural(delay_set_by_operator/delay_resolution));
  				write_llc(16#20#, ubyte_scratch); 
+				write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 			else
 				put_line("ERROR: Delay value invalid !");
 				put_line("       Provide a number between" & type_delay_value'image(type_delay_value'first) 
@@ -1632,11 +1717,11 @@ procedure compseq is
 			-- convert frequency to prescaler value
 			-- CS: depends on executor firmware
 			-- if frequency given is zero (or option missing entirely) the hex value defaults (see m1_internal.ads)
-			case so.frequency is
-				when 4 => so.frequency_prescaler := 16#FF#;
-				when 3 => so.frequency_prescaler := 16#FE#;
-				when 2 => so.frequency_prescaler := 16#FD#;
-				when 1 => so.frequency_prescaler := 16#F8#;
+			case so.frequency is -- CS: replace hex numbers by names in m1_firmware.ads
+				when 4 => so.frequency_prescaler_unsigned_8 := 16#FF#;
+				when 3 => so.frequency_prescaler_unsigned_8 := 16#FE#;
+				when 2 => so.frequency_prescaler_unsigned_8 := 16#FD#;
+				when 1 => so.frequency_prescaler_unsigned_8 := 16#F8#;
 				when others => 
 					-- CS: the lowest frequency depends on executor firmware
 					put_line("WARNING: frequency option invalid or missing. Falling back to safest frequency of 33 khz ...");
@@ -1656,7 +1741,7 @@ procedure compseq is
 			scratch_float := (float(so.threshold_tdi_port_2) * 255.0)/3.3;
 			so.threshold_tdi_port_2_unsigned_8 := unsigned_8(natural(scratch_float));
 
-			-- convert driver characteristics to unsigned_8
+			-- convert driver characteristics to unsigned_8 -- CS: replace hex numbers by names in m1_firmware.ads
 			-- port 1:
 			case so.tck_driver_port_1 is
 				when push_pull	=> so.tck_driver_port_1_unsigned_8	:= 16#06#;
@@ -1803,19 +1888,38 @@ procedure compseq is
 		--separate major and minor compiler version and write them in header
 		nat_scratch := natural'value(compseq_version(1..3)); -- major number is the three digits before "."
     	seq_io_unsigned_byte.write(vector_file_header,unsigned_8(nat_scratch));
+			-- record in list file
+			write_listing (item => location, loc => size_of_vector_header);
+			write_listing (item => object_code, obj_code => (natural_to_string(nat_scratch,16,2)));
 		size_of_vector_header := size_of_vector_header + 1;
  
 		nat_scratch := natural'value(compseq_version(5..7)); -- minor number is the three digits after "."
     	seq_io_unsigned_byte.write(vector_file_header,unsigned_8(nat_scratch));
+			-- record in list file
+			write_listing (item => object_code, obj_code => (natural_to_string(nat_scratch,16,2)));
+			write_listing (item => source_code, src_code => "compiler version " & compseq_version);
 		size_of_vector_header := size_of_vector_header + 1;
 
 		-- write vector file format, CS: not supported yet, default is 00h each
-    	seq_io_unsigned_byte.write(vector_file_header,16#00#); -- vector file format major number
-    	seq_io_unsigned_byte.write(vector_file_header,16#00#); -- vector file format minor number
+		nat_scratch := natural'value(vector_format_version(1..3)); -- major number is the three digits before "."
+    	seq_io_unsigned_byte.write(vector_file_header,unsigned_8(nat_scratch)); -- vector file format major number
+			-- record in list file
+			write_listing (item => location, loc => size_of_vector_header);
+			write_listing (item => object_code, obj_code => (natural_to_string(nat_scratch,16,2)));
+
+		nat_scratch := natural'value(vector_format_version(5..7)); -- vector file format minor number
+    	seq_io_unsigned_byte.write(vector_file_header,unsigned_8(nat_scratch)); -- vector file format minor number
+			-- record in list file
+			write_listing (item => object_code, obj_code => (natural_to_string(nat_scratch,16,2)));
+			write_listing (item => source_code, src_code => "vector format version " & vector_format_version);
 		size_of_vector_header := size_of_vector_header + 2;
  
 		-- write scanpath count -- CS: should be a (16bit) number that indicates active scanpaths
 		seq_io_unsigned_byte.write(vector_file_header, unsigned_8(summary.scanpath_ct));
+			-- record in list file
+			write_listing (item => location, loc => size_of_vector_header);
+			write_listing (item => object_code, obj_code => (natural_to_string(summary.scanpath_ct,16,2)));
+			write_listing (item => source_code, src_code => "number of scanpaths");
 		size_of_vector_header := size_of_vector_header + 1;
 	end write_vector_file_header;
 	
@@ -1842,6 +1946,9 @@ procedure compseq is
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
 	 		ubyte_scratch := unsigned_8(u4byte_scratch); -- take lowbyte
 			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 7..0 in file
+				-- record in list file
+				write_listing (item => location, loc => size_of_vector_header);
+				write_listing (item => object_code, obj_code => (natural_to_string(natural(ubyte_scratch),16,2)));
 			size_of_vector_header := size_of_vector_header + 1;
 
 			u4byte_scratch := unsigned_32(size_of_vector_file);
@@ -1849,6 +1956,8 @@ procedure compseq is
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
 			ubyte_scratch := unsigned_8(u4byte_scratch);
 			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 15..8 in file
+				-- record in list file
+				write_listing (item => object_code, obj_code => (natural_to_string(natural(ubyte_scratch),16,2)));
 			size_of_vector_header := size_of_vector_header + 1;
 
 			u4byte_scratch := unsigned_32(size_of_vector_file);
@@ -1856,12 +1965,17 @@ procedure compseq is
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
 	 		ubyte_scratch := unsigned_8(u4byte_scratch);
 			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 23..16 in file
+				-- record in list file
+				write_listing (item => object_code, obj_code => (natural_to_string(natural(ubyte_scratch),16,2)));
 			size_of_vector_header := size_of_vector_header + 1;
 
 			u4byte_scratch := unsigned_32(size_of_vector_file);
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift right by 24 bits
 			ubyte_scratch := unsigned_8(u4byte_scratch); -- take highbyte
 			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 31..24 in file
+				-- record in list file
+				write_listing (item => object_code, obj_code => (natural_to_string(natural(ubyte_scratch),16,2)));
+				write_listing (item => source_code, src_code => "base address scanpath" & positive'image(scanpath_being_compiled));
 			size_of_vector_header := size_of_vector_header + 1;
 
 		end write_base_address;
@@ -1991,8 +2105,7 @@ procedure compseq is
 			end write_image_in_vector_file;
 
 
-
-		begin
+		begin -- order_img
 			prog_position := 1000;
 			for i in 1..vector_id loop
 
@@ -2184,7 +2297,6 @@ procedure compseq is
 
 
 
-
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
@@ -2199,6 +2311,14 @@ begin
  	test_name:= universal_string_type.to_bounded_string(Argument(2));
  	put_line ("test name      : " & universal_string_type.to_string(test_name));
 
+	-- create list file
+	prog_position	:= 25;
+	create(
+		file	=> compile_listing,
+		mode	=> out_file, 
+		name 	=> universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".lis"
+		);
+	write_listing_header;
 
 	-- create vectorfile
 	prog_position	:= 30;
@@ -2244,32 +2364,90 @@ begin
 	write_vector_file_header;
 
 	-- WRITE GLOBAL CONFIGURATION IN VEC FILE
+	listing_offset := size_of_vector_header + summary.scanpath_ct * 4;
+
 	-- frequency
-	write_byte_in_vector_file(scanpath_options.frequency_prescaler);
+	write_listing(item => location, loc => size_of_vector_file + listing_offset);
+	write_byte_in_vector_file(scanpath_options.frequency_prescaler_unsigned_8);
+	write_listing(item => object_code, obj_code => natural_to_string(natural(scanpath_options.frequency_prescaler_unsigned_8),16,2));
+	write_listing(item => source_code, src_code => "tck frequency prescaler");
+
 	-- threshold
+	write_listing(item => location, loc => size_of_vector_file + listing_offset);
 	write_byte_in_vector_file(scanpath_options.threshold_tdi_port_1_unsigned_8);
+	write_listing(item => object_code, obj_code => natural_to_string(natural(scanpath_options.threshold_tdi_port_1_unsigned_8),16,2));
+	write_listing(item => source_code, src_code => section_scanpath_options_item.threshold_tdi_port_1);
+
+	write_listing(item => location, loc => size_of_vector_file + listing_offset);
 	write_byte_in_vector_file(scanpath_options.threshold_tdi_port_2_unsigned_8);
+	write_listing(item => object_code, obj_code => natural_to_string(natural(scanpath_options.threshold_tdi_port_2_unsigned_8),16,2));
+	write_listing(item => source_code, src_code => section_scanpath_options_item.threshold_tdi_port_2);
+
 	-- output voltage
+	write_listing(item => location, loc => size_of_vector_file + listing_offset);
 	write_byte_in_vector_file(scanpath_options.voltage_out_port_1_unsigned_8);
+	write_listing(item => object_code, obj_code => natural_to_string(natural(scanpath_options.voltage_out_port_1_unsigned_8),16,2));
+	write_listing(item => source_code, src_code => section_scanpath_options_item.voltage_out_port_1);
+
+	write_listing(item => location, loc => size_of_vector_file + listing_offset);
 	write_byte_in_vector_file(scanpath_options.voltage_out_port_2_unsigned_8);
+	write_listing(item => object_code, obj_code => natural_to_string(natural(scanpath_options.voltage_out_port_2_unsigned_8),16,2));
+	write_listing(item => source_code, src_code => section_scanpath_options_item.voltage_out_port_2);
 
-	-- port 1: sum up drv characteristics of tck an tms to a single byte
-	write_byte_in_vector_file(scanpath_options.tck_driver_port_1_unsigned_8 + scanpath_options.tms_driver_port_1_unsigned_8);
+	-- port 1: sum up drv characteristics of tms (bit 6..3) and tck (bit 2..0) to a single byte
+	write_listing(item => location, loc => size_of_vector_file + listing_offset);
+	write_byte_in_vector_file(scanpath_options.tms_driver_port_1_unsigned_8 + scanpath_options.tck_driver_port_1_unsigned_8);
+	write_listing(item => object_code, obj_code => 
+		natural_to_string(natural(scanpath_options.tms_driver_port_1_unsigned_8 + scanpath_options.tck_driver_port_1_unsigned_8),16,2));
+	write_listing(item => source_code, src_code => 
+		section_scanpath_options_item.tms_driver_port_1 & " bit [6..3] " & section_scanpath_options_item.tck_driver_port_1
+		& " bit [2..0]"
+		);
 
-	-- port 1: sum up drv characteristics of tdo an trst to a single byte
-	write_byte_in_vector_file(scanpath_options.tdo_driver_port_1_unsigned_8 + scanpath_options.trst_driver_port_1_unsigned_8);
+	-- port 1: sum up drv characteristics of trst (bit 6..3) and tdo (bit 2..0) to a single byte
+	write_listing(item => location, loc => size_of_vector_file + listing_offset);
+	write_byte_in_vector_file(scanpath_options.trst_driver_port_1_unsigned_8 + scanpath_options.tdo_driver_port_1_unsigned_8);
+	write_listing(item => object_code, obj_code => 
+		natural_to_string(natural(scanpath_options.trst_driver_port_1_unsigned_8 + scanpath_options.tdo_driver_port_1_unsigned_8),16,2));
+	write_listing(item => source_code, src_code => 
+		section_scanpath_options_item.trst_driver_port_1 & " bit [6..3] " & section_scanpath_options_item.tdo_driver_port_1
+		& " bit [2..0]"
+		);
 
 	-- port 2: sum up drv characteristics of tck an tms to a single byte
-	write_byte_in_vector_file(scanpath_options.tck_driver_port_2_unsigned_8 + scanpath_options.tms_driver_port_2_unsigned_8);
+	write_listing(item => location, loc => size_of_vector_file + listing_offset);
+	write_byte_in_vector_file(scanpath_options.tms_driver_port_2_unsigned_8 + scanpath_options.tck_driver_port_2_unsigned_8);
+	write_listing(item => object_code, obj_code => 
+		natural_to_string(natural(scanpath_options.tms_driver_port_2_unsigned_8 + scanpath_options.tck_driver_port_2_unsigned_8),16,2));
+	write_listing(item => source_code, src_code => 
+		section_scanpath_options_item.tms_driver_port_2 & " bit [6..3] " & section_scanpath_options_item.tck_driver_port_2
+		& " bit [2..0]"
+		);
 
-	-- port 1: sum up drv characteristics of tdo an trst to a single byte
+	-- port 2: sum up drv characteristics of tdo an trst to a single byte
+	write_listing(item => location, loc => size_of_vector_file + listing_offset);
 	write_byte_in_vector_file(scanpath_options.tdo_driver_port_2_unsigned_8 + scanpath_options.trst_driver_port_2_unsigned_8);
+	write_listing(item => object_code, obj_code => 
+		natural_to_string(natural(scanpath_options.trst_driver_port_2_unsigned_8 + scanpath_options.tdo_driver_port_2_unsigned_8),16,2));
+	write_listing(item => source_code, src_code => 
+		section_scanpath_options_item.trst_driver_port_2 & " bit [6..3] " & section_scanpath_options_item.tdo_driver_port_2
+		& " bit [2..0]"
+		);
+
 
 	-- port 1 all scanport relays off, CS: ignored by executor
+	write_listing(item => location, loc => size_of_vector_file + listing_offset);
 	write_byte_in_vector_file(16#FF#);
+	write_listing(item => object_code, obj_code => "FFh");
+	write_listing(item => source_code, src_code => "dummy");
 	-- port 2 all scanport relays off, CS: ignored by executor
+	write_listing(item => location, loc => size_of_vector_file + listing_offset);
    	write_byte_in_vector_file(16#FF#); 
+	write_listing(item => object_code, obj_code => "FFh");
+	write_listing(item => source_code, src_code => "dummy");
 
+	-- listing_address will be used further-on for writing locations in listing file
+	listing_address := size_of_vector_file + listing_offset;
  	--seq_io_unsigned_byte.close(vector_file);
  	-- options writing done
 
