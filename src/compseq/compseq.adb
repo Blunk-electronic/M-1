@@ -109,23 +109,40 @@ procedure compseq is
 	type type_all_scanports is array (natural range 1..scanport_count_max) of type_single_scanport;
 	scanport	: type_all_scanports;
 
+
+
+
+	type type_step_class is ( class_a, class_b);
+	type type_step_class_b_binary_array is array (natural range <>) of unsigned_8;
+	type type_step_class_b (byte_count : positive) is
+		record
+			binary	: type_step_class_b_binary_array(1..byte_count);
+			source	: universal_string_type.bounded_string;
+		end record;
+			
 	type type_test_step_pre;
 	type ptr_type_test_step_pre is access all type_test_step_pre;
-	type type_test_step_pre ( length_total : positive) is 
+	type type_test_step_pre ( length_total : natural; step_class : type_step_class) is 
 		record
 			next		: ptr_type_test_step_pre;
-			scan		: type_scan;
-			vector_id	: positive;
-			img_drive	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
-			img_expect	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
-			img_mask	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
-			retry_count	: unsigned_8;
-			retry_delay	: unsigned_8;
+			case step_class is
+				when class_a =>
+					scan		: type_scan;
+					vector_id	: positive;
+					img_drive	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
+					img_expect	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
+					img_mask	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
+					retry_count	: unsigned_8;
+					retry_delay	: unsigned_8;
+				when class_b =>
+					command		: type_step_class_b(length_total);
+			end case;
 		end record;
 	ptr_test_step_pre	: ptr_type_test_step_pre;
 
 	procedure add_to_step_list_pre(
 		list				: in out ptr_type_test_step_pre;
+		step_class_given	: type_step_class;
 		scan_given			: type_scan; -- SIR or SDR
 		vector_id_given		: positive;
 		length_total_given	: positive;
@@ -136,18 +153,38 @@ procedure compseq is
 		retry_delay_given	: unsigned_8
 		) is
 	begin
-		list := new type_test_step_pre'(
-			next 			=> list,
-			scan			=> scan_given,
-			vector_id		=> vector_id_given,
-			length_total	=> length_total_given,
-			img_drive		=> img_drive_given,		-- LSB left (pos 1)
-			img_expect		=> img_expect_given,	-- LSB left (pos 1)
-			img_mask		=> img_mask_given,		-- LSB left (pos 1)
-			retry_count		=> retry_count_given,
-			retry_delay		=> retry_delay_given
-			);
-	end;
+		case step_class_given is
+			when class_a =>
+				list := new type_test_step_pre'(
+					next 			=> list,
+					step_class		=> class_a,
+					scan			=> scan_given,
+					vector_id		=> vector_id_given,
+					length_total	=> length_total_given,
+					img_drive		=> img_drive_given,		-- LSB left (pos 1)
+					img_expect		=> img_expect_given,	-- LSB left (pos 1)
+					img_mask		=> img_mask_given,		-- LSB left (pos 1)
+					retry_count		=> retry_count_given,
+					retry_delay		=> retry_delay_given
+					);
+			when others =>
+				put_line(standard_output,"ERROR: The given step class can not be added by this procedure !");
+				raise constraint_error;
+		end case;
+	end add_to_step_list_pre;
+
+
+-- 	procedure add_class_b_cmd_to_step_list_pre(
+-- 		list				: in out ptr_type_test_step_pre;
+-- 		step_class_given	: type_step_class;
+-- 		binary_given
+-- 
+-- 				list := new type_test_step_pre'(
+-- 					next 			=> list,
+-- 					step_class		=> class_b,
+-- 					command.binary	=> 
+-- 
+-- 	end;
 
 ------------------------------------------
 	
@@ -534,6 +571,7 @@ procedure compseq is
 
 		add_to_step_list_pre(
 			list				=> ptr_test_step_pre,
+			step_class_given	=> class_a,
 			scan_given			=> SIR,
 			vector_id_given		=> vector_id,
 			length_total_given	=> length_total,
@@ -726,6 +764,7 @@ procedure compseq is
 
 			add_to_step_list_pre(
 				list				=> ptr_test_step_pre,
+				step_class_given	=> class_a,
 				scan_given			=> SDR,
 				vector_id_given		=> vector_id,
 				length_total_given	=> length_total,
