@@ -86,7 +86,7 @@ procedure compseq is
 	scanpath_being_compiled	: positive;	-- points to the scanpath being compiled
 
 	vector_id				: positive;
-
+	test_step_id			: natural := 0;
 	ubyte_scratch			: unsigned_8; -- used for appending vector_file to vector_file_head
 
 	-- GLOBAL ARRAY THAT DESCRIBES ALL PHYSICAL AVAILABLE SCANPATHS
@@ -125,6 +125,7 @@ procedure compseq is
 	type type_test_step_pre ( length_total : natural; step_class : type_step_class) is 
 		record
 			next		: ptr_type_test_step_pre;
+			step_id		: positive;
 			case step_class is
 				when class_a =>
 					scan		: type_scan;
@@ -140,9 +141,24 @@ procedure compseq is
 		end record;
 	ptr_test_step_pre	: ptr_type_test_step_pre;
 
-	procedure add_to_step_list_pre(
+	procedure add_class_b_cmd_to_step_list_pre(
 		list				: in out ptr_type_test_step_pre;
-		step_class_given	: type_step_class;
+		length_total_given	: natural;
+		command_given		: type_step_class_b) is
+	begin
+		test_step_id := test_step_id + 1;
+		list := new type_test_step_pre'(
+			next 			=> list,
+			step_id			=> test_step_id,
+			step_class		=> class_b,
+			length_total	=> length_total_given,
+			command			=> command_given
+			);
+	end add_class_b_cmd_to_step_list_pre;
+
+	procedure add_class_a_cmd_to_step_list_pre(
+		list				: in out ptr_type_test_step_pre;
+		--step_class_given	: type_step_class;
 		scan_given			: type_scan; -- SIR or SDR
 		vector_id_given		: positive;
 		length_total_given	: positive;
@@ -153,10 +169,12 @@ procedure compseq is
 		retry_delay_given	: unsigned_8
 		) is
 	begin
-		case step_class_given is
-			when class_a =>
+		test_step_id := test_step_id + 1;
+		--case step_class_given is
+		--	when class_a =>
 				list := new type_test_step_pre'(
 					next 			=> list,
+					step_id			=> test_step_id,
 					step_class		=> class_a,
 					scan			=> scan_given,
 					vector_id		=> vector_id_given,
@@ -167,24 +185,13 @@ procedure compseq is
 					retry_count		=> retry_count_given,
 					retry_delay		=> retry_delay_given
 					);
-			when others =>
-				put_line(standard_output,"ERROR: The given step class can not be added by this procedure !");
-				raise constraint_error;
-		end case;
-	end add_to_step_list_pre;
+		--	when others =>
+		--		put_line(standard_output,"ERROR: The given step class can not be added by this procedure !");
+		--		raise constraint_error;
+		--end case;
+	end add_class_a_cmd_to_step_list_pre;
 
 
--- 	procedure add_class_b_cmd_to_step_list_pre(
--- 		list				: in out ptr_type_test_step_pre;
--- 		step_class_given	: type_step_class;
--- 		binary_given
--- 
--- 				list := new type_test_step_pre'(
--- 					next 			=> list,
--- 					step_class		=> class_b,
--- 					command.binary	=> 
--- 
--- 	end;
 
 ------------------------------------------
 	
@@ -300,9 +307,24 @@ procedure compseq is
 	-- writes a low level command
 		(
 		llct	:	unsigned_8; -- low level command type
-		llcc	:	unsigned_8  -- low level command itself
+		llcc	:	unsigned_8;  -- low level command itself
+		length	:	positive; -- number of bytes required for the command
+		source	:	string
 		) is
+		llc_scratch : type_step_class_b(length);
 	begin
+			llc_scratch.binary(1) := unsigned_8(id_configuration); -- id lowbyte
+			llc_scratch.binary(2) := unsigned_8(id_configuration/256); -- id highbyte
+			llc_scratch.binary(3) := llct;
+			llc_scratch.binary(4) := unsigned_8(scanpath_being_compiled);
+			llc_scratch.binary(5) := llcc;
+			llc_scratch.source	:= universal_string_type.to_bounded_string(source);
+			add_class_b_cmd_to_step_list_pre(
+				list 				=> ptr_test_step_pre,
+				length_total_given	=> length,
+				command_given		=> llc_scratch);
+
+
 		-- write ID, which is always id_configuration
 		write_listing(item => location, loc => listing_address);
 		write_word_in_vector_file(id_configuration); -- id_configuration is 16bit wide
@@ -569,9 +591,9 @@ procedure compseq is
 
 		check_option_retry;
 
-		add_to_step_list_pre(
+		add_class_a_cmd_to_step_list_pre(
 			list				=> ptr_test_step_pre,
-			step_class_given	=> class_a,
+			--step_class_given	=> class_a,
 			scan_given			=> SIR,
 			vector_id_given		=> vector_id,
 			length_total_given	=> length_total,
@@ -762,9 +784,9 @@ procedure compseq is
 
 			check_option_retry;
 
-			add_to_step_list_pre(
+			add_class_a_cmd_to_step_list_pre(
 				list				=> ptr_test_step_pre,
-				step_class_given	=> class_a,
+				--step_class_given	=> class_a,
 				scan_given			=> SDR,
 				vector_id_given		=> vector_id,
 				length_total_given	=> length_total,
@@ -825,21 +847,25 @@ procedure compseq is
 	end concatenate_sdr_images;
 
 
+
  	begin -- compile_command
 		prog_position	:= 400;
 
 		--hard+soft trst (default)
 		if get_field_from_line(cmd,1) = sequence_instruction_set.trst then
-			write_llc(llc_head,llc_cmd_trst); 
-			write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+			write_llc(llct => llc_head, llcc => llc_cmd_trst, length => 5, source => extended_string.to_string(cmd) ); 
+			--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+
 		--only soft trst
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.strst then
-			write_llc(llc_head,llc_cmd_strst);
-			write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+			write_llc(llct => llc_head, llcc => llc_cmd_strst, length => 5, source => extended_string.to_string(cmd) ); 
+			--write_llc(llc_head,llc_cmd_strst);
+			--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 		--only hard trst
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.htrst then
-			write_llc(llc_head,llc_cmd_strst);
-			write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+			write_llc(llct => llc_head, llcc => llc_cmd_htrst, length => 5, source => extended_string.to_string(cmd) ); 
+			--write_llc(llc_head,llc_cmd_strst);
+			--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 
 		prog_position	:= 420;
 		-- "scanpath" (example: tap_state test-logic-reset, tap_state pause-dr)
@@ -2323,7 +2349,7 @@ procedure compseq is
 				end loop;
 
 				-- ORDER DRV/EXP IMAGES AS SPECIFIED IN OPTION END_SDR/SIR
-				order_img;
+				--order_img;
 
 				-- CLOSE REGISER FILE
 				prog_position	:= 280;
