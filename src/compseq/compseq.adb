@@ -88,9 +88,16 @@ procedure compseq is
 	scanpath_being_compiled	: positive;	-- points to the scanpath being compiled
 	sequence_being_compiled	: positive;	-- points to the sequence being compiled
 
-	vector_id				: positive;
+	vector_count_max		: constant positive := (2**16)-1;
+	subtype type_vector_id is positive range 1..vector_count_max;
+	vector_id				: type_vector_id;
+
 	test_step_id			: natural := 0;
 	ubyte_scratch			: unsigned_8; -- used for appending vector_file to vector_file_head
+
+	vector_length_max		: constant positive := (2**16)-1; -- CS: machine dependend and limited here
+										-- to a reasonable value
+	subtype type_vector_length is positive range 1..vector_length_max;
 
 	-- GLOBAL ARRAY THAT DESCRIBES ALL PHYSICAL AVAILABLE SCANPATHS
 	-- non-active scanpaths have an irl_total of zero
@@ -125,7 +132,7 @@ procedure compseq is
 			
 	type type_test_step_pre;
 	type ptr_type_test_step_pre is access all type_test_step_pre;
-	type type_test_step_pre ( length_total : natural; step_class : type_step_class) is 
+	type type_test_step_pre ( length_total : type_vector_length; step_class : type_step_class) is 
 		record
 			next		: ptr_type_test_step_pre;
 			step_id		: positive;
@@ -133,7 +140,7 @@ procedure compseq is
 			case step_class is
 				when class_a =>
 					scan		: type_scan;
-					vector_id	: positive;
+					vector_id	: type_vector_id;
 					img_drive	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
 					img_expect	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
 					img_mask	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
@@ -147,7 +154,7 @@ procedure compseq is
 
 	procedure add_class_b_cmd_to_step_list_pre(
 		list				: in out ptr_type_test_step_pre;
-		length_total_given	: natural;
+		length_total_given	: natural; -- this is the number of bytes required for that command
 		command_given		: type_step_class_b) is
 	begin
 		test_step_id := test_step_id + 1;
@@ -156,7 +163,8 @@ procedure compseq is
 			step_id			=> test_step_id,
 			sequence_id		=> sequence_being_compiled,
 			step_class		=> class_b,
-			length_total	=> length_total_given,
+			length_total	=> length_total_given, -- here the discriminant length_total is misused to hold the number
+												-- of bytes required for that command
 			command			=> command_given
 			);
 	end add_class_b_cmd_to_step_list_pre;
@@ -165,8 +173,8 @@ procedure compseq is
 		list				: in out ptr_type_test_step_pre;
 		--step_class_given	: type_step_class;
 		scan_given			: type_scan; -- SIR or SDR
-		vector_id_given		: positive;
-		length_total_given	: positive;
+		vector_id_given		: type_vector_id;
+		length_total_given	: type_vector_length; -- this is the number of bits required for that vector
 		img_drive_given		: type_string_of_bit_characters_class_0;	-- LSB left (pos 1)
 		img_expect_given	: type_string_of_bit_characters_class_0;	-- LSB left (pos 1)
 		img_mask_given		: type_string_of_bit_characters_class_0;	-- LSB left (pos 1)
@@ -320,8 +328,8 @@ procedure compseq is
 		) is
 		llc_scratch : type_step_class_b(length);
 	begin
-		llc_scratch.binary(1) := unsigned_8(id_configuration); -- id lowbyte
-		llc_scratch.binary(2) := unsigned_8(id_configuration/256); -- id highbyte
+		llc_scratch.binary(1) := get_byte_from_word(id_configuration,0); -- id lowbyte
+		llc_scratch.binary(2) := get_byte_from_word(id_configuration,1); -- id highbyte
 		llc_scratch.binary(3) := llct;
 		llc_scratch.binary(4) := unsigned_8(scanpath_being_compiled);
 		llc_scratch.binary(5) := llcc;
@@ -2200,8 +2208,8 @@ procedure compseq is
 								-- WRITE VECTOR ID (16 bit)
 								write_word_in_vector_file(unsigned_16(t.vector_id));
 								write_listing(item => location, loc => listing_address);
-								write_listing(item => object_code, obj_code => unsigned_8(t.vector_id)); -- lowbyte -- CS may not work
-								write_listing(item => object_code, obj_code => unsigned_8(t.vector_id/256)); -- highbyte (by shifting 8 bits right)
+								write_listing(item => object_code, obj_code => get_byte_from_word(unsigned_16(t.vector_id),0) ); -- lowbyte
+								write_listing(item => object_code, obj_code => get_byte_from_word(unsigned_16(t.vector_id),1) ); -- highbyte
 								--write_listing(item => source_code, src_code => "dummy");
 								listing_address := listing_address + 2; -- prepare next location to be written in listing
 
@@ -2290,7 +2298,11 @@ procedure compseq is
 
 								-- WRITE SXR LENGTH (32 bit)
 								write_double_word_in_vector_file(unsigned_32(t.length_total));
-								-- CS current: write_listing(item => object_code, obj_code => unsi
+								write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),0));
+								write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),1)); 
+								write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),2)); 
+								write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),3));  
+								write_listing(item => source_code, src_code => "dummy");
 
 								case t.scan is
 									when sir =>
