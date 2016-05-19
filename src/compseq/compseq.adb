@@ -132,8 +132,9 @@ procedure compseq is
 	type type_test_step_pre ( length_total : type_vector_length; step_class : type_step_class) is 
 		record
 			next		: ptr_type_test_step_pre;
-			step_id		: positive;
-			sequence_id	: positive;
+			step_id		: positive; -- CS: use dedicated type
+			scanpath_id	: positive; -- CS: use dedicated type
+			sequence_id	: positive; -- CS: use dedicated type
 			case step_class is
 				when class_a =>
 					scan		: type_scan;
@@ -155,10 +156,11 @@ procedure compseq is
 		length_total_given	: natural; -- this is the number of bytes required for that command
 		command_given		: type_step_class_b) is
 	begin
-		test_step_id := test_step_id + 1;
+		test_step_id := test_step_id + 1; -- just a number that helps ordering test steps later when reading the list
 		list := new type_test_step_pre'(
 			next 			=> list,
 			step_id			=> test_step_id,
+			scanpath_id		=> scanpath_being_compiled,
 			sequence_id		=> sequence_being_compiled,
 			step_class		=> class_b,
 			length_total	=> length_total_given, -- here the discriminant length_total is misused to hold the number
@@ -181,10 +183,11 @@ procedure compseq is
 		source_given		: universal_string_type.bounded_string
 		) is
 	begin
-		test_step_id := test_step_id + 1;
+		test_step_id := test_step_id + 1; -- just a number that helps ordering test steps later when reading the list
 		list := new type_test_step_pre'(
 			next 			=> list,
 			step_id			=> test_step_id,
+			scanpath_id		=> scanpath_being_compiled,
 			sequence_id		=> sequence_being_compiled,
 			step_class		=> class_a,
 			scan			=> scan_given,
@@ -2056,7 +2059,8 @@ procedure compseq is
 			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 31..24 in file
 				-- record in list file
 				write_listing (item => object_code, obj_code => unsigned_8(ubyte_scratch));
-				write_listing (item => source_code, src_code => "base address scanpath" & positive'image(scanpath_being_compiled));
+				write_listing (item => source_code, src_code => "base address scanpath" & positive'image(scanpath_being_compiled) 
+					& row_separator_0 & comment & " lowbyte left");
 				new_line(compile_listing);
 			size_of_vector_header := size_of_vector_header + 1;
 
@@ -2147,7 +2151,7 @@ procedure compseq is
 				byte_count		: natural := length/w; -- holds number of full bytes
 				remaining_bits	: natural := length rem w; -- holds number of left-over bits
 				
-			begin
+			begin -- write_image_in_vector_file
 				prog_position := 1100;
 				-- if there are full bytes, they are processed first, one by one (point A)
 				-- if no full bytes, but an incomplete byte, the left-over bits are proesssed at point B
@@ -2201,7 +2205,8 @@ procedure compseq is
 				t := ptr_test_step_pre;
 				while t /= null loop
 					--put_line(standard_output," sequence id" & positive'image(t.sequence_id));
-					if t.step_id = i and t.sequence_id = sequence_being_compiled then
+					--if t.step_id = i and t.sequence_id = sequence_being_compiled then
+					if t.step_id = i and t.scanpath_id = scanpath_being_compiled and t.sequence_id = sequence_being_compiled then
 						--put_line(standard_output," post processing step id" & positive'image(i));
 
 						case t.step_class is
@@ -2326,7 +2331,7 @@ procedure compseq is
 									when sir =>
 										--put("sir ");
 										case test_info.end_sir is
-											when RTI => 
+											when RTI => -- in this mode, no re-ordering is required
 												write_image_in_vector_file(t.img_drive,		t.length_total);
 												write_listing(item => separator);
 												write_image_in_vector_file(t.img_mask,		t.length_total);
@@ -2337,7 +2342,7 @@ procedure compseq is
 									when sdr =>
 										--put("sdr ");
 										case test_info.end_sdr is
-											when RTI =>
+											when RTI => -- in this mode, no re-ordering is required
 												write_image_in_vector_file(t.img_drive,		t.length_total);
 												write_listing(item => separator);
 												write_image_in_vector_file(t.img_mask,		t.length_total);
@@ -2346,18 +2351,20 @@ procedure compseq is
 											when PDR => null;
 										end case;
 								end case;
-								write_listing(item => source_code, src_code => universal_string_type.to_string(t.source));
+								write_listing(item => source_code, src_code => universal_string_type.to_string(t.source) 
+									& row_separator_0 & comment & " lowbyte left");
 
 							when class_b =>
 
+								-- WRITE LOW LEVEL COMMAND
 								write_listing(item => location, loc => listing_address);
 								for b in 1..t.length_total loop
 									write_byte_in_vector_file(t.command.binary(b));	
 									write_listing(item => object_code, obj_code => t.command.binary(b));
 								end loop;
 								write_listing(item => source_code, src_code => universal_string_type.to_string(t.command.source));
-
 								listing_address := listing_address + t.length_total; -- prepare next location to be written in listing
+
 						end case;
 					end if;
 					t := t.next;
@@ -2607,8 +2614,23 @@ begin
 	-- write test end marker in vector file
 	prog_position	:= 2000;
  	write_word_in_vector_file(id_configuration);
+	write_listing(item => location, loc => listing_address);
+	write_listing(item => object_code, obj_code => get_byte_from_word(id_configuration,0)); -- id lowbyte
+	write_listing(item => object_code, obj_code => get_byte_from_word(id_configuration,1)); -- id highbyte
+
  	write_byte_in_vector_file(mark_end_of_test);
+	write_listing(item => object_code, obj_code => mark_end_of_test);
+	write_listing(item => source_code, src_code => "end of test");
+	listing_address := listing_address + 3; -- prepare next location to be written in listing
+
  	write_byte_in_vector_file(16#02#);	-- 02h indicates virtual begin of chain 2 data -- CS: ?
+	write_listing(item => location, loc => listing_address);
+	write_listing(item => object_code, obj_code => 16#02#);
+	write_listing(item => source_code, src_code => "dummy");
+	
+	-- close list file
+	close(compile_listing);
+
 
 	-- append vector file to header file byte per byte
 	prog_position	:= 2010;
