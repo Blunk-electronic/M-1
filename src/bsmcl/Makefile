@@ -1,7 +1,7 @@
 TARGET = bsmcl
 
 VPATH = include
-OBJS = $(TARGET).o m1.o m1_internal.o 
+OBJS = $(TARGET).o m1.o m1_internal.o m1_firmware.o
 PREFIX = $(HOME)
 BINDIR = $(PREFIX)/bin
 

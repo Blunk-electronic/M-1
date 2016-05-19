@@ -73,7 +73,6 @@ procedure compseq is
 	size_of_vector_file		: natural := 0; -- incremented on every byte written in vector_file
 	size_of_vector_header	: natural := 0; -- incremented on every byte written in vector_file_header
 
-	mem_size				: natural := integer'Value("16#0FFFFF#"); -- BSC RAM size
 	destination_address		: natural;
 
 	line_counter			: natural := 0; -- line counter in sequence file (global counter !)
@@ -133,7 +132,7 @@ procedure compseq is
 		record
 			next		: ptr_type_test_step_pre;
 			step_id		: positive; -- CS: use dedicated type
-			scanpath_id	: positive; -- CS: use dedicated type
+			scanpath_id	: type_scanpath_id;
 			sequence_id	: positive; -- CS: use dedicated type
 			case step_class is
 				when class_a =>
