@@ -22,11 +22,21 @@
 --    along with this program.  If not, see <http://www.gnu.org/licenses/>. --
 ------------------------------------------------------------------------------
 
+--   Please send your questions and comments to:
+--
+--   Mario.Blunk@blunk-electronic.de
+--   or visit <http://www.blunk-electronic.de> for more contact data
+--
+--   history of changes:
+--
+
+
 with Ada.Text_IO;				use Ada.Text_IO;
 with Ada.Integer_Text_IO;		use Ada.Integer_Text_IO;
 with Ada.Characters.Handling; 	use Ada.Characters.Handling;
 
 with Ada.Strings.Bounded; 		use Ada.Strings.Bounded;
+with Ada.Strings.fixed; 		use Ada.Strings.fixed;
 with Ada.Exceptions; 			use Ada.Exceptions;
  
 with Ada.Command_Line;			use Ada.Command_Line;
@@ -41,13 +51,21 @@ procedure mkinfra is
 	version			: String (1..3) := "039";
 	prog_position	: natural := 0;
 
+	test_profile	: type_test_profile	:= infrastructure;
+
 	type type_algorithm is ( standard , intrusive);
 	algorithm : type_algorithm;
 	--type type_option is ( none, intrusive ); -- CS
 
+	end_sir			: type_end_sir		:= RTI;
+	end_sdr			: type_end_sdr		:= RTI;
+
 	procedure write_info_section is
-		--previous_output	: file_fype renames current_output;
-		--Previous_Input	: File_Type renames Current_Input;
+	-- creates the sequence file,
+	-- directs subsequent puts into the sequence file
+	-- writes the info section into the sequence file
+
+		colon_position : positive := 19;
 	begin
 		-- create sequence file
 		create( sequence_file, 
@@ -55,18 +73,20 @@ procedure mkinfra is
 
 			set_output(sequence_file); -- set data sink
 
-			put_line ("Section info");
+			--put_line ("Section info");
+			put_line(section_mark.section & row_separator_0 & test_section.info);
 			put_line (" created by infra structure test generator version "& version);
-			put_line (" date          : " & date_now); 
-			--put_line (" UTC_Offset    : " ); Put (Integer(UTC_Time_Offset/60),1); put(" hours"); new_line; 
-			put_line (" data base     : " & universal_string_type.to_string(data_base));
-			put_line (" bic count     :" & positive'image(summary.bic_ct));
-			put_line (" algorithm     : " & type_algorithm'image(standard));
-			--put_line (" options       : " & type_option'image()); -- CS 
-			put_line ("EndSection"); new_line;
+			put_line(row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & m1.date_now);
+			put_line(row_separator_0 & section_info_item.data_base & (colon_position-(2+section_info_item.data_base'last)) * row_separator_0 & ": " & universal_string_type.to_string(data_base));
+			put_line(row_separator_0 & section_info_item.test_name & (colon_position-(2+section_info_item.test_name'last)) * row_separator_0 & ": " & universal_string_type.to_string(test_name));
+			put_line(row_separator_0 & section_info_item.test_profile & (colon_position-(2+section_info_item.test_profile'last)) * row_separator_0 & ": " & type_test_profile'image(test_profile));
+			put_line(row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(end_sdr));
+			put_line(row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(end_sir));
 
-			--Close(OutputFile); --Close(InputFile);
-			--Set_Output(Previous_Output); --Set_Input(Previous_Input);
+			put_line (" bic count        :" & positive'image(summary.bic_ct));
+			put_line (" algorithm        : " & type_algorithm'image(standard));
+			--put_line (" options       : " & type_option'image()); -- CS 
+			put_line(section_mark.endsection); 
 		end;
 
 	procedure write_sequences is
@@ -111,7 +131,7 @@ procedure mkinfra is
 							& sxr_io_identifier.drive & row_separator_0
 							& sir_target_register.ir
 							& type_register_length'image(b.len_ir - 1) & row_separator_0
-							& sxr_vector_direction.downto & row_separator_0 & "0" & row_separator_0
+							& sxr_vector_orientation.downto & row_separator_0 & "0" & row_separator_0
 							& sxr_assignment_operator.assign & row_separator_0
 							);
 						-- write instruction depended part
@@ -150,7 +170,7 @@ procedure mkinfra is
 									--& " 31 " & sxr_vector_direction.downto 
 									& type_register_length'image(bic_idcode_register_length - 1)
 									& row_separator_0
-									& sxr_vector_direction.downto 
+									& sxr_vector_orientation.downto 
 									& " 0 "
 									& sxr_assignment_operator.assign
 									& " 0" -- we drive 32bits of 0 into the register. but it is a read-only register (as specified in std)
@@ -161,7 +181,7 @@ procedure mkinfra is
 								put_line(sdr_target_register.usercode
 									& type_register_length'image(bic_usercode_register_length -1)
 									& row_separator_0
-									& sxr_vector_direction.downto 
+									& sxr_vector_orientation.downto 
 									& " 0 "
 									& sxr_assignment_operator.assign
 									& " 0" -- we drive 32bits of 0 into the register. but it is a read-only register (as specified in std)
@@ -170,7 +190,7 @@ procedure mkinfra is
 							when others => -- sample, preload, extest
 								-- example: "boundary 5 downto 0 := XXX11"
 								put(sdr_target_register.boundary
-									& natural'image(b.len_bsr - 1) & row_separator_0 & sxr_vector_direction.downto 
+									& natural'image(b.len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto 
 									& " 0 "
 									& sxr_assignment_operator.assign & row_separator_0
 									);
@@ -193,7 +213,7 @@ procedure mkinfra is
 								put(sdr_target_register.idcode
 									& type_register_length'image(bic_idcode_register_length -1)
 									& row_separator_0 
-									& sxr_vector_direction.downto 
+									& sxr_vector_orientation.downto 
 									& " 0 "
 									& sxr_assignment_operator.assign & row_separator_0
 									);
@@ -204,7 +224,7 @@ procedure mkinfra is
 								put(sdr_target_register.usercode
 									& type_register_length'image(bic_usercode_register_length -1)
 									& row_separator_0
-									& sxr_vector_direction.downto 
+									& sxr_vector_orientation.downto 
 									& " 0 "
 									& sxr_assignment_operator.assign & row_separator_0
 									);
@@ -214,7 +234,7 @@ procedure mkinfra is
 							when others => -- sample, preload, extest
 								-- example: "boundary 5 downto 0 := X"
 								put(sdr_target_register.boundary
-									& natural'image(b.len_bsr - 1) & row_separator_0 & sxr_vector_direction.downto 
+									& natural'image(b.len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto 
 									& " 0 "
 									& sxr_assignment_operator.assign
 									& " X "
@@ -266,7 +286,7 @@ procedure mkinfra is
 						& sxr_io_identifier.drive & row_separator_0
 						& sir_target_register.ir
 						& type_register_length'image(b.len_ir - 1) & row_separator_0
-						& sxr_vector_direction.downto & row_separator_0 & "0" & row_separator_0
+						& sxr_vector_orientation.downto & row_separator_0 & "0" & row_separator_0
 						& sxr_assignment_operator.assign & row_separator_0
 						);
 					m1_internal.put_binary_class_1(b.opc_bypass);
@@ -279,7 +299,7 @@ procedure mkinfra is
 						& sxr_io_identifier.expect & row_separator_0
 						& sir_target_register.ir
 						& type_register_length'image(b.len_ir - 1) & row_separator_0
-						& sxr_vector_direction.downto & row_separator_0 & "0" & row_separator_0
+						& sxr_vector_orientation.downto & row_separator_0 & "0" & row_separator_0
 						& sxr_assignment_operator.assign & row_separator_0
 						);
 					m1_internal.put_binary_class_1(b.capture_ir);

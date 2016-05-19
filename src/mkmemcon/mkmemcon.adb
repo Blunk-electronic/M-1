@@ -143,8 +143,8 @@ procedure mkmemcon is
 	type type_info_item is
 		record
 			test_profile	: type_test_profile	:= memconnect;
-			end_sdr			: type_end_sxr		:= PDR; -- pause dr  -- CS: wrong placed. this is not part of the model file !
-			end_sir			: type_end_sxr		:= RTI; -- run-test/idle -- CS: wrong placed. this is not part of the model file !
+			end_sdr			: type_end_sdr		:= PDR; -- pause dr  -- CS: wrong placed. this is not part of the model file !
+			end_sir			: type_end_sir		:= RTI; -- run-test/idle -- CS: wrong placed. this is not part of the model file !
 			value			: string (1..5) 	:= "value";
 			compatibles		: string (1..11) 	:= "compatibles";
 			date			: string (1..4) 	:= "date";
@@ -2121,6 +2121,9 @@ procedure mkmemcon is
 	-- creates the sequence file,
 	-- directs subsequent puts into the sequence file
 	-- writes the info section into the sequence file
+
+		colon_position : positive := 19;
+
 		procedure write_pin_list is
 			-- writes bus width of address, control and data
 			-- writes the pin list
@@ -2200,14 +2203,20 @@ procedure mkmemcon is
 			name => (compose (universal_string_type.to_string(test_name), universal_string_type.to_string(test_name), "seq")));
 		set_output(sequence_file); -- set data sink
 
-		put_line("Section " & section_name.info);
+		put_line(section_mark.section & row_separator_0 & test_section.info);
 		put_line(" created by memory/module connections test generator version "& version);
-		put_line(" date             : " & m1.date_now);
-		put_line(" data_base        : " & universal_string_type.to_string(ptr_target.data_base));
-		put_line(" test_name        : " & universal_string_type.to_string(ptr_target.test_name));
-		put_line(" test_profile     : " & type_test_profile'image(info_item.test_profile));
-		put_line(" end_sdr          : " & type_end_sxr'image(info_item.end_sdr));
-		put_line(" end_sir          : " & type_end_sxr'image(info_item.end_sir));
+		--put_line(" date             : " & m1.date_now);
+		put_line(row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & m1.date_now);
+		--put_line(" data_base        : " & universal_string_type.to_string(ptr_target.data_base));
+		put_line(row_separator_0 & section_info_item.data_base & (colon_position-(2+section_info_item.data_base'last)) * row_separator_0 & ": " & universal_string_type.to_string(ptr_target.data_base));
+		--put_line(" test_name        : " & universal_string_type.to_string(ptr_target.test_name));
+		put_line(row_separator_0 & section_info_item.test_name & (colon_position-(2+section_info_item.test_name'last)) * row_separator_0 & ": " & universal_string_type.to_string(ptr_target.test_name));
+		--put_line(" test_profile     : " & type_test_profile'image(info_item.test_profile));
+		put_line(row_separator_0 & section_info_item.test_profile & (colon_position-(2+section_info_item.test_profile'last)) * row_separator_0 & ": " & type_test_profile'image(info_item.test_profile));
+		--put_line(" end_sdr          : " & type_end_sdr'image(info_item.end_sdr));
+		put_line(row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(info_item.end_sdr));
+		--put_line(" end_sir          : " & type_end_sir'image(info_item.end_sir));
+		put_line(row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(info_item.end_sir));
 		put_line(" target_name      : " & universal_string_type.to_string(ptr_target.device_name));
 		put_line(" target_class     : " & type_target_class'image(ptr_target.class_target));
 		case ptr_target.class_target is 
@@ -2234,7 +2243,7 @@ procedure mkmemcon is
 		put_line("  total           :" & natural'image(ptr_target.step_count_total));
 		write_pin_list;
 
-		put_line("EndSection"); 
+		put_line(section_mark.endsection); 
 		new_line;
 	end write_info_section;
 

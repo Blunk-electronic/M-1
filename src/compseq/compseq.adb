@@ -1082,7 +1082,7 @@ procedure compseq is
 				--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
 			else
 				put_line("ERROR: Delay value invalid !");
-				put_line("       Provide a number between" & type_delay_value'image(type_delay_value'first) 
+				put_line("       Provide a number between" & float'image(delay_resolution) 
 					& " and " & type_delay_value'image(type_delay_value'last) & ". Unit is 'seconds' !");
 				put_line("       Example: " & sequence_instruction_set.dely & row_separator_0 & type_delay_value'image(type_delay_value'last));
 			end if;
