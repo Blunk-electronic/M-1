@@ -28,16 +28,13 @@
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
--- bugfix: at prog_position BY2 and BY6 changed expected register assignment for bypass to 0=1 and 0=0
--- at prog_position MA1 EX1 added 'X' to don't care bit case
--- added letter X to bit_char 
 
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
 with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
-with Ada.Characters; 		use Ada.Characters;
+--with Ada.Characters; 		use Ada.Characters;
 with Ada.Characters.Handling; 		use Ada.Characters.Handling;
-with ada.characters.conversions;	use ada.characters.conversions;
+--with ada.characters.conversions;	use ada.characters.conversions;
 
 with m1; --use m1;
 with m1_internal; use m1_internal;
@@ -60,9 +57,9 @@ with Ada.Exceptions; use Ada.Exceptions;
 with Ada.Command_Line;	use Ada.Command_Line;
 with Ada.Directories;	use Ada.Directories;
  
-with Ada.Calendar;				use Ada.Calendar;
-with Ada.Calendar.Formatting;	use Ada.Calendar.Formatting;
-with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
+-- with Ada.Calendar;				use Ada.Calendar;
+-- with Ada.Calendar.Formatting;	use Ada.Calendar.Formatting;
+-- with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
 
 procedure compseq is
 
@@ -146,6 +143,7 @@ procedure compseq is
 					img_mask	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
 					retry_count	: unsigned_8;
 					retry_delay	: unsigned_8;
+					source		: universal_string_type.bounded_string; -- the command in plain text like "sir 3"
 				when class_b =>
 					command		: type_step_class_b(length_total);
 			end case;
@@ -179,30 +177,26 @@ procedure compseq is
 		img_expect_given	: type_string_of_bit_characters_class_0;	-- LSB left (pos 1)
 		img_mask_given		: type_string_of_bit_characters_class_0;	-- LSB left (pos 1)
 		retry_count_given	: unsigned_8;
-		retry_delay_given	: unsigned_8
+		retry_delay_given	: unsigned_8;
+		source_given		: universal_string_type.bounded_string
 		) is
 	begin
 		test_step_id := test_step_id + 1;
-		--case step_class_given is
-		--	when class_a =>
-				list := new type_test_step_pre'(
-					next 			=> list,
-					step_id			=> test_step_id,
-					sequence_id		=> sequence_being_compiled,
-					step_class		=> class_a,
-					scan			=> scan_given,
-					vector_id		=> vector_id_given,
-					length_total	=> length_total_given,
-					img_drive		=> img_drive_given,		-- LSB left (pos 1)
-					img_expect		=> img_expect_given,	-- LSB left (pos 1)
-					img_mask		=> img_mask_given,		-- LSB left (pos 1)
-					retry_count		=> retry_count_given,
-					retry_delay		=> retry_delay_given
-					);
-		--	when others =>
-		--		put_line(standard_output,"ERROR: The given step class can not be added by this procedure !");
-		--		raise constraint_error;
-		--end case;
+		list := new type_test_step_pre'(
+			next 			=> list,
+			step_id			=> test_step_id,
+			sequence_id		=> sequence_being_compiled,
+			step_class		=> class_a,
+			scan			=> scan_given,
+			vector_id		=> vector_id_given,
+			length_total	=> length_total_given,
+			img_drive		=> img_drive_given,		-- LSB left (pos 1)
+			img_expect		=> img_expect_given,	-- LSB left (pos 1)
+			img_mask		=> img_mask_given,		-- LSB left (pos 1)
+			retry_count		=> retry_count_given,
+			retry_delay		=> retry_delay_given,
+			source			=> source_given
+			);
 	end add_class_a_cmd_to_step_list_pre;
 
 
@@ -227,7 +221,7 @@ procedure compseq is
 		put_line(compile_listing,column_separator_0);
 	end write_listing_header;
 
-	type type_list_item is ( LOCATION, OBJECT_CODE, LINE_NUMBER, SOURCE_CODE);
+	type type_list_item is ( LOCATION, OBJECT_CODE, LINE_NUMBER, SOURCE_CODE, SEPARATOR);
 	--subtype type_object_code is string (1..3); -- like EFh or 52h
 	procedure write_listing (
 		item 		: type_list_item;
@@ -253,6 +247,8 @@ procedure compseq is
 				--put(compile_listing,src_code);
 				--Set_Col(1);
 				put_line(compile_listing,src_code);
+			when SEPARATOR =>
+				put(compile_listing,row_separator_1);
 			when others => null;
 		end case;
 	end write_listing;
@@ -563,7 +559,7 @@ procedure compseq is
 		pos_end		: positive;
 
 	begin -- concatenate_sir_images
-		for p in 1..summary.bic_ct loop -- p defines the position
+		for p in reverse 1..summary.bic_ct loop -- p defines the position (start with the highest position, close to BSC TDI)
 			b := ptr_bic;
 			while b /= null loop -- loop in bic list
 				if b.position = p then -- on position match
@@ -617,7 +613,8 @@ procedure compseq is
 			img_expect_given	=> sir_expect, -- LSB left (pos 1)
 			img_mask_given		=> sir_mask, -- LSB left (pos 1)
 			retry_count_given	=> sxr_retries_unsigned_8,
-			retry_delay_given	=> sxr_retry_delay_unsigned_8
+			retry_delay_given	=> sxr_retry_delay_unsigned_8,
+			source_given		=> universal_string_type.to_bounded_string(extended_string.to_string(cmd))
 			);
 
 	end concatenate_sir_images;
@@ -645,8 +642,7 @@ procedure compseq is
 
 		begin -- build_sdr_image
 			-- the last instruction loaded indicates the targeted data register
-			-- CS: add sdr trailer
-			for p in 1..summary.bic_ct loop -- p defines the position
+			for p in reverse 1..summary.bic_ct loop -- p defines the position (start with the highest position, close to BSC TDI)
 				b := ptr_bic;
 				while b /= null loop -- loop in bic list
 					if b.position = p then -- on position match
@@ -810,7 +806,8 @@ procedure compseq is
 				img_expect_given	=> sdr_expect,	-- LSB left (pos 1)
 				img_mask_given		=> sdr_mask,	-- LSB left (pos 1)
 				retry_count_given	=> sxr_retries_unsigned_8,
-				retry_delay_given	=> sxr_retry_delay_unsigned_8
+				retry_delay_given	=> sxr_retry_delay_unsigned_8,
+				source_given		=> universal_string_type.to_bounded_string(extended_string.to_string(cmd))
 				);
 
 		end build_sdr_image;
@@ -2016,6 +2013,7 @@ procedure compseq is
 			ubyte_scratch	: unsigned_8 := 0;
 	 	begin
 			put_line("writing scanpath base address ...");
+			new_line(compile_listing);
 
 			-- add offset due to header size (one byte is chain_count, 4 byte start address per chain) -- CS: unclear !!
 			--size_of_vector_file := size_of_vector_file + (summary.scanpath_ct * 4)+1 + destination_address;
@@ -2059,6 +2057,7 @@ procedure compseq is
 				-- record in list file
 				write_listing (item => object_code, obj_code => unsigned_8(ubyte_scratch));
 				write_listing (item => source_code, src_code => "base address scanpath" & positive'image(scanpath_being_compiled));
+				new_line(compile_listing);
 			size_of_vector_header := size_of_vector_header + 1;
 
 		end write_base_address;
@@ -2134,7 +2133,7 @@ procedure compseq is
 			offset	: unsigned_8;
 
 			procedure write_image_in_vector_file(img : type_string_of_bit_characters_class_0; length : positive) is
-			-- writes the image (LSB left, pos. 1) in vector file
+			-- writes the image (LSB left, pos. 1) in vector file. starts with LSB
 
 				-- create a last_byte that holds only zeroes
 				-- left-over bits will overwrite it
@@ -2150,7 +2149,7 @@ procedure compseq is
 				
 			begin
 				prog_position := 1100;
-				-- if there are full bytes, they are processed first, ony by one (point A)
+				-- if there are full bytes, they are processed first, one by one (point A)
 				-- if no full bytes, but an incomplete byte, the left-over bits are proesssed at point B
 				--put_line("length, byte count, rem:" & natural'image(length) & natural'image(byte_count) & natural'image(remaining_bits));
 
@@ -2163,6 +2162,8 @@ procedure compseq is
 						--put_line("i:" & positive'image(i) & positive'image(i+w-1));
 						byte := unsigned_8(to_natural(binary_in => img(i..i+w-1))); -- select bits 1..8 / 9..16 / 17..24 / ...
 						write_byte_in_vector_file(byte);
+						write_listing(item => object_code, obj_code => byte);  
+						listing_address := listing_address + 1;
 						i := i + w; -- i=9 / i=17 / i=25
 					end loop;
 
@@ -2174,6 +2175,8 @@ procedure compseq is
 						--put_line("i:" & positive'image(i) & positive'image(length) & positive'image(img'last));
 						last_byte(1..remaining_bits) := img(i..length); -- overwrite positions in last_byte with left-over bits
 						write_byte_in_vector_file( unsigned_8(to_natural(last_byte)));
+						write_listing(item => object_code, obj_code => unsigned_8(to_natural(last_byte)));  
+						listing_address := listing_address + 1;
 					end if;
 				else
 					-- B: an incomplete byte is given
@@ -2182,6 +2185,8 @@ procedure compseq is
 						prog_position := 1140;
 						last_byte(1..remaining_bits) := img(i..length); -- overwrite positions in last_byte with left-over bits
 						write_byte_in_vector_file( unsigned_8(to_natural(last_byte)));
+						write_listing(item => object_code, obj_code => unsigned_8(to_natural(last_byte))); 
+						listing_address := listing_address + 1;
 					end if;
 
 				end if;
@@ -2210,6 +2215,7 @@ procedure compseq is
 								write_listing(item => location, loc => listing_address);
 								write_listing(item => object_code, obj_code => get_byte_from_word(unsigned_16(t.vector_id),0) ); -- lowbyte
 								write_listing(item => object_code, obj_code => get_byte_from_word(unsigned_16(t.vector_id),1) ); -- highbyte
+								write_listing(item => separator);
 								--write_listing(item => source_code, src_code => "dummy");
 								listing_address := listing_address + 2; -- prepare next location to be written in listing
 
@@ -2237,6 +2243,7 @@ procedure compseq is
 													when 0 => 
 														write_byte_in_vector_file(mark_sir_hstrst + offset);
 														write_listing(item => object_code, obj_code => mark_sir_hstrst + offset);
+														listing_address := listing_address + 1;
 													when others => 
 														write_byte_in_vector_file(mark_sir_hstrst_retry + offset);
 														write_listing(item => object_code, obj_code => mark_sir_hstrst_retry + offset);
@@ -2244,12 +2251,14 @@ procedure compseq is
 														write_listing(item => object_code, obj_code => t.retry_count);
 														write_byte_in_vector_file(t.retry_delay);
 														write_listing(item => object_code, obj_code => t.retry_delay);
+														listing_address := listing_address + 3;
 												end case;
 											when sdr => 
 												case t.retry_count is
 													when 0 => 
 														write_byte_in_vector_file(mark_sdr_hstrst + offset);
 														write_listing(item => object_code, obj_code => mark_sdr_hstrst + offset);
+														listing_address := listing_address + 1;
 													when others => 
 														write_byte_in_vector_file(mark_sdr_hstrst_retry + offset);
 														write_listing(item => object_code, obj_code => mark_sdr_hstrst_retry + offset);
@@ -2257,6 +2266,7 @@ procedure compseq is
 														write_listing(item => object_code, obj_code => t.retry_count);
 														write_byte_in_vector_file(t.retry_delay);
 														write_listing(item => object_code, obj_code => t.retry_delay);
+														listing_address := listing_address + 3;
 												end case;
 										end case;
 									when POWER_DOWN =>
@@ -2266,6 +2276,7 @@ procedure compseq is
 													when 0 => 
 														write_byte_in_vector_file(mark_sir_pwrdown + offset);
 														write_listing(item => object_code, obj_code => mark_sir_pwrdown + offset);
+														listing_address := listing_address + 1;
 													when others => 
 														write_byte_in_vector_file(mark_sir_pwrdown_retry + offset);
 														write_listing(item => object_code, obj_code => mark_sir_pwrdown_retry + offset);
@@ -2273,12 +2284,14 @@ procedure compseq is
 														write_listing(item => object_code, obj_code => t.retry_count);
 														write_byte_in_vector_file(t.retry_delay);
 														write_listing(item => object_code, obj_code => t.retry_delay);
+														listing_address := listing_address + 3;
 												end case;
 											when sdr =>
 												case t.retry_count is
 													when 0 => 
 														write_byte_in_vector_file(mark_sdr_pwrdown + offset);
 														write_listing(item => object_code, obj_code => mark_sdr_pwrdown + offset);
+														listing_address := listing_address + 1;
 													when others => 
 														write_byte_in_vector_file(mark_sdr_pwrdown_retry + offset);
 														write_listing(item => object_code, obj_code => mark_sdr_pwrdown_retry + offset);
@@ -2286,15 +2299,19 @@ procedure compseq is
 														write_listing(item => object_code, obj_code => t.retry_count);
 														write_byte_in_vector_file(t.retry_delay);
 														write_listing(item => object_code, obj_code => t.retry_delay);
+														listing_address := listing_address + 3;
 												end case;
 										end case;
 		-- 							when FINISH_TEST =>
 		-- 								put_line("ERROR: " & type_on_fail_action'image(scanpath_options.on_fail) & 
 								end case;
+								write_listing(item => separator);
 
 								-- WRITE SCANPATH ID (8 bit) -- CS: ignored ?
 								write_byte_in_vector_file(unsigned_8(scanpath_being_compiled));
 								write_listing(item => object_code, obj_code => unsigned_8(scanpath_being_compiled));
+								listing_address := listing_address + 1;
+								write_listing(item => separator);
 
 								-- WRITE SXR LENGTH (32 bit)
 								write_double_word_in_vector_file(unsigned_32(t.length_total));
@@ -2302,7 +2319,8 @@ procedure compseq is
 								write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),1)); 
 								write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),2)); 
 								write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),3));  
-								write_listing(item => source_code, src_code => "dummy");
+								listing_address := listing_address + 4;
+								write_listing(item => separator);
 
 								case t.scan is
 									when sir =>
@@ -2310,7 +2328,9 @@ procedure compseq is
 										case test_info.end_sir is
 											when RTI => 
 												write_image_in_vector_file(t.img_drive,		t.length_total);
+												write_listing(item => separator);
 												write_image_in_vector_file(t.img_mask,		t.length_total);
+												write_listing(item => separator);
 												write_image_in_vector_file(t.img_expect,	t.length_total);
 											when PIR => null;
 										end case;
@@ -2319,11 +2339,14 @@ procedure compseq is
 										case test_info.end_sdr is
 											when RTI =>
 												write_image_in_vector_file(t.img_drive,		t.length_total);
+												write_listing(item => separator);
 												write_image_in_vector_file(t.img_mask,		t.length_total);
+												write_listing(item => separator);
 												write_image_in_vector_file(t.img_expect,	t.length_total);
 											when PDR => null;
 										end case;
 								end case;
+								write_listing(item => source_code, src_code => universal_string_type.to_string(t.source));
 
 							when class_b =>
 
