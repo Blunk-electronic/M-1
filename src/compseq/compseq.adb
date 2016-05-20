@@ -86,7 +86,7 @@ procedure compseq is
 
 	vector_count_max		: constant positive := (2**16)-1;
 	subtype type_vector_id is positive range 1..vector_count_max;
-	vector_id				: type_vector_id;
+	vector_id				: type_vector_id; -- as in "sdr id 456" or "sir id 5"
 
 	test_step_id			: natural := 0;
 	ubyte_scratch			: unsigned_8; -- used for appending vector_file to vector_file_head
@@ -136,8 +136,9 @@ procedure compseq is
 			sequence_id	: positive; -- CS: use dedicated type
 			case step_class is
 				when class_a =>
-					scan		: type_scan;
+					scan		: type_scan;  -- SIR or SDR
 					vector_id	: type_vector_id;
+					-- CS: place information about targeted registers
 					img_drive	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
 					img_expect	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
 					img_mask	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
@@ -2195,6 +2196,49 @@ procedure compseq is
 				end if;
 			end write_image_in_vector_file;
 
+			nv : ptr_type_test_step_pre; -- points to position of next vector
+			function get_pos_of_next_vector(cv : ptr_type_test_step_pre) return ptr_type_test_step_pre is
+				t	: ptr_type_test_step_pre := ptr_test_step_pre;
+				nv	: ptr_type_test_step_pre := ptr_test_step_pre;
+			begin
+				--put_line(standard_output,"--vector current:" & type_vector_id'image(cv.vector_id));
+				for a in 1..vector_count_max loop -- "a" is the number of vectors to look ahead in the step list
+												-- in order to find the next drive image
+					-- for the start, we look for the closest vector after the one pointed to by "cv"
+					-- iteratively, the look-ahead window increases
+
+					t := ptr_test_step_pre;
+					while t /= null loop
+						-- the next vector must meet following criterions:
+						-- check discriminants first
+						if t.step_class = cv.step_class -- same class (class_a mostly)
+						and t.length_total = cv.length_total -- same length
+						then -- check other properties
+							if t.scan = cv.scan -- same scan type (sir, sdr)
+							and t.scanpath_id = cv.scanpath_id -- same scanpath id
+							and t.sequence_id = cv.sequence_id -- same sequence id (CS: crossing sequence boundaries not supported yet)
+							then
+								if t.vector_id = cv.vector_id + a then -- vector id after given id. (not to confuse with step_id !)
+
+									-- CS: check targeted registers
+									-- if the look-ahead window is greater 1, put a warning.
+									if t.scan = sdr and a > 1 then
+										put_line(standard_output,"WARNING: Look-ahead window for next " & type_scan'image(t.scan) & " drive image is" & positive'image(a) & " steps !");
+										put_line(standard_output,"         Vector id current:" & type_vector_id'image(cv.vector_id));
+										put_line(standard_output,"         Vector id next   :" & type_vector_id'image(t.vector_id));
+										put_line(standard_output,"         Make sure, the targeted registers are the same !");
+									end if;
+									return t; -- return pointer of next vector
+								end if;
+							end if;
+						end if;
+						t := t.next;
+					end loop;
+				end loop;
+
+				-- search finished but no subsequent vector found
+				return t; -- return null
+			end get_pos_of_next_vector;
 
 		begin -- order_img
 			prog_position := 1000;
@@ -2331,27 +2375,66 @@ procedure compseq is
 										--put("sir ");
 										case test_info.end_sir is
 											when RTI => -- in this mode, no re-ordering is required
+-- 												-- WRITE SXR LENGTH (32 bit)
+-- 												write_double_word_in_vector_file(unsigned_32(t.length_total));
+-- 												write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),0));
+-- 												write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),1)); 
+-- 												write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),2)); 
+-- 												write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),3));  
+-- 												listing_address := listing_address + 4;
+-- 												write_listing(item => separator);
+
+												-- WRITE IMAGES
 												write_image_in_vector_file(t.img_drive,		t.length_total);
 												write_listing(item => separator);
 												write_image_in_vector_file(t.img_mask,		t.length_total);
 												write_listing(item => separator);
 												write_image_in_vector_file(t.img_expect,	t.length_total);
-											when PIR => null;
+											when PIR =>
+												nv := get_pos_of_next_vector(t);  -- nv points to position of next vector
+												if nv /= null then -- means if next vector available, write drive image of that vector
+													write_image_in_vector_file(nv.img_drive,	nv.length_total);
+												else -- otherwise use drive image of current vector. CS: what else ?
+													write_image_in_vector_file(t.img_drive,	t.length_total);
+												end if;
+												write_listing(item => separator);
+												write_image_in_vector_file(t.img_mask,		t.length_total);
+												write_listing(item => separator);
+												write_image_in_vector_file(t.img_expect,	t.length_total);
 										end case;
 									when sdr =>
 										--put("sdr ");
 										case test_info.end_sdr is
 											when RTI => -- in this mode, no re-ordering is required
+												-- WRITE SXR LENGTH (32 bit)
+-- 												write_double_word_in_vector_file(unsigned_32(t.length_total));
+-- 												write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),0));
+-- 												write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),1)); 
+-- 												write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),2)); 
+-- 												write_listing(item => object_code, obj_code => get_byte_from_doubleword(unsigned_32(t.length_total),3));  
+-- 												listing_address := listing_address + 4;
+-- 												write_listing(item => separator);
+
 												write_image_in_vector_file(t.img_drive,		t.length_total);
 												write_listing(item => separator);
 												write_image_in_vector_file(t.img_mask,		t.length_total);
 												write_listing(item => separator);
 												write_image_in_vector_file(t.img_expect,	t.length_total);
-											when PDR => null;
+											when PDR =>
+												nv := get_pos_of_next_vector(t);  -- nv points to position of next vector
+												if nv /= null then -- means if next vector available, write drive image of that vector
+													write_image_in_vector_file(nv.img_drive,	nv.length_total);
+												else -- otherwise use drive image of current vector. CS: what else ?
+													write_image_in_vector_file(t.img_drive,	t.length_total);
+												end if;
+												write_listing(item => separator);
+												write_image_in_vector_file(t.img_mask,		t.length_total);
+												write_listing(item => separator);
+												write_image_in_vector_file(t.img_expect,	t.length_total);
 										end case;
 								end case;
 								write_listing(item => source_code, src_code => universal_string_type.to_string(t.source) 
-									& row_separator_0 & comment & " lowbyte left");
+									& row_separator_0 & comment & " lowbyte left: sxr_id | sxr_type | scanpath | length | drv | mask | exp");
 
 							when class_b =>
 
