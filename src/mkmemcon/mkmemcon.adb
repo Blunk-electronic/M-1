@@ -2972,6 +2972,7 @@ begin
 	exception
 		when event: others =>
 			set_output(standard_output);
+			set_exit_status(failure);
 			case prog_position is
 				when 10 =>
 					put_line("ERROR: Data base file missing or insufficient access rights !");

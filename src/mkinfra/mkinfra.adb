@@ -457,6 +457,7 @@ begin
 -- 		when constraint_error => 
 
 		when event: others =>
+			set_exit_status(failure);
 			case prog_position is
 				when 10 =>
 					put_line("ERROR: Data base file missing or insufficient access rights !");

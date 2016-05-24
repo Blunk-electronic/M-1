@@ -651,6 +651,8 @@ procedure compseq is
 					if b.position = p then -- on position match
 						if b.chain = scanpath_being_compiled then -- on scanpath match
 
+							-- b.pattern_last_xxx_xxxx has MSB on the left (pos 1)
+
 							-- if last instruction was BYPASS
 							if b.pattern_last_ir_drive = replace_dont_care(b.opc_bypass) then
 								-- calculate end position to place bic-image
