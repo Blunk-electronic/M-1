@@ -623,19 +623,32 @@ l_4:	ld	HL,DLD		;see comments at label l_0 and following
 
 		call	req_d	;ask host for bits [23:8] of destination address
 
-		;load vector output ram address (-1)
+		; set path
+		ld	A,00000000b	;direct adr and data from rf to ram
+		out	(path),A
+
+; 		;load vector output ram address (-1)
+; 		sub	A
+; 		dec 	A
+; 		out	(st_adr0),A ; bits [7:0] always fixed to FFh
+; 		ld	HL,(DEST_ADR)
+; 		dec HL
+; 		ld 	A,L
+; 		out	(st_adr1),A
+; 		ld	A,H
+; 		out	(st_adr2),A
+
+		;load vector output ram address
 		sub	A
-		dec 	A
-		out	(st_adr0),A ; bits [7:0] always fixed to FFh
+		out	(st_adr0),A ; bits [7:0] always fixed to 00h
 		ld	HL,(DEST_ADR)
-		dec HL
 		ld 	A,L
 		out	(st_adr1),A
 		ld	A,H
 		out	(st_adr2),A
 
-		ld	A,00000000b	;direct adr and data from rf to ram
-		out	(path),A
+; 		ld	A,00000000b	;direct adr and data from rf to ram
+; 		out	(path),A
 
 		ld	HL,AWT_TRM
 		call	TX_STR	;request user to transmit file per xmodem
@@ -2951,7 +2964,7 @@ l_el:
 ;-------TEXT BEGIN---------------------------------------------------
 Welcome:
 	DEFB	0Ch	;CLS
-	DEFM	'BSC V6.0 ready' ;sys version
+	DEFM	'BSC V002 ready' ;sys version
 	DEFB	0
 	
 prompt:	DEFB	0Ah	;next line
@@ -2960,7 +2973,7 @@ prompt:	DEFB	0Ah	;next line
 	DEFB	0
 
 sys_fw:
-	DEFM	'cpu_firmware_version: 6.0'
+	DEFM	'cpu_firmware_version: 002'
 	DEFB	0Ah
 	DEFB	0Dh
 	DEFM	'executor_firmware_version: '
