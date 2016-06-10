@@ -562,7 +562,10 @@ l_4p:
 
 		call	req_d	;ask host for bits [23:8] of destination address
 
-		;load vector output ram address
+		ld	A,0FFh		; break path, so that mmu keeps waiting in state ROUT1
+		out	(path),A
+
+		;load vector output ram address (test start address)
 		sub	A
 		out	(st_adr0),A ; bits [7:0] always fixed to 00h
 		ld	HL,(DEST_ADR)
@@ -572,18 +575,27 @@ l_4p:
 		out	(st_adr2),A
 
 		;ld	A,00000001b	;direct adr from ram to rf , release d_ram : RAM debug mode
-		ld	A,00000101b	;direct adr from ex to ram , ram drives data : EX mode
-		out	(path),A
+ 		ld	A,005h		;direct adr from ex to ram , ram drives data : EX mode
+ 		out	(path),A
 
 		;ld	A,010h		;set  executor step mode: production 
 		;out	(cmd),A
 
-		ld	A,055h
-		out	(strt_stop),A		;55h in strt_stop starts test
-		nop
-		nop
+; 		ld	A,055h
+; 		out	(strt_stop),A		;55h in strt_stop starts test
+; 		nop
+; 		nop
+; 		ld	A,0FFh
+; 		out	(strt_stop),A
+
+		;start test
+		ld	A,013h
+		out	(cmd),A
+
+		;issue null command
 		ld	A,0FFh
-		out	(strt_stop),A
+		out	(cmd),A
+
 		jp	EO_post_proc
 
 
@@ -657,17 +669,20 @@ l_4:	ld	HL,DLD		;see comments at label l_0 and following
 ;		call	TX_STR_TERM
 
 		;clear vector output ram address (default start address)
-		sub	A
-		out	(st_adr0),A
-		out	(st_adr1),A
-		out	(st_adr2),A
+; 		sub	A
+; 		out	(st_adr0),A
+; 		out	(st_adr1),A
+; 		out	(st_adr2),A
+; no need anymore
 
 		;ld	A,00000001b	;direct adr from ram to rf , release d_ram : RAM debug mode
-		ld	A,00000101b	;direct adr from ex to ram , ram drives data : EX mode
+		;ld	A,00000101b	;direct adr from ex to ram , ram drives data : EX mode
+		ld	A,0FFh	; break data path so that mmu keeps waiting in state ROUT1
 		out	(path),A
 
-		ld	A,010h		;set executor step width: production
-		out	(cmd),A
+; 		ld	A,010h		;set executor step width: production
+; 		out	(cmd),A
+; no need anymore
 
 		jp	EO_post_proc
 
