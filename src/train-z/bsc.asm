@@ -1,5 +1,14 @@
 mmu_path_state	equ 0A2h; high nibble holds path, low nibble holds mmu_state
 
+cmd_clear_ram	equ 020h
+cmd_null		equ 0FFh
+cmd_start_test	equ 013h
+
+pth_null			equ	00Fh
+pth_rf_writes_ram	equ 000h
+pth_rf_reads_ram	equ	001h
+pth_ex_reads_ram	equ	005h
+
 ; bus monitor
 pio_c_d		equ 052h
 pio_d_d		equ 051h
@@ -425,11 +434,11 @@ l_10a:
 		;out	(path),A
 
 		;start RAM init
-		ld		A,020h
+		ld		A,cmd_clear_ram
 		out		(cmd),A
 
 		;issue null-command
-		ld		A,0FFh
+		ld		A,cmd_null
 		out		(cmd),A
 
 ;CS: check ram clear status	
@@ -572,7 +581,7 @@ l_4p:
 
 		call	req_d	;ask host for bits [23:8] of destination address
 
-		ld		A,00Fh		; break path, so that mmu keeps waiting in state ROUT1 (only low nibble matters)
+		ld		A,pth_null		; break path, so that mmu keeps waiting in state ROUT1 (only low nibble matters)
 		out		(path),A
 
 		;load vector output ram address (test start address)
@@ -585,7 +594,8 @@ l_4p:
 		out	(st_adr2),A
 
 		;ld	A,00000001b	;direct adr from ram to rf , release d_ram : RAM debug mode
- 		ld		A,005h		;direct adr from ex to ram , ram drives data : EX mode (only low nibble matters)
+		;direct adr from ex to ram , ram drives data : EX mode (only low nibble matters)
+ 		ld		A,pth_ex_reads_ram	
  		out		(path),A
 
 		;ld	A,010h		;set  executor step mode: production 
@@ -599,11 +609,11 @@ l_4p:
 ; 		out	(strt_stop),A
 
 		;start test
-		ld		A,013h
+		ld		A,cmd_start_test
 		out		(cmd),A
 
 		;issue null command
-		ld		A,0FFh
+		ld		A,cmd_null
 		out		(cmd),A
 
 		jp		EO_post_proc
@@ -614,13 +624,22 @@ l_4q:
 	call	PAR_CMD
 	jp	nc,l_4r
 
-		ld	A,0AAh
-		out	(strt_stop),A		;AAh in strt_stop stops test
-		nop
-		nop
-		ld	A,0FFh
-		out	(strt_stop),A
-		jp	EO_post_proc
+		;ld		A,0AAh
+		;out	(strt_stop),A		;AAh in strt_stop stops test
+		;nop
+		;nop
+		;ld	A,0FFh
+		;out	(strt_stop),A
+
+		;stop executor
+		ld		A,cmd_null
+		out		(cmd),A
+
+		;break data path
+		ld		A,pth_null
+		out		(path),A
+
+		jp		EO_post_proc
 
 
 l_4r:
@@ -631,8 +650,8 @@ l_4r:
 		ld	HL,st_width
 		call	TX_STR
 		call	req_number	;get step width from host
-		out	(cmd),A		;load step width in executor cmd register
-		jp	EO_post_proc
+		out		(cmd),A		;load step width in executor cmd register CS: remove
+		jp		EO_post_proc
 
 
 
@@ -640,13 +659,14 @@ l_4:	ld	HL,DLD		;see comments at label l_0 and following
 	call	PAR_CMD
 	jp	nc,l_4a
 
-		ld	A,0FFh		;stop executor
-		out	(cmd),A
+		;stop executor
+		ld		A,cmd_null
+		out		(cmd),A
 
 		call	req_d	;ask host for bits [23:8] of destination address
 
 		; set path
-		ld		A,000h		;direct adr and data from rf to ram (only low nibble matters)
+		ld		A,pth_rf_writes_ram		;direct adr and data from rf to ram (only low nibble matters)
 		out		(path),A
 
 ; 		;load vector output ram address (-1)
@@ -687,7 +707,8 @@ l_4:	ld	HL,DLD		;see comments at label l_0 and following
 
 		;ld	A,00000001b	;direct adr from ram to rf , release d_ram : RAM debug mode
 		;ld	A,00000101b	;direct adr from ex to ram , ram drives data : EX mode
-		ld		A,00Fh	; break data path so that mmu keeps waiting in state ROUT1 (only low nibble matters)
+		;break data path so that mmu keeps waiting in state ROUT1 (only low nibble matters)
+		ld		A,pth_null
 		out		(path),A
 
 ; 		ld	A,010h		;set executor step width: production
@@ -2922,7 +2943,7 @@ rd_out_ram:	;reads output RAM memory content starting where HL points to
 
 		;set adr path from rf to ram
 		;set data path from ram to rf
-		ld		A,01h
+		ld		A,pth_rf_reads_ram
 		out		(path),A
 
 		;preset start address (offset -1)
@@ -2988,7 +3009,8 @@ l_el:
 		out	(st_adr0),A
 
 		;ld	A,00000101b	;direct adr from ex to ram , ram drives data : EX mode
-		ld		A,00Fh	; break all paths -> null-path (lownibble relevant only)
+		;break all paths -> null-path (lownibble relevant only)
+		ld		A,pth_null
 		out		(path),A
 
 		ret
