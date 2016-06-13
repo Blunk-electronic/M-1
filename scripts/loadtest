@@ -24,7 +24,7 @@ set flow rts/cts
 set carrier-watch off
 set protocol xmodem
 set duplex full
-set output pacing 15
+set output pacing 30
 #set input echo on
 set input echo off
 

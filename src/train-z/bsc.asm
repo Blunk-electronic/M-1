@@ -1,3 +1,7 @@
+mmu_state	equ 0A2h
+pio_c_d		equ 052h
+pio_d_d		equ 051h
+pio_e_d		equ 050h
 
 ram_out		equ	80h
 ram_out2	equ	0A3h 	;same as ram_out, but no increment of st_adr, ins V6.0
@@ -1827,9 +1831,9 @@ END_OF_RX_BSP:
 	;-------process backspace character end-----------	
 
 eo_rx_cha_ava:
-;	call	A_RTS_ON
+	call	A_RTS_ON
 	pop	AF
-;	ei
+	ei
 	reti
 	
 ;-------Int Routine upon RX charcter end---------------------------------------------------	
@@ -1842,10 +1846,16 @@ eo_rx_cha_ava:
 poll_CMD_cpl:
 ;	call	SIO_A_RESET
 	call	A_RTS_ON
-l_690:
 	ei
-	call	A_RTS_ON	;V877
-	halt
+l_690:
+	;ei
+	;call	A_RTS_ON	;V877
+	;halt
+
+	;display mmu status on bus monitor
+	in		A,(mmu_state)
+	out		(pio_c_d),A
+
 	ld	A,(CMD_STS)
 	cp	1h		;poll for "cmd complete"
 	jp	nz,l_690
