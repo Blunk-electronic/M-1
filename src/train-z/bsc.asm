@@ -1,4 +1,6 @@
-mmu_state	equ 0A2h
+mmu_path_state	equ 0A2h; high nibble holds path, low nibble holds mmu_state
+
+; bus monitor
 pio_c_d		equ 052h
 pio_d_d		equ 051h
 pio_e_d		equ 050h
@@ -416,38 +418,42 @@ l_10a:
 	call	PAR_CMD
 	jp	nc,l_16a
 
-		ld	A,0FFh		;reset cmd cannel -> stops executor
-		out	(cmd),A
+		;ld	A,0FFh		;reset cmd cannel -> stops executor
+		;out	(cmd),A
 
-		ld	A,00001010b	;direct adr and data from init to ram
-		out	(path),A
+		;ld	A,00001010b	;direct adr and data from init to ram
+		;out	(path),A
 
-		ld	A,020h
-		out	(cmd),A		;start RAM init
-		ld	A,0FFh
-		out	(cmd),A		;reset cmd channel 
-	
-l_clr: 		in	A,(mach_sts)	;read machine status register
-		bit	0,A		;test if bit 0 cleared
-		jr	nz,l_clr	;RAM init done if bit 0 cleared
-		jp	EO_post_proc
+		;start RAM init
+		ld		A,020h
+		out		(cmd),A
+
+		;issue null-command
+		ld		A,0FFh
+		out		(cmd),A
+
+;CS: check ram clear status	
+; l_clr: 	in		A,(mach_sts)	;read machine status register
+; 		bit		0,A				;test if bit 0 cleared
+; 		jr		nz,l_clr		;RAM init done if bit 0 cleared
+		jp		EO_post_proc
 
 
 
 
 l_16a:
-	ld	HL,firmware
-	call	PAR_CMD
-	jp	nc,l_16b
+		ld		HL,firmware
+		call	PAR_CMD
+		jp		nc,l_16b
 
-		ld	HL,sys_fw
+		ld		HL,sys_fw
 		call	TX_STR
-		in	A,(fw_ex1)
+		in		A,(fw_ex1)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(fw_ex0)
+		in		A,(fw_ex0)
 		call	APP_ACCU	;append value to STD_OUT
 		call	TX_STD_OUT	;TX input value to host
-		ld	HL,NEW_LINE	;transmit new line
+		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
 		jp	EO_post_proc
@@ -566,8 +572,8 @@ l_4p:
 
 		call	req_d	;ask host for bits [23:8] of destination address
 
-		ld	A,0FFh		; break path, so that mmu keeps waiting in state ROUT1
-		out	(path),A
+		ld		A,00Fh		; break path, so that mmu keeps waiting in state ROUT1 (only low nibble matters)
+		out		(path),A
 
 		;load vector output ram address (test start address)
 		sub	A
@@ -579,8 +585,8 @@ l_4p:
 		out	(st_adr2),A
 
 		;ld	A,00000001b	;direct adr from ram to rf , release d_ram : RAM debug mode
- 		ld	A,005h		;direct adr from ex to ram , ram drives data : EX mode
- 		out	(path),A
+ 		ld		A,005h		;direct adr from ex to ram , ram drives data : EX mode (only low nibble matters)
+ 		out		(path),A
 
 		;ld	A,010h		;set  executor step mode: production 
 		;out	(cmd),A
@@ -593,14 +599,14 @@ l_4p:
 ; 		out	(strt_stop),A
 
 		;start test
-		ld	A,013h
-		out	(cmd),A
+		ld		A,013h
+		out		(cmd),A
 
 		;issue null command
-		ld	A,0FFh
-		out	(cmd),A
+		ld		A,0FFh
+		out		(cmd),A
 
-		jp	EO_post_proc
+		jp		EO_post_proc
 
 
 l_4q:
@@ -640,8 +646,8 @@ l_4:	ld	HL,DLD		;see comments at label l_0 and following
 		call	req_d	;ask host for bits [23:8] of destination address
 
 		; set path
-		ld	A,00000000b	;direct adr and data from rf to ram
-		out	(path),A
+		ld		A,000h		;direct adr and data from rf to ram (only low nibble matters)
+		out		(path),A
 
 ; 		;load vector output ram address (-1)
 ; 		sub	A
@@ -681,8 +687,8 @@ l_4:	ld	HL,DLD		;see comments at label l_0 and following
 
 		;ld	A,00000001b	;direct adr from ram to rf , release d_ram : RAM debug mode
 		;ld	A,00000101b	;direct adr from ex to ram , ram drives data : EX mode
-		ld	A,0FFh	; break data path so that mmu keeps waiting in state ROUT1
-		out	(path),A
+		ld		A,00Fh	; break data path so that mmu keeps waiting in state ROUT1 (only low nibble matters)
+		out		(path),A
 
 ; 		ld	A,010h		;set executor step width: production
 ; 		out	(cmd),A
@@ -1229,10 +1235,10 @@ l_52:	scf
 DWNLD:	ld	C,01h		;defines timeout	
 
 TICKER:	call   	WAIT_2
-	dec	C
-	ld	A,C
-	cp	0
-	jp	nz,TICKER
+		dec		C
+		ld		A,C
+		cp		0
+		jp		nz,TICKER
 
 ;-------------
 	;set up TX and RX:
@@ -1852,9 +1858,12 @@ l_690:
 	;call	A_RTS_ON	;V877
 	;halt
 
-	;display mmu status on bus monitor
-	in		A,(mmu_state)
+	;display mmu status on bus monitor digit 5/4
+	in		A,(mmu_path_state)
 	out		(pio_c_d),A
+	;display executor status on bus monitor digit 3/2
+	in		A,(ex_state)
+	out		(pio_d_d),A
 
 	ld	A,(CMD_STS)
 	cp	1h		;poll for "cmd complete"
@@ -2913,8 +2922,8 @@ rd_out_ram:	;reads output RAM memory content starting where HL points to
 
 		;set adr path from rf to ram
 		;set data path from ram to rf
-		ld	A,01h
-		out	(path),A
+		ld		A,01h
+		out		(path),A
 
 		;preset start address (offset -1)
 		sub	A
@@ -2978,8 +2987,9 @@ l_el:
 		pop	AF
 		out	(st_adr0),A
 
-		ld	A,00000101b	;direct adr from ex to ram , ram drives data : EX mode
-		out	(path),A
+		;ld	A,00000101b	;direct adr from ex to ram , ram drives data : EX mode
+		ld		A,00Fh	; break all paths -> null-path (lownibble relevant only)
+		out		(path),A
 
 		ret
 
