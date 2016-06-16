@@ -1,9 +1,15 @@
 mmu_path_state	equ 0A2h; high nibble holds path, low nibble holds mmu_state
 
-cmd_clear_ram	equ 020h
-cmd_null		equ 0FFh
-cmd_start_test	equ 013h
+;commands
+c_clear_ram		equ 020h
+c_null			equ 0FFh
+c_stp_tck		equ 011h
+c_stp_sxr		equ 012h
+c_stp_test		equ 013h
+c_test_halt		equ 002h
+c_test_abort	equ 003h
 
+;data paths
 pth_null			equ	00Fh
 pth_rf_writes_ram	equ 000h
 pth_rf_reads_ram	equ	001h
@@ -434,12 +440,13 @@ l_10a:
 		;out	(path),A
 
 		;start RAM init
-		ld		A,cmd_clear_ram
+		ld		A,c_null		; clear command
+		out		(cmd),A
+		ld		A,c_clear_ram	; set command
+		out		(cmd),A
+		ld		A,c_null		; clear command
 		out		(cmd),A
 
-		;issue null-command
-		ld		A,cmd_null
-		out		(cmd),A
 
 ;CS: check ram clear status	
 ; l_clr: 	in		A,(mach_sts)	;read machine status register
@@ -575,9 +582,9 @@ l_02:
 
 
 l_4p:
-	ld	HL,runtest
-	call	PAR_CMD
-	jp	nc,l_4q
+		ld		HL,runtest
+		call	PAR_CMD
+		jp		nc,l_4q
 
 		call	req_d	;ask host for bits [23:8] of destination address
 
@@ -585,13 +592,13 @@ l_4p:
 		out		(path),A
 
 		;load vector output ram address (test start address)
-		sub	A
-		out	(st_adr0),A ; bits [7:0] always fixed to 00h
-		ld	HL,(DEST_ADR)
-		ld 	A,L
-		out	(st_adr1),A
-		ld	A,H
-		out	(st_adr2),A
+		sub		A
+		out		(st_adr0),A ; bits [7:0] always fixed to 00h
+		ld		HL,(DEST_ADR)
+		ld 		A,L
+		out		(st_adr1),A
+		ld		A,H
+		out		(st_adr2),A
 
 		;ld	A,00000001b	;direct adr from ram to rf , release d_ram : RAM debug mode
 		;direct adr from ex to ram , ram drives data : EX mode (only low nibble matters)
@@ -609,11 +616,11 @@ l_4p:
 ; 		out	(strt_stop),A
 
 		;start test
-		ld		A,cmd_start_test
+		ld		A,c_null		; clear command
 		out		(cmd),A
-
-		;issue null command
-		ld		A,cmd_null
+		ld		A,c_stp_test	; set command
+		out		(cmd),A
+		ld		A,c_null		; clear command
 		out		(cmd),A
 
 		jp		EO_post_proc
@@ -632,7 +639,11 @@ l_4q:
 		;out	(strt_stop),A
 
 		;stop executor
-		ld		A,cmd_null
+		ld		A,c_null		; clear command
+		out		(cmd),A
+		ld		A,c_test_abort	; set command
+		out		(cmd),A
+		ld		A,c_null		; clear command
 		out		(cmd),A
 
 		;break data path
@@ -643,11 +654,11 @@ l_4q:
 
 
 l_4r:
-	ld	HL,stwidth
-	call	PAR_CMD
-	jp	nc,l_4
+		ld		HL,stwidth
+		call	PAR_CMD
+		jp		nc,l_4
 
-		ld	HL,st_width
+		ld		HL,st_width
 		call	TX_STR
 		call	req_number	;get step width from host
 		out		(cmd),A		;load step width in executor cmd register CS: remove
@@ -655,12 +666,12 @@ l_4r:
 
 
 
-l_4:	ld	HL,DLD		;see comments at label l_0 and following
-	call	PAR_CMD
-	jp	nc,l_4a
+l_4:	ld		HL,DLD		;see comments at label l_0 and following
+		call	PAR_CMD
+		jp		nc,l_4a
 
 		;stop executor
-		ld		A,cmd_null
+		ld		A,c_null		; clear command
 		out		(cmd),A
 
 		call	req_d	;ask host for bits [23:8] of destination address
@@ -681,18 +692,18 @@ l_4:	ld	HL,DLD		;see comments at label l_0 and following
 ; 		out	(st_adr2),A
 
 		;load vector output ram address
-		sub	A
-		out	(st_adr0),A ; bits [7:0] always fixed to 00h
-		ld	HL,(DEST_ADR)
-		ld 	A,L
-		out	(st_adr1),A
-		ld	A,H
-		out	(st_adr2),A
+		sub		A
+		out		(st_adr0),A ; bits [7:0] always fixed to 00h
+		ld		HL,(DEST_ADR)
+		ld 		A,L
+		out		(st_adr1),A
+		ld		A,H
+		out		(st_adr2),A
 
 ; 		ld	A,00000000b	;direct adr and data from rf to ram
 ; 		out	(path),A
 
-		ld	HL,AWT_TRM
+		ld		HL,AWT_TRM
 		call	TX_STR	;request user to transmit file per xmodem
 ;		call	TX_STR_TERM
 		call	DWNLD	;download file
@@ -715,12 +726,12 @@ l_4:	ld	HL,DLD		;see comments at label l_0 and following
 ; 		out	(cmd),A
 ; no need anymore
 
-		jp	EO_post_proc
+		jp		EO_post_proc
 
 
-l_4a:	ld	HL,dbg			;see comments at label l_0 and following
-	call	PAR_CMD
-	jp	nc,l_41
+l_4a:	ld		HL,dbg			;see comments at label l_0 and following
+		call	PAR_CMD
+		jp		nc,l_41
 
 		ld	HL,exe_state
 		call	TX_STR
