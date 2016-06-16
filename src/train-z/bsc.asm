@@ -3,9 +3,11 @@ mmu_path_state	equ 0A2h; high nibble holds path, low nibble holds mmu_state
 ;commands
 c_clear_ram		equ 020h
 c_null			equ 0FFh
+
+c_stp_test		equ 010h
 c_stp_tck		equ 011h
 c_stp_sxr		equ 012h
-c_stp_test		equ 013h
+
 c_test_halt		equ 002h
 c_test_abort	equ 003h
 
@@ -30,6 +32,8 @@ st_adr2		equ	083h
 
 path		equ	08Bh
 cmd			equ	084h	;executor command/step_mode
+
+cmd_readback	equ 0A4h	;command readback to be displayed on bus monitor digit 1/0
 
 dc_t1a		equ	060h	;drv_char_tap1a
 dc_t1b		equ	062h	;drv_char_tap1b
@@ -428,10 +432,10 @@ CMD_post_proc:
 		jp	EO_post_proc
 
 
-l_10a:
-	ld	HL,clrram
-	call	PAR_CMD
-	jp	nc,l_16a
+l_10a:  ; BSC CLEAR OUTPUT RAM
+		ld		HL,clrram
+		call	PAR_CMD
+		jp		nc,l_16a
 
 		;ld	A,0FFh		;reset cmd cannel -> stops executor
 		;out	(cmd),A
@@ -444,8 +448,8 @@ l_10a:
 		out		(cmd),A
 		ld		A,c_clear_ram	; set command
 		out		(cmd),A
-		ld		A,c_null		; clear command
-		out		(cmd),A
+; 		ld		A,c_null		; clear command
+; 		out		(cmd),A
 
 
 ;CS: check ram clear status	
@@ -472,18 +476,18 @@ l_16a:
 		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
-		jp	EO_post_proc
+		jp		EO_post_proc
 
 
 
 l_16b:
-	ld	HL,copy	
-	call	PAR_CMD
-	jp	nc,l_15
+		ld		HL,copy	
+		call	PAR_CMD
+		jp		nc,l_15
 
 		call	req_snd		;request source, number, destination address
 		ldir
-		jp	EO_post_proc
+		jp		EO_post_proc
 
 
 
@@ -581,7 +585,7 @@ l_02:
 		jp	EO_post_proc
 
 
-l_4p:
+l_4p:	; BSC START TEST
 		ld		HL,runtest
 		call	PAR_CMD
 		jp		nc,l_4q
@@ -591,9 +595,9 @@ l_4p:
 		ld		A,pth_null		; break path, so that mmu keeps waiting in state ROUT1 (only low nibble matters)
 		out		(path),A
 
-		;load vector output ram address (test start address)
+		;load test start address
 		sub		A
-		out		(st_adr0),A ; bits [7:0] always fixed to 00h
+		out		(st_adr0),A 	; bits [7:0] always fixed to 00h
 		ld		HL,(DEST_ADR)
 		ld 		A,L
 		out		(st_adr1),A
@@ -615,13 +619,20 @@ l_4p:
 ; 		ld	A,0FFh
 ; 		out	(strt_stop),A
 
+;use this when setting step width
+; 		ld		HL,st_width
+; 		call	TX_STR
+; 		call	req_number	;get step width from host
+; 		out		(cmd),A		;load step width in executor cmd register CS: remove
+
+
 		;start test
 		ld		A,c_null		; clear command
 		out		(cmd),A
 		ld		A,c_stp_test	; set command
 		out		(cmd),A
-		ld		A,c_null		; clear command
-		out		(cmd),A
+; 		ld		A,c_null		; clear command
+; 		out		(cmd),A
 
 		jp		EO_post_proc
 
@@ -629,7 +640,7 @@ l_4p:
 l_4q:
 	ld	HL,stoptest
 	call	PAR_CMD
-	jp	nc,l_4r
+	jp	nc,l_4
 
 		;ld		A,0AAh
 		;out	(strt_stop),A		;AAh in strt_stop stops test
@@ -643,8 +654,8 @@ l_4q:
 		out		(cmd),A
 		ld		A,c_test_abort	; set command
 		out		(cmd),A
-		ld		A,c_null		; clear command
-		out		(cmd),A
+; 		ld		A,c_null		; clear command
+; 		out		(cmd),A
 
 		;break data path
 		ld		A,pth_null
@@ -653,16 +664,16 @@ l_4q:
 		jp		EO_post_proc
 
 
-l_4r:
-		ld		HL,stwidth
-		call	PAR_CMD
-		jp		nc,l_4
-
-		ld		HL,st_width
-		call	TX_STR
-		call	req_number	;get step width from host
-		out		(cmd),A		;load step width in executor cmd register CS: remove
-		jp		EO_post_proc
+; l_4r:
+; 		ld		HL,stwidth
+; 		call	PAR_CMD
+; 		jp		nc,l_4
+; 
+; 		ld		HL,st_width
+; 		call	TX_STR
+; 		call	req_number	;get step width from host
+; 		out		(cmd),A		;load step width in executor cmd register CS: remove
+; 		jp		EO_post_proc
 
 
 
@@ -899,44 +910,44 @@ l_5:	ld	HL,VIEW_MEM	;see comments at label l_0 and following
 	call	PAR_CMD
 	jp	nc,l_5b
 
-		ld	HL,mem_adr16
-    		call	TX_STR
+		ld		HL,mem_adr16
+    	call	TX_STR
 ;		call	TX_STR_TERM
 		call	req_number	;ask host for 16 bit number
 		call	READ_MEM
-		jp	EO_post_proc
+		jp		EO_post_proc
 
 
 
-l_5b:	ld	HL,vw_out_ram		;see comments at label l_0 and following
-	call	PAR_CMD
-	jp	nc,l_8
+l_5b:	ld		HL,vw_out_ram		;see comments at label l_0 and following
+		call	PAR_CMD
+		jp		nc,l_8
 
-		ld	HL,mem_adr16
-    		call	TX_STR
+		ld		HL,mem_adr16
+    	call	TX_STR
 ;		call	TX_STR_TERM
 		call	req_number	;ask host for 16 bit number
 		call	rd_out_ram
-		jp	EO_post_proc
+		jp		EO_post_proc
 
 
 
 
 l_8:	ld	HL,ca_usr_prg		;see comments at label l_0 and following
 
-	call	PAR_CMD
-	jp	nc,l_9
+		call	PAR_CMD
+		jp		nc,l_9
 
-		ld	HL,mem_adr16
-    		call	TX_STR
+		ld		HL,mem_adr16
+    	call	TX_STR
 ;		call	TX_STR_TERM
 		call	req_number	;ask host for user program start address
-		ld	(temp0),HL	;backup start address in temp0
-		ld	HL,l_ret	;load user program return 
+		ld		(temp0),HL	;backup start address in temp0
+		ld		HL,l_ret	;load user program return 
 		push	HL		;address on stack
-		ld	HL,(temp0)	;restore user program start address in HL
-		jp	(HL)		;jump to user program
-l_ret:		jp	EO_post_proc
+		ld		HL,(temp0)	;restore user program start address in HL
+		jp		(HL)		;jump to user program
+l_ret:	jp		EO_post_proc
 
 
 
@@ -1896,14 +1907,17 @@ l_690:
 	;display executor status on bus monitor digit 3/2
 	in		A,(ex_state)
 	out		(pio_d_d),A
+	;display cmd on bus monitor digit 1/0
+	in		A,(cmd_readback)
+	out		(pio_e_d),A
 
-	ld	A,(CMD_STS)
-	cp	1h		;poll for "cmd complete"
-	jp	nz,l_690
+	ld		A,(CMD_STS)
+	cp		1h		;poll for "cmd complete"
+	jp		nz,l_690
 
 ;	di
-	sub	A
-	ld	(CMD_STS),A
+	sub		A
+	ld		(CMD_STS),A
 ;	call	A_RTS_OFF
 ;	call	SIO_A_DI
 	RET
@@ -3401,10 +3415,10 @@ stoptest:
 	DEFB	0Dh	;cursor home
 	DEFB	0Ah	;next line
 
-stwidth:
-	DEFM	'step'
-	DEFB	0Dh	;cursor home
-	DEFB	0Ah	;next line
+; stwidth:
+; 	DEFM	'step'
+; 	DEFB	0Dh	;cursor home
+; 	DEFB	0Ah	;next line
 
 firmware:
 	DEFM	'fw'
