@@ -82,6 +82,20 @@ procedure compseq is
 	test_info				: type_test_info;
 	scanpath_options		: type_scanpath_options;
 
+	active_scanpath_info	: unsigned_8 := 16#00#;
+	procedure build_active_scanpath_info(scanpath_id : type_scanpath_id) is
+		-- builds a byte where a bit is set for a given scanpath. example: if scanpath_id is 2 -> active_scanpath_info is 00000010b
+		-- for every further active scanpath the corresponding bit is set. so if next scanpath_id is 8 -> active_scanpath_info becomes 10000010b
+		scratch : natural := 0;
+	begin
+		--put_line(" -------------------> building active scanpath info ...");
+		scratch := 2**(scanpath_id - 1);
+		active_scanpath_info := active_scanpath_info + unsigned_8(scratch); -- 16#00#;
+		--put_line(natural'image(scratch));
+		put_line(unsigned_8'image(active_scanpath_info));
+	end build_active_scanpath_info;
+
+	
 	sequence_count			: positive := 1;
 	scanpath_being_compiled	: positive;	-- points to the scanpath being compiled
 	sequence_being_compiled	: positive;	-- points to the sequence being compiled
@@ -2002,11 +2016,15 @@ procedure compseq is
 		size_of_vector_header := size_of_vector_header + 2;
  
 		-- write scanpath count -- CS: should be a (16bit) number that indicates active scanpaths
-		seq_io_unsigned_byte.write(vector_file_header, unsigned_8(summary.scanpath_ct));
+		--seq_io_unsigned_byte.write(vector_file_header, unsigned_8(summary.scanpath_ct)); -- this writes the number of active scanpaths
+		put_line(standard_output,"active scanpath info: " & unsigned_8'image(active_scanpath_info));
+		seq_io_unsigned_byte.write(vector_file_header, active_scanpath_info); -- this writes a byte with a bit set for an active scanpath
 			-- record in list file
 			write_listing (item => location, loc => size_of_vector_header);
-			write_listing (item => object_code, obj_code => unsigned_8(summary.scanpath_ct));
-			write_listing (item => source_code, src_code => "number of scanpaths");
+			--write_listing (item => object_code, obj_code => unsigned_8(summary.scanpath_ct));
+			write_listing (item => object_code, obj_code => active_scanpath_info);
+			--write_listing (item => source_code, src_code => "number of scanpaths");
+			write_listing (item => source_code, src_code => "active scanpaths (bit set if active)");
 		size_of_vector_header := size_of_vector_header + 1;
 	end write_vector_file_header;
 	
@@ -2456,6 +2474,7 @@ procedure compseq is
 
 			end loop;
 		end order_img;
+
 
 	begin -- unknown_yet
 		--	set_output(standard_output);
