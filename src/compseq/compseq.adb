@@ -28,6 +28,7 @@
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
+--	 - 2016-06-17 in procdedure write_vector_file_header number of scanpaths written in list file fixed
 
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
@@ -2003,7 +2004,7 @@ procedure compseq is
 		seq_io_unsigned_byte.write(vector_file_header, unsigned_8(summary.scanpath_ct));
 			-- record in list file
 			write_listing (item => location, loc => size_of_vector_header);
-			write_listing (item => object_code, obj_code => unsigned_8(nat_scratch));
+			write_listing (item => object_code, obj_code => unsigned_8(summary.scanpath_ct));
 			write_listing (item => source_code, src_code => "number of scanpaths");
 		size_of_vector_header := size_of_vector_header + 1;
 	end write_vector_file_header;

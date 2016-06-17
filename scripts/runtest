@@ -36,23 +36,25 @@ set input echo off
 		IF FAIL close_connection
 
 
-# set step mode
-	output step\13
-	input 2 {step_width: }
-		if fail close_connection
-	output \%2\13
-	input 2 {cmd> }
-		if fail close_connection
-
-
-
-# start test
+# send test start address
 	output runtest\13
 	input 2 destination_adr:
 		IF FAIL close_connection
 	output \%3\13
 	input 2 cmd>
 		IF FAIL close_connection
+
+# CS: step width parameter \%2 ignored currently, remove it in bsmcl
+# send test start command
+#	output step\13
+#	input 2 {step_width: }
+#		if fail close_connection
+#	output \%2\13
+#	input 2 {cmd> }
+#		if fail close_connection
+
+
+
 		
     #echo "running"
 close
