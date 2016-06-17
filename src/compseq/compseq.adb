@@ -28,7 +28,8 @@
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
---	 - 2016-06-17 in procdedure write_vector_file_header number of scanpaths written in list file fixed
+--	 2016-06-17: - in procdedure write_vector_file_header number of scanpaths written in list file fixed
+--	  			 - procedure write_base_address fixed calculation of scanpath start address
 
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
@@ -2021,10 +2022,8 @@ procedure compseq is
 			put_line("writing scanpath base address ...");
 			new_line(compile_listing);
 
-			-- add offset due to header size (one byte is chain_count, 4 byte start address per chain) -- CS: unclear !!
-			--size_of_vector_file := size_of_vector_file + (summary.scanpath_ct * 4)+1 + destination_address;
-			size_of_vector_file := destination_address + size_of_vector_file + (summary.scanpath_ct * 4) +1;
-			--size_of_vector_file := destination_address + 5 + size_of_vector_file + (summary.scanpath_ct * 4);
+			--size_of_vector_file := destination_address + size_of_vector_file + (summary.scanpath_ct * 4) +1; -- wrong
+			size_of_vector_file := destination_address + 5 + size_of_vector_file + (summary.scanpath_ct * 4); -- correct
 
 			-- write size_of_vector_file byte per byte in vec_header (lowbyte first)
 	 		u4byte_scratch := unsigned_32(size_of_vector_file);
