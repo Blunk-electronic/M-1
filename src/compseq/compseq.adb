@@ -30,6 +30,7 @@
 --   history of changes:
 --	 2016-06-17: - in procdedure write_vector_file_header number of scanpaths written in list file fixed
 --	  			 - procedure write_base_address fixed calculation of scanpath start address
+--				 - procedure build_active_scanpath_info. the global variable active_scanpath_info is written in vec and list file
 
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
@@ -82,17 +83,21 @@ procedure compseq is
 	test_info				: type_test_info;
 	scanpath_options		: type_scanpath_options;
 
-	active_scanpath_info	: unsigned_8 := 16#00#;
-	procedure build_active_scanpath_info(scanpath_id : type_scanpath_id) is
+	active_scanpath_info	: unsigned_8 := 16#00#; -- for every active scanpath a bit is set here. CS: implies maximum of 8 scanpaths
+	procedure build_active_scanpath_info is --(scanpath_id : type_scanpath_id) is
 		-- builds a byte where a bit is set for a given scanpath. example: if scanpath_id is 2 -> active_scanpath_info is 00000010b
 		-- for every further active scanpath the corresponding bit is set. so if next scanpath_id is 8 -> active_scanpath_info becomes 10000010b
 		scratch : natural := 0;
 	begin
-		--put_line(" -------------------> building active scanpath info ...");
-		scratch := 2**(scanpath_id - 1);
-		active_scanpath_info := active_scanpath_info + unsigned_8(scratch); -- 16#00#;
-		--put_line(natural'image(scratch));
-		put_line(unsigned_8'image(active_scanpath_info));
+		for sp in 1..scanport_count_max loop
+			if is_scanport_active(sp) then
+				--put_line(" -------------------> building active scanpath info ...");
+				scratch := 2**(sp - 1);
+				active_scanpath_info := active_scanpath_info + unsigned_8(scratch); -- 16#00#;
+				--put_line(natural'image(scratch));
+				put_line(unsigned_8'image(active_scanpath_info));
+			end if;
+		end loop;
 	end build_active_scanpath_info;
 
 	
@@ -2015,8 +2020,8 @@ procedure compseq is
 			write_listing (item => source_code, src_code => "vector format version " & vector_format_version);
 		size_of_vector_header := size_of_vector_header + 2;
  
-		-- write scanpath count -- CS: should be a (16bit) number that indicates active scanpaths
 		--seq_io_unsigned_byte.write(vector_file_header, unsigned_8(summary.scanpath_ct)); -- this writes the number of active scanpaths
+		build_active_scanpath_info; -- sets a bit for every active scanpath in active_scanpath_info
 		put_line(standard_output,"active scanpath info: " & unsigned_8'image(active_scanpath_info));
 		seq_io_unsigned_byte.write(vector_file_header, active_scanpath_info); -- this writes a byte with a bit set for an active scanpath
 			-- record in list file
