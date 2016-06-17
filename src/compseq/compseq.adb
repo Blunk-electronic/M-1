@@ -31,6 +31,8 @@
 --	 2016-06-17: - in procdedure write_vector_file_header number of scanpaths written in list file fixed
 --	  			 - procedure write_base_address fixed calculation of scanpath start address
 --				 - procedure build_active_scanpath_info. the global variable active_scanpath_info is written in vec and list file
+--				 - procedure write_base_address differentiates between first and subsequent scanpath base addresses (the base addres of subsequent
+--				   scanpaths is now calculated correctly.
 
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
@@ -95,7 +97,7 @@ procedure compseq is
 				scratch := 2**(sp - 1);
 				active_scanpath_info := active_scanpath_info + unsigned_8(scratch); -- 16#00#;
 				--put_line(natural'image(scratch));
-				put_line(unsigned_8'image(active_scanpath_info));
+				--put_line(unsigned_8'image(active_scanpath_info));
 			end if;
 		end loop;
 	end build_active_scanpath_info;
@@ -2022,7 +2024,7 @@ procedure compseq is
  
 		--seq_io_unsigned_byte.write(vector_file_header, unsigned_8(summary.scanpath_ct)); -- this writes the number of active scanpaths
 		build_active_scanpath_info; -- sets a bit for every active scanpath in active_scanpath_info
-		put_line(standard_output,"active scanpath info: " & unsigned_8'image(active_scanpath_info));
+		--put_line(standard_output,"active scanpath info: " & unsigned_8'image(active_scanpath_info));
 		seq_io_unsigned_byte.write(vector_file_header, active_scanpath_info); -- this writes a byte with a bit set for an active scanpath
 			-- record in list file
 			write_listing (item => location, loc => size_of_vector_header);
@@ -2037,6 +2039,9 @@ procedure compseq is
 	procedure unknown_yet is
 		b : type_bscan_ic_ptr;
 
+		first_scanpath_address_written : boolean := false; -- this flag is used in procdedure write_base_address
+		-- in order to calculate the base address for the first scanpath different from other scanpaths
+
 	 	procedure write_base_address is
 		-- writes base address of current scanpath in vector_file_header
 			u4byte_scratch	: unsigned_32 := 0;
@@ -2045,8 +2050,15 @@ procedure compseq is
 			put_line("writing scanpath base address ...");
 			new_line(compile_listing);
 
-			--size_of_vector_file := destination_address + size_of_vector_file + (summary.scanpath_ct * 4) +1; -- wrong
-			size_of_vector_file := destination_address + 5 + size_of_vector_file + (summary.scanpath_ct * 4); -- correct
+			-- calcualate the base address
+			if not first_scanpath_address_written then
+				-- if this is the first scanpath base address the calculation is as follows:
+				size_of_vector_file := destination_address + 5 + size_of_vector_file + (summary.scanpath_ct * 4); -- correct
+				first_scanpath_address_written := true;
+			else
+				-- for all subsequent scanpaths do this calculation
+				size_of_vector_file := destination_address + size_of_vector_file;
+			end if;
 
 			-- write size_of_vector_file byte per byte in vec_header (lowbyte first)
 	 		u4byte_scratch := unsigned_32(size_of_vector_file);
