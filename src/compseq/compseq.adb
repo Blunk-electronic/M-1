@@ -343,18 +343,19 @@ procedure compseq is
 	procedure write_llc
 	-- writes a low level command
 		(
-		llct	:	unsigned_8; -- low level command type
-		llcc	:	unsigned_8;  -- low level command itself
-		length	:	positive; -- number of bytes required for the command
+		head	:	unsigned_8; -- low level command header that indicates the nature of the command
+		arg1	:	unsigned_8; -- argument 1
+		arg2	:	unsigned_8 := 16#00#; -- argument 2 (optional)
 		source	:	string
 		) is
+		length		: positive := 5; -- all low level commands are 5 byte long
 		llc_scratch : type_step_class_b(length);
 	begin
 		llc_scratch.binary(1) := get_byte_from_word(id_configuration,0); -- id lowbyte
 		llc_scratch.binary(2) := get_byte_from_word(id_configuration,1); -- id highbyte
-		llc_scratch.binary(3) := llct;
-		llc_scratch.binary(4) := unsigned_8(scanpath_being_compiled);
-		llc_scratch.binary(5) := llcc;
+		llc_scratch.binary(3) := head;
+		llc_scratch.binary(4) := arg1;
+		llc_scratch.binary(5) := arg2;
 		llc_scratch.source	:= universal_string_type.to_bounded_string(source);
 
 		add_class_b_cmd_to_step_list_pre(
@@ -393,8 +394,8 @@ procedure compseq is
  	procedure compile_command (cmd : extended_string.bounded_string) is
 		field_pt 				: positive := 1;
 		field_ct 				: positive := get_field_count(extended_string.to_string(cmd));
-		ubyte_scratch  			: unsigned_8;
-		ubyte_scratch2		 	: unsigned_8;
+		--ubyte_scratch  			: unsigned_8;
+		--ubyte_scratch2		 	: unsigned_8;
 		bic_name				: universal_string_type.bounded_string;
 		bic_coordinates			: type_bscan_ic_ptr;
 		set_direction		 	: type_set_direction;
@@ -894,35 +895,27 @@ procedure compseq is
 
 		--hard+soft trst (default)
 		if get_field_from_line(cmd,1) = sequence_instruction_set.trst then
-			write_llc(llct => llc_head, llcc => llc_cmd_trst, length => 5, source => extended_string.to_string(cmd) ); 
-			--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+			write_llc(head => llc_head_tap, arg1 => llc_cmd_trst, source => extended_string.to_string(cmd) ); 
 
 		--only soft trst
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.strst then
-			write_llc(llct => llc_head, llcc => llc_cmd_strst, length => 5, source => extended_string.to_string(cmd) ); 
-			--write_llc(llc_head,llc_cmd_strst);
-			--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+			write_llc(head => llc_head_tap, arg1 => llc_cmd_strst, source => extended_string.to_string(cmd) ); 
+
 		--only hard trst
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.htrst then
-			write_llc(llct => llc_head, llcc => llc_cmd_htrst, length => 5, source => extended_string.to_string(cmd) ); 
-			--write_llc(llc_head,llc_cmd_strst);
-			--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+			write_llc(head => llc_head_tap, arg1 => llc_cmd_htrst, source => extended_string.to_string(cmd) ); 
 
 		prog_position	:= 420;
 		-- "tap_state" (example: tap_state test-logic-reset, tap_state pause-dr)
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.tap_state then
 			if get_field_from_line(cmd,2) = tap_state.test_logic_reset then
-				write_llc(llct => llc_head, llcc => llc_cmd_tap_state_tlr, length => 5, source => extended_string.to_string(cmd) ); 
-				--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_state_tlr, source => extended_string.to_string(cmd) ); 
 			elsif get_field_from_line(cmd,2) = tap_state.run_test_idle then
-				write_llc(llct => llc_head, llcc => llc_cmd_tap_state_rti, length => 5, source => extended_string.to_string(cmd) ); 
-				--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_state_rti, source => extended_string.to_string(cmd) ); 
 			elsif get_field_from_line(cmd,2) = tap_state.pause_dr then
-				write_llc(llct => llc_head, llcc => llc_cmd_tap_state_pdr, length => 5, source => extended_string.to_string(cmd) ); 
-				--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_state_pdr, source => extended_string.to_string(cmd) ); 
 			elsif get_field_from_line(cmd,2) = tap_state.pause_ir then 
-				write_llc(llct => llc_head, llcc => llc_cmd_tap_state_pir, length => 5, source => extended_string.to_string(cmd) ); 
-				--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_state_pir, source => extended_string.to_string(cmd) ); 
 			else
 				put_line("ERROR: TAP state not supported for low level operation !");
 				raise constraint_error;
@@ -932,11 +925,9 @@ procedure compseq is
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.connect then
 			if get_field_from_line(cmd,2) = scanport_identifier.port then 
 				if get_field_from_line(cmd,3) = "1" then
-					write_llc(llct => llc_head2, llcc => llc_cmd_connect_port_1, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_connect_port, arg1 => 16#01#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
 				elsif get_field_from_line(cmd,3) = "2" then 
-					write_llc(llct => llc_head2, llcc => llc_cmd_connect_port_2, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_connect_port, arg1 => 16#02#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
 				else
 					put_line("ERROR: Expected a valid scanport id. Example: " 
 						& sequence_instruction_set.connect & row_separator_0
@@ -954,12 +945,9 @@ procedure compseq is
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.disconnect then
 			if get_field_from_line(cmd,2) = scanport_identifier.port then 
 				if get_field_from_line(cmd,3) = "1" then
-					write_llc(llct => llc_head2, llcc => llc_cmd_disconnect_port_1, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_connect_port, arg1 => 16#01#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				elsif get_field_from_line(cmd,3) = "2" then 
-					--write_llc(16#40#,16#02#); -- gnd 2, tap 2 relay on #CS: dio, aio ?
-					write_llc(llct => llc_head2, llcc => llc_cmd_disconnect_port_2, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_connect_port, arg1 => 16#02#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				else
 					put_line("ERROR: Expected a valid scanport id. Example: " 
 						& sequence_instruction_set.disconnect & row_separator_0
@@ -975,30 +963,25 @@ procedure compseq is
  
 		-- "power" example: power up 1, power down all
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.power then
-			write_llc(llct => llc_head2, llcc => llc_cmd_internal_set_mux_sub_2, length => 5, source => "internal: set i2c mux sub bus 2" ); 
-			--write_listing(item => source_code, src_code => "internal: set i2c mux sub bus 2");
+			--write_llc(head => llc_head2, llcc => llc_cmd_internal_set_mux_sub_2, length => 5, source => "internal: set i2c mux sub bus 2" ); 
 			if get_field_from_line(cmd,2) = power_cycle_identifier.up then
 
 				-- pwr relay 1 on
 				if get_field_from_line(cmd,3) = "1" then
-					write_llc(llct => llc_head2, llcc => llc_cmd_pwr_relay_1_on, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_power, arg1 => 16#01#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
 				-- pwr relay 2 on
 				elsif get_field_from_line(cmd,3) = "2" then
-					write_llc(llct => llc_head2, llcc => llc_cmd_pwr_relay_2_on, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_power, arg1 => 16#02#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
 				-- pwr relay 3 on
 				elsif get_field_from_line(cmd,3) = "3" then
-					write_llc(llct => llc_head2, llcc => llc_cmd_pwr_relay_3_on, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_power, arg1 => 16#03#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+
 				-- all pwr relays on
 				elsif get_field_from_line(cmd,3) = power_channel_name.all_channels then 
-					write_llc(llct => llc_head2, llcc => llc_cmd_pwr_relay_all_on, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_power, arg1 => 16#FF#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
 				-- gnd pwr relay on
 				elsif get_field_from_line(cmd,3) = power_channel_name.gnd then
-					write_llc(llct => llc_head2, llcc => llc_cmd_pwr_relay_gnd_on, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_power, arg1 => 16#00#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
 				else
 					put_line("ERROR: Expected power channel id as positive integer or keyword '" 
 						& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !");
@@ -1013,24 +996,19 @@ procedure compseq is
 
 				-- pwr relay 1 off
 				if get_field_from_line(cmd,3) = "1" then
-					write_llc(llct => llc_head2, llcc => llc_cmd_pwr_relay_1_off, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_power, arg1 => 16#01#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				-- pwr relay 2 off
 				elsif get_field_from_line(cmd,3) = "2" then
-					write_llc(llct => llc_head2, llcc => llc_cmd_pwr_relay_2_off, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_power, arg1 => 16#02#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				-- pwr relay 3 off
 				elsif get_field_from_line(cmd,3) = "3" then
-					write_llc(llct => llc_head2, llcc => llc_cmd_pwr_relay_3_off, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_power, arg1 => 16#03#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				-- all pwr relays off
 				elsif get_field_from_line(cmd,3) = power_channel_name.all_channels then 
-					write_llc(llct => llc_head2, llcc => llc_cmd_pwr_relay_all_off, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_power, arg1 => 16#FF#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				-- gnd pwr relay off
 				elsif get_field_from_line(cmd,3) = power_channel_name.gnd then
-					write_llc(llct => llc_head2, llcc => llc_cmd_pwr_relay_gnd_off, length => 5, source => extended_string.to_string(cmd) ); 
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+					write_llc(head => llc_head_power, arg1 => 16#00#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				else
 					put_line("ERROR: Expected power channel id as positive integer or keyword '" 
 						& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !");
@@ -1051,8 +1029,7 @@ procedure compseq is
 
 		-- "imax" example: imax 2 1 timeout 0.2 (means channel 2, max. current 1A, timeout to shutdown 0.2s)
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.imax then -- CS: check field count
-			write_llc(llct => llc_head2, llcc => llc_cmd_internal_set_mux_sub_3, length => 5, source => "internal: set i2c mux sub bus 3" ); 
-			--write_listing(item => source_code, src_code => "internal: set i2c mux sub bus 3");
+			--write_llc(llct => llc_head2, llcc => llc_cmd_internal_set_mux_sub_3, length => 5, source => "internal: set i2c mux sub bus 3" ); 
 			if positive'value(get_field_from_line(cmd,2)) in type_power_channel_id then
 				power_channel_name.id := positive'value(get_field_from_line(cmd,2)); -- get power channel
 			else
@@ -1064,29 +1041,39 @@ procedure compseq is
 			-- get imax (as set by operator) and calculate 8 bit DAC value
 			-- write llc (40h + pwr channel , current_limit_set_by_operator) as extended I2C operation
 			current_limit_set_by_operator := float'value(get_field_from_line(cmd,3)); 
-			ubyte_scratch := unsigned_8(natural(22.4 * (5.7 + current_limit_set_by_operator)));
-			ubyte_scratch2 := 16#40# + unsigned_8(power_channel_name.id);
-			write_llc(llct => ubyte_scratch2, llcc => ubyte_scratch, length => 5, 
-				source => "internal: pwr channel " & natural_to_string(natural(ubyte_scratch2),16,2) & row_separator_0
-				& "current limit " & natural_to_string(natural(ubyte_scratch),16,2)); 
--- 			write_listing(item => source_code, src_code => 
--- 				"internal: pwr channel " & natural_to_string(natural(ubyte_scratch2),16,2) & row_separator_0
--- 				& "current limit " & natural_to_string(natural(ubyte_scratch),16,2));
+-- 			ubyte_scratch := unsigned_8(natural(22.4 * (5.7 + current_limit_set_by_operator)));
+-- 			ubyte_scratch2 := 16#40# + unsigned_8(power_channel_name.id);
+-- 			write_llc(llct => ubyte_scratch2, llcc => ubyte_scratch, length => 5, 
+-- 				source => "internal: pwr channel " & natural_to_string(natural(ubyte_scratch2),16,2) & row_separator_0
+-- 				& "current limit " & natural_to_string(natural(ubyte_scratch),16,2)); 
+
+			write_llc(
+				head => llc_head_imax,
+				arg1 => unsigned_8(power_channel_name.id), 
+				arg2 => unsigned_8(natural(22.4 * (5.7 + current_limit_set_by_operator))),
+				source => " pwr channel" & natural'image(power_channel_name.id) & " imax" & float'image(current_limit_set_by_operator) & " Amp"
+				);
 
 			-- get timeout
 			if get_field_from_line(cmd,4) = timeout_identifier then
 				if float'value(get_field_from_line(cmd,5)) in type_overload_timeout then
 					overload_timeout := float'value(get_field_from_line(cmd,5));
 					-- set i2c muxer sub bus 2
-					write_llc(llct => llc_head2, llcc => llc_cmd_internal_set_mux_sub_2, length => 5, source => "internal: set i2c mux sub bus 2"); 
-					--write_listing(item => source_code, src_code => "internal: set i2c mux sub bus 2");
+					--write_llc(llct => llc_head2, llcc => llc_cmd_internal_set_mux_sub_2, length => 5, source => "internal: set i2c mux sub bus 2"); 
 
 					-- cal. 8bit timeout value
 					-- write llc (43h + pwr_channel) as extended I2C operation
-					ubyte_scratch := unsigned_8(natural(overload_timeout/overload_timeout_resolution)); 
-					ubyte_scratch2 := 16#43# + unsigned_8(power_channel_name.id);
-					write_llc(llct => ubyte_scratch2, llcc => ubyte_scratch, length => 5, source => extended_string.to_string(cmd) );
-					--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+-- 					ubyte_scratch := unsigned_8(natural(overload_timeout/overload_timeout_resolution)); 
+-- 					ubyte_scratch2 := 16#43# + unsigned_8(power_channel_name.id);
+-- 					write_llc(llct => ubyte_scratch2, llcc => ubyte_scratch, length => 5, source => extended_string.to_string(cmd) );
+
+					write_llc(
+						head => llc_head_timeout,
+						arg1 => unsigned_8(power_channel_name.id),
+						arg2 => unsigned_8(natural(overload_timeout/overload_timeout_resolution)),
+						--source => extended_string.to_string(cmd)
+						source => " pwr channel" & natural'image(power_channel_name.id) & " timeout" & float'image(overload_timeout) & " sec"
+						); 
 				else
 					put_line("ERROR: Timeout value invalid !");
 					put_line("       Provide a number between" & type_overload_timeout'image(type_overload_timeout'first) 
@@ -1105,9 +1092,14 @@ procedure compseq is
 
 				-- calc. 8 bit delay value and write llc as time operation
 				delay_set_by_operator := float'value(get_field_from_line(cmd,2));
- 				ubyte_scratch := unsigned_8(natural(delay_set_by_operator/delay_resolution));
- 				write_llc(llct => llc_head3, llcc => ubyte_scratch, length => 5, source => extended_string.to_string(cmd) ); 
-				--write_listing(item => source_code, src_code => extended_string.to_string(cmd));
+-- 				ubyte_scratch := unsigned_8(natural(delay_set_by_operator/delay_resolution));
+-- 				write_llc(llct => llc_head3, llcc => ubyte_scratch, length => 5, source => extended_string.to_string(cmd) ); 
+
+				write_llc(
+					head => llc_head_delay, 
+					arg1 => unsigned_8(natural(delay_set_by_operator/delay_resolution)),
+					source => extended_string.to_string(cmd)
+					); 
 			else
 				put_line("ERROR: Delay value invalid !");
 				put_line("       Provide a number between" & float'image(delay_resolution) 
