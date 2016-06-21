@@ -895,15 +895,15 @@ procedure compseq is
 
 		--hard+soft trst (default)
 		if get_field_from_line(cmd,1) = sequence_instruction_set.trst then
-			write_llc(head => llc_head_tap, arg1 => llc_cmd_trst, source => extended_string.to_string(cmd) ); 
+			write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_trst, source => extended_string.to_string(cmd) ); 
 
 		--only soft trst
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.strst then
-			write_llc(head => llc_head_tap, arg1 => llc_cmd_strst, source => extended_string.to_string(cmd) ); 
+			write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_strst, source => extended_string.to_string(cmd) ); 
 
 		--only hard trst
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.htrst then
-			write_llc(head => llc_head_tap, arg1 => llc_cmd_htrst, source => extended_string.to_string(cmd) ); 
+			write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_htrst, source => extended_string.to_string(cmd) ); 
 
 		prog_position	:= 420;
 		-- "tap_state" (example: tap_state test-logic-reset, tap_state pause-dr)
@@ -925,9 +925,9 @@ procedure compseq is
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.connect then
 			if get_field_from_line(cmd,2) = scanport_identifier.port then 
 				if get_field_from_line(cmd,3) = "1" then
-					write_llc(head => llc_head_connect_port, arg1 => 16#01#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_connect_disconnect, arg1 => 16#01#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
 				elsif get_field_from_line(cmd,3) = "2" then 
-					write_llc(head => llc_head_connect_port, arg1 => 16#02#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_connect_disconnect, arg1 => 16#02#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
 				else
 					put_line("ERROR: Expected a valid scanport id. Example: " 
 						& sequence_instruction_set.connect & row_separator_0
@@ -945,9 +945,9 @@ procedure compseq is
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.disconnect then
 			if get_field_from_line(cmd,2) = scanport_identifier.port then 
 				if get_field_from_line(cmd,3) = "1" then
-					write_llc(head => llc_head_connect_port, arg1 => 16#01#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_connect_disconnect, arg1 => 16#01#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				elsif get_field_from_line(cmd,3) = "2" then 
-					write_llc(head => llc_head_connect_port, arg1 => 16#02#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_connect_disconnect, arg1 => 16#02#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				else
 					put_line("ERROR: Expected a valid scanport id. Example: " 
 						& sequence_instruction_set.disconnect & row_separator_0
@@ -968,20 +968,20 @@ procedure compseq is
 
 				-- pwr relay 1 on
 				if get_field_from_line(cmd,3) = "1" then
-					write_llc(head => llc_head_power, arg1 => 16#01#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#01#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
 				-- pwr relay 2 on
 				elsif get_field_from_line(cmd,3) = "2" then
-					write_llc(head => llc_head_power, arg1 => 16#02#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#02#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
 				-- pwr relay 3 on
 				elsif get_field_from_line(cmd,3) = "3" then
-					write_llc(head => llc_head_power, arg1 => 16#03#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#03#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
 
 				-- all pwr relays on
 				elsif get_field_from_line(cmd,3) = power_channel_name.all_channels then 
-					write_llc(head => llc_head_power, arg1 => 16#FF#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#FF#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
 				-- gnd pwr relay on
 				elsif get_field_from_line(cmd,3) = power_channel_name.gnd then
-					write_llc(head => llc_head_power, arg1 => 16#00#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#00#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
 				else
 					put_line("ERROR: Expected power channel id as positive integer or keyword '" 
 						& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !");
@@ -996,19 +996,19 @@ procedure compseq is
 
 				-- pwr relay 1 off
 				if get_field_from_line(cmd,3) = "1" then
-					write_llc(head => llc_head_power, arg1 => 16#01#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#01#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				-- pwr relay 2 off
 				elsif get_field_from_line(cmd,3) = "2" then
-					write_llc(head => llc_head_power, arg1 => 16#02#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#02#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				-- pwr relay 3 off
 				elsif get_field_from_line(cmd,3) = "3" then
-					write_llc(head => llc_head_power, arg1 => 16#03#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#03#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				-- all pwr relays off
 				elsif get_field_from_line(cmd,3) = power_channel_name.all_channels then 
-					write_llc(head => llc_head_power, arg1 => 16#FF#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#FF#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				-- gnd pwr relay off
 				elsif get_field_from_line(cmd,3) = power_channel_name.gnd then
-					write_llc(head => llc_head_power, arg1 => 16#00#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#00#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
 				else
 					put_line("ERROR: Expected power channel id as positive integer or keyword '" 
 						& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !");
