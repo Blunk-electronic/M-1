@@ -49,6 +49,8 @@ vcc_io2		equ	05Eh
 
 tap_in12	equ	088h	;TAP inputs 1/2 fail, tdi, exp, mask
 ex_state	equ	089h	;exectuor state
+lc_state	equ 0A5h	;low level command processor state
+i2_state	equ	0A6h	;i2c master state
 t_state12	equ	08Ah	;state of tap 1 and 2
 
 b_prc_1a	equ	08Ch	;LSB of bits processed 1
@@ -744,141 +746,158 @@ l_4a:	ld		HL,dbg			;see comments at label l_0 and following
 		call	PAR_CMD
 		jp		nc,l_41
 
-		ld	HL,exe_state
+		ld		HL,exe_state
 		call	TX_STR
-		in	A,(ex_state)
-		call	APP_ACCU	;append value to STD_OUT
-		call	TX_STD_OUT	;TX input value to host
-		ld	HL,NEW_LINE	;transmit new line
-		call	TX_STR
-
-		ld	HL,tap_state
-		call	TX_STR
-		in	A,(t_state12)
-		call	APP_ACCU	;append value to STD_OUT
-		call	TX_STD_OUT	;TX input value to host
-		ld	HL,NEW_LINE	;transmit new line
+		in		A,(ex_state)
+		call	APP_ACCU		;append value to STD_OUT
+		call	TX_STD_OUT		;TX input value to host
+		ld		HL,NEW_LINE		;transmit new line
 		call	TX_STR
 
-		ld	HL,tap_in
+		ld		HL,lcp_state
 		call	TX_STR
-		in	A,(tap_in12)
-		call	APP_ACCU	;append value to STD_OUT
-		call	TX_STD_OUT	;TX input value to host
-		ld	HL,NEW_LINE	;transmit new line
+		in		A,(lc_state)
+		call	APP_ACCU		;append value to STD_OUT
+		call	TX_STD_OUT		;TX input value to host
+		ld		HL,NEW_LINE		;transmit new line
 		call	TX_STR
 
-		ld	HL,step_id
+		ld		HL,i2c_state
 		call	TX_STR
-		in	A,(step_idb)
+		in		A,(i2_state)
+		call	APP_ACCU		;append value to STD_OUT
+		call	TX_STD_OUT		;TX input value to host
+		ld		HL,NEW_LINE		;transmit new line
+		call	TX_STR
+
+
+		ld		HL,tap_state
+		call	TX_STR
+		in		A,(t_state12)
+		call	APP_ACCU	;append value to STD_OUT
+		call	TX_STD_OUT	;TX input value to host
+		ld		HL,NEW_LINE	;transmit new line
+		call	TX_STR
+
+		ld		HL,tap_in
+		call	TX_STR
+		in		A,(tap_in12)
+		call	APP_ACCU	;append value to STD_OUT
+		call	TX_STD_OUT	;TX input value to host
+		ld		HL,NEW_LINE	;transmit new line
+		call	TX_STR
+
+		ld		HL,step_id
+		call	TX_STR
+		in		A,(step_idb)
 		call	APP_ACCU
-		in	A,(step_ida)
+		in		A,(step_ida)
 		call	APP_ACCU
 		call	TX_STD_OUT	;TX input value to host
-		ld	HL,NEW_LINE	;transmit new line
+		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
 		;tx total bit count chain 1
-		ld	HL,bits_to1
+		ld		HL,bits_to1
 		call	TX_STR
-		in	A,(sxr_ln1d)
+		in		A,(sxr_ln1d)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(sxr_ln1c)
+		in		A,(sxr_ln1c)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(sxr_ln1b)
+		in		A,(sxr_ln1b)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(sxr_ln1a)
+		in		A,(sxr_ln1a)
 		call	APP_ACCU	;append value to STD_OUT
 		call	TX_STD_OUT	;TX input value to host
-		ld	HL,NEW_LINE	;transmit new line
+		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
-                ;tx bit position chain 1
-		ld	HL,bits_pr1
+        ;tx bit position chain 1
+		ld		HL,bits_pr1
 		call	TX_STR
-		in	A,(b_prc_1d)
+		in		A,(b_prc_1d)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(b_prc_1c)
+		in		A,(b_prc_1c)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(b_prc_1b)
+		in		A,(b_prc_1b)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(b_prc_1a)
+		in		A,(b_prc_1a)
 		call	APP_ACCU	;append value to STD_OUT
 		call	TX_STD_OUT	;TX input value to host
-		ld	HL,NEW_LINE	;transmit new line
+		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
 		;tx vector state 1
-		ld	HL,vst1
+		ld		HL,vst1
 		call	TX_STR
-		in	A,(vec_st1)
+		in		A,(vec_st1)
 		call	APP_ACCU	;append value to STD_OUT
 		call	TX_STD_OUT	;TX input value to host
-		ld	HL,NEW_LINE	;transmit new line
+		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
 		;tx total bit count chain 2
-		ld	HL,bits_to2
+		ld		HL,bits_to2
 		call	TX_STR
-		in	A,(sxr_ln2d)
+		in		A,(sxr_ln2d)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(sxr_ln2c)
+		in		A,(sxr_ln2c)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(sxr_ln2b)
+		in		A,(sxr_ln2b)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(sxr_ln2a)
+		in		A,(sxr_ln2a)
 		call	APP_ACCU	;append value to STD_OUT
 		call	TX_STD_OUT	;TX input value to host
-		ld	HL,NEW_LINE	;transmit new line
+		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
-                ;tx bit position chain 2
-		ld	HL,bits_pr2
+        ;tx bit position chain 2
+		ld		HL,bits_pr2
 		call	TX_STR
-		in	A,(b_prc_2d)
+		in		A,(b_prc_2d)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(b_prc_2c)
+		in		A,(b_prc_2c)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(b_prc_2b)
+		in		A,(b_prc_2b)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(b_prc_2a)
+		in		A,(b_prc_2a)
 		call	APP_ACCU	;append value to STD_OUT
 		call	TX_STD_OUT	;TX input value to host
-		ld	HL,NEW_LINE	;transmit new line
+		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
 		;tx vector state 2
-		ld	HL,vst2
+		ld		HL,vst2
 		call	TX_STR
-		in	A,(vec_st2)
+		in		A,(vec_st2)
 		call	APP_ACCU	;append value to STD_OUT
 		call	TX_STD_OUT	;TX input value to host
-		ld	HL,NEW_LINE	;transmit new line
+		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
-                ;tx current RAM address
-		ld	HL,ram_adr
+        ;tx current RAM address
+		ld		HL,ram_adr
 		call	TX_STR
-		in	A,(ram_adr2)
+		in		A,(ram_adr2)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(ram_adr1)
+		in		A,(ram_adr1)
 		call	APP_ACCU	;append value to STD_OUT
-		in	A,(ram_adr0)
+		in		A,(ram_adr0)
 		call	APP_ACCU	;append value to STD_OUT
 		call	TX_STD_OUT	;TX input value to host
-		ld	HL,NEW_LINE	;transmit new line
+		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
 		;tx current RAM data
-		ld	HL,rm_data
+		ld		HL,rm_data
 		call	TX_STR
-		in	A,(ram_out2)	;chgd from ram_out to ram_out2 in V6.0
+		in		A,(ram_out2)	;chgd from ram_out to ram_out2 in V6.0
 		call	APP_ACCU	;append value to STD_OUT
 		call	TX_STD_OUT	;TX input value to host
-		ld	HL,NEW_LINE	;transmit new line
+		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
-		jp	EO_post_proc
+		jp		EO_post_proc
 
 
 
@@ -3228,6 +3247,14 @@ pio_ab:
 
 exe_state:
 	DEFM	'EXE: '
+	DEFB	0h
+
+lcp_state:
+	DEFM	'LCP: '
+	DEFB	0h
+
+i2c_state:
+	DEFM	'I2C: '
 	DEFB	0h
 
 tap_state:
