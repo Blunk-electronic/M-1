@@ -909,7 +909,7 @@ procedure compseq is
 		-- "tap_state" (example: tap_state test-logic-reset, tap_state pause-dr)
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.tap_state then
 			if get_field_from_line(cmd,2) = tap_state.test_logic_reset then
-				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_state_tlr, source => extended_string.to_string(cmd) ); 
+				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_strst, source => extended_string.to_string(cmd) ); -- same as strst
 			elsif get_field_from_line(cmd,2) = tap_state.run_test_idle then
 				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_state_rti, source => extended_string.to_string(cmd) ); 
 			elsif get_field_from_line(cmd,2) = tap_state.pause_dr then
@@ -1670,6 +1670,28 @@ procedure compseq is
 		section_entered		: boolean := false;
 		line_of_file		: extended_string.bounded_string;
 		scratch_float		: float;
+
+		function frequency_float_to_unsigned_8 (frequency_float : type_tck_frequency) return unsigned_8 is
+			frequency_unsigned_8: unsigned_8 := 16#52#;
+		begin
+			-- CS: depends on executor firmware
+			-- if frequency given is zero (or option missing entirely) the hex value defaults (see m1_internal.ads)
+-- 			case so.frequency is -- CS: replace hex numbers by names in m1_firmware.ads
+-- 				when 0.1 => so.frequency_prescaler_unsigned_8 := 16#15#;
+-- 				when 1.0 => so.frequency_prescaler_unsigned_8 := 16#FE#;
+-- 				when 2.0 => so.frequency_prescaler_unsigned_8 := 16#FD#;
+-- 				when 4.0 => so.frequency_prescaler_unsigned_8 := 16#F8#;
+-- 				when others => 
+-- 					-- CS: the lowest frequency depends on executor firmware
+-- 					put_line("WARNING: frequency option invalid or missing. Falling back to safest frequency of " & type_tck_frequency'image(tck_frequency_default) & " Mhz ...");
+-- 			end case;
+			--so.frequency_prescaler_unsigned_8 := 16#52#;
+
+			-- CS:
+			
+			return frequency_unsigned_8;
+		end frequency_float_to_unsigned_8;
+		
 	begin
 		reset(sequence_file);
 		line_counter := 0;
@@ -1691,6 +1713,8 @@ procedure compseq is
 
 						else
 							-- PROCESSING SECTION OPTIONS BEGIN
+
+							-- NOTE: if a particular option missing -> default to option as specified for type type_scanpath_options (see m1_internal.ads)
 							--put_line(extended_string.to_string(line_of_file));
 
 							-- search for option on_fail
@@ -1814,19 +1838,9 @@ procedure compseq is
 				end if;
 			end loop;
 			
-			-- convert frequency to prescaler value
-			-- CS: depends on executor firmware
-			-- if frequency given is zero (or option missing entirely) the hex value defaults (see m1_internal.ads)
-			case so.frequency is -- CS: replace hex numbers by names in m1_firmware.ads
-				when 4 => so.frequency_prescaler_unsigned_8 := 16#FF#;
-				when 3 => so.frequency_prescaler_unsigned_8 := 16#FE#;
-				when 2 => so.frequency_prescaler_unsigned_8 := 16#FD#;
-				when 1 => so.frequency_prescaler_unsigned_8 := 16#F8#;
-				when others => 
-					-- CS: the lowest frequency depends on executor firmware
-					put_line("WARNING: frequency option invalid or missing. Falling back to safest frequency of 33 khz ...");
-			end case;
-
+			-- convert frequency to scan clock timer value
+			so.frequency_prescaler_unsigned_8 := frequency_float_to_unsigned_8(so.frequency);
+			
 			-- calculate 8bit values required for DACs (by DAC resolution and full-scale value)
 			-- CS: depends on transeiver hardware
 			-- driver voltages:
@@ -2642,7 +2656,7 @@ begin
 	write_listing(item => location, loc => size_of_vector_file + listing_offset);
 	write_byte_in_vector_file(scanpath_options.frequency_prescaler_unsigned_8);
 	write_listing(item => object_code, obj_code => scanpath_options.frequency_prescaler_unsigned_8);
-	write_listing(item => source_code, src_code => "tck frequency prescaler");
+	write_listing(item => source_code, src_code => "scan clock timer (high nibble -> multipier, low nibble -> exponent)");
 
 	-- threshold
 	write_listing(item => location, loc => size_of_vector_file + listing_offset);
