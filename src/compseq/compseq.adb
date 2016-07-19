@@ -1673,7 +1673,17 @@ procedure compseq is
 
 		function frequency_float_to_unsigned_8 (frequency_float : type_tck_frequency) return unsigned_8 is
 			frequency_unsigned_8: unsigned_8 := 16#52#;
+			scan_clock_timer_float	: float;
+			scan_clock_timer_positive	: positive;
 		begin
+			--put(standard_output,"frequency float in: " & type_tck_frequency'image(frequency_float)); new_line(standard_output);
+			scan_clock_timer_float := float(executor_master_clock) / (2.0 * float(frequency_float));
+			--n := float(frequency_float);
+			put(standard_output,"scan clock timer float: " & float'image(scan_clock_timer_float)); new_line(standard_output);
+
+			scan_clock_timer_positive := positive(scan_clock_timer_float);
+			put(standard_output,"scan clock timer n: " & positive'image(scan_clock_timer_positive)); new_line(standard_output);
+
 			-- CS: depends on executor firmware
 			-- if frequency given is zero (or option missing entirely) the hex value defaults (see m1_internal.ads)
 -- 			case so.frequency is -- CS: replace hex numbers by names in m1_firmware.ads
