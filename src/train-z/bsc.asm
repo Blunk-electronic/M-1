@@ -80,8 +80,8 @@ ram_adr0	equ	085h	;LSB of current RAM address
 ram_adr1	equ	086h
 ram_adr2	equ	087h	;MSB of current RAM address
 
-vec_st1		equ	096h	;vector state 1
-vec_st2		equ	09Fh    ;vector state 2
+sh_st1		equ	096h	;shifter state 1
+sh_st2		equ	09Fh    ;shifter state 2
 
 strt_stop	equ	098h	;test start / stop   55/AA
 
@@ -827,10 +827,10 @@ l_4a:	ld		HL,dbg			;see comments at label l_0 and following
 		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
-		;tx vector state 1
-		ld		HL,vst1
+		;tx shifter state 1
+		ld		HL,shst1
 		call	TX_STR
-		in		A,(vec_st1)
+		in		A,(sh_st1)
 		call	APP_ACCU	;append value to STD_OUT
 		call	TX_STD_OUT	;TX input value to host
 		ld		HL,NEW_LINE	;transmit new line
@@ -866,10 +866,10 @@ l_4a:	ld		HL,dbg			;see comments at label l_0 and following
 		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
-		;tx vector state 2
-		ld		HL,vst2
+		;tx shifter state 2
+		ld		HL,shst2
 		call	TX_STR
-		in		A,(vec_st2)
+		in		A,(sh_st2)
 		call	APP_ACCU	;append value to STD_OUT
 		call	TX_STD_OUT	;TX input value to host
 		ld		HL,NEW_LINE	;transmit new line
@@ -3293,12 +3293,12 @@ rm_data:
 	DEFM	'DAT: '
 	DEFB	0h
 
-vst1:
-	DEFM	'VS1: '
+shst1:
+	DEFM	'SH1: '
 	DEFB	0h
 
-vst2:
-	DEFM	'VS2: '
+shst2:
+	DEFM	'SH2: '
 	DEFB	0h
 
 
