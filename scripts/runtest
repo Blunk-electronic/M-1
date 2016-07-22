@@ -1,9 +1,6 @@
 #!/usr/local/bin/kermit +
 
-# V0.3
-
 # $interface $step_mode;
-
 
 define close_connection {
 	close
@@ -11,8 +8,6 @@ define close_connection {
 	echo "BSC not responding properly"
 	EXIT 1
 	}
-
-
 
 set exit warning on
 
@@ -44,14 +39,14 @@ set input echo off
 	input 2 cmd>
 		IF FAIL close_connection
 
-# CS: step width parameter \%2 ignored currently, remove it in bsmcl
+# set step width
 # send test start command
-#	output step\13
-#	input 2 {step_width: }
-#		if fail close_connection
-#	output \%2\13
-#	input 2 {cmd> }
-#		if fail close_connection
+	output step\13
+	input 2 {step_width: }
+		if fail close_connection
+	output \%2\13
+	input 2 {cmd> }
+		if fail close_connection
 
 
 
