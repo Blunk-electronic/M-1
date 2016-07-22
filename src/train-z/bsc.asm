@@ -611,30 +611,14 @@ l_4p:	; BSC START TEST
  		ld		A,pth_ex_reads_ram	
  		out		(path),A
 
-		;ld	A,010h		;set  executor step mode: production 
-		;out	(cmd),A
-
-; 		ld	A,055h
-; 		out	(strt_stop),A		;55h in strt_stop starts test
-; 		nop
-; 		nop
-; 		ld	A,0FFh
-; 		out	(strt_stop),A
-
-;use this when setting step width
-; 		ld		HL,st_width
-; 		call	TX_STR
-; 		call	req_number	;get step width from host
-; 		out		(cmd),A		;load step width in executor cmd register CS: remove
-
-
 		;start test
 		ld		A,c_null		; clear command
 		out		(cmd),A
-		ld		A,c_stp_test	; set command
-		out		(cmd),A
-; 		ld		A,c_null		; clear command
-; 		out		(cmd),A
+		;set step width
+ 		ld		HL,st_width
+ 		call	TX_STR
+ 		call	req_number	;get step width from host
+ 		out		(cmd),A		;load step width in executor cmd register -> this starts the test
 
 		jp		EO_post_proc
 
