@@ -578,9 +578,9 @@ l_02A:
 
 
 l_02:
-	ld	HL,RAM_S		;see comments at label l_0 and following
-	call	PAR_CMD
-	jp	nc,l_4p
+		ld		HL,RAM_S		;see comments at label l_0 and following
+		call	PAR_CMD
+		jp	nc,l_4p
 
 		call	RAM_SIZE_CHK
 ;		call	TX_STR_TERM
@@ -590,9 +590,9 @@ l_02:
 l_4p:	; BSC START TEST
 		ld		HL,runtest
 		call	PAR_CMD
-		jp		nc,l_4q
+		jp		nc,l_4s
 
-		call	req_d	;ask host for bits [23:8] of destination address
+		call	req_d			;ask host for bits [23:8] of destination address
 
 		ld		A,pth_null		; break path, so that mmu keeps waiting in state ROUT1 (only low nibble matters)
 		out		(path),A
@@ -617,10 +617,28 @@ l_4p:	; BSC START TEST
 		;set step width
  		ld		HL,st_width
  		call	TX_STR
- 		call	req_number	;get step width from host
- 		out		(cmd),A		;load step width in executor cmd register -> this starts the test
-
+ 		call	req_number		;get step width from host
+ 		out		(cmd),A			;load step width in executor cmd register -> this starts the test
+								;NOTE: test starts independed of given step width
 		jp		EO_post_proc
+
+
+l_4s:	; BSC STEP TEST
+		ld		HL,steptest
+		call	PAR_CMD
+		jp		nc,l_4q
+
+		;start test
+		ld		A,c_null		; clear command
+		out		(cmd),A
+		;set step width
+ 		ld		HL,st_width
+ 		call	TX_STR
+ 		call	req_number		;get step width from host
+ 		out		(cmd),A			;load step width in executor cmd register -> this executes the next step
+								;as specified by step width
+		jp		EO_post_proc
+
 
 
 l_4q:
@@ -3426,10 +3444,10 @@ stoptest:
 	DEFB	0Dh	;cursor home
 	DEFB	0Ah	;next line
 
-; stwidth:
-; 	DEFM	'step'
-; 	DEFB	0Dh	;cursor home
-; 	DEFB	0Ah	;next line
+steptest:
+	DEFM	'steptest'
+	DEFB	0Dh	;cursor home
+	DEFB	0Ah	;next line
 
 firmware:
 	DEFM	'fw'
