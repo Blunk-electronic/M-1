@@ -1597,18 +1597,16 @@ begin
 		-- WAITS FOR TEST END
 		elsif action = "run" then
 			prog_position := "RU100";
-			test_name:=to_unbounded_string(m1.strip_trailing_forward_slash(Argument(2))); -- mod v020
+			test_name:=to_unbounded_string(m1.strip_trailing_forward_slash(Argument(2)));
 			if arg_ct = 3 then
 				prog_position := "RU400";
-				m1_internal.step_mode:= m1_internal.step_mode_type'value(Argument(3)); -- ins v019
+				m1_internal.step_mode:= m1_internal.type_step_mode'value(Argument(3));
 			end if;
 			
 			-- check if test exists
 			if exists (compose (to_string(test_name),to_string(test_name), "vec")) then
-				--put ("running        : ");	put(test_name); new_line;
 				put_line ("test name      : " & test_name);
-				--put ("mode           : ");	put("production"); new_line; --put(run_mode); new_line; -- rm v019
-				put_line ("step mode      : " & step_mode_type'image(m1_internal.step_mode)); new_line; -- ins v019
+				put_line ("step mode      : " & type_step_mode'image(m1_internal.step_mode)); new_line;
 
 				--bsm --run $run_mode $name  #launch single test/ISP
 				-- launch test
@@ -1618,7 +1616,8 @@ begin
 					test_name 					=> to_string(test_name),
 					interface_to_scan_master 	=> to_string(interface_to_scan_master),
 					directory_of_binary_files	=> to_string(directory_of_binary_files),
-					step_mode					=> step_mode
+					step_mode					=> step_mode,
+					execute_item				=> test
 					) is
 					when pass =>
 						prog_position := "RU310";
@@ -1648,6 +1647,59 @@ begin
 				raise constraint_error;
 			end if;
 		-- test execution end
+
+
+		-- test step execution begin
+		elsif action = "step" then
+			prog_position := "ST100";
+			test_name:=to_unbounded_string(m1.strip_trailing_forward_slash(Argument(2)));
+			if arg_ct = 3 then
+				prog_position := "ST400";
+				m1_internal.step_mode:= m1_internal.type_step_mode'value(Argument(3));
+			end if;
+			
+			-- check if test exists
+			if exists (compose (to_string(test_name),to_string(test_name), "vec")) then
+				put_line ("test name      : " & test_name);
+				put_line ("step mode      : " & type_step_mode'image(m1_internal.step_mode)); new_line;
+
+				prog_position := "ST300";
+				case execute_test
+					(
+					test_name 					=> to_string(test_name),
+					interface_to_scan_master 	=> to_string(interface_to_scan_master),
+					directory_of_binary_files	=> to_string(directory_of_binary_files),
+					step_mode					=> step_mode,
+					execute_item				=> step
+					) is
+					when pass =>
+						prog_position := "ST310";
+						new_line;
+						put_line("Test STEP of '"& test_name &"' PASSED !");
+					when fail =>
+						prog_position := "ST320";
+						new_line;
+						put_line("Test STEP of '"& test_name &"' FAILED !");
+						set_exit_status(failure);
+					when not_loaded =>
+						prog_position := "ST330";
+						new_line;
+						put_line("ERROR : Test not loaded yet. Please upload test. Then try again.");
+						set_exit_status(failure);
+					when others =>
+						prog_position := "ST340";
+						new_line;
+						put_line("ERROR: Internal malfunction !");
+						put_line("Test '"& test_name &"' FAILED !");
+						set_exit_status(failure);
+				end case;
+
+			else 
+				prog_position := "ST200";
+				put_line("ERROR    : Test '"& test_name &"' does not exist !");
+				raise constraint_error;
+			end if;
+		-- test step execution end
 
 
 		-- test start begin
@@ -1983,8 +2035,9 @@ begin
 									put ("        - load      (load a compiled test into the Boundary Scan Controller)"); new_line;
 									put ("        - clear     (clear entire RAM of the Boundary Scan Controller)"); new_line;
 									put ("        - dump      (view a RAM section of the Boundary Scan Controller (use for debugging only !))"); new_line;
-									put ("        - run       (run a test on your UUT/target system and WAIT until test done)"); new_line;
-									put ("        - start     (start a test on your UUT/target system and DO NOT WAIT until end of test)"); new_line;
+									put ("        - run       (run a test on your UUT/target and WAIT until test done)"); new_line;
+									put ("        - step      (execute a single test step on your UUT/target)"); new_line;
+									--put ("        - start     (start a test on your UUT/target system and DO NOT WAIT until end of test)"); new_line;
 									put ("        - off       (immediately stop a running test, shut down UUT power and disconnect TAP signals)"); new_line;
 									put ("        - status    (query Boundary Scan Controller status)"); new_line;
 									put ("        - report    (view the latest sequence execution results)"); new_line;	
@@ -2236,7 +2289,7 @@ begin
 									put ("        Supported step modes are: ");
 									for p in 0..m1_internal.step_mode_count
 									loop
-										put(m1_internal.step_mode_type'image(m1_internal.step_mode_type'val(p)));
+										put(m1_internal.type_step_mode'image(m1_internal.type_step_mode'val(p)));
 										if p < m1_internal.step_mode_count then put(" , "); end if;
 									end loop;
 									new_line;
