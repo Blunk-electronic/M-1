@@ -569,33 +569,33 @@ l_01:
 
 		
 l_02A:		
-	ld	HL,pio_test
-	call	PAR_CMD
-	jp	nc,l_02
+		ld		HL,pio_test
+		call	PAR_CMD
+		jp		nc,l_02
 
 		call	p_test
-		jp	EO_post_proc
+		jp		EO_post_proc
 
 
 l_02:
 		ld		HL,RAM_S		;see comments at label l_0 and following
 		call	PAR_CMD
-		jp	nc,l_4p
+		jp		nc,l_4p
 
 		call	RAM_SIZE_CHK
 ;		call	TX_STR_TERM
-		jp	EO_post_proc
+		jp		EO_post_proc
 
 
-l_4p:	; BSC START TEST
+l_4p:	; BSC START TEST/STEP
 		ld		HL,runtest
 		call	PAR_CMD
-		jp		nc,l_4s
+		jp		nc,l_4q
 
 		call	req_d			;ask host for bits [23:8] of destination address
 
-		ld		A,pth_null		; break path, so that mmu keeps waiting in state ROUT1 (only low nibble matters)
-		out		(path),A
+; 		ld		A,pth_null		; break path, so that mmu keeps waiting in state ROUT1 (only low nibble matters)
+; 		out		(path),A
 
 		;load test start address
 		sub		A
@@ -606,12 +606,13 @@ l_4p:	; BSC START TEST
 		ld		A,H
 		out		(st_adr2),A
 
-		;ld	A,00000001b	;direct adr from ram to rf , release d_ram : RAM debug mode
 		;direct adr from ex to ram , ram drives data : EX mode (only low nibble matters)
  		ld		A,pth_ex_reads_ram	
  		out		(path),A
+		;the MMU is waiting in state MMU_STATE_ROUT1 and is permanently registering the 
+		;start address and passing it to the executor
 
-		;start test
+		;START TEST
 		ld		A,c_null		; clear command
 		out		(cmd),A
 		;set step width
@@ -623,21 +624,21 @@ l_4p:	; BSC START TEST
 		jp		EO_post_proc
 
 
-l_4s:	; BSC STEP TEST
-		ld		HL,steptest
-		call	PAR_CMD
-		jp		nc,l_4q
-
-		;start test
-		ld		A,c_null		; clear command
-		out		(cmd),A
-		;set step width
- 		ld		HL,st_width
- 		call	TX_STR
- 		call	req_number		;get step width from host
- 		out		(cmd),A			;load step width in executor cmd register -> this executes the next step
-								;as specified by step width
-		jp		EO_post_proc
+; l_4s:	; BSC STEP TEST
+; 		ld		HL,steptest
+; 		call	PAR_CMD
+; 		jp		nc,l_4q
+; 
+; 		;start test
+; 		ld		A,c_null		; clear command
+; 		out		(cmd),A
+; 		;set step width
+;  		ld		HL,st_width
+;  		call	TX_STR
+;  		call	req_number		;get step width from host
+;  		out		(cmd),A			;load step width in executor cmd register -> this executes the next step
+; 								;as specified by step width
+; 		jp		EO_post_proc
 
 
 
@@ -2943,13 +2944,20 @@ l_rd3:		ld	HL,NEW_LINE	;transmit new line
 
 
 
-bsc_init:	
+bsc_init:
+	ld		A,pth_null		; break path, so that mmu keeps waiting in state ROUT1 (only low nibble matters)
+	out		(path),A
+
+	ld		A,c_null		; clear command
+	out		(cmd),A
 
 	;clear vector output ram address
-	sub	A
-	out	(st_adr0),A
-	out	(st_adr1),A
-	out	(st_adr2),A
+	sub		A
+	out		(st_adr0),A
+	out		(st_adr1),A
+	out		(st_adr2),A
+
+; CS: add more things to init !
 
 	ret
 
@@ -3444,10 +3452,10 @@ stoptest:
 	DEFB	0Dh	;cursor home
 	DEFB	0Ah	;next line
 
-steptest:
-	DEFM	'steptest'
-	DEFB	0Dh	;cursor home
-	DEFB	0Ah	;next line
+; steptest:
+; 	DEFM	'steptest'
+; 	DEFB	0Dh	;cursor home
+; 	DEFB	0Ah	;next line
 
 firmware:
 	DEFM	'fw'
