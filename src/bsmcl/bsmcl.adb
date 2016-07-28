@@ -1631,7 +1631,7 @@ begin
 					when not_loaded =>
 						prog_position := "RU330";
 						new_line;
-						put_line("ERROR : Test not loaded yet. Please upload test. Then try again.");
+						put_line("ERROR : Test data invalid or not loaded yet. Please upload test. Then try again.");
 						set_exit_status(failure);
 					when others =>
 						prog_position := "RU340";
