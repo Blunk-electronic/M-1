@@ -34,6 +34,8 @@
 --				 - procedure write_base_address differentiates between first and subsequent scanpath base addresses (the base addres of subsequent
 --				   scanpaths is now calculated correctly.
 
+--   2016-07-29: - vector file dummy bytes (at pos. 10 and 11) removed. they now contain the vector count
+
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
 with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
@@ -110,6 +112,7 @@ procedure compseq is
 	vector_count_max		: constant positive := (2**16)-1;
 	subtype type_vector_id is positive range 1..vector_count_max;
 	vector_id				: type_vector_id; -- as in "sdr id 456" or "sir id 5"
+	ct_tmp					: positive := 1;
 
 	test_step_id			: natural := 0;
 	ubyte_scratch			: unsigned_8; -- used for appending vector_file to vector_file_head
@@ -2726,17 +2729,21 @@ begin
 		& " bit [2..0]"
 		);
 
-
-	-- port 1 all scanport relays off, CS: ignored by executor
+	-- NOTE 1:
+	-- since the total number of vectors (sxr) is not known yet, it is assumed as FFFFh
+	-- later when finishing compiling, it will be replaced by the real number of sxr found in the source code
+	-- !! CURRENTLY THE TOTAL NUMBER OF VECTORS IS NOT WRITTEN IN THE LISTING !! -- CS
+	-- CAUTION: THIS IS A HACK AND NEEDS PROPER REWORK !!! -- CS
+	-- vector (sxr) count, lowbyte
 	write_listing(item => location, loc => size_of_vector_file + listing_offset);
 	write_byte_in_vector_file(16#FF#);
 	write_listing(item => object_code, obj_code => 16#FF#);
-	write_listing(item => source_code, src_code => "dummy");
-	-- port 2 all scanport relays off, CS: ignored by executor
+	write_listing(item => source_code, src_code => "vector/sxr count (lowbyte) NOTE: currently invalid here -> see *.vec file instead !");
+	-- vector (sxr) count, higbyte
 	write_listing(item => location, loc => size_of_vector_file + listing_offset);
    	write_byte_in_vector_file(16#FF#); 
 	write_listing(item => object_code, obj_code => 16#FF#);
-	write_listing(item => source_code, src_code => "dummy");
+	write_listing(item => source_code, src_code => "vector/sxr count (highbyte) NOTE: currently invalid here -> see *.vec file instead !");
 
 	-- listing_address will be used further-on for writing locations in listing file
 	listing_address := size_of_vector_file + listing_offset;
@@ -2769,6 +2776,8 @@ begin
 
 
 	-- append vector file to header file byte per byte
+	-- later the header is renamed to the actual vector file (*.vec)
+	-- CAUTION: THIS IS A HACK AND NEEDS PROPER REWORK !!! -- CS
 	prog_position	:= 2010;
 	seq_io_unsigned_byte.reset(
 		file 	=> vector_file,
@@ -2777,7 +2786,21 @@ begin
 	--put_line("size of vec file:" & natural'image(size_of_vector_file));
 	--put_line("size of vec head:" & natural'image(size_of_vector_header));
  	while not seq_io_unsigned_byte.end_of_file(vector_file) loop
+
+		-- read byte from vector file
  		seq_io_unsigned_byte.read(vector_file,ubyte_scratch);
+
+		-- as said in NOTE 1, the bytes 10 and 11 of the vector file are now replaced by the vector count
+		-- CAUTION: THIS IS A HACK AND NEEDS PROPER REWORK !!! -- CS
+		-- ct_tmp (starts with 1) serves as pointer to the byte position to be modified
+		case ct_tmp is
+			when 10 => ubyte_scratch := unsigned_8(vector_id); -- write lowbyte of vector count
+			when 11 => ubyte_scratch := unsigned_8(shift_right(unsigned_16(vector_id),8)); -- write highbyte of vector count
+			when others => null; -- other bytes untouched
+		end case;
+		ct_tmp := ct_tmp + 1;
+
+		-- write byte in vector file header
 		seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch);
 		size_of_vector_header := size_of_vector_header + 1;
  	end loop;
@@ -2786,6 +2809,7 @@ begin
 	seq_io_unsigned_byte.close(vector_file_header);
 
 	-- make final vector file in test directory (overwrite old vector file by the final one)
+	-- CAUTION: THIS IS A HACK AND NEEDS PROPER REWORK !!! -- CS
 	prog_position	:= 2040;
 	copy_file(
 		temp_directory & '/' & vector_header_file_name, -- from here
