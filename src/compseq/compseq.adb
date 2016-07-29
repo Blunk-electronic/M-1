@@ -34,7 +34,7 @@
 --				 - procedure write_base_address differentiates between first and subsequent scanpath base addresses (the base addres of subsequent
 --				   scanpaths is now calculated correctly.
 
---   2016-07-29: - vector file dummy bytes (at pos. 10 and 11) removed. they now contain the vector count
+--   2016-07-29: - vector file dummy bytes (at pos. 10 and 11) removed. they now contain the step count (incl. low level commands)
 
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
@@ -112,9 +112,11 @@ procedure compseq is
 	vector_count_max		: constant positive := (2**16)-1;
 	subtype type_vector_id is positive range 1..vector_count_max;
 	vector_id				: type_vector_id; -- as in "sdr id 456" or "sir id 5"
-	ct_tmp					: positive := 1;
+	ct_tmp					: positive := 1; -- used to identify position of bytes to be replaced by step count
 
-	test_step_id			: natural := 0;
+	-- test_step_id is incremented on every test step (incl. low level commands) per scanpath
+	test_step_id			: natural := 0; -- CS: upper limit ?
+
 	ubyte_scratch			: unsigned_8; -- used for appending vector_file to vector_file_head
 
 	vector_length_max		: constant positive := (2**16)-1; -- CS: machine dependend and limited here
@@ -161,7 +163,7 @@ procedure compseq is
 			scanpath_id	: type_scanpath_id;
 			sequence_id	: positive; -- CS: use dedicated type
 			case step_class is
-				when class_a =>
+				when class_a => -- class a is an sxr
 					scan		: type_scan;  -- SIR or SDR
 					vector_id	: type_vector_id;
 					-- CS: place information about targeted registers
@@ -171,13 +173,13 @@ procedure compseq is
 					retry_count	: unsigned_8;
 					retry_delay	: unsigned_8;
 					source		: universal_string_type.bounded_string; -- the command in plain text like "sir 3"
-				when class_b =>
+				when class_b => -- class b is a low level command
 					command		: type_step_class_b(length_total);
 			end case;
 		end record;
 	ptr_test_step_pre	: ptr_type_test_step_pre;
 
-	procedure add_class_b_cmd_to_step_list_pre(
+	procedure add_class_b_cmd_to_step_list_pre( -- low level command
 		list				: in out ptr_type_test_step_pre;
 		length_total_given	: natural; -- this is the number of bytes required for that command
 		command_given		: type_step_class_b) is
@@ -195,7 +197,7 @@ procedure compseq is
 			);
 	end add_class_b_cmd_to_step_list_pre;
 
-	procedure add_class_a_cmd_to_step_list_pre(
+	procedure add_class_a_cmd_to_step_list_pre( -- sxr command
 		list				: in out ptr_type_test_step_pre;
 		--step_class_given	: type_step_class;
 		scan_given			: type_scan; -- SIR or SDR
@@ -2730,20 +2732,20 @@ begin
 		);
 
 	-- NOTE 1:
-	-- since the total number of vectors (sxr) is not known yet, it is assumed as FFFFh
-	-- later when finishing compiling, it will be replaced by the real number of sxr found in the source code
-	-- !! CURRENTLY THE TOTAL NUMBER OF VECTORS IS NOT WRITTEN IN THE LISTING !! -- CS
+	-- since the total number of test steps (incl. low level commands) is not known yet, it is assumed as FFFFh
+	-- later when finishing compiling, it will be replaced by the real number of steps found in the source code
+	-- !! CURRENTLY THE TOTAL NUMBER OF STEPS IS NOT WRITTEN IN THE LISTING !! -- CS
 	-- CAUTION: THIS IS A HACK AND NEEDS PROPER REWORK !!! -- CS
-	-- vector (sxr) count, lowbyte
+	-- step count, lowbyte
 	write_listing(item => location, loc => size_of_vector_file + listing_offset);
 	write_byte_in_vector_file(16#FF#);
 	write_listing(item => object_code, obj_code => 16#FF#);
-	write_listing(item => source_code, src_code => "vector/sxr count (lowbyte) NOTE: currently invalid here -> see *.vec file instead !");
-	-- vector (sxr) count, higbyte
+	write_listing(item => source_code, src_code => "step count (lowbyte) NOTE: currently invalid here -> see *.vec file instead !");
+	-- step count, higbyte
 	write_listing(item => location, loc => size_of_vector_file + listing_offset);
    	write_byte_in_vector_file(16#FF#); 
 	write_listing(item => object_code, obj_code => 16#FF#);
-	write_listing(item => source_code, src_code => "vector/sxr count (highbyte) NOTE: currently invalid here -> see *.vec file instead !");
+	write_listing(item => source_code, src_code => "step count (highbyte) NOTE: currently invalid here -> see *.vec file instead !");
 
 	-- listing_address will be used further-on for writing locations in listing file
 	listing_address := size_of_vector_file + listing_offset;
@@ -2764,12 +2766,12 @@ begin
  	write_byte_in_vector_file(mark_end_of_test);
 	write_listing(item => object_code, obj_code => mark_end_of_test);
 	write_listing(item => source_code, src_code => "end of test");
-	listing_address := listing_address + 3; -- prepare next location to be written in listing
+--	listing_address := listing_address + 3; -- prepare next location to be written in listing
 
- 	write_byte_in_vector_file(16#02#);	-- 02h indicates virtual begin of chain 2 data -- CS: ?
-	write_listing(item => location, loc => listing_address);
-	write_listing(item => object_code, obj_code => 16#02#);
-	write_listing(item => source_code, src_code => "dummy");
+--  write_byte_in_vector_file(16#02#);	-- 02h indicates virtual begin of chain 2 data -- CS: ?
+-- 	write_listing(item => location, loc => listing_address);
+-- 	write_listing(item => object_code, obj_code => 16#02#);
+-- 	write_listing(item => source_code, src_code => "dummy");
 	
 	-- close list file
 	close(compile_listing);
@@ -2785,17 +2787,22 @@ begin
 	prog_position	:= 2020;
 	--put_line("size of vec file:" & natural'image(size_of_vector_file));
 	--put_line("size of vec head:" & natural'image(size_of_vector_header));
+
+	-- the total number of test steps (inc. low level commands) is test_step_id divided by scanpath_ct.
+	-- why ?: test_step_id is incremented on every test step per scanpath. since all scanpaths have equal test step counts
+	-- it must be divided by scanpath_ct to obtain the real number of steps.
+	put_line("test steps total:" & positive'image(test_step_id/summary.scanpath_ct) & " (incl. low level commands)");
  	while not seq_io_unsigned_byte.end_of_file(vector_file) loop
 
 		-- read byte from vector file
  		seq_io_unsigned_byte.read(vector_file,ubyte_scratch);
 
-		-- as said in NOTE 1, the bytes 10 and 11 of the vector file are now replaced by the vector count
+		-- as said in NOTE 1, the bytes 10 and 11 of the vector file are now replaced by the step count
 		-- CAUTION: THIS IS A HACK AND NEEDS PROPER REWORK !!! -- CS
 		-- ct_tmp (starts with 1) serves as pointer to the byte position to be modified
 		case ct_tmp is
-			when 10 => ubyte_scratch := unsigned_8(vector_id); -- write lowbyte of vector count
-			when 11 => ubyte_scratch := unsigned_8(shift_right(unsigned_16(vector_id),8)); -- write highbyte of vector count
+			when 10 => ubyte_scratch := unsigned_8(test_step_id/summary.scanpath_ct); -- write lowbyte of step count
+			when 11 => ubyte_scratch := unsigned_8(shift_right(unsigned_16(test_step_id/summary.scanpath_ct),8)); -- write highbyte of step count
 			when others => null; -- other bytes untouched
 		end case;
 		ct_tmp := ct_tmp + 1;
