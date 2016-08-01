@@ -1677,32 +1677,48 @@ procedure compseq is
 		scratch_float		: float;
 
 		function frequency_float_to_unsigned_8 (frequency_float : type_tck_frequency) return unsigned_8 is
+			-- frequency_float is given in unit MHz
 			frequency_unsigned_8: unsigned_8 := 16#52#;
-			scan_clock_timer_float	: float;
+			scan_clock_timer_float		: float;
 			scan_clock_timer_positive	: positive;
+			exponent_max				: positive := 8; -- 10^8
+			subtype type_low_nibble is natural range 0..exponent_max;
+			subtype type_high_nibble is positive range 1..15;
+			low_nibble	: type_low_nibble;
+			high_nibble	: type_high_nibble;
+			frequency_real : float;
 		begin
-			--put(standard_output,"frequency float in: " & type_tck_frequency'image(frequency_float)); new_line(standard_output);
+			put_line(standard_output,"calculating available tck frequency...");
+			-- display frequency requested by user 
+			put(standard_output," - requested:" & type_tck_frequency'image(frequency_float) & " MHz"); new_line(standard_output);
+
+			-- calculate scan_clock_timer (N) required for half of a tck cycle (duty cycle of 50% applies)
+			-- since the result is a float number, it must be converted to a positive number
 			scan_clock_timer_float := float(executor_master_clock) / (2.0 * float(frequency_float));
-			--n := float(frequency_float);
-			put(standard_output,"scan clock timer float: " & float'image(scan_clock_timer_float)); new_line(standard_output);
-
+			--put(standard_output,"scan clock timer float: " & float'image(scan_clock_timer_float)); new_line(standard_output);
 			scan_clock_timer_positive := positive(scan_clock_timer_float);
-			put(standard_output,"scan clock timer n: " & positive'image(scan_clock_timer_positive)); new_line(standard_output);
+			--put(standard_output,"scan clock timer n: " & positive'image(scan_clock_timer_positive)); new_line(standard_output);
 
-			-- CS: depends on executor firmware
-			-- if frequency given is zero (or option missing entirely) the hex value defaults (see m1_internal.ads)
--- 			case so.frequency is -- CS: replace hex numbers by names in m1_firmware.ads
--- 				when 0.1 => so.frequency_prescaler_unsigned_8 := 16#15#;
--- 				when 1.0 => so.frequency_prescaler_unsigned_8 := 16#FE#;
--- 				when 2.0 => so.frequency_prescaler_unsigned_8 := 16#FD#;
--- 				when 4.0 => so.frequency_prescaler_unsigned_8 := 16#F8#;
--- 				when others => 
--- 					-- CS: the lowest frequency depends on executor firmware
--- 					put_line("WARNING: frequency option invalid or missing. Falling back to safest frequency of " & type_tck_frequency'image(tck_frequency_default) & " Mhz ...");
--- 			end case;
-			--so.frequency_prescaler_unsigned_8 := 16#52#;
+			-- calculate frequency_unsigned_8 (low nibble and high nibble separately)
+			-- then add them to obtain frequency_unsigned_8 (which will be written into the vector/list file)
+			for e in 1..exponent_max loop
+				--put(standard_output,"exponent: " & positive'image(e)); new_line(standard_output);
+				if scan_clock_timer_positive < 10**e then
+					low_nibble	:= e-1;
+					high_nibble	:= type_high_nibble(scan_clock_timer_positive/(10**(e-1))); -- CS: fix rounding error when number ends in 5
+					frequency_unsigned_8 := unsigned_8(high_nibble*16 + low_nibble);
+					exit;
+				end if;
+			end loop;
 
-			-- CS:
+			--put(standard_output,"high nibble: " & type_high_nibble'image(high_nibble)); new_line(standard_output);
+			--put(standard_output," low nibble: " & type_low_nibble'image(low_nibble)); new_line(standard_output);
+			-- calculate and display real frequency availabe close to the requested
+			frequency_real := float(executor_master_clock) / float(2 * high_nibble * 10**low_nibble);
+			put(standard_output," - selected: " & float'image(frequency_real) & " MHz"); new_line(standard_output);
+
+			-- CS: if frequency given is zero (or option missing entirely) the hex value defaults (see m1_internal.ads)
+			-- put_line("WARNING: frequency option invalid or missing. Falling back to safest frequency of " & type_tck_frequency'image(tck_frequency_default) & " Mhz ...");
 			
 			return frequency_unsigned_8;
 		end frequency_float_to_unsigned_8;
