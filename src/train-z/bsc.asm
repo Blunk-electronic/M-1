@@ -47,7 +47,7 @@ ref_cmp2	equ	05Ah
 vcc_io1		equ	05Ch
 vcc_io2		equ	05Eh
 
-tap_in12	equ	088h	;TAP inputs 1/2 fail, tdi, exp, mask
+fail_sp		equ	088h	;failed scanport, bit set for every failed port
 ex_state	equ	089h	;exectuor state
 lc_state	equ 0A5h	;low level command processor state
 i2_state	equ	0A6h	;i2c master state
@@ -782,9 +782,9 @@ l_4a:	ld		HL,dbg			;see comments at label l_0 and following
 		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
-		ld		HL,tap_in
+		ld		HL,failed_sp
 		call	TX_STR
-		in		A,(tap_in12)
+		in		A,(fail_sp)
 		call	APP_ACCU	;append value to STD_OUT
 		call	TX_STD_OUT	;TX input value to host
 		ld		HL,NEW_LINE	;transmit new line
@@ -3287,8 +3287,8 @@ bits_pr2:
 	DEFM	'BP2: '
 	DEFB	0h
 
-tap_in:
-	DEFM	'TIN: '
+failed_sp:
+	DEFM	'FLD: '
 	DEFB	0h
 
 step_id:
