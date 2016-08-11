@@ -109,9 +109,13 @@ procedure compseq is
 	scanpath_being_compiled	: positive;	-- points to the scanpath being compiled
 	sequence_being_compiled	: positive;	-- points to the sequence being compiled
 
-	vector_count_max		: constant positive := (2**16)-1;
-	subtype type_vector_id is positive range 1..vector_count_max;
-	vector_id				: type_vector_id; -- as in "sdr id 456" or "sir id 5"
+-- 	vector_count_max		: constant positive := (2**16)-1;
+-- 	subtype type_vector_id is positive range 1..vector_count_max;
+-- NOTE: moved to m1_internal.ads
+
+ 	vector_id				: type_vector_id; -- as in "sdr id 456" or "sir id 5"
+
+
 	ct_tmp					: positive := 1; -- used to identify position of bytes to be replaced by step count
 
 	-- test_step_id is incremented on every test step (incl. low level commands) per scanpath
@@ -119,9 +123,10 @@ procedure compseq is
 
 	ubyte_scratch			: unsigned_8; -- used for appending vector_file to vector_file_head
 
-	vector_length_max		: constant positive := (2**16)-1; -- CS: machine dependend and limited here
-										-- to a reasonable value
-	subtype type_vector_length is positive range 1..vector_length_max;
+-- 	vector_length_max		: constant positive := (2**16)-1; -- CS: machine dependend and limited here
+-- 										-- to a reasonable value
+-- 	subtype type_vector_length is positive range 1..vector_length_max;
+-- NOTE: moved to m1_internal.ads
 
 	-- GLOBAL ARRAY THAT DESCRIBES ALL PHYSICAL AVAILABLE SCANPATHS
 	-- non-active scanpaths have an irl_total of zero
