@@ -3313,8 +3313,8 @@ shst2:
 
 
 NEW_LINE:
-	DEFB	0Dh	;next line
-	DEFB	0Ah	;cursor home
+	;DEFB	0Dh	;next line ; CR
+	DEFB	0Ah	;cursor home ; LF
 	DEFB	0
 			
 BS_SP_BS:
