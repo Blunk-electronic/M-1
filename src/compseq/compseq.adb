@@ -2564,7 +2564,8 @@ procedure compseq is
 				prog_position	:= 240;
  				create( 
 					file => scanport(sp).register_file,
-					name => (universal_string_type.to_string(test_name) & "/members_" & trim(natural'image(sp), side => left) & ".reg")
+					--name => (universal_string_type.to_string(test_name) & "/members_" & trim(natural'image(sp), side => left) & ".reg")
+					name => (universal_string_type.to_string(test_name) & "/" & register_file_prefix & trim(natural'image(sp), side => left) & register_file_suffix)
 					);
  
 				-- search for bic in the scanpath being processed
