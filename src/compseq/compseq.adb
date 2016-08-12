@@ -165,7 +165,8 @@ procedure compseq is
 		record
 			next		: ptr_type_test_step_pre;
 			step_id		: positive; -- CS: use dedicated type
-			scanpath_id	: type_scanpath_id;
+			--scanpath_id	: type_scanpath_id;
+			scanpath_id	: type_scanport_id;
 			sequence_id	: positive; -- CS: use dedicated type
 			case step_class is
 				when class_a => -- class a is an sxr
