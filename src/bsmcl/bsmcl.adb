@@ -1622,11 +1622,11 @@ begin
 					when pass =>
 						prog_position := "RU310";
 						new_line;
-						put_line("Test '"& test_name &"' PASSED !");
+						put_line("Test/Step '"& test_name &"' PASSED !");
 					when fail =>
 						prog_position := "RU320";
 						new_line;
-						put_line("Test '"& test_name &"' FAILED !");
+						put_line("Test/Step '"& test_name &"' FAILED !");
 						set_exit_status(failure);
 					when not_loaded =>
 						prog_position := "RU330";
@@ -1637,7 +1637,7 @@ begin
 						prog_position := "RU340";
 						new_line;
 						put_line("ERROR: Internal malfunction !");
-						put_line("Test '"& test_name &"' FAILED !");
+						put_line("Test/Step '"& test_name &"' FAILED !");
 						set_exit_status(failure);
 				end case;
 
