@@ -2968,6 +2968,11 @@ begin
 	prog_position	:= 140;
 	close(sequence_file);
 
+	prog_position	:= 150;
+	write_diagnosis_netlist(
+		data_base	=>	universal_string_type.to_string(data_base),
+		test_name	=>	universal_string_type.to_string(test_name)
+		);
 
 	exception
 		when event: others =>
