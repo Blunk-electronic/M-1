@@ -1,10 +1,9 @@
 Section scanpath_configuration
-
 -- version 002
 
  SubSection options
   on_fail power_down -- default is power_down. NOTE: similar commands: hstrst (hard+soft scanpath reset)
-  frequency 1 -- unit is Mhz, use integers 1,2,3,4 only ! Comment this option out for lowest frequency of 33kHz !
+  frequency 1 -- unit is Mhz, use numbers like 0.1, 1, 4.5
   trailer_ir 01010010 -- 8 bit binary value -- equals 52h
   trailer_dr 01010010
   voltage_out_port_1  1.8  -- min value +1.8V, max value +3.3V

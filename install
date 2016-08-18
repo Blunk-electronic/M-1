@@ -1,8 +1,8 @@
 #! /bin/sh
 version=005
 
-#to do:
-# check for kermit
+#CS: check for ada compiler, gcc, make, ...
+#CS: check for kermit
 
 source_script_dir=scripts
 dest_script_dir=$HOME/bin
@@ -52,6 +52,7 @@ procedure_make()
 	cp -R conf/.M-1 $HOME
 	[ $? -ne 0 ] && exit 1
 	}
+#CS: ask user if configuration directory should be updated.
 
 echo "copying script files in" $dest_script_dir "..."
 echo "WARNING ! Already existing script files residing there will be overwritten !"
