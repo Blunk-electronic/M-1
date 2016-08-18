@@ -774,7 +774,9 @@ procedure chkpsn is
 											);
 									end if;
 
-									-- if non-shared control cell, just turn it off
+									-- if non-shared control cell, just turn it off:
+									--  write disable value in cell list
+									--  write drive value 0 of useless output cell in cell list
 									if not d.pin(p).cell_info.control_cell_shared then
 										prog_position := "DD1300";
 										case class is
@@ -794,6 +796,21 @@ procedure chkpsn is
 													locked_to_enable_state_given	=> false, -- the pin is to be disabled
 													disable_value_given				=> d.pin(p).cell_info.disable_value
 													);
+
+												-- add (unused) output cell to list
+												prog_position := "DD1410";
+												add_to_locked_output_cells_in_class_DH_DL_nets(
+													list				=> ptr_cell_list_locked_output_cells_in_class_DH_DL_nets,
+													class_given			=> class,
+													net_given			=> universal_string_type.to_bounded_string(name),
+													device_given		=> d.pin(p).device_name,
+													pin_given			=> d.pin(p).device_pin_name,
+													cell_given			=> d.pin(p).cell_info.output_cell_id,
+													drive_value_given	=> '0' --drive_value_derived_from_class(class) 
+														-- the drive value is meaningless since the pin is disabled
+													);
+
+
 											when PU | PD =>
 												-- add control cell to list
 												prog_position := "DD1500";
@@ -841,6 +858,21 @@ procedure chkpsn is
 														locked_to_enable_state_given	=> false, -- the pin is to be disabled
 														disable_value_given				=> d.pin(p).cell_info.disable_value
 														);
+
+													-- add (unused) output cell to list
+													prog_position := "DD2110";
+													add_to_locked_output_cells_in_class_DH_DL_nets(
+														list				=> ptr_cell_list_locked_output_cells_in_class_DH_DL_nets,
+														class_given			=> class,
+														net_given			=> universal_string_type.to_bounded_string(name),
+														device_given		=> d.pin(p).device_name,
+														pin_given			=> d.pin(p).device_pin_name,
+														cell_given			=> d.pin(p).cell_info.output_cell_id,
+														drive_value_given	=> '0' --drive_value_derived_from_class(class) 
+															-- the drive value is meaningless since the pin is disabled
+														);
+
+
 												when PU | PD =>
 													-- add control cell to list
 													prog_position := "DD2200";
@@ -1134,6 +1166,7 @@ procedure chkpsn is
 				end loop;
 
 				-- FIND SUITABLE DRIVER PIN BEGIN:
+				-- It will be searched for only one driver !
 				prog_position := "UC2500";
 				case level is
 					when primary => -- search driver in primary nets only
