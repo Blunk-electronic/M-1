@@ -29,28 +29,9 @@
 --
 --   history of changes:
 --
+--   todo:
+--   - when generating a test, test if test_init_custom.txt is available. if not ask whether to use test_init_general.txt
 
-
--- V1.3
--- raise constraint error when subprocess failed to abort bsmcl
--- RAM dump supported
--- V1.4 
---	- various cad formats supported (altium, orcad, zuken)
---	- mkoptions requires mknets executed first -> fixed	
--- V1.5
---  - minor text output changes
-
--- V016
--- call to verilog model maker added
-
--- V020
--- kermit calls optimized. shell script bsm now obsolete
-
--- V021
--- opt file and net routing file bear the same name as the udb by default
-
--- V023
--- fixed path to cad import scripts and binaries
 
 with Ada.Text_IO;		use Ada.Text_IO;
 --with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
