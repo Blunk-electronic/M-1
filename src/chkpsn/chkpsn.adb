@@ -2027,12 +2027,18 @@ begin
 	-- options net list ready. pointer options_net_ptr points to list !
 	-- data base net list ready, pointer net_ptr points to list !
 
+-- CS: It's too confusing outputting statistics at this stage. So this block is commented.
 -- CS: compare net numbers ?
 --	put_line("comparing net count");
 --	if total_options_net_count < udb_summary.net_count_statistics.total then
 --		put_line("WARNING: Number of nets found in options file differs from number those in data base !");
-		put_line("options net count   : " & natural'image(total_options_net_count));
-		put_line("data base net count : " & natural'image(udb_summary.net_count_statistics.bs_testable));
+--		put_line("options net count   : " & natural'image(total_options_net_count));
+
+		--put_line("data base net count : " & natural'image(udb_summary.net_count_statistics.bs_testable));
+		-- it makes not sense to output number of bs_testable, because chkpsn runs on a newly generated udb (made by mknets).
+		-- a brand new udb has all nets in class NA, hence there are no bs_testable nets (if judged by net classes)
+
+--		put_line("data base net count : " & natural'image(udb_summary.net_count_statistics.total));
 --	end if;
 
 	-- extract from current udb the sections "scanpath_configuration" and "registers" in preliminary data base

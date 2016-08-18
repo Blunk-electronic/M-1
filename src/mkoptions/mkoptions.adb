@@ -1389,7 +1389,9 @@ begin
 		--put ("-- bridges         :" & Natural'Image(bridge_ct)); new_line;	
 
 		net_ct := count_nets;
-		put ("-- net count total  :" & Natural'Image(net_ct)); new_line;
+		put ("-- net count total  :" & Natural'Image(net_ct) & " (incl. non-bs nets)"); new_line;
+		put ("--                    NOTE: Non-bs nets are commented and shown as supplementary information only."); new_line; 
+		put ("--                          Don't waste your time editing their net classes !"); new_line;
 
 		new_line(standard_output);		
 		if make_netlist

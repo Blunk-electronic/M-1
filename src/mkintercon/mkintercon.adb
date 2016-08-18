@@ -63,7 +63,7 @@ with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
 
 procedure mkintercon is
 
-	Version			: String (1..3) := "035";
+	Version			: String (1..3) := "036";
 	test_name  		: Unbounded_string;	
 	data_base  		: Unbounded_string;
 
@@ -1521,9 +1521,9 @@ procedure mkintercon is
 				close(atg_expect_list);
 
 				vector_ct_atg := write_sxr_atg(vector_ct_atg,0); -- 0 -> sdr , 1 -> sir
-				new_line;
-				put (" trst  -- comment out this line if necessary "); new_line; new_line;
-				put ("EndSection"); new_line;
+-- 				new_line;
+-- 				put (" trst  -- comment out this line if necessary "); new_line; new_line;
+-- 				put ("EndSection"); new_line;
 			end write_dynamic_drive_and_expect_values;
 
 
@@ -1557,19 +1557,26 @@ procedure mkintercon is
 						put (" -- generating test pattern for " & Get_Field(Line,4) & " dynamic nets ..."); new_line;
 					end if;
 				end loop;
-					
+
+
 			-- round up dynamic net count to next member in sequence 1,2,4,18,16,32,64, ...
 			while result < dyn_ct
 				loop
-				exponent := exponent + 1;
-				result := 2 ** exponent;
+					exponent := exponent + 1;
+					result := 2 ** exponent;
 				end loop;
 			dyn_ct := result;
-			step_ct:=Natural(Float'Ceiling( log (base => 2.0, X => float(dyn_ct) ) ) );
 
-			--build_interconnect_matrix (dyn_ct,step_ct,0);
-			write_dynamic_drive_and_expect_values ( count_members, m , build_interconnect_matrix (dyn_ct,step_ct,0) , vector_ct);
+			if dyn_ct > 0 then
+				step_ct:=Natural(Float'Ceiling( log (base => 2.0, X => float(dyn_ct) ) ) );
 
+				--build_interconnect_matrix (dyn_ct,step_ct,0);
+				write_dynamic_drive_and_expect_values ( count_members, m , build_interconnect_matrix (dyn_ct,step_ct,0) , vector_ct);
+			end if;
+
+			new_line;
+			put (" trst  -- comment out this line if necessary "); new_line; new_line;
+			put ("EndSection"); new_line;
 
 
 			Close(InputFile); Close(OutputFile);
