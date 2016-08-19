@@ -254,7 +254,7 @@ procedure chkpsn is
 					-- prepares writing a cell list entry like:
 					-- class NA primary_net OSC_OUT device IC300 pin 6 control_cell 93 locked_to disable_value 0
 					-- class NA secondary_net OSC_OUT device IC300 pin 6 control_cell 93 locked_to disable_value 0
-					list				: in out type_cell_list_locked_control_cells_in_class_EH_EL_NA_nets_ptr;
+					list				: in out type_ptr_cell_list_static_control_cells_class_EX_NA;
 					class_given			: type_net_class;
 					level_given			: type_net_level;
 					net_given			: universal_string_type.bounded_string;
@@ -264,7 +264,7 @@ procedure chkpsn is
 					disable_value_given	: type_bit_char_class_0
 					) is
 				begin
-					list := new type_cell_list_locked_control_cells_in_class_EH_EL_NA_nets'(
+					list := new type_cell_list_static_control_cells_class_EX_NA'(
 						next 			=> list,
 						class			=> class_given,
 						level			=> level_given,
@@ -281,7 +281,7 @@ procedure chkpsn is
 					-- class NR primary_net LED0 device IC303 pin 10 control_cell 16 locked_to enable_value 0
 					-- class NR primary_net LED1 device IC303 pin 9 control_cell 16 locked_to enable_value 0
 					-- class NR secondary_net LED7_R device IC301 pin 13 control_cell 75 locked_to disable_value 0
-					list				: in out type_cell_list_locked_control_cells_in_class_DH_DL_NR_nets_ptr;
+					list				: in out type_ptr_cell_list_static_control_cells_class_DX_NR;
 					class_given			: type_net_class;
 					level_given			: type_net_level;
 					net_given			: universal_string_type.bounded_string;
@@ -295,7 +295,7 @@ procedure chkpsn is
 				begin
 					case locked_to_enable_state_given is
 						when true =>
-							list := new type_cell_list_locked_control_cells_in_class_DH_DL_NR_nets'(
+							list := new type_cell_list_static_control_cells_class_DX_NR'(
 								next 			=> list,
 								class			=> class_given,
 								level			=> level_given,
@@ -307,7 +307,7 @@ procedure chkpsn is
 								enable_value			=> enable_value_given
 								);
 						when false =>
-							list := new type_cell_list_locked_control_cells_in_class_DH_DL_NR_nets'(
+							list := new type_cell_list_static_control_cells_class_DX_NR'(
 								next 			=> list,
 								class			=> class_given,
 								level			=> level_given,
@@ -325,53 +325,33 @@ procedure chkpsn is
 					-- prepares writing a cell list entry like:
 					-- class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
 					-- class PD secondary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
-					list				: in out type_cell_list_locked_control_cells_in_class_PU_PD_nets_ptr;
+					list				: in out type_ptr_cell_list_static_control_cells_class_PX;
 					class_given			: type_net_class;
 					level_given			: type_net_level;
 					net_given			: universal_string_type.bounded_string;
 					device_given		: universal_string_type.bounded_string;
 					pin_given			: universal_string_type.bounded_string;
 					cell_given			: natural;
-					--locked_to_enable_state_given	: boolean;
-					--enable_value_given				: type_bit_char_class_0 := '0';
-					--disable_value_given				: type_bit_char_class_0 := '0'
 					disable_value_given				: type_bit_char_class_0
 					) is
 				begin
-					--case locked_to_enable_state_given is
-					--	when true =>
--- 							list := new type_cell_list_locked_control_cells_in_class_PU_PD_nets'(
--- 								next 			=> list,
--- 								class			=> class_given,
--- 								level			=> level_given,
--- 								net				=> net_given,
--- 								device			=> device_given,
--- 								pin				=> pin_given,
--- 								cell			=> cell_given,
--- 								locked_to_enable_state	=> true,
--- 								enable_value			=> enable_value_given
--- 								);
--- 						when false =>
-							list := new type_cell_list_locked_control_cells_in_class_PU_PD_nets'(
-								next 			=> list,
-								class			=> class_given,
-								level			=> level_given,
-								net				=> net_given,
-								device			=> device_given,
-								pin				=> pin_given,
-								cell			=> cell_given,
---								locked_to_enable_state	=> false,
-								disable_value			=> disable_value_given
-								);
---					end case;
+					list := new type_cell_list_static_control_cells_class_PX'(
+						next 			=> list,
+						class			=> class_given,
+						level			=> level_given,
+						net				=> net_given,
+						device			=> device_given,
+						pin				=> pin_given,
+						cell			=> cell_given,
+						disable_value	=> disable_value_given
+						);
 				end add_to_locked_control_cells_in_class_PU_PD_nets;
 
 				procedure add_to_locked_output_cells_in_class_PU_PD_nets(
 					-- prepares writing a cell list entry like:
 					-- class PU primary_net /SYS_RESET device IC300 pin 39 output_cell 37 locked_to drive_value 0
-					list				: in out type_cell_list_locked_output_cells_in_class_PU_PD_nets_ptr;
+					list				: in out type_ptr_cell_list_static_output_cells_class_PX;
 					class_given			: type_net_class;
-					--level_given			: type_net_level := primary; -- because this is always a primary net
 					net_given			: universal_string_type.bounded_string;
 					device_given		: universal_string_type.bounded_string;
 					pin_given			: universal_string_type.bounded_string;
@@ -379,10 +359,9 @@ procedure chkpsn is
 					drive_value_given	: type_bit_char_class_0
 					) is
 				begin
-					list := new type_cell_list_locked_output_cells_in_class_PU_PD_nets'(
+					list := new type_cell_list_static_output_cells_class_PX'(
 						next 			=> list,
 						class			=> class_given,
-						--level			=> level_given,
 						net				=> net_given,
 						device			=> device_given,
 						pin				=> pin_given,
@@ -395,7 +374,7 @@ procedure chkpsn is
 					-- prepares writing a cell list entry like:
 					-- class DL primary_net /CPU_MREQ device IC300 pin 28 output_cell 13 locked_to drive_value 0
 					-- class DH primary_net /CPU_RD device IC300 pin 27 output_cell 10 locked_to drive_value 1
-					list				: in out type_cell_list_locked_output_cells_in_class_DH_DL_nets_ptr;
+					list				: in out type_ptr_cell_list_static_output_cells_class_DX_NR;
 					class_given			: type_net_class;
 					--level_given			: type_net_level := primary; -- because this is always a primary net
 					net_given			: universal_string_type.bounded_string;
@@ -405,7 +384,7 @@ procedure chkpsn is
 					drive_value_given	: type_bit_char_class_0
 					) is
 				begin
-					list := new type_cell_list_locked_output_cells_in_class_DH_DL_nets'(
+					list := new type_cell_list_static_output_cells_class_DX_NR'(
 						next 			=> list,
 						class			=> class_given,
 						--level			=> level_given,
@@ -421,7 +400,7 @@ procedure chkpsn is
 					-- prepares writing a cell list entry like:
 					-- class DL primary_net /CPU_MREQ device IC300 pin 28 input_cell 14 expect_value 0
 					-- class DL secondary_net /CPU_MREQ device IC300 pin 28 input_cell 14 expect_value 0
-					list				: in out type_cell_list_static_expect_ptr;
+					list				: in out type_ptr_cell_list_static_expect;
 					class_given			: type_net_class;
 					level_given			: type_net_level;
 					net_given			: universal_string_type.bounded_string;
@@ -432,16 +411,6 @@ procedure chkpsn is
 					primary_net_is_given: universal_string_type.bounded_string
 					) is
 				begin
--- 					list := new type_cell_list_static_expect'(
--- 						next 			=> list,
--- 						class			=> class_given,
--- 						level			=> level_given,
--- 						net				=> net_given,
--- 						device			=> device_given,
--- 						pin				=> pin_given,
--- 						cell			=> cell_given,
--- 						expect_value	=> expect_value_given
--- 						);
 					case level is
 						when primary =>
 							list := new type_cell_list_static_expect'(
@@ -474,7 +443,7 @@ procedure chkpsn is
 					-- prepares writing a cell list entry like:
 					-- class PU secondary_net CT_D3 device IC303 pin 19 input_cell 11 primary_net_is D3
 					-- class PU primary_net /CPU_WR device IC300 pin 26 input_cell 8
- 					list				: in out type_cell_list_atg_expect_ptr;
+ 					list				: in out type_ptr_cell_list_atg_expect;
 					class_given			: type_net_class;
 					level_given			: type_net_level;
 					net_given			: universal_string_type.bounded_string;
@@ -514,9 +483,8 @@ procedure chkpsn is
 					-- class NR primary_net LED7 device IC303 pin 2 output_cell 7
 					-- class PU primary_net /CPU_WR device IC300 pin 26 control_cell 6 inverted yes
 					-- class PD primary_net /DRV_EN device IC301 pin 27 control_cell 9 inverted no
-					list				: in out type_cell_list_atg_drive_ptr;
+					list				: in out type_ptr_cell_list_atg_drive;
 					class_given			: type_net_class;
-					--level_given			: type_net_level := primary; -- because this is always a primary net
 					net_given			: universal_string_type.bounded_string;
 					device_given		: universal_string_type.bounded_string;
 					pin_given			: universal_string_type.bounded_string;
@@ -562,8 +530,7 @@ procedure chkpsn is
 					-- prepares writing a cell list entry like:
 					-- class NA primary_net OSC_OUT device IC301 pin 6 input_cell 95
 					-- class NA secondary_net LED0_R device IC301 pin 2 input_cell 107 primary_net_is LED0
-					list				: in out type_cell_list_input_cells_in_class_NA_nets_ptr;
-					--class_given			: type_net_class := NA; -- because this is always a class NA net
+					list				: in out type_ptr_cell_list_input_cells_class_NA;
 					level_given			: type_net_level;
 					net_given			: universal_string_type.bounded_string;
 					device_given		: universal_string_type.bounded_string;
@@ -574,9 +541,8 @@ procedure chkpsn is
 				begin
 					case level_given is
 						when primary =>
-							list := new type_cell_list_input_cells_in_class_NA_nets'(
+							list := new type_cell_list_input_cells_class_NA'(
 								next 			=> list,
-								--class			=> NA,
 								level			=> primary,
 								net				=> net_given,
 								device			=> device_given,
@@ -584,9 +550,8 @@ procedure chkpsn is
 								cell			=> cell_given
 								);
 						when secondary =>
-							list := new type_cell_list_input_cells_in_class_NA_nets'(
+							list := new type_cell_list_input_cells_class_NA'(
 								next 			=> list,
-								--class			=> NA,
 								level			=> secondary,
 								net				=> net_given,
 								device			=> device_given,
@@ -605,8 +570,8 @@ procedure chkpsn is
 					device		: universal_string_type.bounded_string;
 					cell_id		: natural) 
 					return boolean is
-					a : type_cell_list_locked_control_cells_in_class_DH_DL_NR_nets_ptr	:= ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets;
-					b : type_cell_list_atg_drive_ptr									:= ptr_cell_list_atg_drive;
+					a : type_ptr_cell_list_static_control_cells_class_DX_NR	:= ptr_cell_list_static_control_cells_class_DX_NR;
+					b : type_ptr_cell_list_atg_drive						:= ptr_cell_list_atg_drive;
 
 					procedure print_error_on_shared_control_cell_conflict is
 					begin
@@ -664,10 +629,10 @@ procedure chkpsn is
 					cell_id		: natural) 
 					return boolean is
 					--sj	: type_shared_control_cell_journal_ptr := shared_control_cell_journal_ptr;
-					a : type_cell_list_locked_control_cells_in_class_EH_EL_NA_nets_ptr	:= ptr_cell_list_locked_control_cells_in_class_EH_EL_NA_nets;
-					b : type_cell_list_locked_control_cells_in_class_DH_DL_NR_nets_ptr	:= ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets;
-					c : type_cell_list_locked_control_cells_in_class_PU_PD_nets_ptr 	:= ptr_cell_list_locked_control_cells_in_class_PU_PD_nets;
-					d : type_cell_list_atg_drive_ptr									:= ptr_cell_list_atg_drive;
+					a : type_ptr_cell_list_static_control_cells_class_EX_NA	:= ptr_cell_list_static_control_cells_class_EX_NA;
+					b : type_ptr_cell_list_static_control_cells_class_DX_NR	:= ptr_cell_list_static_control_cells_class_DX_NR;
+					c : type_ptr_cell_list_static_control_cells_class_PX 	:= ptr_cell_list_static_control_cells_class_PX;
+					d : type_ptr_cell_list_atg_drive						:= ptr_cell_list_atg_drive;
 
 					procedure print_error_on_shared_control_cell_conflict is
 					begin
@@ -786,7 +751,7 @@ procedure chkpsn is
 												add_to_locked_control_cells_in_class_DH_DL_NR_nets(
 													-- prepares writing a cell list entry like:
 													-- class NR secondary_net LED7_R device IC301 pin 13 control_cell 75 locked_to disable_value 0
-													list				=> ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets,
+													list				=> ptr_cell_list_static_control_cells_class_DX_NR,
 													class_given			=> class,
 													level_given			=> level,
 													net_given			=> universal_string_type.to_bounded_string(name),
@@ -800,7 +765,7 @@ procedure chkpsn is
 												-- add (unused) output cell to list
 												prog_position := "DD1410";
 												add_to_locked_output_cells_in_class_DH_DL_nets(
-													list				=> ptr_cell_list_locked_output_cells_in_class_DH_DL_nets,
+													list				=> ptr_cell_list_static_output_cells_class_DX_NR,
 													class_given			=> class,
 													net_given			=> universal_string_type.to_bounded_string(name),
 													device_given		=> d.pin(p).device_name,
@@ -818,14 +783,13 @@ procedure chkpsn is
 													-- prepares writing a cell list entry like:
 													-- class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
 													-- class PD secondary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
-													list				=> ptr_cell_list_locked_control_cells_in_class_PU_PD_nets,
+													list				=> ptr_cell_list_static_control_cells_class_PX,
 													class_given			=> class,
 													level_given			=> level,
 													net_given			=> universal_string_type.to_bounded_string(name),
 													device_given		=> d.pin(p).device_name,
 													pin_given			=> d.pin(p).device_pin_name,
 													cell_given			=> d.pin(p).cell_info.control_cell_id,
-													--locked_to_enable_state_given	=> false, -- the pin is to be disabled
 													disable_value_given				=> d.pin(p).cell_info.disable_value
 													);
 											when others => null;
@@ -848,7 +812,7 @@ procedure chkpsn is
 													add_to_locked_control_cells_in_class_DH_DL_NR_nets(
 														-- prepares writing a cell list entry like:
 														-- class NR secondary_net LED7_R device IC301 pin 13 control_cell 75 locked_to disable_value 0
-														list				=> ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets,
+														list				=> ptr_cell_list_static_control_cells_class_DX_NR,
 														class_given			=> class,
 														level_given			=> level,
 														net_given			=> universal_string_type.to_bounded_string(name),
@@ -862,7 +826,7 @@ procedure chkpsn is
 													-- add (unused) output cell to list
 													prog_position := "DD2110";
 													add_to_locked_output_cells_in_class_DH_DL_nets(
-														list				=> ptr_cell_list_locked_output_cells_in_class_DH_DL_nets,
+														list				=> ptr_cell_list_static_output_cells_class_DX_NR,
 														class_given			=> class,
 														net_given			=> universal_string_type.to_bounded_string(name),
 														device_given		=> d.pin(p).device_name,
@@ -880,15 +844,14 @@ procedure chkpsn is
 														-- prepares writing a cell list entry like:
 														-- class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
 														-- class PD secondary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
-														list				=> ptr_cell_list_locked_control_cells_in_class_PU_PD_nets,
+														list				=> ptr_cell_list_static_control_cells_class_PX,
 														class_given			=> class,
 														level_given			=> level,
 														net_given			=> universal_string_type.to_bounded_string(name),
 														device_given		=> d.pin(p).device_name,
 														pin_given			=> d.pin(p).device_pin_name,
 														cell_given			=> d.pin(p).cell_info.control_cell_id,
-														--locked_to_enable_state_given	=> false, -- the pin is to be disabled
-														disable_value_given				=> d.pin(p).cell_info.disable_value
+														disable_value_given	=> d.pin(p).cell_info.disable_value
 														);
 												when others => null;
 											end case;
@@ -967,8 +930,7 @@ procedure chkpsn is
 								when NA =>
 									prog_position := "UC1600";
 									add_to_input_cells_in_class_NA_nets(
-										list			=> ptr_cell_list_input_cells_in_class_NA_nets,
-										--class_given		=> class, -- no need, class NA set inside add_to_input_cells_in_class_NA_nets
+										list			=> ptr_cell_list_input_cells_class_NA,
 										level_given		=> level, 
 										-- if secondary net, the argument "primary_net_is" will be evaluated, otherwise ignored
 										primary_net_is_given	=> primary_net_is,
@@ -1005,7 +967,7 @@ procedure chkpsn is
 												-- all control cells of those nets must be in disable state (don't care about net level)
 												prog_position := "UC2210";
 												add_to_locked_control_cells_in_class_EH_EL_NA_nets(
-													list				=> ptr_cell_list_locked_control_cells_in_class_EH_EL_NA_nets,
+													list				=> ptr_cell_list_static_control_cells_class_EX_NA,
 													class_given			=> class,
 													level_given			=> level,
 													net_given			=> universal_string_type.to_bounded_string(name),
@@ -1021,7 +983,7 @@ procedure chkpsn is
 										-- all control cells of those nets must be in disable state
 										prog_position := "UC2220";
 										add_to_locked_control_cells_in_class_EH_EL_NA_nets(
-											list				=> ptr_cell_list_locked_control_cells_in_class_EH_EL_NA_nets,
+											list				=> ptr_cell_list_static_control_cells_class_EX_NA,
 											class_given			=> class,
 											level_given			=> level,
 											net_given			=> universal_string_type.to_bounded_string(name),
@@ -1076,7 +1038,7 @@ procedure chkpsn is
 
 													prog_position := "UC2340";
 													add_to_locked_control_cells_in_class_DH_DL_NR_nets(
-														list				=> ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets,
+														list				=> ptr_cell_list_static_control_cells_class_DX_NR,
 														class_given			=> class,
 														level_given			=> level,
 														net_given			=> universal_string_type.to_bounded_string(name),
@@ -1095,7 +1057,7 @@ procedure chkpsn is
 												-- all control cells of those nets must be in disable state
 												prog_position := "UC2350";
 												add_to_locked_control_cells_in_class_DH_DL_NR_nets(
-													list				=> ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets,
+													list				=> ptr_cell_list_static_control_cells_class_DX_NR,
 													class_given			=> class,
 													level_given			=> level,
 													net_given			=> universal_string_type.to_bounded_string(name),
@@ -1125,7 +1087,7 @@ procedure chkpsn is
 
 													prog_position := "UC2380";
 													add_to_locked_control_cells_in_class_PU_PD_nets(
-														list				=> ptr_cell_list_locked_control_cells_in_class_PU_PD_nets,
+														list				=> ptr_cell_list_static_control_cells_class_PX,
 														class_given			=> class,
 														level_given			=> level,
 														net_given			=> universal_string_type.to_bounded_string(name),
@@ -1144,7 +1106,7 @@ procedure chkpsn is
 												-- all control cells of those nets must be in disable state
 												prog_position := "UC2390";
 												add_to_locked_control_cells_in_class_PU_PD_nets(
-													list				=> ptr_cell_list_locked_control_cells_in_class_PU_PD_nets,
+													list				=> ptr_cell_list_static_control_cells_class_PX,
 													class_given			=> class,
 													level_given			=> level,
 													net_given			=> universal_string_type.to_bounded_string(name),
@@ -1186,7 +1148,7 @@ procedure chkpsn is
 												when DH | DL =>
 													prog_position := "UC2630";
 													add_to_locked_output_cells_in_class_DH_DL_nets(
-														list				=> ptr_cell_list_locked_output_cells_in_class_DH_DL_nets,
+														list				=> ptr_cell_list_static_output_cells_class_DX_NR,
 														class_given			=> class,
 														net_given			=> universal_string_type.to_bounded_string(name),
 														device_given		=> d.pin(p).device_name,
@@ -1254,7 +1216,7 @@ procedure chkpsn is
 															-- add control cell to list (no need to check cell lists, as this control cell is non-shared)
 															prog_position := "UC2830";
 															add_to_locked_control_cells_in_class_DH_DL_NR_nets(
-																list				=> ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets,
+																list				=> ptr_cell_list_static_control_cells_class_DX_NR,
 																class_given			=> class,
 																level_given			=> level,
 																net_given			=> universal_string_type.to_bounded_string(name),
@@ -1268,7 +1230,7 @@ procedure chkpsn is
 															-- add output cell to list
 															prog_position := "UC2840";
 															add_to_locked_output_cells_in_class_DH_DL_nets(
-																list				=> ptr_cell_list_locked_output_cells_in_class_DH_DL_nets,
+																list				=> ptr_cell_list_static_output_cells_class_DX_NR,
 																class_given			=> class,
 																net_given			=> universal_string_type.to_bounded_string(name),
 																device_given		=> d.pin(p).device_name,
@@ -1281,7 +1243,7 @@ procedure chkpsn is
 															-- add control cell to list
 															prog_position := "UC2850";
 															add_to_locked_control_cells_in_class_DH_DL_NR_nets(
-																list				=> ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets,
+																list				=> ptr_cell_list_static_control_cells_class_DX_NR,
 																class_given			=> class,
 																level_given			=> level,
 																net_given			=> universal_string_type.to_bounded_string(name),
@@ -1310,7 +1272,7 @@ procedure chkpsn is
 															-- NOTE: in pull-up/down nets, the output cell of the driver is static
 															prog_position := "UC2870";
 															add_to_locked_output_cells_in_class_PU_PD_nets(
-																list				=> ptr_cell_list_locked_output_cells_in_class_PU_PD_nets,
+																list				=> ptr_cell_list_static_output_cells_class_PX,
 																class_given			=> class,
 																net_given			=> universal_string_type.to_bounded_string(name),
 																device_given		=> d.pin(p).device_name,
@@ -1407,7 +1369,7 @@ procedure chkpsn is
 																	-- add control cell to list
 																	prog_position := "UC3230";
 																	add_to_locked_control_cells_in_class_DH_DL_NR_nets(
-																		list				=> ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets,
+																		list				=> ptr_cell_list_static_control_cells_class_DX_NR,
 																		class_given			=> class,
 																		level_given			=> level,
 																		net_given			=> universal_string_type.to_bounded_string(name),
@@ -1423,7 +1385,7 @@ procedure chkpsn is
 																			-- add output cell to list
 																			prog_position := "UC3240";
 																			add_to_locked_output_cells_in_class_DH_DL_nets(
-																				list				=> ptr_cell_list_locked_output_cells_in_class_DH_DL_nets,
+																				list				=> ptr_cell_list_static_output_cells_class_DX_NR,
 																				class_given			=> class,
 																				net_given			=> universal_string_type.to_bounded_string(name),
 																				device_given		=> d.pin(p).device_name,
@@ -1667,20 +1629,21 @@ procedure chkpsn is
 
 
 	procedure write_new_cell_lists is
-		a : type_cell_list_locked_control_cells_in_class_EH_EL_NA_nets_ptr	:= ptr_cell_list_locked_control_cells_in_class_EH_EL_NA_nets;
-		b : type_cell_list_locked_control_cells_in_class_DH_DL_NR_nets_ptr	:= ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets;
-		c : type_cell_list_locked_control_cells_in_class_PU_PD_nets_ptr 	:= ptr_cell_list_locked_control_cells_in_class_PU_PD_nets;
-		d : type_cell_list_locked_output_cells_in_class_PU_PD_nets_ptr		:= ptr_cell_list_locked_output_cells_in_class_PU_PD_nets;
-		e : type_cell_list_locked_output_cells_in_class_DH_DL_nets_ptr		:= ptr_cell_list_locked_output_cells_in_class_DH_DL_nets;
-		f : type_cell_list_static_expect_ptr								:= ptr_cell_list_static_expect;
-		g : type_cell_list_atg_expect_ptr									:= ptr_cell_list_atg_expect;
-		h : type_cell_list_atg_drive_ptr									:= ptr_cell_list_atg_drive;
-		i : type_cell_list_input_cells_in_class_NA_nets_ptr					:= ptr_cell_list_input_cells_in_class_NA_nets;
+		a : type_ptr_cell_list_static_control_cells_class_EX_NA				:= ptr_cell_list_static_control_cells_class_EX_NA;
+		b : type_ptr_cell_list_static_control_cells_class_DX_NR				:= ptr_cell_list_static_control_cells_class_DX_NR;
+		c : type_ptr_cell_list_static_control_cells_class_PX			 	:= ptr_cell_list_static_control_cells_class_PX;
+		d : type_ptr_cell_list_static_output_cells_class_PX					:= ptr_cell_list_static_output_cells_class_PX;
+		e : type_ptr_cell_list_static_output_cells_class_DX_NR				:= ptr_cell_list_static_output_cells_class_DX_NR;
+		f : type_ptr_cell_list_static_expect								:= ptr_cell_list_static_expect;
+		g : type_ptr_cell_list_atg_expect									:= ptr_cell_list_atg_expect;
+		h : type_ptr_cell_list_atg_drive									:= ptr_cell_list_atg_drive;
+		i : type_ptr_cell_list_input_cells_class_NA							:= ptr_cell_list_input_cells_class_NA;
 	begin
 		put_line("------- CELL LISTS ----------------------------------------------------------");
 		new_line(2);
 
-		put_line("Section locked_control_cells_in_class_EH_EL_NA_nets"); -- CS: Section locked_control_cells_in_class_EH_EL_?_nets discarded
+		--put_line("Section locked_control_cells_in_class_EH_EL_NA_nets"); -- CS: Section locked_control_cells_in_class_EH_EL_?_nets discarded
+		put_line(section_mark.section & row_separator_0 & section_static_control_cells_class_EX_NA);
 		-- writes a cell list entry like:
 		put_line("-- addresses control cells which statically disable drivers");
 		put_line("-- example 1: class NA primary_net OSC_OUT device IC300 pin 6 control_cell 93 locked_to disable_value 0");
@@ -1696,7 +1659,8 @@ procedure chkpsn is
 		end loop;
 		put_line("EndSection"); new_line;
 
-		put_line("Section locked_control_cells_in_class_DH_DL_NR_nets");
+		--put_line("Section locked_control_cells_in_class_DH_DL_NR_nets");
+		put_line(section_mark.section & row_separator_0 & section_static_control_cells_class_DX_NR);
 		-- writes a cell list entry like:
 		put_line("-- addresses control cells which enable or disable static drivers");
 		put_line("-- example 1: class NR primary_net LED0 device IC303 pin 10 control_cell 16 locked_to enable_value 0");
@@ -1716,7 +1680,8 @@ procedure chkpsn is
 		end loop;
 		put_line("EndSection"); new_line;
 
-		put_line("Section locked_control_cells_in_class_PU_PD_nets");
+		--put_line("Section locked_control_cells_in_class_PU_PD_nets");
+		put_line(section_mark.section & row_separator_0 & section_static_control_cells_class_PX);
 		-- writes a cell list entry like:
 		put_line("-- addresses control cells which statically disable drivers");
 		put_line("-- example 1: class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0");
@@ -1737,7 +1702,8 @@ procedure chkpsn is
 		end loop;
 		put_line("EndSection"); new_line;
 
-		put_line("Section locked_output_cells_in_class_PU_PD_nets");
+		--put_line("Section locked_output_cells_in_class_PU_PD_nets");
+		put_line(section_mark.section & row_separator_0 & section_static_output_cells_class_PX);
 		-- writes a cell list entry like:
 		put_line("-- addresses output cells which drive statically");
 		put_line("-- example 1 : class PU primary_net /SYS_RESET device IC300 pin 39 output_cell 37 locked_to drive_value 0");
@@ -1752,11 +1718,13 @@ procedure chkpsn is
 		end loop;
 		put_line("EndSection"); new_line;
 
-		put_line("Section locked_output_cells_in_class_DH_DL_nets");
+		--put_line("Section locked_output_cells_in_class_DH_DL_nets");
+		put_line(section_mark.section & row_separator_0 & section_static_output_cells_class_DX_NR);
 		-- writes a cell list entry like:
 		put_line("-- addresses output cells which drive statically");
 		put_line("-- example 1 : class DL primary_net /CPU_MREQ device IC300 pin 28 output_cell 13 locked_to drive_value 0");
 		put_line("-- example 2 : class DH primary_net /CPU_RD device IC300 pin 27 output_cell 10 locked_to drive_value 1");
+		put_line("-- NOTE:   1 : Output cells of disabled driver pins may appear here. Don't care.");
 		while e /= null loop
 			put_line(" class " & type_net_class'image(e.class) & " primary_net"
 				& row_separator_0 & universal_string_type.to_string(e.net) & " device"
@@ -1767,7 +1735,8 @@ procedure chkpsn is
 		end loop;
 		put_line("EndSection"); new_line;
 
-		put_line("Section static_expect");
+		--put_line("Section static_expect");
+		put_line(section_mark.section & row_separator_0 & section_static_expect);
 		-- writes a cell list entry like:
 		put_line("-- addresses input cells which expect statically");
 		put_line("-- example 1 : class DL primary_net /CPU_MREQ device IC300 pin 28 input_cell 14 expect_value 0");
@@ -1786,7 +1755,8 @@ procedure chkpsn is
 		end loop;
 		put_line("EndSection"); new_line;
 
-		put_line("Section atg_expect");
+		--put_line("Section atg_expect");
+		put_line(section_mark.section & row_separator_0 & section_atg_expect);
 		-- writes a cell list entry like:
 		put_line("-- addresses input cells which expect values defined by ATG");
 		put_line("-- example 1 : class PU secondary_net CT_D3 device IC303 pin 19 input_cell 11 primary_net_is D3");
@@ -1806,7 +1776,8 @@ procedure chkpsn is
 		end loop;
 		put_line("EndSection"); new_line;
 
-		put_line("Section atg_drive");
+		--put_line("Section atg_drive");
+		put_line(section_mark.section & row_separator_0 & section_atg_drive);
 		-- writes a cell list entry like:
 		put_line("-- addresses output and control cells which drive values defined by ATG");
 		put_line("-- example 1 : class NR primary_net LED7 device IC303 pin 2 output_cell 7");
@@ -1830,7 +1801,8 @@ procedure chkpsn is
 		end loop;
 		put_line("EndSection"); new_line;
 
-		put_line("Section input_cells_in_class_NA_nets"); -- CS: input_cells_in_class_?_nets discarded
+		--put_line("Section input_cells_in_class_NA_nets"); -- CS: input_cells_in_class_?_nets discarded
+		put_line(section_mark.section & row_separator_0 & section_input_cells_class_NA);
 		-- writes a cell list entry like:
 		put_line("-- addresses input cells");
 		put_line("-- example 1 : class NA primary_net OSC_OUT device IC301 pin 6 input_cell 95");
