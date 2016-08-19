@@ -405,10 +405,8 @@ procedure compseq is
  	procedure compile_command (cmd : extended_string.bounded_string) is
 		field_pt 				: positive := 1;
 		field_ct 				: positive := get_field_count(extended_string.to_string(cmd));
-		--ubyte_scratch  			: unsigned_8;
-		--ubyte_scratch2		 	: unsigned_8;
 		bic_name				: universal_string_type.bounded_string;
-		bic_coordinates			: type_bscan_ic_ptr;
+		bic_coordinates			: type_ptr_bscan_ic;
 		set_direction		 	: type_set_direction;
 		target_register			: type_set_target_register;
 		set_assignment_method	: type_set_assigment_method;
@@ -591,7 +589,7 @@ procedure compseq is
 		sir_drive	: type_sir_image;
 		sir_expect	: type_sir_image;
 		sir_mask	: type_sir_image;
-		b : type_bscan_ic_ptr;
+		b 			: type_ptr_bscan_ic;
 
 		pos_start	: positive := 1;
 		pos_end		: positive;
@@ -665,7 +663,7 @@ procedure compseq is
 	-- adds images to list of test steps (pointed to by ptr_test_step_pre)
 
 		length_total 	: natural := trailer_length; -- the trailer is always included
-		b 				: type_bscan_ic_ptr;
+		b 				: type_ptr_bscan_ic;
 
 		procedure build_sdr_image is
 		-- with the total length known, the overall sdr image can be created
@@ -673,7 +671,7 @@ procedure compseq is
 			sdr_drive	: type_sdr_image;
 			sdr_expect	: type_sdr_image;
 			sdr_mask	: type_sdr_image;
-			b : type_bscan_ic_ptr;
+			b 			: type_ptr_bscan_ic;
 
 			pos_start	: positive := 1;
 			pos_end		: positive;
@@ -2080,7 +2078,7 @@ procedure compseq is
 	
 
 	procedure unknown_yet is
-		b : type_bscan_ic_ptr;
+		b : type_ptr_bscan_ic;
 
 		first_scanpath_address_written : boolean := false; -- this flag is used in procdedure write_base_address
 		-- in order to calculate the base address for the first scanpath different from other scanpaths

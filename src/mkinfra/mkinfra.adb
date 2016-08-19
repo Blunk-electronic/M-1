@@ -90,14 +90,14 @@ procedure mkinfra is
 		end;
 
 	procedure write_sequences is
-		b : type_bscan_ic_ptr;
+		b : type_ptr_bscan_ic;
 
 		procedure one_of_all( 
 			position	: positive; 
 			instruction	: type_bic_instruction_for_infra_structure;
 			write_sxr	: boolean := true
 			) is
-			b : type_bscan_ic_ptr;
+			b : type_ptr_bscan_ic;
 		begin
 				b := ptr_bic; -- reset bic pointer b
 				while b /= null loop

@@ -336,7 +336,7 @@ procedure mkmemcon is
 		-- from object "target" (created after processing section "info"), accessed by ptr_target we
 		-- get the device name, value and package (ptr_target.device_name, ptr_target.device_value and ptr_target.device_package)
 		-- now the net list (from data base) is searched for a net that contains the target device with name_pin_given
-			n			: type_net_ptr := ptr_net;
+			n			: type_ptr_net := ptr_net;
 			net_name	: universal_string_type.bounded_string;
 			net_found	: boolean := false; -- indicates whether a net has been found
 		begin
@@ -455,8 +455,8 @@ procedure mkmemcon is
 		-- searches in atg drive cell list for the driver of the net given in name_net_primary
 		-- if the driver is not in this list, it is in a static net which does not qualify for test generation
 		-- further-on: the disable value of the control cell is derived 
-			c	: type_cell_list_atg_drive_ptr := ptr_cell_list_atg_drive;
-			c1	: type_cell_list_locked_control_cells_in_class_DH_DL_NR_nets_ptr := ptr_cell_list_locked_control_cells_in_class_DH_DL_NR_nets;
+			c	: type_ptr_cell_list_atg_drive := ptr_cell_list_atg_drive;
+			c1	: type_ptr_cell_list_static_control_cells_class_DX_NR := ptr_cell_list_static_control_cells_class_DX_NR;
 			driver_found	: boolean := false;
 		begin
 			while c /= null loop -- search atg drive list
@@ -553,7 +553,7 @@ procedure mkmemcon is
 		-- searches in atg expect list for ALL receivers if the net given in name_net
 		-- and adds them one-by-one to the receiver list pointed to by ptr_receiver
 		-- it adds receivers every time it gets called
-			c	: type_cell_list_atg_expect_ptr 	:= ptr_cell_list_atg_expect;
+			c	: type_ptr_cell_list_atg_expect 	:= ptr_cell_list_atg_expect;
 		begin
 			while c /= null loop
 				if universal_string_type.to_string(c.net) = universal_string_type.to_string(name_net) then
@@ -2266,7 +2266,7 @@ procedure mkmemcon is
 		value_format: type_value_format;
 		line_number	: positive
 		) is
-		b	: type_bscan_ic_ptr := ptr_bic;
+		b	: type_ptr_bscan_ic := ptr_bic;
 		p	: type_ptr_memory_pin := ptr_memory_pin;
 		value_length	: positive;
 		value_natural	: natural;
