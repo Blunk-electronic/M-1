@@ -89,7 +89,7 @@ procedure chkpsn is
 	procedure add_to_options_net_list(
 		-- this procedure adds a primary net (incl. secondary nets) to the options net list
 		-- multiple occurencs of nets in options file will be checked
-		list								: in out type_options_net_ptr;
+		list								: in out type_ptr_options_net;
 		name_given							: in string;
 		class_given							: in type_net_class;
 		line_number_given					: in positive;
@@ -98,7 +98,7 @@ procedure chkpsn is
 		) is
 
 		procedure verify_primary_net_appears_only_once (name : string) is
-			n	: type_options_net_ptr := ptr_options_net;
+			n	: type_ptr_options_net := ptr_options_net;
 		begin
 			prog_position := "OP3000";
 			while n /= null loop
@@ -130,7 +130,7 @@ procedure chkpsn is
 
 		procedure verify_secondary_net_appears_only_once (name : string) is
 		-- checks if secondary net appears only once in options file
-			n	: type_options_net_ptr := ptr_options_net;
+			n	: type_ptr_options_net := ptr_options_net;
 		begin
 			prog_position := "OP4000";
 			while n /= null loop
@@ -225,8 +225,8 @@ procedure chkpsn is
 		-- with the two net lists pointed to by net_ptr and options_net_ptr, a new net list is created and appended to the
 		-- preliminary data base
 		-- the class requirements and secondary net dependencies from the options file are taken into account
-		o	: type_options_net_ptr 	:= ptr_options_net;
-		n 	: type_net_ptr			:= ptr_net; -- used to dump non-optimized nets
+		o	: type_ptr_options_net 	:= ptr_options_net;
+		n 	: type_ptr_net			:= ptr_net; -- used to dump non-optimized nets
 
 		procedure dump_net_content (
 		-- from a given net name, the whole content (means all devices) is dumped into the preliminary data base
@@ -240,12 +240,11 @@ procedure chkpsn is
 			class 				: type_net_class; 
 			spacing_from_left 	: positive
 			) is
-			d : type_net_ptr := ptr_net;
+			d : type_ptr_net := ptr_net;
 
 
-			procedure update_cell_lists( d : type_net_ptr ) is
+			procedure update_cell_lists( d : type_ptr_net ) is
 			-- updates cell lists by the net where d points to (in data base net list)
-				--c : type_net_ptr := d;
 				drivers_without_disable_spec_ct 			: natural := 0;
 				driver_with_non_shared_control_cell_found 	: boolean := false;
 				driver_with_shared_control_cell_found		: boolean := false;
@@ -716,7 +715,7 @@ procedure chkpsn is
 					return false;
 				end control_cell_in_disable_state_by_any_cell_list;
 
-				procedure disable_remaining_drivers ( d : type_net_ptr) is
+				procedure disable_remaining_drivers ( d : type_ptr_net) is
 				begin
 					if debug_level >= 30 then
 						put_line(standard_output,"disabling remaining drivers in net " & row_separator_0 & universal_string_type.to_string(d.name));
