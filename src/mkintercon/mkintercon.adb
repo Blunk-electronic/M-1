@@ -1008,11 +1008,11 @@ procedure mkintercon is
 		last_cell		: Integer := -1;
 
 		begin
-			extract_section("tmp/udb_no_comments.tmp","tmp/cells1.tmp","Section","EndSection","locked_control_cells_in_class_EH_EL_NA_nets");
-			extract_section("tmp/udb_no_comments.tmp","tmp/cells2.tmp","Section","EndSection","locked_control_cells_in_class_DH_DL_NR_nets");
-			extract_section("tmp/udb_no_comments.tmp","tmp/cells3.tmp","Section","EndSection","locked_control_cells_in_class_PU_PD_nets");
-			extract_section("tmp/udb_no_comments.tmp","tmp/cells4.tmp","Section","EndSection","locked_output_cells_in_class_PU_PD_nets");
-			extract_section("tmp/udb_no_comments.tmp","tmp/cells5.tmp","Section","EndSection","locked_output_cells_in_class_DH_DL_nets");
+			extract_section("tmp/udb_no_comments.tmp","tmp/cells1.tmp","Section","EndSection","static_control_cells_class_EX_NA");
+			extract_section("tmp/udb_no_comments.tmp","tmp/cells2.tmp","Section","EndSection","static_control_cells_class_DX_NR");
+			extract_section("tmp/udb_no_comments.tmp","tmp/cells3.tmp","Section","EndSection","static_control_cells_class_PX");
+			extract_section("tmp/udb_no_comments.tmp","tmp/cells4.tmp","Section","EndSection","static_output_cells_class_PX");
+			extract_section("tmp/udb_no_comments.tmp","tmp/cells5.tmp","Section","EndSection","static_output_cells_class_DX_NR");
 
 			append_file("tmp/cells5.tmp","tmp/cells4.tmp");
 			append_file("tmp/cells4.tmp","tmp/cells3.tmp");
