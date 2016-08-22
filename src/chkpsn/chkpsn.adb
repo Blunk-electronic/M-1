@@ -2128,6 +2128,7 @@ begin
 	exception
 
 		when event: others =>
+			set_exit_status(failure);
 			set_output(standard_output);
 
 			if prog_position = "ARG001" then
