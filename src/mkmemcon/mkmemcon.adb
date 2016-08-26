@@ -2859,11 +2859,15 @@ procedure mkmemcon is
 
 		load_safe_values;
 		write_sdr; new_line;
-		load_safe_values;
-		write_sdr; new_line;
 
 		all_in(extest);
 		write_sir; new_line;
+
+		load_safe_values;
+		write_sdr; new_line;
+
+-- 		all_in(extest);
+-- 		write_sir; new_line;
 
 		load_static_drive_values;
 		load_static_expect_values;
