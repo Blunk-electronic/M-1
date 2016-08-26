@@ -1,7 +1,6 @@
 #!/usr/local/bin/kermit +
 
-#version 3.1
-
+#echo \%1
 #echo \%2
 
 define close_connection {
