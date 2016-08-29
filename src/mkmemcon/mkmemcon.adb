@@ -1009,6 +1009,12 @@ procedure mkmemcon is
 
 									-- get direction (expect, drive) from next field
 									group_address.direction := type_step_direction'value(get_field_from_line(line_of_file,f+1));
+									if operation = read and group_address.direction = expect then
+										put_line("ERROR: '" & type_step_direction'image(group_address.direction) &
+											"' on address group not allowed for this kind of operation !");
+										raise constraint_error;
+									end if;
+
 
 									-- get atg or value field from next field
 									if to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.atg then
