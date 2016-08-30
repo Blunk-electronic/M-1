@@ -1,4 +1,4 @@
-------------------------------------------------------------------------------
+--t----------------------------------------------------------------------------
 --                                                                          --
 --                    SYSTEM M-1 MODULE BSMCL                               --
 --                                                                          --
@@ -38,6 +38,7 @@ with Ada.Text_IO;		use Ada.Text_IO;
 --with Ada.Sequential_IO;
 --with System.OS_Lib;   use System.OS_Lib;
 with Ada.Strings; 			use Ada.Strings;
+with Ada.Strings.Fixed; 	use Ada.Strings.Fixed;
 with Ada.Strings.Bounded; 	use Ada.Strings.Bounded;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
@@ -133,7 +134,13 @@ procedure bsmcl is
 	row_separator			: string (1..60) := "------------------------------------------------------------";
 	row_separator_double	: string (1..60) := "============================================================";
 
+	action_request_help		: constant string (1..4) := "help";
+	action_create_project	: constant string (1..6) := "create";
+	action_set_breakpoint	: constant string (1..5) := "break";
+	-- CS: add more actions use the when evaluating arguments
 
+	vector_id		: type_vector_id;
+	bit_position	: type_sxr_break_position := 0; -- in case bit_position to break at is not provided, default used
 
 	type language_type is (german, english);
 	language 	: language_type := english;
@@ -483,7 +490,7 @@ begin
 	action:=(to_unbounded_string(Argument(1)));
 
 		-- make project begin
-		if action = "create" then
+		if action = action_create_project then
 			put ("action         : ");	put(action); new_line;			
 			prog_position := "PJN00";
 			project_name:=to_unbounded_string(Argument(2));
@@ -527,7 +534,7 @@ begin
 	--action:=(to_unbounded_string(Argument(1)));
 	put ("action         : ");	put(action); new_line;
 
-		if action = "help" then
+		if action = action_request_help then
 			case language is
 				when german => 
 					open(
@@ -553,7 +560,7 @@ begin
 
 
 		-- do nothing meaningful if project has just been created
-		elsif action = "create" then 
+		elsif action = action_create_project then 
 			new_line;
 			put("... done"); new_line(2);
 			put("Recommended next steps :"); new_line (2);
@@ -801,7 +808,6 @@ begin
 		-- CAD import end
 
 
--- ins V016 begin
 		-- make verilog model begin
 		elsif action = "mkvmod" then
 
@@ -839,7 +845,6 @@ begin
 
 
 		-- make verilog model end
--- ins V016 end 
 
 
 		-- join netlist begin
@@ -1630,6 +1635,41 @@ begin
 		-- test execution end
 
 
+		-- set break point begin
+		elsif action = action_set_breakpoint then
+			prog_position := "BP100";
+			vector_id := type_vector_id'value(argument(2));
+			-- CS: message when invalid id given
+			put_line ("sxr id         : " & trim(type_vector_id'image(vector_id),left));
+			if arg_ct = 3 then
+				prog_position := "BP200";
+				bit_position := type_sxr_break_position'value(argument(3));
+				-- CS: message when invalid bit position given
+			end if;
+			put_line ("bit position   : " & trim(type_sxr_break_position'image(bit_position),left));
+
+			prog_position := "BP300";
+			case set_breakpoint
+				(
+				interface_to_scan_master 	=> to_string(interface_to_scan_master),
+				directory_of_binary_files	=> to_string(directory_of_binary_files),
+				vector_id					=> vector_id,
+				bit_position				=> bit_position
+				) is
+				when true =>
+					prog_position := "BP310";
+					new_line;
+					put_line("breakpoint set");
+				when others =>
+					prog_position := "RU320";
+					new_line;
+					put_line("ERROR: Internal malfunction !");
+					put_line("breakpoint NOT set");
+					raise constraint_error;
+			end case;
+		-- set breakpoint end
+
+
 		-- test step execution begin
 -- 		elsif action = "step" then
 -- 			prog_position := "ST100";
@@ -2004,7 +2044,7 @@ begin
 									--new_line;
 									put ("ERROR ! No action specified ! What do you want to do ?"); new_line; 
 									put ("        Actions available are :");new_line;
-									put ("        - create    (set up a new project)"); new_line;									
+									put ("        - " & action_create_project & "    (set up a new project)"); new_line;									
 									put ("        - impcad    (import net and part lists from CAD system)"); new_line;
 									put ("        - join      (merge submodule with mainmodule after CAD import)"); new_line;									
 									put ("        - impbsdl   (import BSDL models)"); new_line;
@@ -2017,15 +2057,16 @@ begin
 									put ("        - clear     (clear entire RAM of the Boundary Scan Controller)"); new_line;
 									put ("        - dump      (view a RAM section of the Boundary Scan Controller (use for debugging only !))"); new_line;
 									put ("        - run       (run a test/step on your UUT/target and WAIT until test done)"); new_line;
+									put ("        - " & action_set_breakpoint & "     (set break point at step ID and bit position)"); new_line;
 									--put ("        - step      (execute a single test step on your UUT/target)"); new_line;
 									--put ("        - start     (start a test on your UUT/target system and DO NOT WAIT until end of test)"); new_line;
 									put ("        - off       (immediately stop a running test, shut down UUT power and disconnect TAP signals)"); new_line;
 									put ("        - status    (query Boundary Scan Controller status)"); new_line;
 									put ("        - report    (view the latest sequence execution results)"); new_line;	
 									put ("        - mkvmod    (create verilog model port list from main module skeleton.txt)"); new_line;
-									put ("        - help      (get examples and assistance)"); new_line;
+									put ("        - " & action_request_help & "    (get examples and assistance)"); new_line;
 									put ("        - firmware  (get firmware versions)"); new_line;
-									put ("        Example: bsmcl help"); new_line;
+									put ("        Example: bsmcl" & action_set_breakpoint); new_line;
 								
 							elsif prog_position = "PDS00" then
 									put ("ERROR : No project data found in current working directory !"); new_line;

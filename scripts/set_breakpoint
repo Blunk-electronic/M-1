@@ -1,0 +1,54 @@
+#!/usr/local/bin/kermit +
+      
+#echo \%1
+#echo \%2
+#echo \%3
+#echo \%4
+
+define close_connection {
+	close
+	echo
+	echo "BSC not responding properly"
+	EXIT 1
+	}
+
+set exit warning on
+
+set modem type none
+set line \%1
+set speed 9600
+#set speed 19200
+#set speed 38400
+set flow rts/cts
+set carrier-watch off
+set protocol xmodem
+set duplex full
+set output pacing 30
+#set input echo on
+set input echo off
+
+
+# INIT
+	output \13
+	input 2 cmd>
+		IF FAIL close_connection
+
+	output break\13
+	input 2 destination_adr:  # misused to send sxr id
+		IF FAIL close_connection
+	output \%2\13 # send sxr id
+
+	input 2 destination_adr:  # misused to send bit position [15:0]
+		IF FAIL close_connection
+	output \%3\13 # send bit pos [15:0]
+	input 3 cmd>
+
+	input 2 destination_adr:  # misused to send bit position [31:16]
+		IF FAIL close_connection
+	output \%4\13 # send bit pos [31:16]
+	input 3 cmd>
+
+
+close
+
+exit

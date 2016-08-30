@@ -91,6 +91,13 @@ fw_ex1		equ	0A1h	;executor firmware highbyte
 mach_sts	equ	0A2h	;machine status ; ins V6.0
 				;	bit 0 cleared when a_ram is zero
 
+bp_sxr_lowbyte	equ	0A7h	; breakpoint sxr id lowbyte
+bp_sxr_highbyte	equ	0A8h	; breakpoint sxr id highbyte
+bp_bp_0			equ	0A9h	; breakpoint bit position lowbyte
+bp_bp_1			equ	0AAh	; breakpoint bit position lowbyte+1
+bp_bp_2			equ	0ABh	; breakpoint bit position lowbyte+2
+bp_bp_3			equ	0ACh	; breakpoint bit position highbyte
+
 ;OFFSET	equ	2000h
 OFFSET	equ	8000h
 ;OFFSET	equ	0000h
@@ -590,7 +597,7 @@ l_02:
 l_4p:	; BSC START TEST/STEP
 		ld		HL,runtest
 		call	PAR_CMD
-		jp		nc,l_4q
+		jp		nc,l_bp1
 
 		call	req_d			;ask host for bits [23:8] of destination address
 
@@ -623,6 +630,33 @@ l_4p:	; BSC START TEST/STEP
 								;NOTE: test starts independed of given step width
 		jp		EO_post_proc
 
+l_bp1:	; set breakpoint
+		ld		HL,break
+		call	PAR_CMD
+		jp		nc,l_4q
+
+		call	req_d			;ask host for sxr id to break at
+		ld		HL,(DEST_ADR)
+		ld		A,L
+		out		(bp_sxr_lowbyte),A 	; set breakpoint sxr id lowbyte
+		ld		A,H
+		out		(bp_sxr_highbyte),A ; set breakpoint sxr id highbyte
+
+		call	req_d			;ask host for bit position bits [15:0] to break at
+		ld		HL,(DEST_ADR)
+		ld		A,L
+		out		(bp_bp_0),A
+		ld		A,H
+		out		(bp_bp_1),A
+
+		call	req_d			;ask host for bit position bits [31:16] to break at
+		ld		HL,(DEST_ADR)
+		ld		A,L
+		out		(bp_bp_2),A
+		ld		A,H
+		out		(bp_bp_3),A
+
+		jp		EO_post_proc
 
 ; l_4s:	; BSC STEP TEST
 ; 		ld		HL,steptest
@@ -3471,6 +3505,12 @@ vw_out_ram:
 	DEFM	'viewoutram'
 	DEFB	0Dh;
 	DEFB	0Ah;
+
+break:
+	DEFM	'break'
+	DEFB	0Dh;
+	DEFB	0Ah;
+
 
 CMDs_END:
 	DEFB	0h

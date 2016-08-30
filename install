@@ -61,9 +61,7 @@ procedure_operator_confirmation
 procedure_copy_script impaltium
 procedure_copy_script impeagle6x
 procedure_copy_script imporcad
-#procedure_copy_script mkinfra
 procedure_copy_script mkclock
-#procedure_copy_script mkmemcon
 procedure_copy_script open_report
 procedure_copy_script run_and_log_sequence
 procedure_copy_script clrram
@@ -76,6 +74,7 @@ procedure_copy_script version
 procedure_copy_script stop_sequence
 procedure_copy_script mkproject
 procedure_copy_script run_continuous
+procedure_copy_script set_breakpoint
 
 lib_examples_uut_dir=M-1
 if [ ! -e $HOME/$lib_examples_uut_dir ]; then
