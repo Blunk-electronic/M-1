@@ -2266,11 +2266,12 @@ procedure mkmemcon is
 	-- it starts writing the cell assigment of the bic with id 1. if a bic is a driver of the group, it appears as new line
 	-- like "set IC304 drv boundary 42=1 48=1 51=0"
 	-- like "set IC305 drv boundary 55=1 556=1 53=0 45=0"
-		pin_class	: type_pin_class;
-		direction	: type_step_direction;
-		value		: string;
-		value_format: type_value_format;
-		line_number	: positive
+		pin_class		: type_pin_class;
+		direction		: type_step_direction;
+		self_monitoring : boolean := true; -- when reading from target, drivers are disabled. in such cases no self monitoring of drivers
+		value			: string;
+		value_format	: type_value_format;
+		line_number		: positive
 		) is
 		b	: type_ptr_bscan_ic := ptr_bic;
 		p	: type_ptr_memory_pin := ptr_memory_pin;
@@ -2373,7 +2374,7 @@ procedure mkmemcon is
 			-- FOR DETECTING SHARED CONTROL CELL CONFLICTS BEGIN
 
 			
-		begin
+		begin -- read_value_bitwise
 			-- translate the given value into a string of bit characters of (0,1,z,Z) held by variable v
 			case value_format is
 				when bitwise => -- if given bitwise
@@ -2498,41 +2499,18 @@ procedure mkmemcon is
 						end loop;
 					end loop;
 				
-					-- ASSIGN EXPECT PATTERN FOR SELF MONITORING
-					put_line("  -- optional self monitoring:");
-					for bic_id in 1..summary.bic_ct loop -- loop in bic list pointed to by b
-						b := ptr_bic;
-						while b /= null loop
-							if b.id = bic_id then -- on bic id match
+					if self_monitoring then
+						-- ASSIGN EXPECT PATTERN FOR SELF MONITORING
+						put_line("  -- optional self monitoring:");
+						for bic_id in 1..summary.bic_ct loop -- loop in bic list pointed to by b
+							b := ptr_bic;
+							while b /= null loop
+								if b.id = bic_id then -- on bic id match
 
-								-- look ahead into receiver list to figure out if the current bic is used as receiver for this group at all
-								-- and write line header like: "set IC301 exp boundary"
-								bic_required_for_self_monitoring := false; -- for the start, we assume the current bic is not required
-								l_1:
-								for i in 1..v'last loop -- do as many loops as v has bits
-									p := ptr_memory_pin;
-									while p /= null loop
-										if p.has_receivers then -- if there are receivers connected at all
-											if p.class_pin = pin_class then -- on pin_class match
-												if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
-													p.receiver_list := p.receiver_list_last;
-													while p.receiver_list /= null loop -- loop though receiver list
-														-- on match of bic name
-														if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
-															bic_required_for_self_monitoring := true;
-															put("  set " & universal_string_type.to_string(b.name) & " exp boundary");
-															exit l_1; -- no need to search for further occurences of bic in pin list
-														end if;
-														p.receiver_list := p.receiver_list.next;
-													end loop;
-												end if;
-											end if;
-										end if; -- if there are receivers at all
-										p := p.next;
-									end loop;	
-								end loop l_1;
-
-								if bic_required_for_self_monitoring then
+									-- look ahead into receiver list to figure out if the current bic is used as receiver for this group at all
+									-- and write line header like: "set IC301 exp boundary"
+									bic_required_for_self_monitoring := false; -- for the start, we assume the current bic is not required
+									l_1:
 									for i in 1..v'last loop -- do as many loops as v has bits
 										p := ptr_memory_pin;
 										while p /= null loop
@@ -2540,24 +2518,12 @@ procedure mkmemcon is
 												if p.class_pin = pin_class then -- on pin_class match
 													if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
 														p.receiver_list := p.receiver_list_last;
-														while p.receiver_list /= null loop
+														while p.receiver_list /= null loop -- loop though receiver list
+															-- on match of bic name
 															if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
-																case v(i) is
-																	when '0' | '1' =>
-																		-- expect 0/1 addresses input cells
-																		-- assign value to input cell
-																			put(natural'image(p.receiver_list.id_cell) 
-																				& sxr_assignment_operator.assign
-																				& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
-																			);
-																	when 'x' | 'X' | 'z' | 'Z' =>
-																		-- expect 0/1 addresses input cells
-																		-- assign value to input cell
-																			put(natural'image(p.receiver_list.id_cell) 
-																				& sxr_assignment_operator.assign
-																				& "x"
-																			);
-																end case;
+																bic_required_for_self_monitoring := true;
+																put("  set " & universal_string_type.to_string(b.name) & " exp boundary");
+																exit l_1; -- no need to search for further occurences of bic in pin list
 															end if;
 															p.receiver_list := p.receiver_list.next;
 														end loop;
@@ -2566,14 +2532,51 @@ procedure mkmemcon is
 											end if; -- if there are receivers at all
 											p := p.next;
 										end loop;	
-									end loop;
-									new_line;
-								end if; -- if bic_required_for_self_monitoring
+									end loop l_1;
 
-							end if; -- on bic id match
-							b := b.next;
+									if bic_required_for_self_monitoring then
+										for i in 1..v'last loop -- do as many loops as v has bits
+											p := ptr_memory_pin;
+											while p /= null loop
+												if p.has_receivers then -- if there are receivers connected at all
+													if p.class_pin = pin_class then -- on pin_class match
+														if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
+															p.receiver_list := p.receiver_list_last;
+															while p.receiver_list /= null loop
+																if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
+																	case v(i) is
+																		when '0' | '1' =>
+																			-- expect 0/1 addresses input cells
+																			-- assign value to input cell
+																				put(natural'image(p.receiver_list.id_cell) 
+																					& sxr_assignment_operator.assign
+																					& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
+																				);
+																		when 'x' | 'X' | 'z' | 'Z' =>
+																			-- expect 0/1 addresses input cells
+																			-- assign value to input cell
+																				put(natural'image(p.receiver_list.id_cell) 
+																					& sxr_assignment_operator.assign
+																					& "x"
+																				);
+																	end case;
+																end if;
+																p.receiver_list := p.receiver_list.next;
+															end loop;
+														end if;
+													end if;
+												end if; -- if there are receivers at all
+												p := p.next;
+											end loop;	
+										end loop;
+										new_line;
+									end if; -- if bic_required_for_self_monitoring
+
+								end if; -- on bic id match
+								b := b.next;
+							end loop;
 						end loop;
-					end loop;
+					end if;
 
 				when expect =>
 					-- ASSIGN EXPECT PATTERN
@@ -2597,7 +2600,7 @@ procedure mkmemcon is
 														-- on match of bic name
 														if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
 															bic_required_as_receiver := true;
-															put("  set " & universal_string_type.to_string(b.name) & " exp boundary ");
+															put("  set " & universal_string_type.to_string(b.name) & " exp boundary");
 															exit l_2; -- no need to search for further occurences of bic in pin list
 														end if;
 														p.receiver_list := p.receiver_list.next;
@@ -2758,6 +2761,22 @@ procedure mkmemcon is
 								put("  -- DATA " & type_step_direction'image(s.group_data.direction));
 								if s.group_data.atg then
 									put_line(" ATG " & natural_to_string(atg_data_given,16));
+
+									-- if we are reading from the target, data drivers must be disabled:
+									if s.group_data.direction = expect then
+										put_line("  -- disable data drivers");
+										assign_cells(
+											pin_class 		=> data,
+											direction 		=> drive,
+											self_monitoring	=> false, -- no self monitoring
+											value 			=> ptr_target.width_data * "Z",
+											value_format	=> bitwise,
+											line_number		=> s.line_number
+											);
+									end if;
+
+									-- assign data driver cells
+									put_line("  -- set data expect");
 									assign_cells(
 										pin_class 		=> data,
 										direction 		=> s.group_data.direction,
@@ -2765,6 +2784,7 @@ procedure mkmemcon is
 										value_format	=> number,
 										line_number		=> s.line_number
 										);
+
 								elsif s.group_data.all_highz then
 									put_line(" ALL HIGHZ ");
 									assign_cells(
