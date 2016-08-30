@@ -41,7 +41,6 @@ set input echo off
 	input 2 destination_adr:  # misused to send bit position [15:0]
 		IF FAIL close_connection
 	output \%3\13 # send bit pos [15:0]
-	input 3 cmd>
 
 	input 2 destination_adr:  # misused to send bit position [31:16]
 		IF FAIL close_connection
