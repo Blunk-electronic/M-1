@@ -834,6 +834,32 @@ l_4a:	ld		HL,dbg			;see comments at label l_0 and following
 		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
 
+		;breakpoint sxr id
+		ld		HL,brk_sxr
+		call	TX_STR
+		in		A,(bp_sxr_lowbyte)
+		call	APP_ACCU
+		in		A,(bp_sxr_highbyte)
+		call	APP_ACCU
+		call	TX_STD_OUT	;TX input value to host
+		ld		HL,NEW_LINE	;transmit new line
+		call	TX_STR
+
+		;breakpoint bit position
+		ld		HL,brk_bp
+		call	TX_STR
+		in		A,(bp_bp_0)
+		call	APP_ACCU
+		in		A,(bp_bp_1)
+		call	APP_ACCU
+		in		A,(bp_bp_2)
+		call	APP_ACCU
+		in		A,(bp_bp_3)
+		call	APP_ACCU
+		call	TX_STD_OUT	;TX input value to host
+		ld		HL,NEW_LINE	;transmit new line
+		call	TX_STR
+
 		;tx total bit count chain 1
 		ld		HL,bits_to1
 		call	TX_STR
@@ -3344,6 +3370,15 @@ shst1:
 shst2:
 	DEFM	'SH2: '
 	DEFB	0h
+
+brk_sxr:
+	DEFM	'BRS: '
+	DEFB	0h
+
+brk_bp:
+	DEFM	'BRB: '
+	DEFB	0h
+
 
 
 NEW_LINE:
