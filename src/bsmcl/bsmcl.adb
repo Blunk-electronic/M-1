@@ -139,8 +139,8 @@ procedure bsmcl is
 	action_set_breakpoint	: constant string (1..5) := "break";
 	-- CS: add more actions use the when evaluating arguments
 
-	vector_id		: type_vector_id;
-	bit_position	: type_sxr_break_position := 0; -- in case bit_position to break at is not provided, default used
+	vector_id_breakpoint	: type_vector_id_breakpoint;
+	bit_position			: type_sxr_break_position := 0; -- in case bit_position to break at is not provided, default used
 
 	type language_type is (german, english);
 	language 	: language_type := english;
@@ -1638,9 +1638,9 @@ begin
 		-- set break point begin
 		elsif action = action_set_breakpoint then
 			prog_position := "BP100";
-			vector_id := type_vector_id'value(argument(2));
+			vector_id_breakpoint := type_vector_id_breakpoint'value(argument(2));
 			-- CS: message when invalid id given
-			put_line ("sxr id         : " & trim(type_vector_id'image(vector_id),left));
+			put_line ("sxr id         : " & trim(type_vector_id_breakpoint'image(vector_id_breakpoint),left));
 			if arg_ct = 3 then
 				prog_position := "BP200";
 				bit_position := type_sxr_break_position'value(argument(3));
@@ -1653,7 +1653,7 @@ begin
 				(
 				interface_to_scan_master 	=> to_string(interface_to_scan_master),
 				directory_of_binary_files	=> to_string(directory_of_binary_files),
-				vector_id					=> vector_id,
+				vector_id_breakpoint		=> vector_id_breakpoint,
 				bit_position				=> bit_position
 				) is
 				when true =>
