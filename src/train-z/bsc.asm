@@ -73,8 +73,8 @@ sxr_ln2b	equ	09Ch
 sxr_ln2c	equ	09Dh
 sxr_ln2d	equ	09Eh	;MSB of SXR chain length 2
 
-step_ida	equ	094h	;MSB of step_id
-step_idb	equ	095h
+step_ida	equ	094h	;sxr id lowbyte
+step_idb	equ	095h	;sxr id highbyte
 
 ram_adr0	equ	085h	;LSB of current RAM address
 ram_adr1	equ	086h
@@ -826,9 +826,9 @@ l_4a:	ld		HL,dbg			;see comments at label l_0 and following
 
 		ld		HL,step_id
 		call	TX_STR
-		in		A,(step_idb)
+		in		A,(step_idb);read sxr id highbyte
 		call	APP_ACCU
-		in		A,(step_ida)
+		in		A,(step_ida);read sxr id lowbyte
 		call	APP_ACCU
 		call	TX_STD_OUT	;TX input value to host
 		ld		HL,NEW_LINE	;transmit new line
@@ -837,9 +837,9 @@ l_4a:	ld		HL,dbg			;see comments at label l_0 and following
 		;breakpoint sxr id
 		ld		HL,brk_sxr
 		call	TX_STR
-		in		A,(bp_sxr_lowbyte)
-		call	APP_ACCU
 		in		A,(bp_sxr_highbyte)
+		call	APP_ACCU
+		in		A,(bp_sxr_lowbyte)
 		call	APP_ACCU
 		call	TX_STD_OUT	;TX input value to host
 		ld		HL,NEW_LINE	;transmit new line
@@ -848,13 +848,13 @@ l_4a:	ld		HL,dbg			;see comments at label l_0 and following
 		;breakpoint bit position
 		ld		HL,brk_bp
 		call	TX_STR
-		in		A,(bp_bp_0)
-		call	APP_ACCU
-		in		A,(bp_bp_1)
+		in		A,(bp_bp_3)	; highbyte
 		call	APP_ACCU
 		in		A,(bp_bp_2)
 		call	APP_ACCU
-		in		A,(bp_bp_3)
+		in		A,(bp_bp_1)
+		call	APP_ACCU
+		in		A,(bp_bp_0)	; lowbyte
 		call	APP_ACCU
 		call	TX_STD_OUT	;TX input value to host
 		ld		HL,NEW_LINE	;transmit new line
