@@ -1645,14 +1645,13 @@ begin
 			if vector_id_breakpoint = 0 then
 				put_line("breakpoint removed");
 			else
-				put_line("breakpoint set at");
+				put_line("breakpoint set after");
 				put_line ("sxr id         : " & trim(type_vector_id_breakpoint'image(vector_id_breakpoint),left));
 				if arg_ct = 3 then
 					prog_position := "BP200";
-					bit_position := type_sxr_break_position'value(argument(3));
-					-- CS: message when invalid bit position given
+					bit_position := type_sxr_break_position'value(argument(3)); -- CS: message when invalid bit position given
+					put_line ("bit position   : " & trim(type_sxr_break_position'image(bit_position),left));
 				end if;
-				put_line ("bit position   : " & trim(type_sxr_break_position'image(bit_position),left));
 			end if;
 
 			prog_position := "BP300";
