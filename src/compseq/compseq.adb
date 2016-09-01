@@ -36,6 +36,9 @@
 
 --   2016-07-29: - vector file dummy bytes (at pos. 10 and 11) removed. they now contain the step count (incl. low level commands)
 
+--  todo:
+--	- write udb and project in compile listing
+
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
 with Ada.Float_Text_IO;		use Ada.Float_Text_IO;

@@ -1605,6 +1605,7 @@ begin
 					step_mode					=> step_mode
 					--execute_item				=> test
 					) is
+					-- CS: distinguish between executed step and test !
 					when pass =>
 						prog_position := "RU310";
 						new_line;
@@ -1659,6 +1660,7 @@ begin
 				when true =>
 					prog_position := "BP310";
 					new_line;
+					-- CS: output "breakpoint cleared" when vector_id_breakpoint is zero
 					put_line("breakpoint set");
 				when others =>
 					prog_position := "RU320";
