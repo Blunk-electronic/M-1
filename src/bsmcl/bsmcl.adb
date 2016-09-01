@@ -1641,13 +1641,19 @@ begin
 			prog_position := "BP100";
 			vector_id_breakpoint := type_vector_id_breakpoint'value(argument(2));
 			-- CS: message when invalid id given
-			put_line ("sxr id         : " & trim(type_vector_id_breakpoint'image(vector_id_breakpoint),left));
-			if arg_ct = 3 then
-				prog_position := "BP200";
-				bit_position := type_sxr_break_position'value(argument(3));
-				-- CS: message when invalid bit position given
+
+			if vector_id_breakpoint = 0 then
+				put_line("breakpoint removed");
+			else
+				put_line("breakpoint set at");
+				put_line ("sxr id         : " & trim(type_vector_id_breakpoint'image(vector_id_breakpoint),left));
+				if arg_ct = 3 then
+					prog_position := "BP200";
+					bit_position := type_sxr_break_position'value(argument(3));
+					-- CS: message when invalid bit position given
+				end if;
+				put_line ("bit position   : " & trim(type_sxr_break_position'image(bit_position),left));
 			end if;
-			put_line ("bit position   : " & trim(type_sxr_break_position'image(bit_position),left));
 
 			prog_position := "BP300";
 			case set_breakpoint
@@ -1659,14 +1665,10 @@ begin
 				) is
 				when true =>
 					prog_position := "BP310";
-					new_line;
-					-- CS: output "breakpoint cleared" when vector_id_breakpoint is zero
-					put_line("breakpoint set");
 				when others =>
-					prog_position := "RU320";
+					prog_position := "BP320";
 					new_line;
 					put_line("ERROR: Internal malfunction !");
-					put_line("breakpoint NOT set");
 					raise constraint_error;
 			end case;
 		-- set breakpoint end
