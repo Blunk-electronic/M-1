@@ -34,36 +34,23 @@
 
 
 with Ada.Text_IO;		use Ada.Text_IO;
---with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
---with Ada.Sequential_IO;
---with System.OS_Lib;   use System.OS_Lib;
 with Ada.Strings; 			use Ada.Strings;
 with Ada.Strings.Fixed; 	use Ada.Strings.Fixed;
 with Ada.Strings.Bounded; 	use Ada.Strings.Bounded;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
---with Ada.Task_Identification;  use Ada.Task_Identification;
 with Ada.Exceptions; use Ada.Exceptions;
  
 with GNAT.OS_Lib;   	use GNAT.OS_Lib;
---with system.os_lib; -- internal
 with Ada.Command_Line;	use Ada.Command_Line;
 with Ada.Directories;	use Ada.Directories;
 with ada.environment_variables;
 
---with gnat.directory_operations;
---with ada.os;
 with m1;
 with m1_internal; use m1_internal;
 
 procedure bsmcl is
 	Version			: String (1..3) := "023";
-	--bin_dir			: String := "/opt/m-1/bin/"; -- CS: need to adapt it to the customers machine ?
---	bin_dir			: String := "/home/luno/cad/projects/m-1/bin/"; -- CS: need to adapt it to the customers machine ? -- mod v017 -- rm v020
-
-	--report_file		: string := "test.txt";
-
--- 	step_mode	  	: m1_internal.step_mode_type;
 
 	uut_dir			: Unbounded_String;
 	action			: Unbounded_string;
@@ -92,8 +79,7 @@ procedure bsmcl is
 	net_list		: unbounded_string;
 	part_list		: unbounded_string;
 
-	v_model			: unbounded_string; -- ins V016
---	partlist_given	: boolean;
+	v_model			: unbounded_string;
 	project_name	: unbounded_string;
 
 	line			: unbounded_string;
@@ -101,20 +87,10 @@ procedure bsmcl is
 
 	key				: String (1..1) := "n";
 	Result   		: Integer;
---	success			: boolean;
 	prog_position	: String (1..5) := "-----";
 
--- 	test_failed		: constant Ada.Command_Line.Exit_Status := 12;
--- 	test_passed		: constant Ada.Command_Line.Exit_Status := 11;
--- 	test_running	: constant Ada.Command_Line.Exit_Status := 10;
--- 	test_error 		: constant Ada.Command_Line.Exit_Status := 13;
--- 	bsc_reset		: constant Ada.Command_Line.Exit_Status := 14;
-
-	arg_ct			: natural; -- ins v020
-	arg_pt			: natural := 1; -- ins v020
-
-	universal_string_length	: natural := 100;
-	package universal_string_type is new generic_bounded_length(universal_string_length); use universal_string_type;
+	arg_ct			: natural;
+	arg_pt			: natural := 1;
 
 	conf_file				: Ada.Text_IO.File_Type;
 	help_file				: Ada.Text_IO.File_Type;
@@ -123,16 +99,11 @@ procedure bsmcl is
 	conf_file_name			: string (1..8) := "M-1.conf";
 	help_file_name_german	: string (1..15) := "help_german.txt";
 	help_file_name_english	: string (1..16) := "help_english.txt";
-	--log_file_txt			: unbounded_string := to_unbounded_string("stock_log.txt");
 	directory_of_backup		: unbounded_string;
 	directory_of_log		: unbounded_string;
 	directory_of_binary_files	: unbounded_string;
 	directory_of_enscript		: unbounded_string;
 	interface_to_scan_master	: universal_string_type.bounded_string;
-	base_address			: string (1..8) := "FFFFFFFF";
-
-	row_separator			: string (1..60) := "------------------------------------------------------------";
-	row_separator_double	: string (1..60) := "============================================================";
 
 	action_request_help		: constant string (1..4) := "help";
 	action_create_project	: constant string (1..6) := "create";
@@ -157,20 +128,20 @@ procedure bsmcl is
 			raise constraint_error;
 		else
 			-- compose home directory name
-			home_directory := to_bounded_string(ada.environment_variables.value("HOME")); -- this is the absolute path of the home directory
+			home_directory := universal_string_type.to_bounded_string(ada.environment_variables.value("HOME")); -- this is the absolute path of the home directory
 			--put_line(to_string(home_directory));
 		end if;
 
 		-- check if conf file exists	
 		prog_position := "ENV10";
-		if not exists ( to_string(home_directory) & '/' & conf_directory & '/' & conf_file_name ) then 
+		if not exists ( universal_string_type.to_string(home_directory) & '/' & conf_directory & '/' & conf_file_name ) then 
 			raise constraint_error;
 		else
 			-- read configuration file
 			Open(
 				file => conf_file,
 				Mode => in_file,
-				Name => ( to_string(home_directory) & '/' & conf_directory & '/' & conf_file_name )
+				Name => ( universal_string_type.to_string(home_directory) & '/' & conf_directory & '/' & conf_file_name )
 				);
 			set_input(conf_file);
 			while not end_of_file
@@ -191,7 +162,7 @@ procedure bsmcl is
 				if m1.get_field(line,1,' ') = "directory_of_binary_files" then 
 					prog_position := "ENV30";
 					if m1.get_field(line,2,' ')(1) /= '/' then -- if no heading /, take this as relative to home directory
-						directory_of_binary_files := to_unbounded_string(to_string(home_directory)) & '/' &
+						directory_of_binary_files := to_unbounded_string(universal_string_type.to_string(home_directory)) & '/' &
 							to_unbounded_string(m1.get_field(line,2,' '));
 					else -- otherwise take this as an absolute path
 						directory_of_binary_files := to_unbounded_string(m1.get_field(line,2,' '));
@@ -206,7 +177,7 @@ procedure bsmcl is
 				if m1.get_field(line,1,' ') = "directory_of_enscript" then 
 					prog_position := "ENV40";
 					if m1.get_field(line,2,' ')(1) /= '/' then -- if no heading /, take this as relative to home directory
-						directory_of_enscript := to_unbounded_string(to_string(home_directory)) & '/' &
+						directory_of_enscript := to_unbounded_string(universal_string_type.to_string(home_directory)) & '/' &
 							to_unbounded_string(m1.get_field(line,2,' '));
 					else -- otherwise take this as an absolute path
 						directory_of_enscript := to_unbounded_string(m1.get_field(line,2,' '));
@@ -220,7 +191,7 @@ procedure bsmcl is
 				-- get interface_to_scan_master
 				if m1.get_field(line,1,' ') = "interface_to_scan_master" then 
 					prog_position := "ENV50";
-					interface_to_scan_master := to_bounded_string(m1.get_field(line,2,' ')); -- this must be an absolute path
+					interface_to_scan_master := universal_string_type.to_bounded_string(m1.get_field(line,2,' ')); -- this must be an absolute path
 --					if debug_mode = 1 then 
 --						put_line("interface_to_scan_master : " & to_string(interface_to_scan_master));
 --					end if;
@@ -235,11 +206,11 @@ procedure bsmcl is
 		prog_position := "ENV90";
 		case language is
 			when german => 
-				if not exists ( to_string(home_directory) & "/" & conf_directory & help_file_name_german ) then 
+				if not exists ( universal_string_type.to_string(home_directory) & "/" & conf_directory & help_file_name_german ) then 
 					put_line("ERROR : German help file missing !");
 				end if;
 			when english =>
-				if not exists ( to_string(home_directory) & "/" & conf_directory & help_file_name_english ) then 
+				if not exists ( universal_string_type.to_string(home_directory) & "/" & conf_directory & help_file_name_english ) then 
 					put_line("ERROR : English help file missing !");
 				end if;
 			when others =>
@@ -247,7 +218,7 @@ procedure bsmcl is
 		end case;
 
 		if debug_mode = 1 then
-			put_line(row_separator);
+			put_line(column_separator_0);
 		end if;
 		set_input(previous_input);
 	end check_environment;
@@ -480,7 +451,7 @@ begin
 
 	new_line;
 	put("M-1 Command Line Interface Version "& Version); new_line;
-	put_line(row_separator_double);
+	put_line(column_separator_1);
 	check_environment;
 
 		
@@ -540,13 +511,13 @@ begin
 					open(
 						file => help_file,
 						mode => in_file,
-						name => to_string(home_directory) & "/" & conf_directory & help_file_name_german
+						name => universal_string_type.to_string(home_directory) & "/" & conf_directory & help_file_name_german
 						);
 				when others =>
 					open(
 						file => help_file,
 						mode => in_file,
-						name => to_string(home_directory) & "/" & conf_directory & help_file_name_english
+						name => universal_string_type.to_string(home_directory) & "/" & conf_directory & help_file_name_english
 						);
 			end case;
 			set_input(help_file);
@@ -1435,7 +1406,7 @@ begin
 			if load_test 
 				(
 				test_name					=> m1.strip_trailing_forward_slash(Argument(2)),
-				interface_to_scan_master	=> to_string(interface_to_scan_master),
+				interface_to_scan_master	=> universal_string_type.to_string(interface_to_scan_master),
 				directory_of_binary_files	=> to_string(directory_of_binary_files)
 				) then
 				prog_position := "LD110";
@@ -1443,44 +1414,6 @@ begin
 				prog_position := "LD120";
 				set_exit_status(failure);
 			end if;
-
-			
-			-- check if test exists
--- 			if exists (compose (to_string(test_name),to_string(test_name), "vec")) then
--- 				put_line ("test name      : " & test_name);
--- 				base_address := m1_internal.get_test_base_address(to_string(test_name));
--- 				put_line ("base address   : " & base_address);
--- 				new_line;
--- 				--bsm --load $name
--- 				-- load test
--- 				Spawn 
--- 					(  
--- 					--Program_Name           => to_string(directory_of_binary_files) & "/bsm",
--- 					program_name           => to_string(directory_of_binary_files) & "/kermit/loadtest",
--- 					Args                   => 	(
--- 												--1=> new String'("--load"),
--- 												1=> new string'(to_string(test_name) & '/' & to_string(test_name) & ".vec"),
--- 												--2=> new String'(to_string(test_name)) -- pass test name to bsm
--- 												2=> new string'(to_string(interface_to_scan_master)),
--- 												3=> new string'(base_address(3..6)) -- CS: currently we transfer only bits 23:8
--- 												),
--- 
--- 					Output_File_Descriptor => Standout,
--- 					Return_Code            => Result
--- 					);
--- 				-- evaluate result
--- 				if Result = 0 then advise_next_step_load(to_string(test_name));
--- 				else
--- 					prog_position := "LD300";			
--- 					put("ERROR    : Malfunction while loading '"& test_name &"' ! Aborting ..."); new_line;
--- 					put("code     :"); put(Result); new_line; 
--- 					raise constraint_error;
--- 				end if;
--- 
--- 			else 
--- 				prog_position := "LD200";			
--- 				raise constraint_error;
--- 			end if;
 		-- test loading end
 
 
@@ -1493,7 +1426,7 @@ begin
 
 			if dump_ram
 				(
-				interface_to_scan_master 	=> to_string(interface_to_scan_master),
+				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
 				directory_of_binary_files	=> to_string(directory_of_binary_files),
 				ram_addr					=> ram_addr -- page address bits [23:8]
 				) then
@@ -1502,32 +1435,6 @@ begin
 				prog_position := "DP120";
 				set_exit_status(failure);
 			end if;
-
-			
-			-- view mem
--- 				Spawn 
--- 					(  
--- 					Program_Name           => to_string(directory_of_binary_files) & "/bsm",
--- 					Args                   => 	(
--- 												1=> new String'("--dump"),
--- 												2=> new String'(to_string(ram_addr)) -- pass ram address bsm
--- 												),
--- 					Output_File_Descriptor => Standout,
--- 					Return_Code            => Result
--- 					);
--- 				-- evaluate result
--- 				if Result = 0 then null; -- advise_next_step_load(to_string(test_name));
--- 				else
--- 					prog_position := "DP300";			
--- 					put("ERROR    : Malfunction while hexdumping ! Aborting ..."); new_line;
--- 					--put("code     :"); put(Result); new_line; 
--- 					raise constraint_error;
--- 				end if;
-
-			--else 
-			--	prog_position := "LD2";			
-			--	raise constraint_error;
-			--end if;
 		-- RAM dump end
 
 
@@ -1537,7 +1444,7 @@ begin
 			
 			if clear_ram
 				(
-				interface_to_scan_master 	=> to_string(interface_to_scan_master),
+				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
 				directory_of_binary_files	=> to_string(directory_of_binary_files)
 				) then
 				prog_position := "CLR20";
@@ -1546,34 +1453,6 @@ begin
 				prog_position := "CLR30";
 				set_exit_status(failure);
 			end if;
-
-			--ram_addr:=to_unbounded_string(Argument(2));
-			
-			-- view mem
--- 				Spawn 
--- 					(  
--- 					Program_Name           => to_string(directory_of_binary_files) & "/bsm",
--- 					Args                   => 	(
--- 												1=> new String'("--clrram")
--- 												--2=> new String'(to_string(ram_addr)) -- pass ram address bsm
--- 												),
--- 					Output_File_Descriptor => Standout,
--- 					Return_Code            => Result
--- 					);
--- 				-- evaluate result
--- 				if Result = 0 then 
--- 					put_line("RAM cleared. Please upload compiled tests now.");
--- 				else
--- 					prog_position := "-----";			
--- 					put("ERROR    : Malfunction while clearing RAM ! Aborting ..."); new_line;
--- 					--put("code     :"); put(Result); new_line; 
--- 					raise constraint_error;
--- 				end if;
-
-			--else 
-			--	prog_position := "LD2";			
-			--	raise constraint_error;
-			--end if;
 		-- RAM clear end
 
 
@@ -1600,7 +1479,7 @@ begin
 				case execute_test
 					(
 					test_name 					=> to_string(test_name),
-					interface_to_scan_master 	=> to_string(interface_to_scan_master),
+					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
 					directory_of_binary_files	=> to_string(directory_of_binary_files),
 					step_mode					=> step_mode
 					--execute_item				=> test
@@ -1657,7 +1536,7 @@ begin
 			prog_position := "BP300";
 			case set_breakpoint
 				(
-				interface_to_scan_master 	=> to_string(interface_to_scan_master),
+				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
 				directory_of_binary_files	=> to_string(directory_of_binary_files),
 				vector_id_breakpoint		=> vector_id_breakpoint,
 				bit_position				=> bit_position
@@ -1780,7 +1659,7 @@ begin
 
 			if query_status
 				(
-				interface_to_scan_master 	=> to_string(interface_to_scan_master),
+				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
 				directory_of_binary_files	=> to_string(directory_of_binary_files)
 				) then
 				prog_position := "QS120";
@@ -1788,37 +1667,6 @@ begin
 				prog_position := "QS130";
 				set_exit_status(failure);
 			end if;
-
-			
-			-- check if test exists
-			--if exists (compose (to_string(test_name),to_string(test_name), "vec")) then
-			--	put ("running        : ");	put(test_name); new_line;
-			--	put ("mode           : ");	put("production"); new_line; --put(run_mode); new_line;
-				--bsm --run $run_mode $name  #launch single test/ISP
-				-- launch test
--- 				Spawn 
--- 					(  
--- 					Program_Name           => to_string(directory_of_binary_files) & "/bsm",
--- 					Args                   => 	(
--- 												1=> new String'("--status")
--- 												--2=> new String'("production"), --(to_string(run_mode)), -- pass run mode to bsm
--- 												--3=> new String'(to_string(test_name)) -- pass test name to bsm
--- 												),
--- 					Output_File_Descriptor => Standout,
--- 					Return_Code            => Result
--- 					);
--- 				-- evaluate result
--- 				put("BSC status     : ");
--- 				case Result is
--- 					when 10 => 		put_line("Test RUNNING"); set_exit_status(test_running);
--- 					when 11 => 		put_line("Test PASSED"); set_exit_status(test_passed);
--- 					when 12 => 		put_line("Test FAILED"); set_exit_status(test_failed);
--- 					when 13 => 		put_line("Test ERROR"); set_exit_status(test_error);
--- 					when 14 => 		put_line("RESET"); set_exit_status(bsc_reset);
--- 					when others => 	put_line("UNKNOWN");new_line; put_line("ERROR    : Malfunction while BSC status query !");
--- 									put("code     :"); put(Result); new_line;
--- 									raise constraint_error;
--- 				end case;
 		-- query bsc status end
 
 		-- show firmware begin
@@ -1826,7 +1674,7 @@ begin
 			prog_position := "FW000";
 			if show_firmware
 				(
-				interface_to_scan_master	=> to_string(interface_to_scan_master),
+				interface_to_scan_master	=> universal_string_type.to_string(interface_to_scan_master),
 				directory_of_binary_files	=> to_string(directory_of_binary_files)
 				) then
 				prog_position := "FW100";
@@ -1841,12 +1689,9 @@ begin
 		-- UUT power down begin
 		elsif action = "off" then
 			prog_position := "SDN01";
-			--prog_position := "RU1";
-			--test_name:=to_unbounded_string(Argument(2));
-
 			if shutdown
 				(
-				interface_to_scan_master 	=> to_string(interface_to_scan_master),
+				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
 				directory_of_binary_files	=> to_string(directory_of_binary_files)
 				) then
 				prog_position := "SDN10";
@@ -1854,80 +1699,7 @@ begin
 				prog_position := "SDN20";
 				set_exit_status(failure);
 			end if;
-
-			
-			-- check if test exists
-			--if exists (compose (to_string(test_name),to_string(test_name), "vec")) then
-			--	put ("running        : ");	put(test_name); new_line;
-			--	put ("mode           : ");	put("production"); new_line; --put(run_mode); new_line;
-				--bsm --run $run_mode $name  #launch single test/ISP
-				-- launch test
--- 				Spawn 
--- 					(  
--- 					Program_Name           => to_string(directory_of_binary_files) & "/bsm",
--- 					Args                   => 	(
--- 												1=> new String'("--stop")
--- 												--2=> new String'("production"), --(to_string(run_mode)), -- pass run mode to bsm
--- 												--3=> new String'(to_string(test_name)) -- pass test name to bsm
--- 												),
--- 					Output_File_Descriptor => Standout,
--- 					Return_Code            => Result
--- 					);
--- 				-- evaluate result
--- 				if 
--- 					Result = 0 then 
--- 						put("Test stopped !"); new_line;
--- 						put("UUT has been shut down !"); new_line;
--- 						put("TAP signals disconnected !"); new_line; new_line;
--- 						put("Test FAILED !"); new_line;
--- 				else
--- 					--prog_position := "RU3";					
--- 					put("ERROR    : Malfunction while UUT shut down !"); new_line;
--- 					put("code     :"); put(Result); new_line; 
--- 					raise constraint_error;
--- 				end if;
-
 		-- UUT power down end
-
-
--- 		-- batch execution begin
--- 		elsif action = "run_sequence" then
--- 			prog_position := "---";
--- 			sequence_name:=to_unbounded_string(Argument(2));
--- 			
--- 			-- check if sequence exists
--- 			if exists (to_string(sequence_name)) then
--- 				put ("running        : ");	put(sequence_name); new_line;
--- 
--- 				-- pass sequence_name and directory to sequence_handler
--- 				Spawn 
--- 					(  
--- 					Program_Name           => bin_dir & "sequence_handler",
--- 					Args                   => 	(
--- 												1=> new String'(Containing_Directory(to_string(sequence_name))),
--- 												2=> new String'(to_string(sequence_name))
--- 												),
--- 					Output_File_Descriptor => Standout,
--- 					Return_Code            => Result
--- 					);
--- 				-- evaluate result
--- 				if 
--- 					Result = 0 then put("test sequence '"& sequence_name &"' PASSED !"); new_line;
--- 				elsif
--- 					Result = 1 then put("test sequence '"& sequence_name &"' FAILED !"); new_line;
--- 					Set_Exit_Status(Failure);
--- 				else
--- 					prog_position := "---";					
--- 					put("ERROR    : Malfunction while executing test sequence '"& sequence_name &"' ! Aborting ..."); new_line;
--- 					put("code     :"); put(Result); new_line; 
--- 					raise constraint_error;
--- 				end if;
--- 
--- 			else 
--- 				prog_position := "---";
--- 				raise constraint_error;
--- 			end if;
--- 		-- test execution end
 
 
 
