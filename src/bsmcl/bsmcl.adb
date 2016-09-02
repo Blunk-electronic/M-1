@@ -1811,320 +1811,315 @@ begin
    new_line;
 
 	exception
-		when Constraint_Error => 
-			if prog_position = "ENV10" then
-				put_line("ERROR ! No configuration file '" & conf_directory & conf_file_name & "' found in home directory.");
+		--when Constraint_Error => 
+		when event: 
+			others =>
+				set_exit_status(failure);
+				set_output(standard_output);
 
-			elsif prog_position = "CRT00" then
-									--new_line;
-									put ("ERROR ! No action specified ! What do you want to do ?"); new_line; 
-									put ("        Actions available are :");new_line;
-									put ("        - " & action_create_project & "    (set up a new project)"); new_line;									
-									put ("        - impcad    (import net and part lists from CAD system)"); new_line;
-									put ("        - join      (merge submodule with mainmodule after CAD import)"); new_line;									
-									put ("        - impbsdl   (import BSDL models)"); new_line;
-									put ("        - mknets    (make boundary scan nets)"); new_line;
-									put ("        - mkoptions (generate options file template)"); new_line;									
-									put ("        - chkpsn    (check entries made by operator in options file)"); new_line;
-									put ("        - generate  (generate a test with a certain profile)"); new_line;
-									put ("        - compile   (compile a test)"); new_line;
-									put ("        - load      (load a compiled test into the Boundary Scan Controller)"); new_line;
-									put ("        - clear     (clear entire RAM of the Boundary Scan Controller)"); new_line;
-									put ("        - dump      (view a RAM section of the Boundary Scan Controller (use for debugging only !))"); new_line;
-									put ("        - run       (run a test/step on your UUT/target and WAIT until test done)"); new_line;
-									put ("        - " & action_set_breakpoint & "     (set break point at step ID and bit position)"); new_line;
-									--put ("        - step      (execute a single test step on your UUT/target)"); new_line;
-									--put ("        - start     (start a test on your UUT/target system and DO NOT WAIT until end of test)"); new_line;
-									put ("        - off       (immediately stop a running test, shut down UUT power and disconnect TAP signals)"); new_line;
-									put ("        - status    (query Boundary Scan Controller status)"); new_line;
-									put ("        - report    (view the latest sequence execution results)"); new_line;	
-									put ("        - mkvmod    (create verilog model port list from main module skeleton.txt)"); new_line;
-									put ("        - " & action_request_help & "    (get examples and assistance)"); new_line;
-									put ("        - firmware  (get firmware versions)"); new_line;
-									put ("        Example: bsmcl" & action_set_breakpoint); new_line;
-								
-							elsif prog_position = "PDS00" then
-									put ("ERROR : No project data found in current working directory !"); new_line;
-									put ("        A project directory must contain at least a file named 'proj_desc.txt' !"); new_line;									
+				if prog_position = "ENV10" then
+					put_line("ERROR ! No configuration file '" & conf_directory & conf_file_name & "' found in home directory.");
+
+				elsif prog_position = "CRT00" then
+										--new_line;
+										put ("ERROR ! No action specified ! What do you want to do ?"); new_line; 
+										put ("        Actions available are :");new_line;
+										put ("        - " & action_create_project & "    (set up a new project)"); new_line;									
+										put ("        - impcad    (import net and part lists from CAD system)"); new_line;
+										put ("        - join      (merge submodule with mainmodule after CAD import)"); new_line;									
+										put ("        - impbsdl   (import BSDL models)"); new_line;
+										put ("        - mknets    (make boundary scan nets)"); new_line;
+										put ("        - mkoptions (generate options file template)"); new_line;									
+										put ("        - chkpsn    (check entries made by operator in options file)"); new_line;
+										put ("        - generate  (generate a test with a certain profile)"); new_line;
+										put ("        - compile   (compile a test)"); new_line;
+										put ("        - load      (load a compiled test into the Boundary Scan Controller)"); new_line;
+										put ("        - clear     (clear entire RAM of the Boundary Scan Controller)"); new_line;
+										put ("        - dump      (view a RAM section of the Boundary Scan Controller (use for debugging only !))"); new_line;
+										put ("        - run       (run a test/step on your UUT/target and WAIT until test done)"); new_line;
+										put ("        - " & action_set_breakpoint & "     (set break point at step ID and bit position)"); new_line;
+										--put ("        - step      (execute a single test step on your UUT/target)"); new_line;
+										--put ("        - start     (start a test on your UUT/target system and DO NOT WAIT until end of test)"); new_line;
+										put ("        - off       (immediately stop a running test, shut down UUT power and disconnect TAP signals)"); new_line;
+										put ("        - status    (query Boundary Scan Controller status)"); new_line;
+										put ("        - report    (view the latest sequence execution results)"); new_line;	
+										put ("        - mkvmod    (create verilog model port list from main module skeleton.txt)"); new_line;
+										put ("        - " & action_request_help & "    (get examples and assistance)"); new_line;
+										put ("        - firmware  (get firmware versions)"); new_line;
+										put ("        Example: bsmcl" & action_set_breakpoint); new_line;
 									
-							elsif prog_position = "IBL00" then
-									new_line;									
-									put ("ERROR ! No database specified !"); new_line; 
-									--put ("        Actions available are : impcad, impbsdl, mknets, chkpsn, generate, compile, load, run"); new_line;
-									put ("        Example: bsmcl impbsdl MMU.udb"); new_line;
-				
-							elsif prog_position = "MKN00" then
-									new_line;									
-									put ("ERROR ! No database specified !"); new_line; 
-									--put ("        Actions available are : impcad, impbsdl, mknets, chkpsn, generate, compile, load, run"); new_line;
-									put ("        Example: bsmcl mknets MMU.udb"); new_line;
-				
-							elsif prog_position = "JSM00" then
-									new_line;									
-									put ("ERROR ! No submodule specified !"); new_line; 
-									--put ("        Actions available are : impcad, impbsdl, mknets, chkpsn, generate, compile, load, run"); new_line;
-									put ("        Run command 'ls *.txt' to get a list of available skeleton files !"); new_line; 									 																		
-									put ("        Then try example: bsmcl join skeleton_my_submodule.txt"); new_line;
+				elsif prog_position = "PDS00" then
+						put ("ERROR : No project data found in current working directory !"); new_line;
+						put ("        A project directory must contain at least a file named 'proj_desc.txt' !"); new_line;									
+						
+				elsif prog_position = "IBL00" then
+						new_line;									
+						put ("ERROR ! No database specified !"); new_line; 
+						--put ("        Actions available are : impcad, impbsdl, mknets, chkpsn, generate, compile, load, run"); new_line;
+						put ("        Example: bsmcl impbsdl MMU.udb"); new_line;
+	
+				elsif prog_position = "MKN00" then
+						new_line;									
+						put ("ERROR ! No database specified !"); new_line; 
+						--put ("        Actions available are : impcad, impbsdl, mknets, chkpsn, generate, compile, load, run"); new_line;
+						put ("        Example: bsmcl mknets MMU.udb"); new_line;
+	
+				elsif prog_position = "JSM00" then
+						new_line;									
+						put ("ERROR ! No submodule specified !"); new_line; 
+						--put ("        Actions available are : impcad, impbsdl, mknets, chkpsn, generate, compile, load, run"); new_line;
+						put ("        Run command 'ls *.txt' to get a list of available skeleton files !"); new_line; 									 																		
+						put ("        Then try example: bsmcl join skeleton_my_submodule.txt"); new_line;
 
-				
-							elsif prog_position = "JSN00" then
-									new_line;
-									put ("        Make sure path and name of skeleton submodule are correct !"); new_line;
-									put ("        Run command 'ls *.txt' to get a list of available skeleton files !"); new_line; 									 
-				
-							elsif prog_position = "SMN00" then
-									new_line;
-									put ("ERROR ! No main module 'skeleton.txt' found. !"); new_line;
-									put ("        It appears you have not imported any CAD data yet. Please import CAD data now."); new_line;
-									put ("        Example: bsmcl impcad cad_format net_list [partlist]"); new_line; 									 
-				
-							elsif prog_position = "MKO00" then
-									new_line;									
-									put ("ERROR ! No database specified !"); new_line; 
-									put ("        Example: bsmcl mkoptions MMU.udb"); new_line;
-				
-							elsif prog_position = "CPS00" then
-									new_line;									
-									put ("ERROR ! No database specified !"); new_line; 
-									--put ("        Actions available are : impcad, impbsdl, mknets, chkpsn, generate, compile, load, run"); new_line;
-									put ("        Example: bsmcl chkpsn MMU.udb"); new_line;
-				
-							elsif prog_position = "GEN00" then
-									new_line;									
-									put ("ERROR ! No database specified !"); new_line; 
-									put ("        Example: bsmcl generate MMU.udb"); new_line;
-				
-							elsif prog_position = "OP100" then
-									new_line;									
-									put ("ERROR ! No options file specified !"); new_line; 
-									put ("        Example: bsmcl chkpsn MMU.udb options_file.opt"); new_line;
-				
-							elsif prog_position = "OP200" then
-									new_line;									
-									put ("ERROR ! No options file specified !"); new_line; 
-									put ("        Example: bsmcl mkoptions MMU.udb options_file.opt"); new_line;
-				
-							elsif prog_position = "OPE00" then
-									new_line;									
-									put ("        Make sure path and options file name are correct !"); new_line; 
-									put ("        Example: bsmcl chkpsn MMU.udb options_file.opt"); new_line;
-								
-							elsif prog_position = "DBE00" then
-									new_line;
-									put ("        Make sure path and database file name are correct !"); new_line; 
-				
-							elsif prog_position = "ICD00" then
-									new_line;									
-									put ("ERROR ! No CAD format specified !"); new_line; 
-									put ("        Formats available are :"); new_line;
-									--put ("        - eagle4"); new_line; 
-									put ("        - altium"); new_line;
-									put ("        - eagle6"); new_line;									
-									put ("        - orcad"); new_line;
-									put ("        - zuken"); new_line;
-									put ("        Example: bsmcl impcad eagle5"); new_line;
-				
-							elsif prog_position = "NCF00" then
-									new_line;									
-									put ("ERROR ! Unsupported CAD format specified !"); new_line; 
-									put ("        Formats available are :"); new_line;
-									--put ("        - eagle4"); new_line; 
-									put ("        - altium"); new_line;
-									put ("        - eagle6"); new_line;									
-									put ("        - orcad"); new_line;
-									put ("        - zuken"); new_line;
-									put ("        Example: bsmcl impcad eagle5"); new_line;
-				
-							elsif prog_position = "INE00" then
-									new_line;									
-									put ("ERROR ! Netlist not specified !"); new_line; 
-									--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
-									put ("        Example: bsmcl impcad format cad/board.net"); new_line;
+	
+				elsif prog_position = "JSN00" then
+						new_line;
+						put ("        Make sure path and name of skeleton submodule are correct !"); new_line;
+						put ("        Run command 'ls *.txt' to get a list of available skeleton files !"); new_line; 									 
+	
+				elsif prog_position = "SMN00" then
+						new_line;
+						put ("ERROR ! No main module 'skeleton.txt' found. !"); new_line;
+						put ("        It appears you have not imported any CAD data yet. Please import CAD data now."); new_line;
+						put ("        Example: bsmcl impcad cad_format net_list [partlist]"); new_line; 									 
+	
+				elsif prog_position = "MKO00" then
+						new_line;									
+						put ("ERROR ! No database specified !"); new_line; 
+						put ("        Example: bsmcl mkoptions MMU.udb"); new_line;
+	
+				elsif prog_position = "CPS00" then
+						new_line;									
+						put ("ERROR ! No database specified !"); new_line; 
+						--put ("        Actions available are : impcad, impbsdl, mknets, chkpsn, generate, compile, load, run"); new_line;
+						put ("        Example: bsmcl chkpsn MMU.udb"); new_line;
+	
+				elsif prog_position = "GEN00" then
+						new_line;									
+						put ("ERROR ! No database specified !"); new_line; 
+						put ("        Example: bsmcl generate MMU.udb"); new_line;
+	
+				elsif prog_position = "OP100" then
+						new_line;									
+						put ("ERROR ! No options file specified !"); new_line; 
+						put ("        Example: bsmcl chkpsn MMU.udb options_file.opt"); new_line;
+	
+				elsif prog_position = "OP200" then
+						new_line;									
+						put ("ERROR ! No options file specified !"); new_line; 
+						put ("        Example: bsmcl mkoptions MMU.udb options_file.opt"); new_line;
+	
+				elsif prog_position = "OPE00" then
+						new_line;									
+						put ("        Make sure path and options file name are correct !"); new_line; 
+						put ("        Example: bsmcl chkpsn MMU.udb options_file.opt"); new_line;
+					
+				elsif prog_position = "DBE00" then
+						new_line;
+						put ("        Make sure path and database file name are correct !"); new_line; 
+	
+				elsif prog_position = "ICD00" then
+						new_line;									
+						put ("ERROR ! No CAD format specified !"); new_line; 
+						put ("        Formats available are :"); new_line;
+						--put ("        - eagle4"); new_line; 
+						put ("        - altium"); new_line;
+						put ("        - eagle6"); new_line;									
+						put ("        - orcad"); new_line;
+						put ("        - zuken"); new_line;
+						put ("        Example: bsmcl impcad eagle5"); new_line;
+	
+				elsif prog_position = "NCF00" then
+						new_line;									
+						put ("ERROR ! Unsupported CAD format specified !"); new_line; 
+						put ("        Formats available are :"); new_line;
+						--put ("        - eagle4"); new_line; 
+						put ("        - altium"); new_line;
+						put ("        - eagle6"); new_line;									
+						put ("        - orcad"); new_line;
+						put ("        - zuken"); new_line;
+						put ("        Example: bsmcl impcad eagle5"); new_line;
+	
+				elsif prog_position = "INE00" then
+						new_line;									
+						put ("ERROR ! Netlist not specified !"); new_line; 
+						--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
+						put ("        Example: bsmcl impcad format cad/board.net"); new_line;
 
-							elsif prog_position = "NLE00" then
-									new_line;									
-									put ("        Make sure path and netlist file name are correct !"); new_line; 
-									--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
-									put ("        Example: bsmcl impcad format cad/board.net"); new_line;
+				elsif prog_position = "NLE00" then
+						new_line;									
+						put ("        Make sure path and netlist file name are correct !"); new_line; 
+						--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
+						put ("        Example: bsmcl impcad format cad/board.net"); new_line;
 
-							elsif prog_position = "PLE00" then
-									new_line;									
-									put ("        Make sure path and partlist file name are correct !"); new_line; 
-									--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
-									put ("        Example: bsmcl impcad format cad/board.net cad/board.part"); new_line;
+				elsif prog_position = "PLE00" then
+						new_line;									
+						put ("        Make sure path and partlist file name are correct !"); new_line; 
+						--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
+						put ("        Example: bsmcl impcad format cad/board.net cad/board.part"); new_line;
 
-							elsif prog_position = "IPA00" then
-									new_line;									
-									put ("ERROR ! Partlist not specified !"); new_line; 
-									--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
-									put ("        Example: bsmcl impcad format cad/board.net cad/board.part"); new_line;
+				elsif prog_position = "IPA00" then
+						new_line;									
+						put ("ERROR ! Partlist not specified !"); new_line; 
+						--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
+						put ("        Example: bsmcl impcad format cad/board.net cad/board.part"); new_line;
 
-							elsif prog_position = "OAT00" then
-									new_line;									
-									put ("CANCELLED by operator !"); new_line;
-									--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
-									--put ("        Example: bsmcl impcad eagle5 cad/board.net cad/board.part"); new_line;
+				elsif prog_position = "OAT00" then
+						new_line;									
+						put ("CANCELLED by operator !"); new_line;
+						--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
+						--put ("        Example: bsmcl impcad eagle5 cad/board.net cad/board.part"); new_line;
 
-							elsif prog_position = "TPR00" then --or if prog_position = "TPN" then
-									new_line(2);									
-									--if prog_position "TPR" then put ("ERROR ! Test profile not specified !"); new_line; 
-									--else put("ERROR : Specified test profile not supported !"); 
-									put("ERROR : Test profile either not specified or not supported !"); new_line;
-									put ("        Profiles available are : "); new_line;
-									put ("        - infrastructure"); new_line;
-									put ("        - interconnect"); new_line;									
-									put ("        - memconnect"); new_line;									
-									put ("        - clock"); new_line;
-									put ("        - toggle"); new_line;									
-									put ("        Example: bsmcl generate MMU.udb infrastructure"); new_line;
-				
-							elsif prog_position = "TNA00" then
-									new_line;									
-									put ("ERROR ! Test name not specified !"); new_line; 
-									put ("        Example: bsmcl generate MMU.udb profile my_test_name"); new_line;
+				elsif prog_position = "TPR00" then --or if prog_position = "TPN" then
+						new_line(2);									
+						--if prog_position "TPR" then put ("ERROR ! Test profile not specified !"); new_line; 
+						--else put("ERROR : Specified test profile not supported !"); 
+						put("ERROR : Test profile either not specified or not supported !"); new_line;
+						put ("        Profiles available are : "); new_line;
+						put ("        - infrastructure"); new_line;
+						put ("        - interconnect"); new_line;									
+						put ("        - memconnect"); new_line;									
+						put ("        - clock"); new_line;
+						put ("        - toggle"); new_line;									
+						put ("        Example: bsmcl generate MMU.udb infrastructure"); new_line;
+	
+				elsif prog_position = "TNA00" then
+						new_line;									
+						put ("ERROR ! Test name not specified !"); new_line; 
+						put ("        Example: bsmcl generate MMU.udb profile my_test_name"); new_line;
 
-							elsif prog_position = "TDV00" then
-									new_line;									
-									put ("ERROR ! Target device not specified !"); new_line; 
-									put ("        Example: bsmcl generate MMU.udb memconnect my_test_name IC202"); new_line;
+				elsif prog_position = "TDV00" then
+						new_line;									
+						put ("ERROR ! Target device not specified !"); new_line; 
+						put ("        Example: bsmcl generate MMU.udb memconnect my_test_name IC202"); new_line;
 
-							--elsif prog_position = "TOD" then
-							--		new_line;									
-							--		put ("ERROR ! Target device not specified !"); new_line; 
-							--		put ("        Example: bsmcl generate MMU.udb toggle my_test_name IC3"); new_line;
+				--elsif prog_position = "TOD" then
+				--		new_line;									
+				--		put ("ERROR ! Target device not specified !"); new_line; 
+				--		put ("        Example: bsmcl generate MMU.udb toggle my_test_name IC3"); new_line;
 
-							elsif prog_position = "DVM00" then
-									new_line;									
-									put ("ERROR ! Device model not specified !"); new_line; 
-									put ("        Example: bsmcl generate MMU.udb memconnect my_test_name RAM_IC202 models/U62256.txt"); new_line;
+				elsif prog_position = "DVM00" then
+						new_line;									
+						put ("ERROR ! Device model not specified !"); new_line; 
+						put ("        Example: bsmcl generate MMU.udb memconnect my_test_name RAM_IC202 models/U62256.txt"); new_line;
 
-							elsif prog_position = "DMN00" then
-									new_line;									
-									put ("        Make sure path and model file name are correct !"); new_line; 
-									put ("        Example: bsmcl generate MMU.udb memconnect my_test_name RAM_IC202 models/U62256.txt"); new_line;
+				elsif prog_position = "DMN00" then
+						new_line;									
+						put ("        Make sure path and model file name are correct !"); new_line; 
+						put ("        Example: bsmcl generate MMU.udb memconnect my_test_name RAM_IC202 models/U62256.txt"); new_line;
 
-							elsif prog_position = "DPC00" then
-									new_line;									
-									put ("ERROR ! Device package not specified !"); new_line; 
-									put ("        Example: bsmcl generate MMU.udb memconnect my_test_name RAM_IC202 models/U62256.txt NDIP28"); new_line;
+				elsif prog_position = "DPC00" then
+						new_line;									
+						put ("ERROR ! Device package not specified !"); new_line; 
+						put ("        Example: bsmcl generate MMU.udb memconnect my_test_name RAM_IC202 models/U62256.txt NDIP28"); new_line;
 
-							elsif prog_position = "TPI00" then
-									new_line;									
-									put ("ERROR ! Receiver pin not specified !"); new_line; 
-									put ("        Example: bsmcl generate MMU.udb clock my_test_name IC7 56"); new_line;
+				elsif prog_position = "TPI00" then
+						new_line;									
+						put ("ERROR ! Receiver pin not specified !"); new_line; 
+						put ("        Example: bsmcl generate MMU.udb clock my_test_name IC7 56"); new_line;
 
-							elsif prog_position = "TON00" then
-									new_line;									
-									put ("ERROR ! Target net not specified !"); new_line; 
-									put ("        Example: bsmcl generate MMU.udb toggle my_test_name SIO_CLK"); new_line;
+				elsif prog_position = "TON00" then
+						new_line;									
+						put ("ERROR ! Target net not specified !"); new_line; 
+						put ("        Example: bsmcl generate MMU.udb toggle my_test_name SIO_CLK"); new_line;
 
-							elsif prog_position = "RYC00" then
-									new_line;									
-									put ("ERROR ! Max retry count not specified !"); new_line; 
-									put ("        Example: bsmcl generate MMU.udb clock my_test_name IC7 56 10"); new_line;
+				elsif prog_position = "RYC00" then
+						new_line;									
+						put ("ERROR ! Max retry count not specified !"); new_line; 
+						put ("        Example: bsmcl generate MMU.udb clock my_test_name IC7 56 10"); new_line;
 
-							elsif prog_position = "RDY00" then
-									new_line;									
-									put ("ERROR ! Retry delay (unit is sec) not specified !"); new_line; 
-									put ("        Example: bsmcl generate MMU.udb clock my_test_name IC7 56 1 "); new_line;
+				elsif prog_position = "RDY00" then
+						new_line;									
+						put ("ERROR ! Retry delay (unit is sec) not specified !"); new_line; 
+						put ("        Example: bsmcl generate MMU.udb clock my_test_name IC7 56 1 "); new_line;
 
-							elsif prog_position = "TCT00" then
-									new_line;									
-									put ("ERROR ! Cycle count not specified !"); new_line; 
-									put ("        Example: bsmcl generate MMU.udb toggle my_test_name SIO_CLK 10"); new_line;
+				elsif prog_position = "TCT00" then
+						new_line;									
+						put ("ERROR ! Cycle count not specified !"); new_line; 
+						put ("        Example: bsmcl generate MMU.udb toggle my_test_name SIO_CLK 10"); new_line;
 
-							elsif prog_position = "TLT00" then
-									new_line;									
-									put ("ERROR ! Low time (unit is sec) not specified !"); new_line; 
-									put ("        Example: bsmcl generate MMU.udb toggle my_test_name SIO_CLK 10 2"); new_line;
+				elsif prog_position = "TLT00" then
+						new_line;									
+						put ("ERROR ! Low time (unit is sec) not specified !"); new_line; 
+						put ("        Example: bsmcl generate MMU.udb toggle my_test_name SIO_CLK 10 2"); new_line;
 
-							elsif prog_position = "THT00" then
-									new_line;									
-									put ("ERROR ! High time (unit is sec) not specified !"); new_line; 
-									put ("        Example: bsmcl generate MMU.udb toggle my_test_name SIO_CLK 10 2 0.5"); new_line;
+				elsif prog_position = "THT00" then
+						new_line;									
+						put ("ERROR ! High time (unit is sec) not specified !"); new_line; 
+						put ("        Example: bsmcl generate MMU.udb toggle my_test_name SIO_CLK 10 2 0.5"); new_line;
 
-							elsif prog_position = "PJN00" then
-									new_line;									
-									put ("ERROR ! Project name not specified !"); new_line; 
-									put ("        Example: bsmcl create new_project_name"); new_line;
+				elsif prog_position = "PJN00" then
+						new_line;									
+						put ("ERROR ! Project name not specified !"); new_line; 
+						put ("        Example: bsmcl create new_project_name"); new_line;
 
-							elsif prog_position = "CMP00" then
-									new_line;									
-									put ("ERROR ! No database specified !"); new_line; 
-									put ("        Example: bsmcl compile MMU.udb"); new_line;
+				elsif prog_position = "CMP00" then
+						new_line;									
+						put ("ERROR ! No database specified !"); new_line; 
+						put ("        Example: bsmcl compile MMU.udb"); new_line;
 
-							elsif prog_position = "CTN00" then
-									new_line;									
-									put ("ERROR ! Test name not specified !"); new_line; 
-									put ("        Example: bsmcl compile MMU.udb my_test_name"); new_line;
-
-
-							elsif prog_position = "CNE00" then
-									new_line;									
-									put ("ERROR : Test '"& test_name &"' has not been generated yet !"); new_line;
-									put ("        Please generate test, then try again."); new_line;
-
-							elsif prog_position = "LD100" then
-									new_line;									
-									put ("ERROR : Test name not specified !"); new_line;
-									put ("        Example: bsmcl load my_test_name"); new_line;
-
-							elsif prog_position = "LD200" or prog_position = "RU2" then
-									new_line;									
-									put ("ERROR : Test '"& test_name &"' either does not exist or has not been compiled yet !"); new_line;
-									put ("        Please generate/compile test, then try again."); new_line;
-
-							elsif prog_position = "RU100" then
-									new_line;									
-									put ("ERROR : Test name not specified !"); new_line;
-									put ("        Example: bsmcl run my_test_name"); new_line;
-
-							elsif prog_position = "RU400" then
-									new_line;									
-									put ("ERROR : Step mode not supported or invalid !"); new_line;
-									put ("        Example: bsmcl run my_test_name [step_mode]"); new_line;
-									put ("        Supported step modes are: ");
-									for p in 0..m1_internal.step_mode_count
-									loop
-										put(m1_internal.type_step_mode'image(m1_internal.type_step_mode'val(p)));
-										if p < m1_internal.step_mode_count then put(" , "); end if;
-									end loop;
-									new_line;
+				elsif prog_position = "CTN00" then
+						new_line;									
+						put ("ERROR ! Test name not specified !"); new_line; 
+						put ("        Example: bsmcl compile MMU.udb my_test_name"); new_line;
 
 
-							elsif prog_position = "LD300" or prog_position = "RU3" then
-									new_line;									
-									put("Measures : - Check cable connection between PC and BSC !"); new_line;
-									put("           - Make sure BSC is powered on (GREEN LED flashes) !"); new_line;					
-									put("           - Push YELLOW reset button on BSC, then try again !"); new_line;															
+				elsif prog_position = "CNE00" then
+						new_line;									
+						put ("ERROR : Test '"& test_name &"' has not been generated yet !"); new_line;
+						put ("        Please generate test, then try again."); new_line;
 
-							elsif prog_position = "ACV00" then
-									new_line;
-									put ("ERROR ! Too little arguments specified !"); new_line;
-									put ("        Example: mkvmod skeleton.txt your_verilog_module (without .v extension)"); new_line;  
+				elsif prog_position = "LD100" then
+						new_line;									
+						put ("ERROR : Test name not specified !"); new_line;
+						put ("        Example: bsmcl load my_test_name"); new_line;
 
-							end if;
-									new_line;
-									put ("PROGRAM ABORTED !"); new_line; 
-									put_line(prog_position);
-									new_line;
-									Set_Exit_Status(Failure);		
+				elsif prog_position = "LD200" or prog_position = "RU2" then
+						new_line;									
+						put ("ERROR : Test '"& test_name &"' either does not exist or has not been compiled yet !"); new_line;
+						put ("        Please generate/compile test, then try again."); new_line;
 
-		
-   --Spawn
-   --(  Program_Name           => "/bin/ls",
-   --   Args                   => Arguments,
-   --   Output_File_Descriptor => Standout,
-   --   Return_Code            => Result
-   --);
-   --for Index in Arguments'Range loop
-   --   Free (Arguments (Index)); -- Free the argument list
-   --end loop;
-		when others => 
-				new_line;
-				put ("PROGRAM ABORTED !"); new_line; 
-				put_line(prog_position);
-				new_line;
-				Set_Exit_Status(Failure);		
+				elsif prog_position = "RU100" then
+						new_line;									
+						put ("ERROR : Test name not specified !"); new_line;
+						put ("        Example: bsmcl run my_test_name"); new_line;
+
+				elsif prog_position = "RU400" then
+						new_line;									
+						put ("ERROR : Step mode not supported or invalid !"); new_line;
+						put ("        Example: bsmcl run my_test_name [step_mode]"); new_line;
+						put ("        Supported step modes are: ");
+						for p in 0..m1_internal.step_mode_count
+						loop
+							put(m1_internal.type_step_mode'image(m1_internal.type_step_mode'val(p)));
+							if p < m1_internal.step_mode_count then put(" , "); end if;
+						end loop;
+						new_line;
+
+
+				elsif prog_position = "LD300" or prog_position = "RU3" then
+						new_line;									
+						put("Measures : - Check cable connection between PC and BSC !"); new_line;
+						put("           - Make sure BSC is powered on (GREEN LED flashes) !"); new_line;					
+						put("           - Push YELLOW reset button on BSC, then try again !"); new_line;															
+
+				elsif prog_position = "ACV00" then
+						new_line;
+						put ("ERROR ! Too little arguments specified !"); new_line;
+						put ("        Example: mkvmod skeleton.txt your_verilog_module (without .v extension)"); new_line;  
+
+				else
+   
+					put("unexpected exception: ");
+					put_line(exception_name(event));
+					put(exception_message(event)); new_line;
+					put_line("program error at position " & prog_position);
+				end if;
+
+-- 				new_line;
+-- 				put ("PROGRAM ABORTED !"); new_line; 
+-- 				put_line(prog_position);
+-- 				new_line;
+--				Set_Exit_Status(Failure);
 
 end bsmcl;
