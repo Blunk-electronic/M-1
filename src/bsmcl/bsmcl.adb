@@ -48,6 +48,7 @@ with ada.environment_variables;
 
 with m1;
 with m1_internal; use m1_internal;
+with m1_numbers;
 
 procedure bsmcl is
 	Version			: String (1..3) := "023";
