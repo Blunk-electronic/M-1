@@ -44,7 +44,7 @@ with Ada.Directories;			use Ada.Directories;
 
 with m1;
 with m1_internal; use m1_internal;
-
+with m1_numbers; use m1_numbers;
 
 procedure mkinfra is
 
@@ -136,14 +136,14 @@ procedure mkinfra is
 							);
 						-- write instruction depended part
 						case instruction is
-							when idcode => m1_internal.put_binary_class_1(b.opc_idcode); -- example: "11111110 idcode"
-							when usercode => m1_internal.put_binary_class_1(b.opc_usercode);
-							when sample => m1_internal.put_binary_class_1(b.opc_sample);
-							when preload => m1_internal.put_binary_class_1(b.opc_preload);
+							when idcode => put_binary_class_1(b.opc_idcode); -- example: "11111110 idcode"
+							when usercode => put_binary_class_1(b.opc_usercode);
+							when sample => put_binary_class_1(b.opc_sample);
+							when preload => put_binary_class_1(b.opc_preload);
 							when extest => 
 								put_line(standard_output,"WARNING: IC '" & universal_string_type.to_string(b.name) 
 									& "' WILL BE OPERATED IN EXTEST MODE !");
-								m1_internal.put_binary_class_1(b.opc_extest);
+								put_binary_class_1(b.opc_extest);
 							when others => 
 								put_line(standard_output,"ERROR: Instruction '" & type_bic_instruction'image(instruction)
 									& "' not allowed for infra structure test !");
@@ -194,7 +194,7 @@ procedure mkinfra is
 									& " 0 "
 									& sxr_assignment_operator.assign & row_separator_0
 									);
-								m1_internal.put_binary_class_1(b.safebits);
+								put_binary_class_1(b.safebits);
 								new_line;
 
 						end case;
@@ -217,7 +217,7 @@ procedure mkinfra is
 									& " 0 "
 									& sxr_assignment_operator.assign & row_separator_0
 									);
-								m1_internal.put_binary_class_1(b.idcode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
+								put_binary_class_1(b.idcode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
 
 							when usercode =>
 								-- example: "usercode 31 downto 0 = xxxx1001010100000010000010010011"
@@ -228,7 +228,7 @@ procedure mkinfra is
 									& " 0 "
 									& sxr_assignment_operator.assign & row_separator_0
 									);
-								m1_internal.put_binary_class_1(b.usercode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
+								put_binary_class_1(b.usercode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
 								-- NOTE: if usercode not programmed yet, it is all x
 
 							when others => -- sample, preload, extest
@@ -289,7 +289,7 @@ procedure mkinfra is
 						& sxr_vector_orientation.downto & row_separator_0 & "0" & row_separator_0
 						& sxr_assignment_operator.assign & row_separator_0
 						);
-					m1_internal.put_binary_class_1(b.opc_bypass);
+					put_binary_class_1(b.opc_bypass);
 					put_line(" bypass");
 
 					-- write instruction capture
@@ -302,7 +302,7 @@ procedure mkinfra is
 						& sxr_vector_orientation.downto & row_separator_0 & "0" & row_separator_0
 						& sxr_assignment_operator.assign & row_separator_0
 						);
-					m1_internal.put_binary_class_1(b.capture_ir);
+					put_binary_class_1(b.capture_ir);
 					new_line;
 
 				end if; -- if bic id matches p

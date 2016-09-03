@@ -1,7 +1,7 @@
 TARGET = udbinfo
 
 VPATH = include
-OBJS = $(TARGET).o m1.o m1_internal.o m1_firmware.o
+OBJS = $(TARGET).o m1.o m1_internal.o m1_firmware.o m1_numbers.o
 PREFIX = $(HOME)
 BINDIR = $(PREFIX)/bin
 

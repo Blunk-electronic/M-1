@@ -54,6 +54,7 @@ with Ada.Directories;	use Ada.Directories;
 
 with m1;
 with m1_internal; use m1_internal;
+with m1_numbers; use m1_numbers;
 
 procedure chkpsn is
 
