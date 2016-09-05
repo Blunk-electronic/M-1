@@ -952,13 +952,13 @@ procedure mkmemcon is
 
 			end check_for_bit_character;
 
-			function format_is(text_in : string ; format_indicator : type_format_indicator) return boolean is
+			function format_is(text_in : string ; format_indicator : type_radix_indicator) return boolean is
 			-- returns true if given text_in ends in a valid format indicator (like d,b,h)
 			-- CS: move to m1_internal.ads
 				pos_of_format_indicator	: positive := text_in'last;
 			begin
 				--put_line(text_in & " " & type_format_indicator'image(format_indicator)(2));
-				if text_in(pos_of_format_indicator) = type_format_indicator'image(format_indicator)(2) then
+				if text_in(pos_of_format_indicator) = type_radix_indicator'image(format_indicator)(2) then
 					-- NOTE: delimiters must be stripped (2) from type_format_indicator'image
 					return true;
 				end if;
