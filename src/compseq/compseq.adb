@@ -2215,8 +2215,8 @@ procedure compseq is
 		end read_sequence;
 
 		procedure order_img is
-			t	: ptr_type_test_step_pre := ptr_test_step_pre;
-			offset	: unsigned_8;
+			t			: ptr_type_test_step_pre := ptr_test_step_pre;
+			sxr_type	: unsigned_8 := 0; -- has a bit set for a particular option
 
 			procedure write_image_in_vector_file(img : type_string_of_bit_characters_class_0; length : positive) is
 			-- writes the image (LSB left, pos. 1) in vector file. starts with LSB
@@ -2349,89 +2349,43 @@ procedure compseq is
 								--write_listing(item => source_code, src_code => "dummy");
 								listing_address := listing_address + 2; -- prepare next location to be written in listing
 
-								-- WRITE SXR MARKER (8 bit)
-								-- CS: makeshift to set sxr markers with end state "pause-xr"
-								-- if option end_sxr PXR given, add 10h to marker. otherwise the marker is unchanged according to current firmware
+								-- WRITE SXR MARKER (8 bit) -- read m1_firmware.ads !
 								case t.scan is
 									when sir =>
+										sxr_type := set_clear_bit_unsigned_8(sxr_type,7,true); -- bit 7 set indicates sir
 										case test_info.end_sir is
-											when RTI => offset := 0;
-											when PIR => offset := mark_sxr_offset;
+											when RTI => sxr_type := set_clear_bit_unsigned_8(sxr_type,6,true);  -- bit 6 set -> end state RTI
+											when PIR => sxr_type := set_clear_bit_unsigned_8(sxr_type,6,false); -- bit 6 cleared -> end state pause-xr
 										end case;
 									when sdr =>
+										sxr_type := set_clear_bit_unsigned_8(sxr_type,7,false); -- bit 7 cleard indicates sdr
 										case test_info.end_sdr is
-											when RTI => offset := 0;
-											when PDR => offset := mark_sxr_offset;
+											when RTI => sxr_type := set_clear_bit_unsigned_8(sxr_type,6,true);  -- bit 6 set -> end state RTI
+											when PDR => sxr_type := set_clear_bit_unsigned_8(sxr_type,6,false); -- bit 6 cleared -> end state pause-xr
 										end case;
+								end case;
+
+								case t.retry_count is
+									when 0 => 
+										write_byte_in_vector_file(sxr_type);
+										write_listing(item => object_code, obj_code => sxr_type);
+										listing_address := listing_address + 1;
+									when others => 
+										sxr_type := set_clear_bit_unsigned_8(sxr_type,3,true); -- bit 3 set indicates retry type
+										write_byte_in_vector_file(sxr_type);
+										write_listing(item => object_code, obj_code => sxr_type);
+										write_byte_in_vector_file(t.retry_count);
+										write_listing(item => object_code, obj_code => t.retry_count);
+										write_byte_in_vector_file(t.retry_delay);
+										write_listing(item => object_code, obj_code => t.retry_delay);
+										listing_address := listing_address + 3;
 								end case;
 
 								case scanpath_options.on_fail is
 									when HSTRST => 
-										case t.scan is
-											when sir => 
-												case t.retry_count is
-													when 0 => 
-														write_byte_in_vector_file(mark_sir_hstrst + offset);
-														write_listing(item => object_code, obj_code => mark_sir_hstrst + offset);
-														listing_address := listing_address + 1;
-													when others => 
-														write_byte_in_vector_file(mark_sir_hstrst_retry + offset);
-														write_listing(item => object_code, obj_code => mark_sir_hstrst_retry + offset);
-														write_byte_in_vector_file(t.retry_count);
-														write_listing(item => object_code, obj_code => t.retry_count);
-														write_byte_in_vector_file(t.retry_delay);
-														write_listing(item => object_code, obj_code => t.retry_delay);
-														listing_address := listing_address + 3;
-												end case;
-											when sdr => 
-												case t.retry_count is
-													when 0 => 
-														write_byte_in_vector_file(mark_sdr_hstrst + offset);
-														write_listing(item => object_code, obj_code => mark_sdr_hstrst + offset);
-														listing_address := listing_address + 1;
-													when others => 
-														write_byte_in_vector_file(mark_sdr_hstrst_retry + offset);
-														write_listing(item => object_code, obj_code => mark_sdr_hstrst_retry + offset);
-														write_byte_in_vector_file(t.retry_count);
-														write_listing(item => object_code, obj_code => t.retry_count);
-														write_byte_in_vector_file(t.retry_delay);
-														write_listing(item => object_code, obj_code => t.retry_delay);
-														listing_address := listing_address + 3;
-												end case;
-										end case;
+										sxr_type := set_clear_bit_unsigned_8(sxr_type,5,true); -- bit 5 set indicates: hstrst on fail
 									when POWER_DOWN =>
-										case t.scan is
-											when sir =>
-												case t.retry_count is
-													when 0 => 
-														write_byte_in_vector_file(mark_sir_pwrdown + offset);
-														write_listing(item => object_code, obj_code => mark_sir_pwrdown + offset);
-														listing_address := listing_address + 1;
-													when others => 
-														write_byte_in_vector_file(mark_sir_pwrdown_retry + offset);
-														write_listing(item => object_code, obj_code => mark_sir_pwrdown_retry + offset);
-														write_byte_in_vector_file(t.retry_count);
-														write_listing(item => object_code, obj_code => t.retry_count);
-														write_byte_in_vector_file(t.retry_delay);
-														write_listing(item => object_code, obj_code => t.retry_delay);
-														listing_address := listing_address + 3;
-												end case;
-											when sdr =>
-												case t.retry_count is
-													when 0 => 
-														write_byte_in_vector_file(mark_sdr_pwrdown + offset);
-														write_listing(item => object_code, obj_code => mark_sdr_pwrdown + offset);
-														listing_address := listing_address + 1;
-													when others => 
-														write_byte_in_vector_file(mark_sdr_pwrdown_retry + offset);
-														write_listing(item => object_code, obj_code => mark_sdr_pwrdown_retry + offset);
-														write_byte_in_vector_file(t.retry_count);
-														write_listing(item => object_code, obj_code => t.retry_count);
-														write_byte_in_vector_file(t.retry_delay);
-														write_listing(item => object_code, obj_code => t.retry_delay);
-														listing_address := listing_address + 3;
-												end case;
-										end case;
+										sxr_type := set_clear_bit_unsigned_8(sxr_type,4,true); -- bit 4 set indicates: power down on fail
 		-- 							when FINISH_TEST =>
 		-- 								put_line("ERROR: " & type_on_fail_action'image(scanpath_options.on_fail) & 
 								end case;
