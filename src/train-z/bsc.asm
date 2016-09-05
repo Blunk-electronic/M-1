@@ -98,6 +98,9 @@ bp_bp_1			equ	0AAh	; breakpoint bit position lowbyte+1
 bp_bp_2			equ	0ABh	; breakpoint bit position lowbyte+2
 bp_bp_3			equ	0ACh	; breakpoint bit position highbyte
 
+sp_bit_1		equ	0ADh	; scanport bits port 1
+sp_bit_2		equ	0AEh	; scanport bits port 2
+
 ;OFFSET	equ	2000h
 OFFSET	equ	8000h
 ;OFFSET	equ	0000h
@@ -815,6 +818,17 @@ l_4a:	ld		HL,dbg			;see comments at label l_0 and following
 		call	TX_STD_OUT	;TX input value to host
 		ld		HL,NEW_LINE	;transmit new line
 		call	TX_STR
+
+		ld		HL,sp_bits
+		call	TX_STR
+		in		A,(sp_bit_2);scanport bits port 2
+		call	APP_ACCU
+		in		A,(sp_bit_1);scanport bits port 1
+		call	APP_ACCU
+		call	TX_STD_OUT	;TX input value to host
+		ld		HL,NEW_LINE	;transmit new line
+		call	TX_STR
+
 
 		ld		HL,failed_sp
 		call	TX_STR
@@ -3379,6 +3393,9 @@ brk_bp:
 	DEFM	'BRB: '
 	DEFB	0h
 
+sp_bits:
+	DEFM	'SPB: '
+	DEFB	0h
 
 
 NEW_LINE:
