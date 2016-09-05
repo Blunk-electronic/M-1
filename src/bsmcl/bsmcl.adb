@@ -452,7 +452,7 @@ begin
 
 	new_line;
 	put("M-1 Command Line Interface Version "& Version); new_line;
-	put_line(column_separator_1);
+	put_line(column_separator_2);
 	check_environment;
 
 		
