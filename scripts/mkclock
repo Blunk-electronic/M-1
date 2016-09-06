@@ -344,7 +344,7 @@
 	#collect all input cells
 	sed -n '/Section atg_expect/,/EndSection/p' tmp/udb_no_emptylines.tmp > tmp/input_cells.tmp
 	sed -n '/Section static_expect/,/EndSection/p' tmp/udb_no_emptylines.tmp >> tmp/input_cells.tmp
-	sed -n '/Section input_cells_in_class_NA_nets/,/EndSection/p' tmp/udb_no_emptylines.tmp >> tmp/input_cells.tmp
+	sed -n '/Section input_cells_class_NA/,/EndSection/p' tmp/udb_no_emptylines.tmp >> tmp/input_cells.tmp
 
 	#search device in input cell list
 	target_in_input_cell_list=no;
