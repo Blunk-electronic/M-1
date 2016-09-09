@@ -49,7 +49,7 @@ with m1_internal; use m1_internal;
 with m1_numbers;
 
 procedure bsmcl is
-	Version			: String (1..3) := "023";
+	Version			: constant string (1..3) := "023";
 
 	uut_dir			: Unbounded_String;
 	action			: Unbounded_string;
@@ -94,10 +94,10 @@ procedure bsmcl is
 	conf_file				: Ada.Text_IO.File_Type;
 	help_file				: Ada.Text_IO.File_Type;
 	home_directory			: universal_string_type.bounded_string;
-	conf_directory			: string (1..5) := ".M-1/";
-	conf_file_name			: string (1..8) := "M-1.conf";
-	help_file_name_german	: string (1..15) := "help_german.txt";
-	help_file_name_english	: string (1..16) := "help_english.txt";
+	conf_directory			: constant string (1..5) := ".M-1/";
+	conf_file_name			: constant string (1..8) := "M-1.conf";
+	help_file_name_german	: constant string (1..15) := "help_german.txt";
+	help_file_name_english	: constant string (1..16) := "help_english.txt";
 	directory_of_backup		: unbounded_string;
 	directory_of_log		: unbounded_string;
 	directory_of_binary_files	: unbounded_string;
@@ -1518,7 +1518,6 @@ begin
 		elsif action = action_set_breakpoint then
 			prog_position := "BP100";
 			vector_id_breakpoint := type_vector_id_breakpoint'value(argument(2));
-			-- CS: message when invalid id given
 
 			if vector_id_breakpoint = 0 then
 				put_line("breakpoint removed");
@@ -1526,8 +1525,8 @@ begin
 				put_line("breakpoint set after");
 				put_line ("sxr id         : " & trim(type_vector_id_breakpoint'image(vector_id_breakpoint),left));
 				if arg_ct = 3 then
-					prog_position := "BP200";
-					bit_position := type_sxr_break_position'value(argument(3)); -- CS: message when invalid bit position given
+					--prog_position := "BP200";
+					bit_position := type_sxr_break_position'value(argument(3));
 					put_line ("bit position   : " & trim(type_sxr_break_position'image(bit_position),left));
 				end if;
 			end if;
@@ -2096,17 +2095,27 @@ begin
 						new_line;
 
 
-				elsif prog_position = "LD300" or prog_position = "RU3" then
+				elsif prog_position = "LD300" or prog_position = "RU3" or prog_position = "BP320" then
 						new_line;									
 						put("Measures : - Check cable connection between PC and BSC !"); new_line;
-						put("           - Make sure BSC is powered on (GREEN LED flashes) !"); new_line;					
+						put("           - Make sure BSC is powered on (RED 'FAIL' LED flashes) !"); new_line;					
 						put("           - Push YELLOW reset button on BSC, then try again !"); new_line;															
 
 				elsif prog_position = "ACV00" then
 						new_line;
 						put ("ERROR ! Too little arguments specified !"); new_line;
-						put ("        Example: mkvmod skeleton.txt your_verilog_module (without .v extension)"); new_line;  
+						put ("        Example: bsmcl mkvmod skeleton.txt your_verilog_module (without .v extension)"); new_line;  
 
+				elsif prog_position = "BP100" then
+						new_line;
+						put_line ("ERROR ! Breakpoint coordinates missing or out of range !");
+						put_line ("        Example to set breakpoint after sxr 6 bit 715: bsmcl break 6 715 ");
+						put_line ("        Allowed ranges:");
+						put_line ("           sxr id      :" & type_vector_id_breakpoint'image(type_vector_id_breakpoint'first) &
+							".." & trim(type_vector_id_breakpoint'image(type_vector_id_breakpoint'last),left));
+						put_line ("           bit position:" & type_sxr_break_position'image(type_sxr_break_position'first) &
+							".." & trim(type_sxr_break_position'image(type_sxr_break_position'last),left));
+						put_line ("        To delete the breakpoint type: bsmcl break 0");
 				else
    
 					put("unexpected exception: ");
