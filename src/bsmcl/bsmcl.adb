@@ -30,8 +30,6 @@
 --   history of changes:
 --
 --   todo:
---   - when generating a test, test if test_init_custom.txt is available. if not ask whether to use test_init_general.txt
-
 
 with Ada.Text_IO;		use Ada.Text_IO;
 with Ada.Strings; 			use Ada.Strings;
@@ -1091,8 +1089,8 @@ begin
 				if Result = 0 then 
 					put("... done"); new_line (2);
 					put("Recommended next steps :"); new_line (2);
-					put("  1. Now edit file setup/test_init_custom.txt with a text editor."); new_line;
-					put("     to prepare your generic test init sequences."); new_line (2);
+					put("  1. Now edit file '" & setup_and_templates_directory & test_init_template & "' with a text editor."); new_line;
+					put("     to prepare your test init sequence."); new_line (2);
 					put("  2. Generate tests using command 'bsmcl generate " & data_base & "'."); new_line;
 					
 				else
