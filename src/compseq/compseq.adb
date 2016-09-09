@@ -934,7 +934,7 @@ procedure compseq is
 				raise constraint_error;
 			end if;
 
-		-- "connect" (example: connect port 1)
+		-- "connect" (example: connect port 1) -- CS: "connect all"
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.connect then
 			if get_field_from_line(cmd,2) = scanport_identifier.port then 
 				if get_field_from_line(cmd,3) = "1" then
@@ -954,7 +954,7 @@ procedure compseq is
 				raise constraint_error;
 			end if;
  
-		-- "disconnect" (example: disconnect port 1)
+		-- "disconnect" (example: disconnect port 1) -- CS: "disconnect all"
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.disconnect then
 			if get_field_from_line(cmd,2) = scanport_identifier.port then 
 				if get_field_from_line(cmd,3) = "1" then
