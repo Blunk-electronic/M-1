@@ -225,7 +225,7 @@ procedure mkintercon is
 
 			type type_receivers_of_test_step is array (1..dyn_ct) of type_ptr_receiver_list;
 			receivers_of_test_step : type_receivers_of_test_step;
-			receivers_of_test_step_init : type_receivers_of_test_step;
+			receivers_of_test_step_init : type_receivers_of_test_step; -- used to reset pointers in receiver list
 
 			procedure add_to_receiver_list(
 				list			: in out type_ptr_receiver_list;
@@ -255,6 +255,7 @@ procedure mkintercon is
 					loop
 						--loop here for each ATG step
 
+						-- reset pointers in receiver lists (they still point to receivers from previous atg step)
 						receivers_of_test_step := receivers_of_test_step_init;
 
 						step_ptr := step_ptr + 1; put (" -- ATG step "); put (step_ptr,1); new_line;
@@ -263,7 +264,8 @@ procedure mkintercon is
 						driver_id := 0;
 						device := ptr_bic;
 						while device /= null loop
-							-- If device (BIC) has a dynamic drive cell, write sdr drive header.
+							-- If device (BIC) has at least one dynamic drive cell, write sdr drive header (like "set IC301 drv boundary")
+							-- In this case it appears in cell list atg_drive.
 							if device.has_dynamic_drive_cell then
 								put(
 									row_separator_0 & sequence_instruction_set.set & row_separator_0 &
@@ -272,7 +274,7 @@ procedure mkintercon is
 									sdr_target_register.boundary
 									);
 
-								-- Collect cell id and inverted-status of all drivers of the device.
+								-- Collect cell id and inverted-status of all drivers of the device (BIC).
 								driver := ptr_cell_list_atg_drive;
 								while driver /= null loop
 									if universal_string_type.to_string(driver.device) = universal_string_type.to_string(device.name) then
@@ -290,6 +292,8 @@ procedure mkintercon is
 
 										receiver := ptr_cell_list_atg_expect;
 										while receiver /= null loop
+
+											-- Add receivers of primary nets:
 											if universal_string_type.to_string(receiver.net) = universal_string_type.to_string(driver.net) then
 												-- add receivers to list
 												add_to_receiver_list(
@@ -301,7 +305,18 @@ procedure mkintercon is
 												--type type_receivers_of_test_step is array (1..dyn_ct) of type_ptr_receiver_list;
 											end if;
 
-											-- secondary nets ?
+											-- Add receivers of secondary nets:
+											if receiver.level = secondary then
+												if universal_string_type.to_string(receiver.primary_net_is) = universal_string_type.to_string(driver.net) then
+													-- add receivers to list
+													add_to_receiver_list(
+														list			=> receivers_of_test_step(driver_id),
+														device_given	=> receiver.device,
+														cell_given		=> receiver.cell,
+														expect_given	=> interconnect_matrix(driver_id,step_ptr)
+														);
+												end if;
+											end if;
 
 											receiver := receiver.next;
 										end loop;
@@ -364,100 +379,7 @@ procedure mkintercon is
 
 					end loop;
 
--- 											-- now find input cells of other devices in current primary net in atg_expect_list
--- 
--- 											Reset(atg_expect_list);
--- 											Set_Input(atg_expect_list);
--- 
--- 											device_ptr2 := 0;
--- 											while device_ptr2 < count_members
--- 												loop
--- 													-- loop here for each member
--- 													device_ptr2 := device_ptr2 + 1; --put ("receiver device " & m(device_ptr2).device); new_line;
--- 
--- 													Reset(atg_expect_list);
--- 													while not End_Of_File
--- 														loop
--- 															Line2:=Get_Line; -- from atg_expect_list
--- 															-- if primary-net (field 3) and net-name match (field 4) and device match (field 6)
--- 															if (Get_Field_Count(Line2) > 0) then
--- 																if (Is_Field(Line2,"primary_net",3) = true) 
--- 																	and (Get_Field(Line2,4) = Get_Field(Line,4)) 
--- 																	and (Get_Field(Line2,6) = m(device_ptr2).device) then
--- 																		m(device_ptr2).bsr_expect := m(device_ptr2).bsr_expect & to_unbounded_string(" " & Get_Field(Line2,10) &"="& matrix_current(driver_id,step_ptr)); 
--- 																end if;
--- 															end if;
--- 														end loop;
--- 													--put (m(device_ptr2).bsr_expect); new_line;
--- 												end loop;
--- 
--- 											
--- 											--find input cells in secondary nets
--- 											device_ptr2 := 0;
--- 											while device_ptr2 < count_members
--- 												loop
--- 													-- loop here for each member
--- 													device_ptr2 := device_ptr2 + 1; --set device to be processed for secondary net input search	
--- 													--put ("-- sec dev ptr: "); put (device_ptr2); new_line;
--- 													Reset(atg_expect_list);
--- 													while not End_Of_File
--- 														loop
--- 															Line2:=Get_Line; -- from atg_expect_list
--- 															if (Get_Field_Count(Line2) > 0) then
--- 																if (Is_Field(Line2,"secondary_net",3) = true)	-- if secondary_net
--- 																and Get_Field(Line2,12) = Get_Field(Line,4)  	-- if primary_net matches
--- 																and Get_Field(Line2,6) = m(device_ptr2).device then -- if device matches
--- 																	--put ("-- sec dev ptr: "); put (device_ptr2); new_line;
--- 																	m(device_ptr2).bsr_expect := m(device_ptr2).bsr_expect & to_unbounded_string(" " & Get_Field(Line2,10) &"="& matrix_current(driver_id,step_ptr)); 
--- 																end if;	
--- 															end if;
--- 														end loop;
--- 												end loop;
--- 
--- 										end if;
--- 										Set_Input(atg_drive_list);
--- 
--- 									end loop;
--- 							
--- 							end loop;
--- 			
--- 						-- step processing done
--- 
--- 						-- write drive values
--- 						device_ptr3 := 0;
--- 						while device_ptr3 < count_members
--- 							loop
--- 								device_ptr3 := device_ptr3 + 1;
--- 								put (m(device_ptr3).bsr_drive); new_line;
--- 							end loop;
--- 
--- 						vector_ct_atg := write_sxr_atg(vector_ct_atg,0); -- 0 -> sdr , 1 -> sir
--- 
--- 						-- write expect values
--- 						device_ptr3 := 0;
--- 						while device_ptr3 < count_members
--- 							loop
--- 								device_ptr3 := device_ptr3 + 1;
--- 								if Length(m(device_ptr3).bsr_expect) > m(device_ptr3).bsr_expect_length then 
--- 									put (m(device_ptr3).bsr_expect); new_line;
--- 									m(device_ptr3).bsr_expect := to_unbounded_string(" set " & to_string(m(device_ptr3).device) & " exp boundary");
--- 								end if;
--- 							end loop;
--- 						new_line;
--- 
--- 						
--- 
--- 					end loop;
--- 				
--- 
--- 				vector_ct_atg := write_sxr_atg(vector_ct_atg,0); -- 0 -> sdr , 1 -> sir
--- 				new_line;
--- 				put (" trst  -- comment out this line if necessary "); new_line; new_line;
--- 				put ("EndSection"); new_line;
 			end write_dynamic_drive_and_expect_values;
-
-
-
 
 
 		begin
@@ -479,8 +401,6 @@ procedure mkintercon is
 				step_ct := natural(float'ceiling( log (base => 2.0, X => float(dyn_ct) ) ) );
 				write_dynamic_drive_and_expect_values (build_interconnect_matrix);
 			end if;
-
-
 
 		end atg_mkintercon;
 
