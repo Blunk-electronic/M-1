@@ -1,7 +1,7 @@
 TARGET = mkintercon
 
 VPATH = include
-OBJS = $(TARGET).o m1.o m1_internal.o m1_firmware.o
+OBJS = $(TARGET).o m1.o m1_internal.o m1_firmware.o m1_numbers.o m1_files_and_directories.o
 PREFIX = $(HOME)
 BINDIR = $(PREFIX)/bin
 
