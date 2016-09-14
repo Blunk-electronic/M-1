@@ -55,7 +55,7 @@ procedure mkintercon is
 	version			: string (1..3) := "037";
 	prog_position	: natural := 0;
 	test_profile	: type_test_profile := interconnect;
-	type type_algorithm is ( true_complement );
+	type type_algorithm is ( true_complement ); -- CS: others: count_up, count_down, count_complement, walking_one, walking_zero, ...
 	algorithm 		: type_algorithm;
 	end_sdr			: type_end_sdr := PDR;
 	end_sir			: type_end_sir := RTI;
@@ -92,141 +92,159 @@ procedure mkintercon is
 
 
 	procedure atg_mkintercon is
-		exponent		: natural := 0;
-		result 			: natural := 0;
-		dyn_ct			: natural := 0;
-		grp_ct			: natural := 1;
-		grp_width		: natural := 1;
-		step_ct			: natural;
-		type type_interconnect_matrix is array (natural range <>, natural range <>) of type_bit_char_class_0;
+		exponent		: natural;
+		dyn_ct_rouned	: natural;
+		dyn_ct			: natural;
+		step_ct			: type_vector_id; -- There can never be more ATG-Steps than vector_count_max (see m1_internal.ads).
+		type type_interconnect_matrix is array (positive range <>, positive range <>) of type_bit_char_class_0;
 
 		function build_interconnect_matrix return type_interconnect_matrix is
-			subtype type_interconnect_matrix_sized is type_interconnect_matrix (1..dyn_ct, 1..(step_ct*2));
+			--subtype type_interconnect_matrix_sized is type_interconnect_matrix (1..dyn_ct, 1..(step_ct*2));
+			subtype type_interconnect_matrix_sized is type_interconnect_matrix (1..dyn_ct, 1..step_ct);
 			driver_matrix	: type_interconnect_matrix_sized;
 			grp_ct			: natural := 1;
 			drv_high		: type_bit_char_class_0 := '1';
 			drv_low			: type_bit_char_class_0 := '0';
 			scratch			: natural := 1;
 			drv_ptr			: natural := 1;
+			grp_width		: natural := 1;
 			grp_ptr			: natural := 0;
 			step_ptr		: natural := 0;
 		begin
-			put (" -- steps required for true-complement test : "); put (step_ct*2,1); new_line; new_line;
-			grp_width := dyn_ct;
-			while grp_width > 1
-				loop
-					step_ptr := step_ptr + 1;
-					grp_width := grp_width / 2;
-					grp_ct := grp_ct * 2;
-					--put ("step number : "); put (step_ptr); new_line;
-					--put ("group width : "); put (grp_width); new_line;
-					--put ("group count : "); put (grp_ct); new_line; new_line;
+			case algorithm is
+				when TRUE_COMPLEMENT =>
 
-					drv_ptr := 1;
-					grp_ptr := 0;
-					while grp_ptr < grp_ct
+					grp_width := dyn_ct;
+					while grp_width > 1
 						loop
-							grp_ptr := grp_ptr + 1;
+							step_ptr := step_ptr + 1;
+							grp_width := grp_width / 2;
+							grp_ct := grp_ct * 2;
+							--put ("step number : "); put (step_ptr); new_line;
+							--put ("group width : "); put (grp_width); new_line;
+							--put ("group count : "); put (grp_ct); new_line; new_line;
 
-							scratch := 1;
-							while scratch <= grp_width
+							drv_ptr := 1;
+							grp_ptr := 0;
+							while grp_ptr < grp_ct
 								loop
-									--put (scratch); new_line;
-									driver_matrix (drv_ptr,step_ptr) := drv_high;
-									--put (driver_matrix(drv_ptr,step_ptr) & " ");
-									scratch := scratch + 1;
-									drv_ptr := drv_ptr + 1;
-								end loop;
+									grp_ptr := grp_ptr + 1;
 
-							grp_ptr := grp_ptr + 1;
+									scratch := 1;
+									while scratch <= grp_width
+										loop
+											--put (scratch); new_line;
+											driver_matrix (drv_ptr,step_ptr) := drv_high;
+											--put (driver_matrix(drv_ptr,step_ptr) & " ");
+											scratch := scratch + 1;
+											drv_ptr := drv_ptr + 1;
+										end loop;
 
-							scratch := 1;
-							while scratch <= grp_width
-								loop
-									--put (scratch); new_line;
-									driver_matrix (drv_ptr,step_ptr) := drv_low;
-									--put (driver_matrix(drv_ptr,step_ptr) & " ");
-									scratch := scratch + 1;
-									drv_ptr := drv_ptr + 1;
+									grp_ptr := grp_ptr + 1;
+
+									scratch := 1;
+									while scratch <= grp_width
+										loop
+											--put (scratch); new_line;
+											driver_matrix (drv_ptr,step_ptr) := drv_low;
+											--put (driver_matrix(drv_ptr,step_ptr) & " ");
+											scratch := scratch + 1;
+											drv_ptr := drv_ptr + 1;
+										end loop;
 								end loop;
+							--new_line;
+						
 						end loop;
-					--new_line;
-				
-				end loop;
-
-			--put (" -- COMPLEMENT test"); new_line; new_line;
-			grp_ct := 1;
-			grp_width := dyn_ct;
-			while grp_width > 1
-				loop
-					step_ptr := step_ptr + 1;
-					grp_width := grp_width / 2;
-					grp_ct := grp_ct * 2;
-					--put ("step number : "); put (step_ptr); new_line;
-					--put ("group width : "); put (grp_width); new_line;
-					--put ("group count : "); put (grp_ct); new_line; new_line;
-
-					drv_ptr := 1;
-					grp_ptr := 0;
-					while grp_ptr < grp_ct
+			
+					--put (" -- COMPLEMENT test"); new_line; new_line;
+					grp_ct := 1;
+					grp_width := dyn_ct;
+					while grp_width > 1
 						loop
-							grp_ptr := grp_ptr + 1;
+							step_ptr := step_ptr + 1;
+							grp_width := grp_width / 2;
+							grp_ct := grp_ct * 2;
+							--put ("step number : "); put (step_ptr); new_line;
+							--put ("group width : "); put (grp_width); new_line;
+							--put ("group count : "); put (grp_ct); new_line; new_line;
 
-							scratch := 1;
-							while scratch <= grp_width
+							drv_ptr := 1;
+							grp_ptr := 0;
+							while grp_ptr < grp_ct
 								loop
-									--put (scratch); new_line;
-									driver_matrix (drv_ptr,step_ptr) := drv_low;
-									--put (driver_matrix(drv_ptr,step_ptr) & " ");
-									scratch := scratch + 1;
-									drv_ptr := drv_ptr + 1;
-								end loop;
+									grp_ptr := grp_ptr + 1;
 
-							grp_ptr := grp_ptr + 1;
+									scratch := 1;
+									while scratch <= grp_width
+										loop
+											--put (scratch); new_line;
+											driver_matrix (drv_ptr,step_ptr) := drv_low;
+											--put (driver_matrix(drv_ptr,step_ptr) & " ");
+											scratch := scratch + 1;
+											drv_ptr := drv_ptr + 1;
+										end loop;
 
-							scratch := 1;
-							while scratch <= grp_width
-								loop
-									--put (scratch); new_line;
-									driver_matrix (drv_ptr,step_ptr) := drv_high;
-									--put (driver_matrix(drv_ptr,step_ptr) & " ");
-									scratch := scratch + 1;
-									drv_ptr := drv_ptr + 1;
+									grp_ptr := grp_ptr + 1;
+
+									scratch := 1;
+									while scratch <= grp_width
+										loop
+											--put (scratch); new_line;
+											driver_matrix (drv_ptr,step_ptr) := drv_high;
+											--put (driver_matrix(drv_ptr,step_ptr) & " ");
+											scratch := scratch + 1;
+											drv_ptr := drv_ptr + 1;
+										end loop;
 								end loop;
+							--new_line;
+						
 						end loop;
-					--new_line;
-				
-				end loop;
+
+			end case;
 
 			return driver_matrix;
 		end build_interconnect_matrix;
 
 
 		procedure write_dynamic_drive_and_expect_values ( interconnect_matrix : type_interconnect_matrix) is
-			step_ptr	: natural := 0;
-			dyn_ct		: natural := interconnect_matrix'last(1); -- get dynamic net count from interconnect_matrix dimension x
-			step_ct		: natural := interconnect_matrix'last(2); -- get step count from interconnect_matrix dimension y
+		-- This procedure derives from the dimensions of the given interconnect_matrix the maximum of drivers (columns in x-axis)
+		-- and the number of test steps (rows in y-axis).
+		-- NOTE 1: The interconnect_matrix frequently has more columns (x) than the real number of drivers required on the UUT. The
+		--         x-axis is of size 1,2,4,8,16,32,64, ... as rounded up earlier. See Note 2 below.
+		-- Drivers are taken from cell list "atg_drive". Receivers are taken from cell list "atg_expect".
+		-- Todo: CS: write ATG steps in detailed test coverage report (with drivers, nets and reveivers)
+			step_ptr	: type_vector_id := 1; -- There can never be more ATG-Steps than vector_count_max (see m1_internal.ads).
+			dyn_ct		: natural := interconnect_matrix'last(1); -- get dynamic net count from interconnect_matrix dimension x (see NOTE 1)
+			step_ct		: type_vector_id := interconnect_matrix'last(2); -- get step count from interconnect_matrix dimension y
 			driver_id	: natural := 0;
-			driver		: type_ptr_cell_list_atg_drive 	:= ptr_cell_list_atg_drive;
-			receiver	: type_ptr_cell_list_atg_expect := ptr_cell_list_atg_expect;
-			device		: type_ptr_bscan_ic := ptr_bic;
+			atg_drive	: type_ptr_cell_list_atg_drive;	-- pointer to cell entries in list atg_drive
+			atg_expect	: type_ptr_cell_list_atg_expect;-- pointer to cell entries in list atg_expect
+			device		: type_ptr_bscan_ic; 			-- pointer to BIC list
 
+			-- Every driver has (should have) one or more receivers. For every test step, after writing the driver in the sequence file,
+			-- its receivers are collected in a list of objects type_receiver_list. The list is accessed by a pointer type_ptr_receiver_list.
+			-- Since there are many drivers, an array of pointers type_ptr_receiver_list is created later.
 			type type_receiver_list;
 			type type_ptr_receiver_list is access all type_receiver_list;
 			type type_receiver_list is
 				record
-					next		: type_ptr_receiver_list;
-					device		: universal_string_type.bounded_string;
-					cell		: type_vector_length;
-					expect		: type_bit_char_class_0;
+					next		: type_ptr_receiver_list;				-- points to next object in list
+					device		: universal_string_type.bounded_string;	-- name of BIC (boundary scan IC)
+					cell		: type_vector_length;					-- receiver (or input) cell
+					expect		: type_bit_char_class_0;				-- expect value of cell
 				end record;
-
+			
+			-- Since the lists of receivers are read many times (while writing input cells in sequence file) the pointer position must be
+			-- backup and restored. The end of the list (where the last receiver resides) must be saved and restored.
 			ptr_last_receiver_of_list : type_ptr_receiver_list;
 
+			-- Here we create the array of pointers of type_ptr_receiver_list. The array name is receivers_of_test_step.
+			-- A copy of this brand new array is instantiated further-on. It serves to reset pointers when a new ATG step is generated.
 			type type_receivers_of_test_step is array (1..dyn_ct) of type_ptr_receiver_list;
 			receivers_of_test_step : type_receivers_of_test_step;
 			receivers_of_test_step_init : type_receivers_of_test_step; -- used to reset pointers in receiver list
 
+			-- This procedure is called each time a receiver is added to a receiver list.
 			procedure add_to_receiver_list(
 				list			: in out type_ptr_receiver_list;
 				device_given	: universal_string_type.bounded_string;
@@ -234,7 +252,6 @@ procedure mkintercon is
 				expect_given	: type_bit_char_class_0
 				) is
 			begin
-				--put(universal_string_type.to_string(device_given));
 				list := new type_receiver_list'(
 				next	=> list,
 				device	=> device_given,
@@ -243,165 +260,204 @@ procedure mkintercon is
 				);
 			end add_to_receiver_list;
 
+		begin -- write_dynamic_drive_and_expect_values
+			--put_line (" -- set dynamic drive and expect values");
 
-			begin
-				put_line (" -- load dynamic drive and expect values");
+			-- eloaborate matrix_current dimensions
+			--put (" -- step ct : "); put (step_ct); new_line;
+			--put (" -- dyn  ct : "); put (dyn_ct); new_line;
 
-				-- eloaborate matrix_current dimensions
-				--put (" -- step ct : "); put (step_ct); new_line;
-				--put (" -- dyn  ct : "); put (dyn_ct); new_line;
+			-- GENERATE ATG STEPS BEGIN
+			-- The number of ATG steps equals step_ct (number of rows in interconnect_matrix (y)).
+			-- The number of drivers per ATG step is constant -> all drivers listed atg_drive list participate in test.
+			while step_ptr <= step_ct
+				loop
+					--loop here for each ATG step
 
-				while step_ptr < step_ct
-					loop
-						--loop here for each ATG step
+					-- Reset pointers in receiver lists (they still point to receivers from previous atg step).
+					receivers_of_test_step := receivers_of_test_step_init;
 
-						-- reset pointers in receiver lists (they still point to receivers from previous atg step)
-						receivers_of_test_step := receivers_of_test_step_init;
+					-- Write ATG step in sequence file.
+					put_line(" -- ATG step #" & trim(type_vector_id'image(step_ptr),left));
 
-						step_ptr := step_ptr + 1; put (" -- ATG step "); put (step_ptr,1); new_line;
+					-- WRITE DRIVERS
+					-- NOTE 2: For every driver found in atg_drive list, variable driver_id increments. The following loop
+					--         ends once atg_drive list has been read. So there might be less drivers than proposed by the x-axis
+					--         of the interconnect_matrix. See Note 1 above.
+					driver_id := 0;
+					device := ptr_bic; -- Set BIC pointer at end of list.
+					while device /= null loop
+						-- If device (BIC) has at least one dynamic drive cell, write sdr drive header (like "set IC301 drv boundary")
+						-- In this case it appears in cell list atg_drive.
+						if device.has_dynamic_drive_cell then
+							put(
+								row_separator_0 & sequence_instruction_set.set & row_separator_0 &
+								universal_string_type.to_string(device.name) & row_separator_0 &
+								sxr_io_identifier.drive & row_separator_0 &
+								sdr_target_register.boundary
+								);
 
-						-- WRITE DRIVERS
-						driver_id := 0;
-						device := ptr_bic;
-						while device /= null loop
-							-- If device (BIC) has at least one dynamic drive cell, write sdr drive header (like "set IC301 drv boundary")
-							-- In this case it appears in cell list atg_drive.
-							if device.has_dynamic_drive_cell then
-								put(
-									row_separator_0 & sequence_instruction_set.set & row_separator_0 &
-									universal_string_type.to_string(device.name) & row_separator_0 &
-									sxr_io_identifier.drive & row_separator_0 &
-									sdr_target_register.boundary
-									);
+							-- COLLECT CELL ID AND INVERTED-STATUS OF ALL DRIVERS OF THE DEVICE (BIC).
+							-- The list "atg_drive" is searched for the current BIC. On match the driver cell and value are written in
+							-- sequence file.
+							atg_drive := ptr_cell_list_atg_drive; -- Set pointer of atg_drive list at end of list.
+							while atg_drive /= null loop -- loop in list atg_drive
+								-- On BIC name match, advance driver_id.
+								if universal_string_type.to_string(atg_drive.device) = universal_string_type.to_string(device.name) then
+									driver_id := driver_id + 1; -- advance driver_id for each driver cell
+									put(type_vector_length'image(atg_drive.cell) & sxr_assignment_operator.assign); -- write cell id and assigment operator (like "45=")
 
-								-- Collect cell id and inverted-status of all drivers of the device (BIC).
-								driver := ptr_cell_list_atg_drive;
-								while driver /= null loop
-									if universal_string_type.to_string(driver.device) = universal_string_type.to_string(device.name) then
-										driver_id := driver_id + 1; -- advance driver_id for each driver cell
-										put(type_vector_length'image(driver.cell) & sxr_assignment_operator.assign);
-										if driver.controlled_by_control_cell then
-											if driver.inverted then
-												put_character_class_0(negate_bit_character_class_0(interconnect_matrix(driver_id,step_ptr)));
-											else
-												put_character_class_0(interconnect_matrix(driver_id,step_ptr));
-											end if;
-										else -- controlled by output cell itself
+									-- Check driver/control cell / inverted-status:
+									-- If the driver is a control cell, it might be inverted. This requires negation of the value taken from the interconnect_matrix.
+									-- If the driver is the output cell itself, the value from the matrix remains untouched.
+									if atg_drive.controlled_by_control_cell then
+										if atg_drive.inverted then
+											put_character_class_0(negate_bit_character_class_0(interconnect_matrix(driver_id,step_ptr)));
+										else
 											put_character_class_0(interconnect_matrix(driver_id,step_ptr));
 										end if;
+									else -- controlled by output cell itself
+										put_character_class_0(interconnect_matrix(driver_id,step_ptr));
+									end if;
 
-										receiver := ptr_cell_list_atg_expect;
-										while receiver /= null loop
+									-- COLLECT RECEIVERS
+									-- Note: Receivers may be inside the driver net or may be in secondary nets.
+									atg_expect := ptr_cell_list_atg_expect; -- Set pointer of atg_expect list at end of list.
+									while atg_expect /= null loop -- loop in list atg_expect
 
-											-- Add receivers of primary nets:
-											if universal_string_type.to_string(receiver.net) = universal_string_type.to_string(driver.net) then
+										-- ADD RECEIVERS IN PRIMARY NETS
+										-- In atg_expect list, receivers are in the same net as the driver. So on net name match:
+										if universal_string_type.to_string(atg_expect.net) = universal_string_type.to_string(atg_drive.net) then
+											-- add receivers to list
+											add_to_receiver_list(
+												list			=> receivers_of_test_step(driver_id),
+												device_given	=> atg_expect.device,
+												cell_given		=> atg_expect.cell,
+												expect_given	=> interconnect_matrix(driver_id,step_ptr)
+												);
+										end if;
+
+										-- ADD RECEIVERS IN SECONDARY NETS:
+										-- Secondary nets in list atg_expect have the selector "primary_net_is".
+										if atg_expect.level = secondary then
+											-- On match of the primary net name, add the receiver found in the secondary net to the list of receivers.
+											if universal_string_type.to_string(atg_expect.primary_net_is) = universal_string_type.to_string(atg_drive.net) then
 												-- add receivers to list
 												add_to_receiver_list(
 													list			=> receivers_of_test_step(driver_id),
-													device_given	=> receiver.device,
-													cell_given		=> receiver.cell,
+													device_given	=> atg_expect.device,
+													cell_given		=> atg_expect.cell,
 													expect_given	=> interconnect_matrix(driver_id,step_ptr)
 													);
-												--type type_receivers_of_test_step is array (1..dyn_ct) of type_ptr_receiver_list;
 											end if;
-
-											-- Add receivers of secondary nets:
-											if receiver.level = secondary then
-												if universal_string_type.to_string(receiver.primary_net_is) = universal_string_type.to_string(driver.net) then
-													-- add receivers to list
-													add_to_receiver_list(
-														list			=> receivers_of_test_step(driver_id),
-														device_given	=> receiver.device,
-														cell_given		=> receiver.cell,
-														expect_given	=> interconnect_matrix(driver_id,step_ptr)
-														);
-												end if;
-											end if;
-
-											receiver := receiver.next;
-										end loop;
-
-									end if;
-
-									driver := driver.next;
-								end loop;
-								new_line;
-
-							end if;
-							device := device.next;
-						end loop;
-
-
-						-- WRITE RECEIVERS
-						device := ptr_bic;
-						while device /= null loop
-
-							--If device (BIC) has a dynamic expect cell, write sdr expect header.
-							if device.has_dynamic_expect_cell then
-								put(
-									row_separator_0 & sequence_instruction_set.set & row_separator_0 &
-									universal_string_type.to_string(device.name) & row_separator_0 &
-									sxr_io_identifier.expect & row_separator_0 &
-									sdr_target_register.boundary
-									);
-								driver_id := 1;
-
-
-								while driver_id <= dyn_ct loop
---									put(" driver id:" & natural'image(driver_id));
-
-									ptr_last_receiver_of_list := receivers_of_test_step(driver_id); -- backup
-
-									while receivers_of_test_step(driver_id) /= null loop
-										--put_line(standard_output,"X");
-										--put(universal_string_type.to_string(receivers_of_test_step(driver_id).device));
-										if universal_string_type.to_string(receivers_of_test_step(driver_id).device) = universal_string_type.to_string(device.name) then
-											put(
-												type_vector_length'image(receivers_of_test_step(driver_id).cell) &
-												sxr_assignment_operator.assign);
-											put_character_class_0(receivers_of_test_step(driver_id).expect);
 										end if;
-										receivers_of_test_step(driver_id) := receivers_of_test_step(driver_id).next;
+
+										atg_expect := atg_expect.next; -- advance pointer to next cell entry in atg_expect
 									end loop;
+								end if;
 
-									receivers_of_test_step(driver_id) := ptr_last_receiver_of_list; -- restore
+								atg_drive := atg_drive.next; -- advance pointer to next cell entry in atg_drive
+							end loop;
+							new_line;
 
-									driver_id := driver_id + 1;
-								end loop;
-
-								new_line;
-
-							end if;
-
-
-							device := device.next;
-						end loop;
-
+						end if;
+						device := device.next; -- advance pointer to BIC in bic list
 					end loop;
 
-			end write_dynamic_drive_and_expect_values;
+
+					-- WRITE RECEIVERS
+					-- The receivers collected in the receiver list are now written in the sequence file.
+					-- The receiver cells are written for one BIC after another. For every BIC the driver id starts at position #1.
+					device := ptr_bic;  -- Set BIC pointer at end of list.
+					while device /= null loop
+
+						--If device (BIC) has a dynamic expect cell, write sdr expect header. Something like "set IC301 exp boundary"
+						if device.has_dynamic_expect_cell then
+							-- WRITING RECEIVERS OF A SINGLE BIC BEGIN
+							put(
+								row_separator_0 & sequence_instruction_set.set & row_separator_0 &
+								universal_string_type.to_string(device.name) & row_separator_0 &
+								sxr_io_identifier.expect & row_separator_0 &
+								sdr_target_register.boundary
+								);
+
+							-- For the current BIC: We start with the receivers connected with driver #1.
+							-- Set pointer in array receivers_of_test_step to first position.
+							driver_id := 1;
+
+							-- Loop here as often as interconnect_matrix has columns (even if is has more than actually required).
+							while driver_id <= dyn_ct loop -- CS: reduce the loops by using the number of drivers found above 
+
+								-- For the current driver position, the list of connected receivers is read.
+								-- But first, we must backup the pointer position receivers_of_test_step(driver_id) as it is pointing
+								-- to the end of the list.
+								ptr_last_receiver_of_list := receivers_of_test_step(driver_id); -- backup
+
+								-- Read the receiver list and filter the receiver cells of the current BIC.
+								while receivers_of_test_step(driver_id) /= null loop
+									-- On match of BIC name: write the receiver cells of the current BIC in the sequence file (like "44=0 46=1 ..."
+									if universal_string_type.to_string(receivers_of_test_step(driver_id).device) = universal_string_type.to_string(device.name) then
+										put(
+											type_vector_length'image(receivers_of_test_step(driver_id).cell) &
+											sxr_assignment_operator.assign);
+										put_character_class_0(receivers_of_test_step(driver_id).expect);
+									end if;
+									receivers_of_test_step(driver_id) := receivers_of_test_step(driver_id).next;
+								end loop;
+
+								-- Restore pointer of receivers_of_test_step(driver_id) so that it points to the last receiver again.
+								-- When processing the next BIC, this pointer must point at the end of the list again.
+								receivers_of_test_step(driver_id) := ptr_last_receiver_of_list; -- restore
+
+								driver_id := driver_id + 1; -- advance driver_id
+							end loop;
+							new_line;
+							-- WRITING RECEIVERS OF A SINGLE BIC FINISHED
+						end if;
+						device := device.next; -- advance BIC pointer
+					end loop;
+					-- WRITING RECEVIERS OF ATG STEP FINISHED
+
+					write_sdr; new_line; -- writes something like " sdr id 4"
+
+					-- Advance step_ptr.
+					step_ptr := step_ptr + 1; 
+				end loop;
+		end write_dynamic_drive_and_expect_values;
 
 
-		begin
+		begin -- atg_mkintercon
+
+			-- Take number of dynamic nets from udb summary.
 			dyn_ct := summary.net_count_statistics.bs_dynamic;
 			put_line (" -- generating test pattern for" & natural'image(dyn_ct) & " dynamic nets (secondary nets included) ...");
-
-
-			-- round up dynamic net count to next member in sequence 1,2,4,18,16,32,64, ...
-			while result < dyn_ct
-				loop
-					exponent := exponent + 1;
-					result := 2 ** exponent;
-				end loop;
-			dyn_ct := result;
 
 			-- If there are dynamic nets to generate a pattern for, calculate required step count.
 			-- Then write drive and expect values in sequence file.
 			if dyn_ct > 0 then
-				step_ct := natural(float'ceiling( log (base => 2.0, X => float(dyn_ct) ) ) );
-				write_dynamic_drive_and_expect_values (build_interconnect_matrix);
+				put(" -- steps required for algorithm ");
+				case algorithm is
+					when TRUE_COMPLEMENT =>
+
+						-- round up dynamic net count to next member in sequence 1,2,4,18,16,32,64, ...
+						dyn_ct_rouned := 0;
+						exponent := 0;
+						while dyn_ct_rouned < dyn_ct
+							loop
+								exponent := exponent + 1;
+								dyn_ct_rouned := 2 ** exponent;
+							end loop;
+						dyn_ct := dyn_ct_rouned;
+
+						step_ct := 2 * natural(float'ceiling( log (base => 2.0, X => float(dyn_ct) ) ) ); -- logarithmic compression
+						-- Step count is to be doubled because the algorithm is "true_complement".
+
+						put_line(type_algorithm'image(algorithm) & ":" & type_vector_id'image(step_ct)); new_line;
+						write_dynamic_drive_and_expect_values (build_interconnect_matrix);
+				end case;
 			end if;
 
+			-- ATG finished
 		end atg_mkintercon;
 
 
