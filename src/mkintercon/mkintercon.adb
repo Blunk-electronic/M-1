@@ -554,8 +554,6 @@ begin
 	
 	read_data_base;
 
-	-- lut ?
-
 	prog_position	:= 70;
  	create_temp_directory;
 	

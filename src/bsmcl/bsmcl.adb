@@ -1323,7 +1323,7 @@ begin
 				
 				else
 					put("ERROR: While generating test "& test_name &" ! Aborting ..."); new_line;
-					prog_position := "-----";		
+					prog_position := "TOG001;
 					raise Constraint_Error;
 					
 					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
