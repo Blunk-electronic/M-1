@@ -111,45 +111,58 @@ procedure mktoggle is
 		-- search in cell list atg_drive
 		atg_drive			: type_ptr_cell_list_atg_drive := ptr_cell_list_atg_drive; -- Set pointer of atg_drive list at end of list.
 		target_net_found	: boolean := false;
+		drv_high			: type_bit_char_class_0 := '1';
+		drv_low				: type_bit_char_class_0 := '0';
 
 	begin
 		while atg_drive /= null
 			loop
--- 				-- if target cell is type output (NR Net)
--- 						if (Get_Field_Count(Line) = 10) and is_field(Line,"NR",2) then
--- 						
--- 							if Get_Field(Line,4) = target_net then -- on net name match
--- 											
--- 								net_found := true;
+				if universal_string_type.to_string(atg_drive.net) = universal_string_type.to_string(target_net) then
+					target_net_found := true;
+					put_line(row_separator_0 & comment & type_cycle_count'image(cycle_count) & " cycles of LH follow ...");
+					put_line(column_separator_0);
+
+					case atg_drive.class is
+						when NR => null;
+ 								-- CS: get init value from safebits
+
+							for n in 1..cycle_count
+								loop
+									put_line(row_separator_0 & comment & " cycle" & type_cycle_count'image(n)); new_line;
+
+									put_line(row_separator_0 & comment & " drive L");
+									put( -- write sdr drive header (like "set IC301 drv boundary")
+										row_separator_0 & sequence_instruction_set.set & row_separator_0 &
+										universal_string_type.to_string(atg_drive.device) & row_separator_0 &
+										sxr_io_identifier.drive & row_separator_0 &
+										sdr_target_register.boundary &
+										type_vector_length'image(atg_drive.cell) & sxr_assignment_operator.assign -- write cell id and assigment operator (like "45=")
+										);
+
+									put_character_class_0(drv_low); new_line;
+									write_sdr; new_line;
+
+									put_line(row_separator_0 & sequence_instruction_set.dely & type_delay_value'image(low_time)); new_line;
+																			
+									put_line(row_separator_0 & comment & " drive H");
+									put( -- write sdr drive header (like "set IC301 drv boundary")
+										row_separator_0 & sequence_instruction_set.set & row_separator_0 &
+										universal_string_type.to_string(atg_drive.device) & row_separator_0 &
+										sxr_io_identifier.drive & row_separator_0 &
+										sdr_target_register.boundary &
+										type_vector_length'image(atg_drive.cell) & sxr_assignment_operator.assign -- write cell id and assigment operator (like "45=")
+										);
+
+									put_character_class_0(drv_high); new_line;
+									write_sdr; new_line;
+
+									put_line(row_separator_0 & sequence_instruction_set.dely & type_delay_value'image(low_time));
+ 									put_line(" ----------------------------- ");
+								
+								end loop;
+
+						when PU | PD => null;
 -- 								-- CS: get init value from safebits
--- 								--drv_value := 
--- 								new_line;
--- 								put (" -- toggle " & Line); new_line;	
--- 								put (" --" & Natural'Image(toggle_ct) & " cycles of LH follow ..."); new_line;			
--- 								put (" ----------------------------------------------------------------------------------------- "); new_line(2);
--- 																
--- 								for toggle_ct_tmp in 1..toggle_ct
--- 									loop
--- 										put (" -- cycle " & Natural'Image(toggle_ct_tmp)); new_line(2);
--- 										
--- 										put (" -- toggle L"); new_line;
--- 										put (" set " & Get_Field(Line,6) & " drv boundary " & Get_Field(Line,10) & "=0"); new_line;
--- 										vector_ct_tmp := write_sxr_file_open(vector_ct_tmp,0); -- 0 -> sdr , 1 -> sir
--- 										put (" delay "); put(low_time, fore=> 2, aft =>1, exp => 0); new_line(2);
--- 																				
--- 										put (" -- toggle H"); new_line;
--- 										put (" set " & Get_Field(Line,6) & " drv boundary " & Get_Field(Line,10) & "=1"); new_line;
--- 										vector_ct_tmp := write_sxr_file_open(vector_ct_tmp,0); -- 0 -> sdr , 1 -> sir
--- 										put (" delay "); put(high_time, fore=> 2, aft =>1, exp => 0); new_line(2);
--- 										put (" ----------------------------- "); new_line;
--- 									
--- 									end loop;
--- 							end if;
--- 						end if;				
--- 					
--- 					 	-- if target cell is type control (PU, PD Net)
--- 						if (Get_Field_Count(Line) = 12) and ( is_field(Line,"PU",2) or is_field(Line,"PD",2) ) then
--- 						
 -- 							-- if net name matches and if no negation required
 -- 							if Get_Field(Line,4) = target_net and is_field(Line,"no",12) then 
 -- 								net_found := true;
@@ -207,12 +220,11 @@ procedure mktoggle is
 -- 									
 -- 									end loop;
 -- 							end if;	-- if net name matches and if negation is required
--- 
--- 
--- 						end if;				
--- 					
--- 					
--- 					end if;				
+
+						when others => raise constraint_error; -- should never happen as nets in atg_drive are in class NR,PD or PU anyway
+					end case;
+				end if;
+
 				atg_drive := atg_drive.next; -- advance pointer in atg_drive list
 			end loop;
 				
