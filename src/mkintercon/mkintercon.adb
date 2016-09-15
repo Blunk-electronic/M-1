@@ -57,6 +57,7 @@ procedure mkintercon is
 	prog_position	: natural := 0;
 	test_profile	: type_test_profile := interconnect;
 	type type_algorithm is ( true_complement ); -- CS: others: count_up, count_down, count_complement, walking_one, walking_zero, ...
+												-- mind number of sxrs !
 	algorithm 		: type_algorithm;
 	end_sdr			: type_end_sdr := PDR;
 	end_sir			: type_end_sir := RTI;
@@ -465,7 +466,7 @@ procedure mkintercon is
 				case algorithm is
 					when TRUE_COMPLEMENT =>
 
-						-- round up dynamic net count to next member in sequence 1,2,4,18,16,32,64, ...
+						-- round up dynamic net count to next member in sequence 1,2,4,8,16,32,64, ...
 						dyn_ct_rouned := 0;
 						exponent := 0;
 						while dyn_ct_rouned < dyn_ct

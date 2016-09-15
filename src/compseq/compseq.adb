@@ -50,6 +50,7 @@ with m1; --use m1;
 with m1_internal; use m1_internal;
 with m1_firmware; use m1_firmware;
 with m1_numbers; use m1_numbers;
+with m1_files_and_directories; use m1_files_and_directories;
 
 --with System.OS_Lib;   use System.OS_Lib;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
