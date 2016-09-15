@@ -48,6 +48,7 @@ with m1;
 with m1_files_and_directories; use m1_files_and_directories;
 with m1_internal; use m1_internal;
 with m1_numbers; use m1_numbers;
+with csv;
 
 
 procedure mkintercon is
@@ -110,10 +111,23 @@ procedure mkintercon is
 			grp_width		: natural := 1;
 			grp_ptr			: natural := 0;
 			step_ptr		: natural := 0;
+
+			matrix_csv		: ada.text_io.file_type;
 		begin
+			-- PREPARE CSV FILE TO DUMP DRIVER MATRIX AT
+			create( matrix_csv, name => (compose (temp_directory,universal_string_type.to_string(test_name) & "_matrix","csv"))); 
+			-- The first line contains the driver id (even if not all drivers used):
+			csv.put_field(matrix_csv,"-");
+			for n in 1..dyn_ct loop
+				csv.put_field(matrix_csv,trim(positive'image(n),left));
+			end loop;
+			csv.put_lf(matrix_csv);
+
 			case algorithm is
+
 				when TRUE_COMPLEMENT =>
 
+					-- CS: This procedure needs rework an a more professional approach.
 					grp_width := dyn_ct;
 					while grp_width > 1
 						loop
@@ -121,6 +135,7 @@ procedure mkintercon is
 							grp_width := grp_width / 2;
 							grp_ct := grp_ct * 2;
 							--put ("step number : "); put (step_ptr); new_line;
+							csv.put_field(matrix_csv,trim(positive'image(step_ptr),left));
 							--put ("group width : "); put (grp_width); new_line;
 							--put ("group count : "); put (grp_ct); new_line; new_line;
 
@@ -135,6 +150,7 @@ procedure mkintercon is
 										loop
 											--put (scratch); new_line;
 											driver_matrix (drv_ptr,step_ptr) := drv_high;
+											csv.put_field(matrix_csv,"1");
 											--put (driver_matrix(drv_ptr,step_ptr) & " ");
 											scratch := scratch + 1;
 											drv_ptr := drv_ptr + 1;
@@ -148,10 +164,13 @@ procedure mkintercon is
 											--put (scratch); new_line;
 											driver_matrix (drv_ptr,step_ptr) := drv_low;
 											--put (driver_matrix(drv_ptr,step_ptr) & " ");
+											csv.put_field(matrix_csv,"0");
 											scratch := scratch + 1;
 											drv_ptr := drv_ptr + 1;
 										end loop;
 								end loop;
+
+							csv.put_lf(matrix_csv);
 							--new_line;
 						
 						end loop;
@@ -165,6 +184,8 @@ procedure mkintercon is
 							grp_width := grp_width / 2;
 							grp_ct := grp_ct * 2;
 							--put ("step number : "); put (step_ptr); new_line;
+							csv.put_field(matrix_csv,trim(positive'image(step_ptr),left));
+
 							--put ("group width : "); put (grp_width); new_line;
 							--put ("group count : "); put (grp_ct); new_line; new_line;
 
@@ -180,6 +201,7 @@ procedure mkintercon is
 											--put (scratch); new_line;
 											driver_matrix (drv_ptr,step_ptr) := drv_low;
 											--put (driver_matrix(drv_ptr,step_ptr) & " ");
+											csv.put_field(matrix_csv,"0");
 											scratch := scratch + 1;
 											drv_ptr := drv_ptr + 1;
 										end loop;
@@ -192,16 +214,20 @@ procedure mkintercon is
 											--put (scratch); new_line;
 											driver_matrix (drv_ptr,step_ptr) := drv_high;
 											--put (driver_matrix(drv_ptr,step_ptr) & " ");
+											csv.put_field(matrix_csv,"1");
 											scratch := scratch + 1;
 											drv_ptr := drv_ptr + 1;
 										end loop;
 								end loop;
+							csv.put_lf(matrix_csv);
 							--new_line;
 						
 						end loop;
 
+
 			end case;
 
+			close(matrix_csv);
 			return driver_matrix;
 		end build_interconnect_matrix;
 
