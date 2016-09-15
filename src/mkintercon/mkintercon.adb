@@ -115,7 +115,7 @@ procedure mkintercon is
 			matrix_csv		: ada.text_io.file_type;
 		begin
 			-- PREPARE CSV FILE TO DUMP DRIVER MATRIX AT
-			create( matrix_csv, name => (compose (temp_directory,universal_string_type.to_string(test_name) & "_matrix","csv"))); 
+			create( matrix_csv, name => (compose (universal_string_type.to_string(test_name), "interconnect_matrix","csv"))); 
 			-- The first line contains the driver id (even if not all drivers used):
 			csv.put_field(matrix_csv,"-");
 			for n in 1..dyn_ct loop
