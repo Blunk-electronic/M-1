@@ -66,8 +66,6 @@ procedure mkclock is
 
 
 
-
-
 	procedure write_info_section is
 	-- creates the sequence file,
 	-- directs subsequent puts into the sequence file
@@ -89,12 +87,10 @@ procedure mkclock is
 		put_line(row_separator_0 & section_info_item.test_profile & (colon_position-(2+section_info_item.test_profile'last)) * row_separator_0 & ": " & type_test_profile'image(test_profile));
 		put_line(row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(end_sdr));
 		put_line(row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(end_sir));
-
-		-- CS: target device and pin
-
+		put_line(row_separator_0 & section_info_item.target_device & (colon_position-(2+section_info_item.target_device'last)) * row_separator_0 & ": " & universal_string_type.to_string(target_device));
+		put_line(row_separator_0 & section_info_item.target_pin & (colon_position-(2+section_info_item.target_pin'last)) * row_separator_0 & ": " & universal_string_type.to_string(target_pin));
 		put_line(row_separator_0 & section_info_item.retry_count & (colon_position-(2+section_info_item.retry_count'last)) * row_separator_0 & ":" & type_sxr_retries'image(retry_count));
 		put_line(row_separator_0 & section_info_item.retry_delay & (colon_position-(2+section_info_item.retry_delay'last)) * row_separator_0 & ":" & type_delay_value'image(retry_delay) & " sec");
-		
 
 		put_line(section_mark.endsection); 
 		new_line;
@@ -110,18 +106,16 @@ procedure mkclock is
 			put_line ("       Check spelling or capitalization and try again !");
 			raise constraint_error;
 		end if;
-
-		-- CS: check if target pin exists
--- 		for p in 1..target.len_port_pin_map loop
--- 			if target.port_pin_map(p).port_pin
--- 		end loop;
 	end check_target;
 
 
   	procedure atg_mkclock is
 
-		-- search in cell list atg_drive
-		atg_expect			: type_ptr_cell_list_atg_expect := ptr_cell_list_atg_expect; -- Set pointer of atg_drive list at end of list.
+		-- Search in cell lists atg_drive, input_cells_class_NA, static_expect.
+		-- Set list pointers at end of list.
+		atg_expect			: type_ptr_cell_list_atg_expect := ptr_cell_list_atg_expect;
+		class_NA 			: type_ptr_cell_list_input_cells_class_NA := ptr_cell_list_input_cells_class_NA;
+		class_static_expect	: type_ptr_cell_list_static_expect := ptr_cell_list_static_expect;
  		target_device_found	: boolean := false;
 		expect_high			: type_bit_char_class_0 := '1';
 		expect_low			: type_bit_char_class_0 := '0';
@@ -130,19 +124,21 @@ procedure mkclock is
 		procedure write_receiver_cell(
 			device 		: string;
 			cell 		: type_cell_id;
-			value 		: type_bit_char_class_0
+			value 		: type_bit_char_class_0;
+			net			: string
 			) is
 		begin
 			put(" -- wait for "); put_character_class_0(value); 
 			put_line(" on target device " & universal_string_type.to_string(target_device) & 
-				row_separator_0 & "pin" & row_separator_0 & universal_string_type.to_string(target_pin));
+				row_separator_0 & "pin" & row_separator_0 & universal_string_type.to_string(target_pin) &
+				row_separator_0 & "net " & net);
 
 			put( -- write sdr expect header (like "set IC301 exp boundary")
 				row_separator_0 & sequence_instruction_set.set & row_separator_0 &
 				device & row_separator_0 &
 				sxr_io_identifier.expect & row_separator_0 &
 				sdr_target_register.boundary &
-				type_cell_id'image(atg_expect.cell) & sxr_assignment_operator.assign -- write cell id and assigment operator (like "45=")
+				type_cell_id'image(cell) & sxr_assignment_operator.assign -- write cell id and assigment operator (like "45=")
 				);
 
 			-- write expect value
@@ -157,7 +153,7 @@ procedure mkclock is
 		end write_receiver_cell;
 
  	begin
- 		-- search in atg_expect list for target device
+ 		-- First, search in atg_expect list for target device.
  		while atg_expect /= null
  			loop
  				if universal_string_type.to_string(atg_expect.device) = universal_string_type.to_string(target_device) then
@@ -167,30 +163,89 @@ procedure mkclock is
 						write_receiver_cell(
 							device => universal_string_type.to_string(target_device),
 							cell => atg_expect.cell,
-							value => expect_low
+							value => expect_low,
+							net => universal_string_type.to_string(atg_expect.net)
 							);
 
 						write_receiver_cell(
 							device => universal_string_type.to_string(target_device),
 							cell => atg_expect.cell,
-							value => expect_high
+							value => expect_high,
+							net => universal_string_type.to_string(atg_expect.net)
 							);
+
+						exit; -- no more seaching required
 					end if;
  				end if;
  				atg_expect := atg_expect.next; -- advance pointer in atg_expect list
  			end loop;
 
-		-- search in input_cells_class_NA (static_expect, )
+		-- If target not found, search in class NA list.
+		if not target_device_found then
+			while class_NA /= null
+				loop
+					if universal_string_type.to_string(class_NA.device) = universal_string_type.to_string(target_device) then
+						if universal_string_type.to_string(class_NA.pin) = universal_string_type.to_string(target_pin) then
+							target_device_found := true;
 
--- 		-- target net found ?
+							write_receiver_cell(
+								device => universal_string_type.to_string(target_device),
+								cell => class_NA.cell,
+								value => expect_low,
+								net => universal_string_type.to_string(class_NA.net)
+								);
+
+							write_receiver_cell(
+								device => universal_string_type.to_string(target_device),
+								cell => class_NA.cell,
+								value => expect_high,
+								net => universal_string_type.to_string(class_NA.net)
+								);
+
+							exit; -- no more seaching required
+						end if;
+
+					end if;
+					class_NA := class_NA.next; -- advance pointer in list
+				end loop;
+		end if;
+
+		-- If target still not found, search in static expect list.
+		if not target_device_found then
+			while class_static_expect /= null
+				loop
+					if universal_string_type.to_string(class_static_expect.device) = universal_string_type.to_string(target_device) then
+						if universal_string_type.to_string(class_static_expect.pin) = universal_string_type.to_string(target_pin) then
+							target_device_found := true;
+
+							put_line(standard_output,"NOTE: The target pin is in class " & type_net_class'image(class_static_expect.class) &
+								row_separator_0 & "net '" & universal_string_type.to_string(class_static_expect.net) & "' !");
+							put_line(standard_output,"      The test is likely to fail.");
+
+							write_receiver_cell(
+								device => universal_string_type.to_string(target_device),
+								cell => class_static_expect.cell,
+								value => expect_low,
+								net => universal_string_type.to_string(class_static_expect.net)
+								);
+
+							write_receiver_cell(
+								device => universal_string_type.to_string(target_device),
+								cell => class_static_expect.cell,
+								value => expect_high,
+								net => universal_string_type.to_string(class_static_expect.net)
+								);
+							exit; -- no more seaching required
+						end if;
+					end if;
+					class_static_expect := class_static_expect.next; -- advance pointer in list
+				end loop;
+		end if;
+
 		if target_device_found = false then
 			set_output(standard_output);
---			put("ERROR : Target '" & universal_string_type.to_string(target_net) & "' search failed !"); new_line(2);
-			put("ERROR : Target search failed !"); new_line(2);
--- CS:
--- 			put("        Troubleshooting: Please verify that"); new_line (2);
--- 			put("        1. target net is a primary net !"); new_line;
--- 			put("        2. target net is in class NR, PU or PD !"); new_line;
+			put_line("ERROR : Target pin search failed !");
+			put_line("        Make sure the targeted pin exists and is connected to a scan capable net !");
 			raise constraint_error;
 		end if;
 		
