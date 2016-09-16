@@ -55,7 +55,7 @@ procedure bsmcl is
 	uut_dir			: Unbounded_String;
 	action			: Unbounded_string;
 	batch_file 		: Unbounded_string;
-	test_profile 	: Unbounded_string;
+	test_profile 	: Unbounded_string; -- CS: use type_test_profile
 	test_name  		: Unbounded_string;
 	sequence_name 	: Unbounded_string;
 	ram_addr   		: string (1..4) := "0000"; -- page address bits [23:8]
