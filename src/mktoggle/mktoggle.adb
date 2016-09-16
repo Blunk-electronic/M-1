@@ -277,7 +277,7 @@ procedure mktoggle is
 
 begin
 
-	put_line("pin toglle generator version "& version);
+	put_line("pin toggle generator version "& version);
 	put_line("=====================================================");
 
 	-- COMMAND LINE ARGUMENTS COLLECTING BEGIN
@@ -308,13 +308,6 @@ begin
 	prog_position	:= 70;	
 	frequency := 1.0/(high_time + low_time);
 	put_line ("frequency      :" & float'image(frequency) & " Hz");
-	-- CS : frequency calculation ?
-	
-	prog_position	:= 80;
-	if argument_count = 7 then
-		debug_level := natural'value(argument(3));
-		put_line("debug level    :" & natural'image(debug_level));
-	end if;
 	-- COMMAND LINE ARGUMENTS COLLECTING DONE
 
 	prog_position	:= 90;	
@@ -361,10 +354,10 @@ begin
 			case prog_position is
 				when 10 =>
 					put_line("ERROR: Data base file missing or insufficient access rights !");
-					put_line("       Provide data base name as argument. Example: mkmemcon my_uut.udb");
+					put_line("       Provide data base name as argument. Example: mktoggle my_uut.udb");
 				when 20 =>
 					put_line("ERROR: Test name missing !");
-					put_line("       Provide test name as argument ! Example: mkmemcon my_uut.udb my_memory_test");
+					put_line("       Provide test name as argument ! Example: mktoggle my_uut.udb my_toggle_test");
 				when 40 =>
 					put_line("ERROR: Invalid cycle count specified. Allowed range:" & type_cycle_count'image(type_cycle_count'first) &
 						".." & type_cycle_count'image(type_cycle_count'last) & " !");

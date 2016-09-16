@@ -594,10 +594,10 @@ begin
 			case prog_position is
 				when 10 =>
 					put_line("ERROR: Data base file missing or insufficient access rights !");
-					put_line("       Provide data base name as argument. Example: mkmemcon my_uut.udb");
+					put_line("       Provide data base name as argument. Example: mkintercon my_uut.udb");
 				when 20 =>
 					put_line("ERROR: Test name missing !");
-					put_line("       Provide test name as argument ! Example: mkmemcon my_uut.udb my_memory_test");
+					put_line("       Provide test name as argument ! Example: mkintercon my_uut.udb my_interconnect_test");
 
 				when 40 =>
 					put_line("ERROR: Invalid argument for debug level. Debug level must be provided as natural number !");
