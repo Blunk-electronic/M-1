@@ -1,5 +1,5 @@
 #! /bin/sh
-version=005
+version=006
 
 #CS: check for ada compiler, gcc, make, ...
 #CS: check for kermit
@@ -61,7 +61,6 @@ procedure_operator_confirmation
 procedure_copy_script impaltium
 procedure_copy_script impeagle6x
 procedure_copy_script imporcad
-procedure_copy_script mkclock
 procedure_copy_script open_report
 procedure_copy_script run_and_log_sequence
 procedure_copy_script clrram
@@ -119,6 +118,7 @@ procedure_make mkmemcon
 procedure_make mknets
 procedure_make mkoptions
 procedure_make mktoggle
+procedure_make mkclock
 procedure_make mkvmod
 
 exit
