@@ -30,16 +30,12 @@
 --   history of changes:
 --
 
+-- todo: option/algorithm for reading back the target net
+
 
 with ada.text_io;				use ada.text_io;
-with ada.integer_text_io;		use ada.integer_text_io;
-with ada.characters.handling; 	use ada.characters.handling;
-
-with ada.strings; 				use ada.strings;
-with ada.strings.bounded; 		use ada.strings.bounded;
 with ada.strings.fixed; 		use ada.strings.fixed;
 with ada.exceptions; 			use ada.exceptions;
-with ada.numerics.elementary_functions; use ada.numerics.elementary_functions;
  
 with ada.command_line;			use ada.command_line;
 with ada.directories;			use ada.directories;
@@ -65,7 +61,7 @@ procedure mktoggle is
 	cycle_count		: type_cycle_count;
 	low_time		: type_delay_value;
 	high_time		: type_delay_value;
-	frequency		: float; -- CS: range !
+	frequency		: float;
 	
 	prog_position	: natural := 0;
 
@@ -93,7 +89,7 @@ procedure mktoggle is
 		put_line(row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(end_sdr));
 		put_line(row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(end_sir));
 
-		put_line(row_separator_0 & section_info_item.target_net & (colon_position-(2+section_info_item.target_net'last)) * row_separator_0 & ": " & universal_string_type.to_string(test_name));
+		put_line(row_separator_0 & section_info_item.target_net & (colon_position-(2+section_info_item.target_net'last)) * row_separator_0 & ": " & universal_string_type.to_string(target_net));
 		put_line(row_separator_0 & section_info_item.cycle_count & (colon_position-(2+section_info_item.cycle_count'last)) * row_separator_0 & ":" & type_cycle_count'image(cycle_count));
 		put_line(row_separator_0 & section_info_item.low_time & (colon_position-(2+section_info_item.low_time'last)) * row_separator_0 & ":" & type_delay_value'image(low_time) & " sec");
 		put_line(row_separator_0 & section_info_item.high_time & (colon_position-(2+section_info_item.high_time'last)) * row_separator_0 & ":" & type_delay_value'image(high_time) & " sec");
@@ -113,113 +109,117 @@ procedure mktoggle is
 		target_net_found	: boolean := false;
 		drv_high			: type_bit_char_class_0 := '1';
 		drv_low				: type_bit_char_class_0 := '0';
+		driver_inverted		: boolean;
+
+		procedure write_driver_cell(
+			--cycle	: type_cycle_count;
+			device 		: string;
+			cell 		: type_cell_id;
+			value 		: type_bit_char_class_0;
+			inverted	: boolean := false;
+			dely		: type_delay_value
+			) is
+		begin
+			if not inverted then
+				put(row_separator_0 & comment & " drive "); put_character_class_0(value); new_line;
+			else
+				put(row_separator_0 & comment & " drive (inverted) "); put_character_class_0(value); new_line;
+			end if;
+
+			put( -- write sdr drive header (like "set IC301 drv boundary")
+				row_separator_0 & sequence_instruction_set.set & row_separator_0 &
+				device & row_separator_0 &
+				sxr_io_identifier.drive & row_separator_0 &
+				sdr_target_register.boundary &
+				type_cell_id'image(atg_drive.cell) & sxr_assignment_operator.assign -- write cell id and assigment operator (like "45=")
+				);
+
+			-- write drive value
+			if not inverted then
+				put_character_class_0(value);
+			else
+				put_character_class_0(negate_bit_character_class_0(value));
+			end if;
+			new_line;
+
+			write_sdr; new_line;
+			put_line(row_separator_0 & sequence_instruction_set.dely & type_delay_value'image(dely)); new_line;
+		end write_driver_cell;
+
+		procedure write_cycle (cycle : type_cycle_count) is
+		begin
+			put_line(row_separator_0 & "----- cycle" & type_cycle_count'image(cycle) & " -----------------------" ); 
+			new_line;
+		end write_cycle;
 
 	begin
+		-- search in atg_drive list for target_net
 		while atg_drive /= null
 			loop
 				if universal_string_type.to_string(atg_drive.net) = universal_string_type.to_string(target_net) then
 					target_net_found := true;
 					put_line(row_separator_0 & comment & type_cycle_count'image(cycle_count) & " cycles of LH follow ...");
-					put_line(column_separator_0);
+					new_line;
+					--put_line(column_separator_0);
 
 					case atg_drive.class is
-						when NR => null;
- 								-- CS: get init value from safebits
+						when NR =>
+ 							-- CS: get init value from safebits
 
 							for n in 1..cycle_count
 								loop
-									put_line(row_separator_0 & comment & " cycle" & type_cycle_count'image(n)); new_line;
-
-									put_line(row_separator_0 & comment & " drive L");
-									put( -- write sdr drive header (like "set IC301 drv boundary")
-										row_separator_0 & sequence_instruction_set.set & row_separator_0 &
-										universal_string_type.to_string(atg_drive.device) & row_separator_0 &
-										sxr_io_identifier.drive & row_separator_0 &
-										sdr_target_register.boundary &
-										type_vector_length'image(atg_drive.cell) & sxr_assignment_operator.assign -- write cell id and assigment operator (like "45=")
+									write_cycle(n);
+									write_driver_cell(
+										--cycle => n,
+										device => universal_string_type.to_string(atg_drive.device),
+										cell => atg_drive.cell,
+										value => drv_low,
+										dely => low_time
 										);
 
-									put_character_class_0(drv_low); new_line;
-									write_sdr; new_line;
-
-									put_line(row_separator_0 & sequence_instruction_set.dely & type_delay_value'image(low_time)); new_line;
-																			
-									put_line(row_separator_0 & comment & " drive H");
-									put( -- write sdr drive header (like "set IC301 drv boundary")
-										row_separator_0 & sequence_instruction_set.set & row_separator_0 &
-										universal_string_type.to_string(atg_drive.device) & row_separator_0 &
-										sxr_io_identifier.drive & row_separator_0 &
-										sdr_target_register.boundary &
-										type_vector_length'image(atg_drive.cell) & sxr_assignment_operator.assign -- write cell id and assigment operator (like "45=")
+									write_driver_cell(
+										--cycle => n,
+										device => universal_string_type.to_string(atg_drive.device),
+										cell => atg_drive.cell,
+										value => drv_high,
+										dely => high_time
 										);
-
-									put_character_class_0(drv_high); new_line;
-									write_sdr; new_line;
-
-									put_line(row_separator_0 & sequence_instruction_set.dely & type_delay_value'image(low_time));
- 									put_line(" ----------------------------- ");
-								
 								end loop;
 
 						when PU | PD => null;
--- 								-- CS: get init value from safebits
--- 							-- if net name matches and if no negation required
--- 							if Get_Field(Line,4) = target_net and is_field(Line,"no",12) then 
--- 								net_found := true;
--- 								
--- 								-- CS: get init value from safebits
--- 								--drv_value := 
--- 								new_line;
--- 								put (" -- toggle " & Line); new_line;	
--- 								put (" --" & Natural'Image(toggle_ct) & " cycles of LH follow ..."); new_line;			
--- 								put (" ----------------------------------------------------------------------------------------- "); new_line(2);
--- 																
--- 								for toggle_ct_tmp in 1..toggle_ct
--- 									loop
--- 										put (" -- cycle " & Natural'Image(toggle_ct_tmp)); new_line(2);
--- 										
--- 										put (" -- toggle L"); new_line;
--- 										put (" set " & Get_Field(Line,6) & " drv boundary " & Get_Field(Line,10) & "=0"); new_line;
--- 										vector_ct_tmp := write_sxr_file_open(vector_ct_tmp,0); -- 0 -> sdr , 1 -> sir
--- 										put (" delay "); put(low_time, fore=> 2, aft =>1, exp => 0); new_line(2);
--- 																				
--- 										put (" -- toggle H"); new_line;
--- 										put (" set " & Get_Field(Line,6) & " drv boundary " & Get_Field(Line,10) & "=1"); new_line;
--- 										vector_ct_tmp := write_sxr_file_open(vector_ct_tmp,0); -- 0 -> sdr , 1 -> sir
--- 										put (" delay "); put(high_time, fore=> 2, aft =>1, exp => 0); new_line(2);
--- 										put (" ----------------------------- "); new_line;
--- 									
--- 									end loop;
--- 							end if; -- if net name matches and if no negation required
--- 
--- 							-- if net name matches and if negation is required
--- 							if Get_Field(Line,4) = target_net and is_field(Line,"yes",12) then 
--- 								net_found := true;
--- 								
--- 								-- CS: get init value from safebits
--- 								--drv_value := 
--- 								new_line;
--- 								put (" -- toggle " & Line); new_line;	
--- 								put (" --" & Natural'Image(toggle_ct) & " cycles of LH follow ..."); new_line;			
--- 								put (" ----------------------------------------------------------------------------------------- "); new_line(2);
--- 																
--- 								for toggle_ct_tmp in 1..toggle_ct
--- 									loop
--- 										put (" -- cycle " & Natural'Image(toggle_ct_tmp)); new_line(2);
--- 										
--- 										put (" -- toggle L"); new_line;
--- 										put (" set " & Get_Field(Line,6) & " drv boundary " & Get_Field(Line,10) & "=1"); new_line;
--- 										vector_ct_tmp := write_sxr_file_open(vector_ct_tmp,0); -- 0 -> sdr , 1 -> sir
--- 										put (" delay "); put(low_time, fore=> 2, aft =>1, exp => 0); new_line(2);
--- 																				
--- 										put (" -- toggle H"); new_line;
--- 										put (" set " & Get_Field(Line,6) & " drv boundary " & Get_Field(Line,10) & "=0"); new_line;
--- 										vector_ct_tmp := write_sxr_file_open(vector_ct_tmp,0); -- 0 -> sdr , 1 -> sir
--- 										put (" delay "); put(high_time, fore=> 2, aft =>1, exp => 0); new_line(2);
--- 										put (" ----------------------------- "); new_line;
--- 									
--- 									end loop;
--- 							end if;	-- if net name matches and if negation is required
+							-- CS: get init value from safebits
+
+							-- Pull-nets frequently are controlled by a control cell. If the cell is to be inverted
+							-- a flag is set. When assigning the drive value is is read.
+							if atg_drive.controlled_by_control_cell then
+								if atg_drive.inverted then
+									driver_inverted := true; -- control cell must be inverted
+								else 
+									driver_inverted := false; -- control cell must not be inverted
+								end if;
+							else -- net driven by output cell
+								driver_inverted := false; -- control cell must not be inverted
+							end if;
+
+							for n in 1..cycle_count
+								loop
+									write_cycle(n);
+									write_driver_cell(
+										device => universal_string_type.to_string(atg_drive.device),
+										cell => atg_drive.cell,
+										value => drv_low,
+										inverted => driver_inverted,
+										dely => low_time
+										);
+
+									write_driver_cell(
+										device => universal_string_type.to_string(atg_drive.device),
+										cell => atg_drive.cell,
+										value => drv_high,
+										inverted => driver_inverted,
+										dely => high_time
+										);
+								end loop;
 
 						when others => raise constraint_error; -- should never happen as nets in atg_drive are in class NR,PD or PU anyway
 					end case;
