@@ -1259,7 +1259,7 @@ begin
 					Args                   => 	(
 												1=> new String'(to_string(data_base)),
 												2=> new String'(to_string(test_name)), -- pass test name to bsm
-												3=> new String'("non-intrusive"),
+												3=> new String'("non_intrusive"),
 												4=> new String'(to_string(target_device)),
 												5=> new String'(to_string(target_pin)),
 												6=> new String'(to_string(retry_count)),
