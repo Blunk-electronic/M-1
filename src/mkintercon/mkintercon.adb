@@ -257,7 +257,7 @@ procedure mkintercon is
 				record
 					next		: type_ptr_receiver_list;				-- points to next object in list
 					device		: universal_string_type.bounded_string;	-- name of BIC (boundary scan IC)
-					cell		: type_vector_length;					-- receiver (or input) cell
+					cell		: type_cell_id;							-- receiver (or input) cell
 					expect		: type_bit_char_class_0;				-- expect value of cell
 				end record;
 			
@@ -275,7 +275,7 @@ procedure mkintercon is
 			procedure add_to_receiver_list(
 				list			: in out type_ptr_receiver_list;
 				device_given	: universal_string_type.bounded_string;
-				cell_given		: type_vector_length;
+				cell_given		: type_cell_id;
 				expect_given	: type_bit_char_class_0
 				) is
 			begin
@@ -332,7 +332,7 @@ procedure mkintercon is
 								-- On BIC name match, advance driver_id.
 								if universal_string_type.to_string(atg_drive.device) = universal_string_type.to_string(device.name) then
 									driver_id := driver_id + 1; -- advance driver_id for each driver cell
-									put(type_vector_length'image(atg_drive.cell) & sxr_assignment_operator.assign); -- write cell id and assigment operator (like "45=")
+									put(type_cell_id'image(atg_drive.cell) & sxr_assignment_operator.assign); -- write cell id and assigment operator (like "45=")
 
 									-- Check driver/control cell / inverted-status:
 									-- If the driver is a control cell, it might be inverted. This requires negation of the value taken from the interconnect_matrix.
@@ -425,7 +425,7 @@ procedure mkintercon is
 									-- On match of BIC name: write the receiver cells of the current BIC in the sequence file (like "44=0 46=1 ..."
 									if universal_string_type.to_string(receivers_of_test_step(driver_id).device) = universal_string_type.to_string(device.name) then
 										put(
-											type_vector_length'image(receivers_of_test_step(driver_id).cell) &
+											type_cell_id'image(receivers_of_test_step(driver_id).cell) &
 											sxr_assignment_operator.assign);
 										put_character_class_0(receivers_of_test_step(driver_id).expect);
 									end if;
