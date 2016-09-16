@@ -75,12 +75,10 @@ with Ada.Directories;	use Ada.Directories;
 
 procedure compseq is
 
-	--a	: unsigned_8 := unsigned_8(256); -- 16#1FF#;
-
 	compseq_version			: string (1..7) := "005.000";
 	vector_format_version	: string (1..7) := "000.000";
 
-	prog_position 	: natural := 0;
+	prog_position 			: natural := 0;
 
 	size_of_vector_file		: natural := 0; -- incremented on every byte written in vector_file
 	size_of_vector_header	: natural := 0; -- incremented on every byte written in vector_file_header
@@ -91,6 +89,10 @@ procedure compseq is
 
 	test_info				: type_test_info;
 	scanpath_options		: type_scanpath_options;
+
+	sxr_retries				: type_sxr_retries;
+	sxr_retry_delay			: type_delay_value;
+
 
 	active_scanpath_info	: unsigned_8 := 16#00#; -- for every active scanpath a bit is set here. CS: implies maximum of 8 scanpaths
 	procedure build_active_scanpath_info is --(scanpath_id : type_scanpath_id) is

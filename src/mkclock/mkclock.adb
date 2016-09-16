@@ -58,10 +58,9 @@ procedure mkclock is
 
 	cycle_count_max	: constant positive := 20; -- CS: increase if neccessary. Greater values not reasonable.
 	subtype type_cycle_count is positive range 1..cycle_count_max;
-	cycle_count		: type_cycle_count;
-	low_time		: type_delay_value;
-	high_time		: type_delay_value;
-	frequency		: float;
+
+	retry_count		: type_sxr_retries;
+	retry_delay		: type_delay_value;
 	
 	prog_position	: natural := 0;
 
