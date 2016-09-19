@@ -556,12 +556,12 @@ begin
 				put ("CAD format     : "); put_format_cad;
 
 				prog_position := "INE00";
-				cad_net_list := universal_string_type.to_bounded_string(argument(3));
+				name_file_cad_net_list := universal_string_type.to_bounded_string(argument(3));
 
 				case format_cad is
 					when orcad =>
 						-- check if netlist file exists
-						if exists_netlist(cad_net_list) then
+						if exists_netlist(name_file_cad_net_list) then
 						
 							-- launch ORCAD importer
 							new_line;
@@ -569,7 +569,7 @@ begin
 								(  
 								program_name           => compose( to_string(directory_of_binary_files), name_module_cad_importer_orcad),
 								args                   => 	(
-															1=> new string'(universal_string_type.to_string(cad_net_list))
+															1=> new string'(universal_string_type.to_string(name_file_cad_net_list))
 															),
 								output_file_descriptor => standout,
 								return_code            => result
@@ -584,7 +584,7 @@ begin
 
 					when altium =>
 						-- check if netlist file exists
-						if exists_netlist(cad_net_list) then
+						if exists_netlist(name_file_cad_net_list) then
 
 							-- launch ALTIUM importer
 							new_line;
@@ -592,7 +592,7 @@ begin
 								(  
 								program_name           => compose( to_string(directory_of_binary_files), name_module_cad_importer_altium),
 								args                   => 	(
-															1=> new string'(universal_string_type.to_string(cad_net_list))
+															1=> new string'(universal_string_type.to_string(name_file_cad_net_list))
 															),
 								output_file_descriptor => standout,
 								return_code            => result
@@ -607,7 +607,7 @@ begin
 
 					when zuken =>
 						-- check if netlist file exists
-						if exists_netlist(cad_net_list) then
+						if exists_netlist(name_file_cad_net_list) then
 					
 							-- launch ZUKEN importer
 							new_line;
@@ -615,7 +615,7 @@ begin
 								(  
 								program_name           => compose( to_string(directory_of_binary_files), name_module_cad_importer_zuken),
 								Args                   => 	(
-															1=> new String'(universal_string_type.to_string(cad_net_list))
+															1=> new String'(universal_string_type.to_string(name_file_cad_net_list))
 															),
 								Output_File_Descriptor => Standout,
 								Return_Code            => Result
@@ -631,12 +631,12 @@ begin
 
 					when eagle =>
 						-- check if netlist file exists
-						if exists_netlist(cad_net_list) then
+						if exists_netlist(name_file_cad_net_list) then
 					
 							-- check if partlist file exists
 							prog_position := "IPA00";
-							cad_part_list := universal_string_type.to_bounded_string(argument(4));
-							if exists_partlist(cad_part_list) then
+							name_file_cad_part_list := universal_string_type.to_bounded_string(argument(4));
+							if exists_partlist(name_file_cad_part_list) then
 
 								-- launch EAGLE importer
 								new_line;
@@ -644,8 +644,8 @@ begin
 									(  
 									program_name           => compose( to_string(directory_of_binary_files), name_module_cad_importer_eagle),
 									args                   => 	(
-																1=> new string'(universal_string_type.to_string(cad_net_list)),
-																2=> new string'(universal_string_type.to_string(cad_part_list))
+																1=> new string'(universal_string_type.to_string(name_file_cad_net_list)),
+																2=> new string'(universal_string_type.to_string(name_file_cad_part_list))
 																),
 									output_file_descriptor => standout,
 									return_code            => result
@@ -673,16 +673,16 @@ begin
 			if is_project_directory then
 
 				prog_position := "ACV00";
-				skeleton := universal_string_type.to_bounded_string(argument(2));
-				verilog_model := universal_string_type.to_bounded_string(argument(3));
+				name_file_skeleton := universal_string_type.to_bounded_string(argument(2));
+				name_file_verilog_model := universal_string_type.to_bounded_string(argument(3));
 										
 				-- LAUNCH VERILOG MODEL MAKER
 				spawn 
 					(  
 					program_name           => compose( to_string(directory_of_binary_files), name_module_mkvmod),
 					args                   => 	(
-												1=> new string'(universal_string_type.to_string(skeleton)),
-												2=> new string'(universal_string_type.to_string(verilog_model))
+												1=> new string'(universal_string_type.to_string(name_file_skeleton)),
+												2=> new string'(universal_string_type.to_string(name_file_verilog_model))
 												),
 					output_file_descriptor => standout,
 					return_code            => result

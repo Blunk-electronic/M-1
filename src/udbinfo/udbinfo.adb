@@ -74,8 +74,8 @@ begin
 	put_line("====================================");
 
 	prog_position	:= 10;
- 	data_base:= universal_string_type.to_bounded_string(Argument(1));
- 	put_line("data base      : " & universal_string_type.to_string(data_base));
+ 	name_file_data_base:= universal_string_type.to_bounded_string(Argument(1));
+ 	put_line("data base      : " & universal_string_type.to_string(name_file_data_base));
 
 	prog_position	:= 20;
 	inquired_item := type_item_udbinfo'value(argument(2));

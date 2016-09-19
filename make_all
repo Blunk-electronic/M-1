@@ -1,0 +1,41 @@
+#! /bin/bash
+
+version=001
+
+procedure_make()
+	{
+	target=$1
+	echo "-" $target
+	cd src/$target # change into source dir
+	[ $? -ne 0 ] && exit 1	
+	make clean # clean up
+	#[ $? -ne 0 ] && exit 1			
+	make # compile
+	[ $? -ne 0 ] && exit 1
+	make install # install
+	[ $? -ne 0 ] && exit 1	
+	make clean # clean up
+	[ $? -ne 0 ] && exit 1		
+	cd - # change back to origin dir
+	}
+
+echo "compiling and installing ..."
+procedure_make bsmcl
+procedure_make chkpsn
+procedure_make udbinfo
+procedure_make compseq
+procedure_make impbsdl
+procedure_make impzuken
+procedure_make joinnetlist
+procedure_make mkinfra
+procedure_make mkintercon
+procedure_make mkmemcon
+procedure_make mknets
+procedure_make mkoptions
+procedure_make mktoggle
+procedure_make mkclock
+procedure_make mkvmod
+
+exit
+echo done
+exit

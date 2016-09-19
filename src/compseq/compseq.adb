@@ -1625,7 +1625,7 @@ procedure compseq is
 
 							-- search for data base name and verify against data base given as argument
 							if get_field_from_line(line_of_file,1) = section_info_item.data_base then
-								if get_field_from_line(line_of_file,3) = universal_string_type.to_string(data_base) then
+								if get_field_from_line(line_of_file,3) = universal_string_type.to_string(name_file_data_base) then
 									ti.data_base_valid := true;
 								else
 									--put_line(standard_output,"WARNING: Data base mismatch in section '" & test_section.info & "' !");
@@ -2596,8 +2596,8 @@ begin
 	create_temp_directory;
 
 	prog_position	:= 10;
- 	data_base:= universal_string_type.to_bounded_string(Argument(1));
- 	put_line ("data base      : " & universal_string_type.to_string(data_base));
+ 	name_file_data_base:= universal_string_type.to_bounded_string(Argument(1));
+ 	put_line ("data base      : " & universal_string_type.to_string(name_file_data_base));
  
 	prog_position	:= 20;
  	test_name:= universal_string_type.to_bounded_string(Argument(2));

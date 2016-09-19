@@ -82,7 +82,7 @@ procedure mkclock is
 		put_line(section_mark.section & row_separator_0 & test_section.info);
 		put_line(" created by clock test generator version "& version);
 		put_line(row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & m1.date_now);
-		put_line(row_separator_0 & section_info_item.data_base & (colon_position-(2+section_info_item.data_base'last)) * row_separator_0 & ": " & universal_string_type.to_string(data_base));
+		put_line(row_separator_0 & section_info_item.data_base & (colon_position-(2+section_info_item.data_base'last)) * row_separator_0 & ": " & universal_string_type.to_string(name_file_data_base));
 		put_line(row_separator_0 & section_info_item.test_name & (colon_position-(2+section_info_item.test_name'last)) * row_separator_0 & ": " & universal_string_type.to_string(test_name));
 		put_line(row_separator_0 & section_info_item.test_profile & (colon_position-(2+section_info_item.test_profile'last)) * row_separator_0 & ": " & type_test_profile'image(test_profile));
 		put_line(row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(end_sdr));
@@ -296,8 +296,8 @@ begin
 
 	-- COMMAND LINE ARGUMENTS COLLECTING BEGIN
 	prog_position	:= 10;
- 	data_base:= universal_string_type.to_bounded_string(Argument(1));
- 	put_line ("data base      : " & universal_string_type.to_string(data_base));
+ 	name_file_data_base:= universal_string_type.to_bounded_string(Argument(1));
+ 	put_line ("data base      : " & universal_string_type.to_string(name_file_data_base));
  
 	prog_position	:= 20;
  	test_name:= universal_string_type.to_bounded_string(Argument(2));
@@ -357,7 +357,7 @@ begin
 
 	prog_position	:= 180;
 	write_diagnosis_netlist(
-		data_base	=>	universal_string_type.to_string(data_base),
+		data_base	=>	universal_string_type.to_string(name_file_data_base),
 		test_name	=>	universal_string_type.to_string(test_name)
 		);
 

@@ -82,7 +82,7 @@ procedure chkpsn is
 	procedure read_data_base is
 	begin
 		udb_summary := read_uut_data_base(
-			name_of_data_base_file => universal_string_type.to_string(data_base),
+			name_of_data_base_file => universal_string_type.to_string(name_file_data_base),
 			debug_level => 0
 			); --.net_count_statistics.total > 0 then null; 
 	end read_data_base;
@@ -1866,13 +1866,13 @@ begin
 	put_line("primary/secondary/class builder "& version);
 	put_line("=======================================");
 	prog_position := "ARG001";
-	data_base := universal_string_type.to_bounded_string(Argument(1));
-	put_line ("data base      : " & universal_string_type.to_string(data_base));
-	data_base_backup_name := data_base; -- backup name of data base. used for overwriting data base with temporarily data base
+	name_file_data_base := universal_string_type.to_bounded_string(Argument(1));
+	put_line ("data base      : " & universal_string_type.to_string(name_file_data_base));
+	data_base_backup_name := name_file_data_base; -- backup name of data base. used for overwriting data base with temporarily data base
 
 	prog_position := "ARG002";
-	options_file := universal_string_type.to_bounded_string(Argument(2));
-	put_line ("options file   : " & universal_string_type.to_string(options_file));
+	name_file_options := universal_string_type.to_bounded_string(Argument(2));
+	put_line ("options file   : " & universal_string_type.to_string(name_file_options));
 
 	prog_position := "ARG003";
 	if argument_count = 3 then
@@ -1895,7 +1895,7 @@ begin
 	open( 
 		file => opt_file,
 		mode => in_file,
-		name => universal_string_type.to_string(options_file)
+		name => universal_string_type.to_string(name_file_options)
 		);
 
 	-- read options file
@@ -2049,7 +2049,7 @@ begin
 
 	-- extract from current udb the sections "scanpath_configuration" and "registers" in preliminary data base
 	prog_position := "EX0000";
-	create( data_base_file_preliminary, name => "tmp/preliminary_" & universal_string_type.to_string(data_base) );
+	create( data_base_file_preliminary, name => "tmp/preliminary_" & universal_string_type.to_string(name_file_data_base) );
 	--create( data_base_file_preliminary, name => "tmp/test.udb" );
 	--set_output( data_base_file_preliminary); -- set data sink
 
@@ -2058,7 +2058,7 @@ begin
 	open( 
 		file => data_base_file,
 		mode => in_file,
-		name => universal_string_type.to_string(data_base)
+		name => universal_string_type.to_string(name_file_data_base)
 		);
 
 	set_input(data_base_file); -- set data source
@@ -2105,7 +2105,7 @@ begin
 
 	-- check preliminary data base and obtain summary
 	put_line("parsing preliminary data base ...");
-	data_base := universal_string_type.to_bounded_string("tmp/preliminary_" & universal_string_type.to_string(data_base) );
+	name_file_data_base := universal_string_type.to_bounded_string("tmp/preliminary_" & universal_string_type.to_string(name_file_data_base) );
 	read_data_base; -- opens and closes data base file given by data_base
 	-- summary now available in udb_summary
 
@@ -2114,7 +2114,7 @@ begin
 	open( 
 		file => data_base_file_preliminary,
 		mode => append_file,
-		name => universal_string_type.to_string(data_base)
+		name => universal_string_type.to_string(name_file_data_base)
 		);
 	set_output(data_base_file_preliminary);
 	write_new_statistics;
@@ -2122,10 +2122,10 @@ begin
 
 	-- overwrite now useless old data base with temporarily data base
 	prog_position := "ST1100";
-	copy_file(universal_string_type.to_string(data_base), universal_string_type.to_string(data_base_backup_name));
+	copy_file(universal_string_type.to_string(name_file_data_base), universal_string_type.to_string(data_base_backup_name));
 	-- clean up tmp directory
 	prog_position := "ST1200";
-	delete_file(universal_string_type.to_string(data_base));
+	delete_file(universal_string_type.to_string(name_file_data_base));
 
 	exception
 

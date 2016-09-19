@@ -1409,7 +1409,7 @@ procedure mkmemcon is
 									value			=> scratch_value,
 									compatibles		=> scratch_compatibles,
 									manufacturer	=> scratch_manufacturer,
-									data_base		=> data_base,  -- derived from cmd line argument
+									data_base		=> name_file_data_base,  -- derived from cmd line argument
 									test_name		=> test_name, --  derived from cmd line argument
 									model_file		=> model_file,  -- derived from cmd line argument
 									device_name		=> target_device, -- derived from cmd line argument
@@ -1440,7 +1440,7 @@ procedure mkmemcon is
 									value			=> scratch_value,
 									compatibles		=> scratch_compatibles,
 									manufacturer	=> scratch_manufacturer,
-									data_base		=> data_base,  -- derived from cmd line argument
+									data_base		=> name_file_data_base,  -- derived from cmd line argument
 									test_name		=> test_name, --  derived from cmd line argument
 									model_file		=> model_file,  -- derived from cmd line argument
 									device_name		=> target_device,  -- derived from cmd line argument
@@ -1468,7 +1468,7 @@ procedure mkmemcon is
 								prog_position := 1230;
 								ptr_target := new type_target'(
 									class_target	=> CLUSTER,
-									data_base		=> data_base,  -- derived from cmd line argument
+									data_base		=> name_file_data_base,  -- derived from cmd line argument
 									test_name		=> test_name, --  derived from cmd line argument
 									model_file		=> model_file,  -- derived from cmd line argument
 									device_name		=> target_device,  -- derived from cmd line argument
@@ -2935,8 +2935,8 @@ begin
 
 	-- ALL COMMAND LINE ARGUMENTS WILL BE PASSED WHEN CREATING OBJECT "TARGET" POINTED TO BY PTR_TARGET
 	prog_position	:= 10;
- 	data_base:= universal_string_type.to_bounded_string(Argument(1));
- 	put_line ("data base      : " & universal_string_type.to_string(data_base));
+ 	name_file_data_base:= universal_string_type.to_bounded_string(Argument(1));
+ 	put_line ("data base      : " & universal_string_type.to_string(name_file_data_base));
  
 	prog_position	:= 20;
  	test_name:= universal_string_type.to_bounded_string(Argument(2));
@@ -3001,7 +3001,7 @@ begin
 
 	prog_position	:= 150;
 	write_diagnosis_netlist(
-		data_base	=>	universal_string_type.to_string(data_base),
+		data_base	=>	universal_string_type.to_string(name_file_data_base),
 		test_name	=>	universal_string_type.to_string(test_name)
 		);
 
