@@ -31,17 +31,19 @@
 --
 --   todo:
 
-with Ada.Text_IO;		use Ada.Text_IO;
-with Ada.Strings; 			use Ada.Strings;
-with Ada.Strings.Fixed; 	use Ada.Strings.Fixed;
-with Ada.Strings.Bounded; 	use Ada.Strings.Bounded;
-with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
-with Ada.Exceptions; use Ada.Exceptions;
+with ada.text_io;				use ada.text_io;
+with ada.characters.handling; 	use ada.characters.handling;
+with ada.strings; 				use ada.strings;
+with ada.strings.fixed; 		use ada.strings.fixed;
+with ada.strings.bounded; 		use ada.strings.bounded;
+with ada.strings.unbounded; 	use ada.strings.unbounded;
+with ada.strings.unbounded.text_io; use ada.strings.unbounded.text_io;
+with ada.exceptions; use ada.exceptions;
+
  
-with GNAT.OS_Lib;   	use GNAT.OS_Lib;
-with Ada.Command_Line;	use Ada.Command_Line;
-with Ada.Directories;	use Ada.Directories;
+with gnat.os_lib;   	use gnat.os_lib;
+with ada.command_line;	use ada.command_line;
+with ada.directories;	use ada.directories;
 with ada.environment_variables;
 
 with m1;
@@ -50,10 +52,10 @@ with m1_numbers;
 with m1_files_and_directories; use m1_files_and_directories;
 
 procedure bsmcl is
-	Version			: constant string (1..3) := "023";
+	version			: constant string (1..3) := "024";
 
-	uut_dir			: Unbounded_String;
-	action			: Unbounded_string;
+--	uut_dir			: Unbounded_String;
+	action			: type_action;
 	batch_file 		: Unbounded_string;
 	test_profile 	: Unbounded_string; -- CS: use type_test_profile
 	test_name  		: Unbounded_string;
@@ -105,18 +107,26 @@ procedure bsmcl is
 	directory_of_enscript		: unbounded_string;
 	interface_to_scan_master	: universal_string_type.bounded_string;
 
-	action_request_help		: constant string (1..4) := "help";
-	action_create_project	: constant string (1..6) := "create";
-	action_set_breakpoint	: constant string (1..5) := "break";
-	-- CS: add more actions use the when evaluating arguments
-
 	vector_id_breakpoint	: type_vector_id_breakpoint;
 	bit_position			: type_sxr_break_position := 0; -- in case bit_position to break at is not provided, default used
 
-	type language_type is (german, english);
+	type language_type is (german, english); -- move to m1_internal ?
 	language 	: language_type := english;
 
 	debug_mode			: natural := 0; -- default is no debug mode
+
+	function is_project_directory return boolean is
+	-- Checks if working directory is a project.
+		is_project : boolean;
+	begin
+		if exists(project_description) then
+			--put ("project        : ");  put(Containing_Directory("proj_desc.txt")); new_line;
+			is_project := true;
+		else
+			is_project := false;
+		end if; 
+		return is_project;
+	end is_project_directory;
 
 	procedure check_environment is
 		previous_input	: Ada.Text_IO.File_Type renames current_input;
@@ -444,68 +454,79 @@ procedure bsmcl is
 
 
 
-
+	procedure write_error_no_project is
+	begin
+		put_line("ERROR: The current working directory is no " & system_name_m1 & " project !");
+		raise constraint_error;
+	end write_error_no_project;
 
 
 begin
 
 	new_line;
-	put("M-1 Command Line Interface Version "& Version); new_line;
+	put("M-1 Command Line Interface Version "& version); new_line;
 	put_line(column_separator_2);
 	check_environment;
 
 		
 	prog_position := "CRT00";
-	arg_ct :=  argument_count; -- ins v020
+	arg_ct :=  argument_count;
 
-	action:=(to_unbounded_string(Argument(1)));
+	action := type_action'value(argument(1));
+	put_line ("action         : " & type_action'image(action));
 
-		-- make project begin
-		if action = action_create_project then
-			put ("action         : ");	put(action); new_line;			
-			prog_position := "PJN00";
-			project_name:=to_unbounded_string(Argument(2));
-			new_line;
-				
+	case action is
+			
+		when create =>
+
+			-- MAKE PROJECT BEGIN
+			prog_position := "CRT05";
+			if is_project_directory then
+				put_line(message_warning & "The current working directory is a " & system_name_m1 & " project already !");
+				ada.text_io.put_line(message_warning'length * row_separator_0 &
+					"Nesting projects is not supported. Change into a valid project directory !");
+				raise constraint_error;
+			else
+				prog_position := "PJN00";
+				project_name:=to_unbounded_string(argument(2));
+				new_line;
+					
 				-- launch project maker
-				Spawn 
+				spawn 
 					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/mkproject",
-					Args                   => 	(
-												1=> new String'(to_string(project_name))
-												-- 2=> new String'(to_string(opt_file)) 
+					program_name           => to_string(directory_of_binary_files) & "/mkproject",
+					args                   => 	(
+												1=> new string'(to_string(project_name))
+												-- 2=> new string'(to_string(opt_file)) 
 												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
+					output_file_descriptor => standout,
+					return_code            => result
 					);
 				-- evaluate result
-				if 
-					Result = 0 then Set_Directory(to_string(project_name)); -- cd into project directory
-				else
-					put("ERROR while creating new project'" & project_name &"'! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
-			
-					--put("code  : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
-				end if;
-		end if;
-		-- make project end
+				case result is
+					when 0 => -- then set_directory(to_string(project_name)); -- cd into project directory -- CS: does not work
+						put_line(done); new_line;
+						put_line("Recommended next steps :"); new_line;
+						put_line("  1. Change into project directory " & quote_single & project_name & quote_single & dot);
+						put_line("  2. Edit project database " & quote_single & project_name & file_extension_separator 
+							& file_extension_database & "' according to your needs with a text editor.");
+						put_line("  3. Import BSDL model files using command: " & quote_single & module_name_cli & row_separator_0 &
+							to_lower(type_action'image(import_bsdl)) & row_separator_0 & project_name &
+							file_extension_separator & file_extension_database & quote_single & dot);
+					when 1 => 
+						put_line(message_error & " Malfunction while creating new project " & quote_single & project_name & quote_single 
+							& row_separator_0 & exclamation & row_separator_0 & aborting);
+						raise constraint_error;
+					when others => 
+						null;
+				end case;
 
-	-- check if working directory is a project at all
-	prog_position := "PDS00";
-	if exists ("proj_desc.txt") then
-		put ("project        : ");  put(Containing_Directory("proj_desc.txt")); new_line;
-	else
-		raise constraint_error;
-	end if; 
+			end if;
+			-- MAKE PROJECT END
 
+		when help =>
 
-
-	-- check action requested by operator
-	--action:=(to_unbounded_string(Argument(1)));
-	put ("action         : ");	put(action); new_line;
-
-		if action = action_request_help then
+			-- HELP BEGIN
 			case language is
 				when german => 
 					open(
@@ -528,316 +549,317 @@ begin
 				put_line(line);
 			end loop;
 			close(help_file);
+			-- HELP END
 
 
-		-- do nothing meaningful if project has just been created
-		elsif action = action_create_project then 
-			new_line;
-			put("... done"); new_line(2);
-			put("Recommended next steps :"); new_line (2);
-			put("  1. Change into project directory '" & project_name & "' using command 'cd " & project_name & "'."); new_line;			
-			put("  2. Edit project database '" & project_name & ".udb' according to your needs using a text editor."); new_line;
-			put("  3. Import BSDL model files using command: 'bsmcl impbsdl " & project_name & ".udb'"); new_line;
-			--set_directory(Containing_Directory("proj_desc.txt"));
 
-
-		-- CAD import begin
-		elsif action = "impcad" then
+		when import_cad =>
+			-- CAD IMPORT BEGIN
 			prog_position := "ICD00";			
 			cad_format:=to_unbounded_string(Argument(2));
+			if is_project_directory then
 
-			if cad_format = "orcad" then
-				put ("CAD format     : ");	put(cad_format); new_line;
-				
-				-- check if netlist file exists
-				prog_position := "INE00";							
-				if exists_netlist(Argument(3)) then null; -- raises exception if netlist not given
-				else 
-					prog_position := "NLE00";	
-					raise Constraint_Error;
-				end if;
-				
-				-- launch ORCAD importer
-				new_line;
-				Spawn 
-					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/imporcad",
-					Args                   => 	(
-												1=> new String'(Argument(3))
---												2=> new String'(Argument(4))
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				-- evaluate result
-				if Result = 0 then advise_next_step_cadimport(true);
-				else
-					put("ERROR   while importing ORCAD CAD data ! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
-				end if;
-
-
-			elsif cad_format = "altium" then
-				put ("CAD format     : ");	put(cad_format); new_line;
-				
-				-- check if netlist file exists
-				prog_position := "INE00";							
-				if exists_netlist(Argument(3)) then null; -- raises exception if netlist not given
-				else 
-					prog_position := "NLE00";	
-					raise Constraint_Error;
-				end if;
-				
-				-- launch ALTIUM importer
-				new_line;
-				Spawn 
-					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/impaltium",
-					Args                   => 	(
-												1=> new String'(Argument(3))
---												2=> new String'(Argument(4))
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				-- evaluate result
-				if Result = 0 then advise_next_step_cadimport(true);
-				else
-					put("ERROR   while importing ALTIUM CAD data ! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
-				end if;
-
-
-
-
-			elsif cad_format = "zuken" then
-				put ("CAD format     : ");	put(cad_format); new_line;
-				
-				-- check if netlist file exists
-				prog_position := "INE00";							
-				if exists_netlist(Argument(3)) then null; -- raises exception if netlist not given
-				else 
-					prog_position := "NLE00";	
-					raise Constraint_Error;
-				end if;
-				
-				-- launch ZUKEN importer
-				new_line;
-				Spawn 
-					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/impzuken",
-					Args                   => 	(
-												1=> new String'(Argument(3))
---												2=> new String'(Argument(4))
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				-- evaluate result
-				if Result = 0 then advise_next_step_cadimport(true);
-				else
-					put("ERROR   while importing ZUKEN CAD data ! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
-				end if;
-
-
-
-
-			elsif cad_format = "eagle6" then
-				put ("CAD format     : ");	put(cad_format); new_line;
-				
-				-- check if netlist file exists
-				prog_position := "INE00";							
-				if exists_netlist(Argument(3)) then null; -- raises exception if netlist not given
-				else 
-					prog_position := "NLE00";	
-					raise Constraint_Error;
-				end if;
-				
-				-- check if partlist file exists
-				prog_position := "IPA00";				
-				if exists_partlist(Argument(4)) then null; -- raises exception if partlist not given 
-				else 
-					prog_position := "PLE00";	
-					raise Constraint_Error;
-				end if;
-
-
-				-- launch EAGLE V6 importer
-				new_line;
-				Spawn 
-					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/impeagle6x",
-					Args                   => 	(
-												1=> new String'(Argument(3)),
-												2=> new String'(Argument(4))
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				-- evaluate result
-				if Result = 0 then advise_next_step_cadimport(true);
-				else
-					put("ERROR while importing EAGLE CAD data ! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
-			
-					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
-				end if;
-
-
---			elsif cad_format = "conti1" then
---				put ("CAD format     : ");	put(cad_format); put(" (IPC-D-356A) "); new_line;					
-				
-				-- check if netlist file exists
---				prog_position := "INE";							
---				if exists_netlist(Argument(3)) then null; -- raises exception if netlist not given
---				else 
---					prog_position := "NLE";	
---					raise Constraint_Error;
---				end if;
-				
---				begin
---					part_list:=to_unbounded_string(Argument(4)); -- raises exception if partlist not given 
--- 
--- 					exception 
--- 						when Constraint_Error => 
--- 							begin
--- 								new_line; Put("WARNING : Partlist not specified ! Proceed anyway ? (y/n) "); Get(key);
--- 								--new_line;
--- 								if key = "y" then 
--- 									partlist_given := false;
--- 									--else Abort_Task (Current_Task); -- CS: not safe
--- 								else 
--- 									prog_position := "OAT"; -- program cancelled by operator
--- 									raise Constraint_Error;
--- 								end if;
--- 							end;
--- 							
--- 				end;
--- 
--- 				begin
--- 
--- 
--- 					-- if part_list has been given, check if part_list file exists
--- 					if partlist_given = true then
--- 						
--- 						-- check if partlist file exists
--- 						prog_position := "IPA";				
--- 						if exists_partlist(Argument(4)) then null; -- raises exception if partlist not given 
--- 						else 
--- 							prog_position := "PLE";	
--- 							raise Constraint_Error;
--- 						end if;
--- 						
--- 		
--- 						-- launch IPC-D-356A importer with net- and partlist
--- 						new_line;
--- 						Spawn 
--- 							(  
--- 							Program_Name           => "/home/bsadmin/bin/bsx/impconti1",
--- 							Args                   => 	(
--- 														1=> new String'(Argument(3)),
--- 														2=> new String'(Argument(4))
--- 														),
--- 							Output_File_Descriptor => Standout,
--- 							Return_Code            => Result
--- 							);
--- 					else
--- 						-- launch IPC-D-356A importer without partlist
--- 						new_line;
--- 						Spawn 
--- 							(  
--- 							Program_Name           => "/home/bsadmin/bin/bsx/impconti1",
--- 							Args                   => 	(
--- 														1=> new String'(Argument(3))
--- 														--2=> new String'(to_string(part_list))
--- 														),
--- 							Output_File_Descriptor => Standout,
--- 							Return_Code            => Result
--- 							);
--- 					end if;
--- 
--- 					-- evaluate result
--- 					if 
--- 						Result = 0 then advise_next_step_cadimport(true);
--- 					else
--- 						put("ERROR   while importing Conti1 IPC-D-356A CAD data ! Aborting ..."); new_line;
--- 					end if;
--- 				end;
-				
-				
-				
-			else	-- if unknown CAD format
-				put ("CAD format     : ");	put(cad_format); new_line;					
-				prog_position := "NCF00";
-				raise Constraint_Error;
-			end if;
-		-- CAD import end
-
-
-		-- make verilog model begin
-		elsif action = "mkvmod" then
-
-			-- do an agrument count check only, mkvmod will do the rest
-			prog_position := "ACV00";
-			if argument_count /= 3 then	-- bsmcl mkvmod skeleton.txt verilog_file
-				raise Constraint_Error;
-			end if;
-									
-				-- launch verilog model maker
-				Spawn 
-					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/mkvmod",
-					Args                   => 	(
-												1=> new String'(argument(2)),
-												2=> new String'(argument(3))
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				-- evaluate result
-				if Result = 0 then
-						new_line;
-						put("... done"); new_line(2);
-						put("Recommended next step :"); new_line (2);
-						put("  1. Edit Verilog Model according to your needs."); new_line;
-
-				else
-					put("ERROR while writing Verilog model file ! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
+				if cad_format = "orcad" then
+					put ("CAD format     : ");	put(cad_format); new_line;
 					
-					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					-- check if netlist file exists
+					prog_position := "INE00";							
+					if exists_netlist(Argument(3)) then null; -- raises exception if netlist not given
+					else 
+						prog_position := "NLE00";	
+						raise Constraint_Error;
+					end if;
+					
+					-- launch ORCAD importer
+					new_line;
+					Spawn 
+						(  
+						Program_Name           => to_string(directory_of_binary_files) & "/imporcad",
+						Args                   => 	(
+													1=> new String'(Argument(3))
+	--												2=> new String'(Argument(4))
+													),
+						Output_File_Descriptor => Standout,
+						Return_Code            => Result
+						);
+					-- evaluate result
+					if Result = 0 then advise_next_step_cadimport(true);
+					else
+						put("ERROR   while importing ORCAD CAD data ! Aborting ..."); new_line;
+						prog_position := "-----";		
+						raise Constraint_Error;
+					end if;
+
+
+				elsif cad_format = "altium" then
+					put ("CAD format     : ");	put(cad_format); new_line;
+					
+					-- check if netlist file exists
+					prog_position := "INE00";							
+					if exists_netlist(Argument(3)) then null; -- raises exception if netlist not given
+					else 
+						prog_position := "NLE00";	
+						raise Constraint_Error;
+					end if;
+					
+					-- launch ALTIUM importer
+					new_line;
+					Spawn 
+						(  
+						Program_Name           => to_string(directory_of_binary_files) & "/impaltium",
+						Args                   => 	(
+													1=> new String'(Argument(3))
+	--												2=> new String'(Argument(4))
+													),
+						Output_File_Descriptor => Standout,
+						Return_Code            => Result
+						);
+					-- evaluate result
+					if Result = 0 then advise_next_step_cadimport(true);
+					else
+						put("ERROR   while importing ALTIUM CAD data ! Aborting ..."); new_line;
+						prog_position := "-----";		
+						raise Constraint_Error;
+					end if;
+
+
+
+
+				elsif cad_format = "zuken" then
+					put ("CAD format     : ");	put(cad_format); new_line;
+					
+					-- check if netlist file exists
+					prog_position := "INE00";							
+					if exists_netlist(Argument(3)) then null; -- raises exception if netlist not given
+					else 
+						prog_position := "NLE00";	
+						raise Constraint_Error;
+					end if;
+					
+					-- launch ZUKEN importer
+					new_line;
+					Spawn 
+						(  
+						Program_Name           => to_string(directory_of_binary_files) & "/impzuken",
+						Args                   => 	(
+													1=> new String'(Argument(3))
+	--												2=> new String'(Argument(4))
+													),
+						Output_File_Descriptor => Standout,
+						Return_Code            => Result
+						);
+					-- evaluate result
+					if Result = 0 then advise_next_step_cadimport(true);
+					else
+						put("ERROR   while importing ZUKEN CAD data ! Aborting ..."); new_line;
+						prog_position := "-----";		
+						raise Constraint_Error;
+					end if;
+
+
+
+
+				elsif cad_format = "eagle6" then
+					put ("CAD format     : ");	put(cad_format); new_line;
+					
+					-- check if netlist file exists
+					prog_position := "INE00";							
+					if exists_netlist(Argument(3)) then null; -- raises exception if netlist not given
+					else 
+						prog_position := "NLE00";	
+						raise Constraint_Error;
+					end if;
+					
+					-- check if partlist file exists
+					prog_position := "IPA00";				
+					if exists_partlist(Argument(4)) then null; -- raises exception if partlist not given 
+					else 
+						prog_position := "PLE00";	
+						raise Constraint_Error;
+					end if;
+
+
+					-- launch EAGLE V6 importer
+					new_line;
+					Spawn 
+						(  
+						Program_Name           => to_string(directory_of_binary_files) & "/impeagle6x",
+						Args                   => 	(
+													1=> new String'(Argument(3)),
+													2=> new String'(Argument(4))
+													),
+						Output_File_Descriptor => Standout,
+						Return_Code            => Result
+						);
+					-- evaluate result
+					if Result = 0 then advise_next_step_cadimport(true);
+					else
+						put("ERROR while importing EAGLE CAD data ! Aborting ..."); new_line;
+						prog_position := "-----";		
+						raise Constraint_Error;
+				
+						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					end if;
+
+
+	--			elsif cad_format = "conti1" then
+	--				put ("CAD format     : ");	put(cad_format); put(" (IPC-D-356A) "); new_line;					
+					
+					-- check if netlist file exists
+	--				prog_position := "INE";							
+	--				if exists_netlist(Argument(3)) then null; -- raises exception if netlist not given
+	--				else 
+	--					prog_position := "NLE";	
+	--					raise Constraint_Error;
+	--				end if;
+					
+	--				begin
+	--					part_list:=to_unbounded_string(Argument(4)); -- raises exception if partlist not given 
+	-- 
+	-- 					exception 
+	-- 						when Constraint_Error => 
+	-- 							begin
+	-- 								new_line; Put("WARNING : Partlist not specified ! Proceed anyway ? (y/n) "); Get(key);
+	-- 								--new_line;
+	-- 								if key = "y" then 
+	-- 									partlist_given := false;
+	-- 									--else Abort_Task (Current_Task); -- CS: not safe
+	-- 								else 
+	-- 									prog_position := "OAT"; -- program cancelled by operator
+	-- 									raise Constraint_Error;
+	-- 								end if;
+	-- 							end;
+	-- 							
+	-- 				end;
+	-- 
+	-- 				begin
+	-- 
+	-- 
+	-- 					-- if part_list has been given, check if part_list file exists
+	-- 					if partlist_given = true then
+	-- 						
+	-- 						-- check if partlist file exists
+	-- 						prog_position := "IPA";				
+	-- 						if exists_partlist(Argument(4)) then null; -- raises exception if partlist not given 
+	-- 						else 
+	-- 							prog_position := "PLE";	
+	-- 							raise Constraint_Error;
+	-- 						end if;
+	-- 						
+	-- 		
+	-- 						-- launch IPC-D-356A importer with net- and partlist
+	-- 						new_line;
+	-- 						Spawn 
+	-- 							(  
+	-- 							Program_Name           => "/home/bsadmin/bin/bsx/impconti1",
+	-- 							Args                   => 	(
+	-- 														1=> new String'(Argument(3)),
+	-- 														2=> new String'(Argument(4))
+	-- 														),
+	-- 							Output_File_Descriptor => Standout,
+	-- 							Return_Code            => Result
+	-- 							);
+	-- 					else
+	-- 						-- launch IPC-D-356A importer without partlist
+	-- 						new_line;
+	-- 						Spawn 
+	-- 							(  
+	-- 							Program_Name           => "/home/bsadmin/bin/bsx/impconti1",
+	-- 							Args                   => 	(
+	-- 														1=> new String'(Argument(3))
+	-- 														--2=> new String'(to_string(part_list))
+	-- 														),
+	-- 							Output_File_Descriptor => Standout,
+	-- 							Return_Code            => Result
+	-- 							);
+	-- 					end if;
+	-- 
+	-- 					-- evaluate result
+	-- 					if 
+	-- 						Result = 0 then advise_next_step_cadimport(true);
+	-- 					else
+	-- 						put("ERROR   while importing Conti1 IPC-D-356A CAD data ! Aborting ..."); new_line;
+	-- 					end if;
+	-- 				end;
+					
+					
+					
+				else	-- if unknown CAD format
+					put ("CAD format     : ");	put(cad_format); new_line;					
+					prog_position := "NCF00";
+					raise Constraint_Error;
 				end if;
-
-
-		-- make verilog model end
-
-
-		-- join netlist begin
-		elsif action = "join" then
-			prog_position := "JSM00";
-			skeleton_sub:=to_unbounded_string(Argument(2)); -- raises exception if skeleton submodule not given
-
-			-- check if skeleton submodule file exists
-			if exists_skeleton(Argument(2)) then null; -- raises exception if skeleton not given 
-			else 
-				prog_position := "JSN00";
-				raise Constraint_Error;
+			else
+				write_error_no_project;
 			end if;
-									
-			-- check if skeleton main file exists
-			if exists("skeleton.txt") then null; -- raises exception if skeleton main not present
-			else 
-				prog_position := "SMN00";
-				raise Constraint_Error;
+			-- CAD IMPORT END
+
+
+
+		when mkvmod =>
+			-- MAKE VERILOG MODEL BEGIN
+
+			if is_project_directory then
+				-- do an agrument count check only, mkvmod will do the rest
+				prog_position := "ACV00";
+				if argument_count /= 3 then	-- bsmcl mkvmod skeleton.txt verilog_file
+					raise Constraint_Error;
+				end if;
+										
+					-- launch verilog model maker
+					Spawn 
+						(  
+						Program_Name           => to_string(directory_of_binary_files) & "/mkvmod",
+						Args                   => 	(
+													1=> new String'(argument(2)),
+													2=> new String'(argument(3))
+													),
+						Output_File_Descriptor => Standout,
+						Return_Code            => Result
+						);
+					-- evaluate result
+					if Result = 0 then
+							new_line;
+							put("... done"); new_line(2);
+							put("Recommended next step :"); new_line (2);
+							put("  1. Edit Verilog Model according to your needs."); new_line;
+
+					else
+						put("ERROR while writing Verilog model file ! Aborting ..."); new_line;
+						prog_position := "-----";		
+						raise Constraint_Error;
+						
+						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					end if;
+
+			else
+				write_error_no_project;
 			end if;
-									
-									
+			-- MAKE VERILOG MODEL END
+
+
+		when join_netlist =>
+		-- JOIN NETLIST BEGIN
+			if is_project_directory then
+
+				prog_position := "JSM00";
+				skeleton_sub:=to_unbounded_string(Argument(2)); -- raises exception if skeleton submodule not given
+
+				-- check if skeleton submodule file exists
+				if exists_skeleton(Argument(2)) then null; -- raises exception if skeleton not given 
+				else 
+					prog_position := "JSN00";
+					raise Constraint_Error;
+				end if;
+										
+				-- check if skeleton main file exists
+				if exists("skeleton.txt") then null; -- raises exception if skeleton main not present
+				else 
+					prog_position := "SMN00";
+					raise Constraint_Error;
+				end if;
+										
+										
 				-- launch netlist joiner
 				Spawn 
 					(  
@@ -863,21 +885,26 @@ begin
 					
 					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
 				end if;
-		-- join netlist end 
 
-
-
-		-- BSDL import begin
-		elsif action = "impbsdl" then
-			prog_position := "IBL00";
-			data_base:=to_unbounded_string(Argument(2)); -- raises exception if udb not given
-
-			-- check if udb file exists
-			if exists_database(Argument(2)) then null; -- raises exception if udb not given 
-			else 
-				prog_position := "DBE00";		
-				raise Constraint_Error;
+			else
+				write_error_no_project;
 			end if;
+		-- JOIN NETLIST END 
+
+
+		when import_bsdl =>
+		-- BSDL IMPORT BEGIN
+			if is_project_directory then
+
+				prog_position := "IBL00";
+				data_base:=to_unbounded_string(Argument(2)); -- raises exception if udb not given
+
+				-- check if udb file exists
+				if exists_database(Argument(2)) then null; -- raises exception if udb not given 
+				else 
+					prog_position := "DBE00";		
+					raise Constraint_Error;
+				end if;
 									
 				-- launch BSDL importer
 				Spawn 
@@ -904,22 +931,26 @@ begin
 				
 					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
 				end if;
-		-- BSDL importer end
 
-
-
-
-		-- mknets begin
-		elsif action = "mknets" then
-			prog_position := "MKN00";
-			data_base:=to_unbounded_string(Argument(2)); -- raises exception if udb not given
-
-			-- check if udb file exists
-			if exists_database(Argument(2)) then null; -- raises exception if udb not given 
-			else 
-				prog_position := "DBE00";		
-				raise Constraint_Error;
+			else
+				write_error_no_project;
 			end if;
+		-- BSDL IMPORT END
+
+
+
+		when mknets =>
+		-- MKNETS BEGIN
+			if is_project_directory then
+				prog_position := "MKN00";
+				data_base:=to_unbounded_string(Argument(2)); -- raises exception if udb not given
+
+				-- check if udb file exists
+				if exists_database(Argument(2)) then null; -- raises exception if udb not given 
+				else 
+					prog_position := "DBE00";		
+					raise Constraint_Error;
+				end if;
 
 				-- launch mknets
 				Spawn 
@@ -947,31 +978,34 @@ begin
 					raise Constraint_Error;
 					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
 				end if;
-		-- mknets end
-
-
-
-		-- mkoptions begin
-		elsif action = "mkoptions" then
-			prog_position := "MKO00";
-			data_base:=to_unbounded_string(Argument(2)); -- raises exception if udb not given
-
-			-- check if udb file exists
-			if exists_database(Argument(2)) then null; -- raises exception if udb not given 
-			else 
-				prog_position := "DBE00";		
-				raise Constraint_Error;
-			end if;
-
-			prog_position := "OP200";
-			-- ins v021 begin
-			if arg_ct = 2 then
-				opt_file := to_unbounded_string(base_name(to_string(data_base)) & ".opt");
 			else
-				opt_file:=to_unbounded_string(Argument(3)); -- NOTE: the opt file given will be created by mkoptions
+				write_error_no_project;
 			end if;
-			-- ins v021 end
-			--	opt_file:=to_unbounded_string(Argument(3)); -- NOTE: the opt file given will be created by mkoptions -- rm v021
+		-- MKNETS END
+
+
+
+
+		when mkoptions =>
+		-- MKOPTIONS BEGIN
+			if is_project_directory then
+				prog_position := "MKO00";
+				data_base:=to_unbounded_string(Argument(2)); -- raises exception if udb not given
+
+				-- check if udb file exists
+				if exists_database(Argument(2)) then null; -- raises exception if udb not given 
+				else 
+					prog_position := "DBE00";		
+					raise Constraint_Error;
+				end if;
+
+				prog_position := "OP200";
+				-- ins v021 begin
+				if arg_ct = 2 then
+					opt_file := to_unbounded_string(base_name(to_string(data_base)) & ".opt");
+				else
+					opt_file:=to_unbounded_string(Argument(3)); -- NOTE: the opt file given will be created by mkoptions
+				end if;
 
 				-- relaunch mknets
 				Spawn 
@@ -1026,32 +1060,37 @@ begin
 					raise Constraint_Error;
 					
 				end if;
-		-- mkoptions end
 
-
-
-
-		-- chkpsn begin
-		elsif action = "chkpsn" then
-			prog_position := "CP100";
-			data_base:=to_unbounded_string(Argument(2));
-
-			-- check if udb file exists
-			if exists_database(Argument(2)) then null; -- raises exception if udb not given 
-			else 
-				prog_position := "DBE00";		
-				raise Constraint_Error;
+			else
+				write_error_no_project;
 			end if;
+		-- MKOPTIONS END
 
-			prog_position := "OP100";
-			opt_file:=to_unbounded_string(Argument(3));
 
-			-- check if opt_file file exists
-			if exists_optfile(Argument(3)) then null; -- raises exception if opt file not given 
-			else 
-				prog_position := "OPE00";		
-				raise Constraint_Error;
-			end if;
+
+		when chkpsn =>
+		-- CHKPSN BEGIN
+			if is_project_directory then
+
+				prog_position := "CP100";
+				data_base:=to_unbounded_string(Argument(2));
+
+				-- check if udb file exists
+				if exists_database(Argument(2)) then null; -- raises exception if udb not given 
+				else 
+					prog_position := "DBE00";		
+					raise Constraint_Error;
+				end if;
+
+				prog_position := "OP100";
+				opt_file:=to_unbounded_string(Argument(3));
+
+				-- check if opt_file file exists
+				if exists_optfile(Argument(3)) then null; -- raises exception if opt file not given 
+				else 
+					prog_position := "OPE00";		
+					raise Constraint_Error;
+				end if;
 
 				-- relaunch mknets
 				Spawn 
@@ -1100,455 +1139,475 @@ begin
 					raise Constraint_Error;
 					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
 				end if;
-		-- chkpsn end
-
-
-
-
-		-- test generation begin
-		elsif action = "generate" then
-			prog_position := "GEN00";
-			data_base:=to_unbounded_string(Argument(2));
-
-			-- check if udb file exists
-			if exists_database(Argument(2)) then null; -- raises exception if udb not given 
-			else 
-				prog_position := "DBE00";		
-				raise Constraint_Error;
+			else
+				write_error_no_project;
 			end if;
-			
-			prog_position := "TPR00";
-			put ("test profile   : ");
-			test_profile:=to_unbounded_string(Argument(3));
-			put(test_profile); new_line;
+		-- CHKPSN END
+
+
+
+		when generate =>
+		-- TEST GENERATION BEGIN
+			if is_project_directory then
+				prog_position := "GEN00";
+				data_base:=to_unbounded_string(Argument(2));
+
+				-- check if udb file exists
+				if exists_database(Argument(2)) then null; -- raises exception if udb not given 
+				else 
+					prog_position := "DBE00";		
+					raise Constraint_Error;
+				end if;
 				
-			if test_profile = "infrastructure" then
-				prog_position := "TNA00";			
-				test_name:=to_unbounded_string(Argument(4));
-				put ("test name      : ");	put(test_name); new_line; new_line;
-				
-				-- launch infra generator
-				Spawn 
-					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/mkinfra",
-					Args                   => 	(
-												1=> new String'(to_string(data_base)),
-												2=> new String'(to_string(test_name)) -- pass test name to bsm
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				-- evaluate result
-				if Result = 0 then advise_next_step_generate(to_string(data_base),to_string(test_name));
+				prog_position := "TPR00";
+				put ("test profile   : ");
+				test_profile:=to_unbounded_string(Argument(3));
+				put(test_profile); new_line;
 					
-				else
-					put("ERROR while generating test "& test_name &" ! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
-					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
-				end if;
-
-			elsif test_profile = "interconnect" then
-				prog_position := "TNA00";			
-				test_name:=to_unbounded_string(Argument(4));
-				put ("test name      : ");	put(test_name); new_line; new_line;
-				-- launch interconnect generator
-				Spawn 
-					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/mkintercon",
-					Args                   => 	(
-												1=> new String'(to_string(data_base)),
-												2=> new String'(to_string(test_name)) -- pass test name to bsm
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				-- evaluate result
-				if Result = 0 then advise_next_step_generate(to_string(data_base),to_string(test_name));
+				if test_profile = "infrastructure" then
+					prog_position := "TNA00";			
+					test_name:=to_unbounded_string(Argument(4));
+					put ("test name      : ");	put(test_name); new_line; new_line;
 				
-				else
-					put("ERROR   while generating test '"& test_name &"' ! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
-					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
-				end if;
-				
-
-			elsif test_profile = "memconnect" then
-				prog_position := "TNA00";			
-				test_name:=to_unbounded_string(Argument(4));
-				put ("test name      : ");	put(test_name); new_line;
-				
-				prog_position := "TDV00";				
-				target_device:=to_unbounded_string(Argument(5));
-				put ("target device  : ");	put(target_device); new_line;
-				
-				prog_position := "DVM00";
-				device_model:=to_unbounded_string(Argument(6));
-				
-				-- check if model file exists
-				if exists_model(Argument(6)) then null; -- raises exception if model file not given 
-					else 
-						prog_position := "DMN00";		
-						raise Constraint_Error;
-				end if;
-				
-				prog_position := "DPC00";
-				device_package:=to_unbounded_string(Argument(7));
-				put ("package        : ");	put(device_package); new_line; new_line;
-
-				-- launch memconnect generator
-				prog_position := "LMC00"; -- ins v018
-				--put_line( bin_dir & "mkmemcon"); -- ins v018
-
-				Spawn 
-					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/mkmemcon",
-					Args                   => 	(
-												1=> new String'(to_string(data_base)),
- 												2=> new String'(to_string(test_name)), -- pass test name to bsm
- 												3=> new String'(to_string(target_device)),
- 												4=> new String'(to_string(device_model)),
- 												5=> new String'(to_string(device_package))
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				--put_line(integer'image(result));
-	
-				-- evaluate result
-				if Result = 0 then 
-					prog_position := "LM000";	-- ins v018
-					advise_next_step_generate(to_string(data_base),to_string(test_name));
-
-				else
-					prog_position := "LM100";	-- ins v018
-					put("ERROR   while generating test "& test_name &" ! Aborting ..."); new_line;
-					prog_position := "MC000";	-- mod v018
-					raise Constraint_Error;
-					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
-				end if;
-
-
-
-			elsif test_profile = "clock" then
-				prog_position := "TNA00";			
-				test_name:=to_unbounded_string(Argument(4));
-				put ("test name      : ");	put(test_name); new_line;
-				
-				prog_position := "TDV00";					
-				target_device:=to_unbounded_string(Argument(5));
-				put ("target device  : ");	put(target_device); new_line;
-				
-				prog_position := "TPI00";				
-				target_pin:=to_unbounded_string(Argument(6));
-				put ("pin            : ");	put(target_pin); new_line;
-				
-				prog_position := "RYC00";									
-				retry_count:=to_unbounded_string(Argument(7));
-				put ("retry count    : ");	put(retry_count); new_line; --new_line;
-				
-				prog_position := "RDY00";				
-				retry_delay:=to_unbounded_string(Argument(8));
-				put ("retry delay    : ");	put(retry_delay); new_line; new_line;
-
-				-- launch clock sampling generator
-				Spawn 
-					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/mkclock",
-					Args                   => 	(
-												1=> new String'(to_string(data_base)),
-												2=> new String'(to_string(test_name)), -- pass test name to bsm
-												3=> new String'("non_intrusive"),
-												4=> new String'(to_string(target_device)),
-												5=> new String'(to_string(target_pin)),
-												6=> new String'(to_string(retry_count)),
-												7=> new String'(to_string(retry_delay))
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				-- evaluate result
-				if Result = 0 then advise_next_step_generate(to_string(data_base),to_string(test_name));
-				
-				else
-					put("ERROR: While generating test "& test_name &" ! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
-					
-					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
-				end if;
-
-
-
-			elsif test_profile = "toggle" then
-				prog_position := "TNA00";			
-				test_name:=to_unbounded_string(Argument(4));
-				put ("test name      : ");	put(test_name); new_line;
-				
-				prog_position := "TON00";				
-				target_net:=to_unbounded_string(Argument(5));
-				put ("target net     : ");	put(target_net); new_line;
-				
-				prog_position := "TCT00";									
-				toggle_count:=to_unbounded_string(Argument(6));
-				put ("cycle count    : ");	put(toggle_count); new_line; --new_line;
-				
-				prog_position := "TLT00";				
-				low_time:=to_unbounded_string(Argument(7));
-				put ("low time       : ");	put(low_time); new_line;
-
-				prog_position := "THT00";				
-				high_time:=to_unbounded_string(Argument(8));
-				put ("high time      : ");	put(high_time); new_line; new_line;
-
-				-- launch pin toggle generator
-				Spawn 
-					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/mktoggle",
-					Args                   => 	(
-												1=> new String'(to_string(data_base)),
-												2=> new String'(to_string(test_name)),
-												-- 3=> new String'(to_string(target_device)),
-												3=> new String'(to_string(target_net)),
-												4=> new String'(to_string(toggle_count)),
-												5=> new String'(to_string(low_time)),
-												6=> new String'(to_string(high_time))
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				-- evaluate result
-				if Result = 0 then advise_next_step_generate(to_string(data_base),to_string(test_name));
-				
-				else
-					put("ERROR: While generating test "& test_name &" ! Aborting ..."); new_line;
-					prog_position := "TOG01";
-					raise Constraint_Error;
-					
-					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
-				end if;
-
-
-			-- if test profile not supported
-			else 
-				--prog_position := "TPN";
-				raise CONSTRAINT_ERROR; --Abort_Task (Current_Task); -- CS: not safe
-			end if;
-		-- test generation end
-
-
-
-
-
-
-
-		-- test compilation begin
-		elsif action = "compile" then
-
-			prog_position := "CMP00";
-			data_base:=to_unbounded_string(Argument(2));
-
-			-- check if udb file exists
-			if exists_database(Argument(2)) then null; -- raises exception if udb not given 
-			else 
-				prog_position := "DBE00";		
-				raise Constraint_Error;
-			end if;
+					-- launch infra generator
+					Spawn 
+						(  
+						Program_Name           => to_string(directory_of_binary_files) & "/mkinfra",
+						Args                   => 	(
+													1=> new String'(to_string(data_base)),
+													2=> new String'(to_string(test_name)) -- pass test name to bsm
+													),
+						Output_File_Descriptor => Standout,
+						Return_Code            => Result
+						);
+					-- evaluate result
+					if Result = 0 then advise_next_step_generate(to_string(data_base),to_string(test_name));
 						
-			prog_position := "CTN00";			
-			--test_name:=to_unbounded_string(Argument(3)); -- rm v020
-			test_name:=to_unbounded_string(m1.strip_trailing_forward_slash(Argument(3))); -- mod v020
+					else
+						put("ERROR while generating test "& test_name &" ! Aborting ..."); new_line;
+						prog_position := "-----";		
+						raise Constraint_Error;
+						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					end if;
 
-			put ("test name      : ");	put(test_name); new_line(2);
+				elsif test_profile = "interconnect" then
+					prog_position := "TNA00";			
+					test_name:=to_unbounded_string(Argument(4));
+					put ("test name      : ");	put(test_name); new_line; new_line;
+					-- launch interconnect generator
+					Spawn 
+						(  
+						Program_Name           => to_string(directory_of_binary_files) & "/mkintercon",
+						Args                   => 	(
+													1=> new String'(to_string(data_base)),
+													2=> new String'(to_string(test_name)) -- pass test name to bsm
+													),
+						Output_File_Descriptor => Standout,
+						Return_Code            => Result
+						);
+					-- evaluate result
+					if Result = 0 then advise_next_step_generate(to_string(data_base),to_string(test_name));
+				
+					else
+						put("ERROR   while generating test '"& test_name &"' ! Aborting ..."); new_line;
+						prog_position := "-----";		
+						raise Constraint_Error;
+						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					end if;
+				
 
-			-- check if test directory containing the seq file exists
-			if exists (compose (to_string(test_name),to_string(test_name), "seq")) then
-
-				-- launch compiler
-				Spawn 
-					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/compseq",
-					Args                   => 	(
-												1=> new String'(to_string(data_base)),
-												2=> new String'(to_string(test_name)) -- pass test name to bsm
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				-- evaluate result
-				if Result = 0 then advise_next_step_compile(to_string(test_name));
-				else
-					put("ERROR   while compiling test "& test_name &" ! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
+				elsif test_profile = "memconnect" then
+					prog_position := "TNA00";			
+					test_name:=to_unbounded_string(Argument(4));
+					put ("test name      : ");	put(test_name); new_line;
 					
-					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					prog_position := "TDV00";				
+					target_device:=to_unbounded_string(Argument(5));
+					put ("target device  : ");	put(target_device); new_line;
+					
+					prog_position := "DVM00";
+					device_model:=to_unbounded_string(Argument(6));
+					
+					-- check if model file exists
+					if exists_model(Argument(6)) then null; -- raises exception if model file not given 
+						else 
+							prog_position := "DMN00";		
+							raise Constraint_Error;
+					end if;
+					
+					prog_position := "DPC00";
+					device_package:=to_unbounded_string(Argument(7));
+					put ("package        : ");	put(device_package); new_line; new_line;
+
+					-- launch memconnect generator
+					prog_position := "LMC00"; -- ins v018
+					--put_line( bin_dir & "mkmemcon"); -- ins v018
+
+					Spawn 
+						(  
+						Program_Name           => to_string(directory_of_binary_files) & "/mkmemcon",
+						Args                   => 	(
+													1=> new String'(to_string(data_base)),
+													2=> new String'(to_string(test_name)), -- pass test name to bsm
+													3=> new String'(to_string(target_device)),
+													4=> new String'(to_string(device_model)),
+													5=> new String'(to_string(device_package))
+													),
+						Output_File_Descriptor => Standout,
+						Return_Code            => Result
+						);
+					--put_line(integer'image(result));
+	
+					-- evaluate result
+					if Result = 0 then 
+						prog_position := "LM000";	-- ins v018
+						advise_next_step_generate(to_string(data_base),to_string(test_name));
+
+					else
+						prog_position := "LM100";	-- ins v018
+						put("ERROR   while generating test "& test_name &" ! Aborting ..."); new_line;
+						prog_position := "MC000";	-- mod v018
+						raise Constraint_Error;
+						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					end if;
+
+
+
+				elsif test_profile = "clock" then
+					prog_position := "TNA00";			
+					test_name:=to_unbounded_string(Argument(4));
+					put ("test name      : ");	put(test_name); new_line;
+					
+					prog_position := "TDV00";					
+					target_device:=to_unbounded_string(Argument(5));
+					put ("target device  : ");	put(target_device); new_line;
+					
+					prog_position := "TPI00";				
+					target_pin:=to_unbounded_string(Argument(6));
+					put ("pin            : ");	put(target_pin); new_line;
+					
+					prog_position := "RYC00";									
+					retry_count:=to_unbounded_string(Argument(7));
+					put ("retry count    : ");	put(retry_count); new_line; --new_line;
+					
+					prog_position := "RDY00";				
+					retry_delay:=to_unbounded_string(Argument(8));
+					put ("retry delay    : ");	put(retry_delay); new_line; new_line;
+
+					-- launch clock sampling generator
+					Spawn 
+						(  
+						Program_Name           => to_string(directory_of_binary_files) & "/mkclock",
+						Args                   => 	(
+													1=> new String'(to_string(data_base)),
+													2=> new String'(to_string(test_name)), -- pass test name to bsm
+													3=> new String'("non_intrusive"),
+													4=> new String'(to_string(target_device)),
+													5=> new String'(to_string(target_pin)),
+													6=> new String'(to_string(retry_count)),
+													7=> new String'(to_string(retry_delay))
+													),
+						Output_File_Descriptor => Standout,
+						Return_Code            => Result
+						);
+					-- evaluate result
+					if Result = 0 then advise_next_step_generate(to_string(data_base),to_string(test_name));
+					
+					else
+						put("ERROR: While generating test "& test_name &" ! Aborting ..."); new_line;
+						prog_position := "-----";		
+						raise Constraint_Error;
+						
+						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					end if;
+
+
+
+				elsif test_profile = "toggle" then
+					prog_position := "TNA00";			
+					test_name:=to_unbounded_string(Argument(4));
+					put ("test name      : ");	put(test_name); new_line;
+					
+					prog_position := "TON00";				
+					target_net:=to_unbounded_string(Argument(5));
+					put ("target net     : ");	put(target_net); new_line;
+					
+					prog_position := "TCT00";									
+					toggle_count:=to_unbounded_string(Argument(6));
+					put ("cycle count    : ");	put(toggle_count); new_line; --new_line;
+					
+					prog_position := "TLT00";				
+					low_time:=to_unbounded_string(Argument(7));
+					put ("low time       : ");	put(low_time); new_line;
+
+					prog_position := "THT00";				
+					high_time:=to_unbounded_string(Argument(8));
+					put ("high time      : ");	put(high_time); new_line; new_line;
+
+					-- launch pin toggle generator
+					Spawn 
+						(  
+						Program_Name           => to_string(directory_of_binary_files) & "/mktoggle",
+						Args                   => 	(
+													1=> new String'(to_string(data_base)),
+													2=> new String'(to_string(test_name)),
+													-- 3=> new String'(to_string(target_device)),
+													3=> new String'(to_string(target_net)),
+													4=> new String'(to_string(toggle_count)),
+													5=> new String'(to_string(low_time)),
+													6=> new String'(to_string(high_time))
+													),
+						Output_File_Descriptor => Standout,
+						Return_Code            => Result
+						);
+					-- evaluate result
+					if Result = 0 then advise_next_step_generate(to_string(data_base),to_string(test_name));
+					
+					else
+						put("ERROR: While generating test "& test_name &" ! Aborting ..."); new_line;
+						prog_position := "TOG01";
+						raise Constraint_Error;
+						
+						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					end if;
+
+
+				-- if test profile not supported
+				else 
+					raise constraint_error;
 				end if;
 
 			else
-				prog_position := "CNE00"; 
-				raise constraint_error;
+				write_error_no_project;
 			end if;
-		-- test compilation end
+		-- TEST GENERATION END
 
 
 
 
+		when compile =>
+		-- TEST COMPILATION BEGIN
+			if is_project_directory then
+				prog_position := "CMP00";
+				data_base:=to_unbounded_string(Argument(2));
 
+				-- check if udb file exists
+				if exists_database(Argument(2)) then null; -- raises exception if udb not given 
+				else 
+					prog_position := "DBE00";		
+					raise Constraint_Error;
+				end if;
+							
+				prog_position := "CTN00";			
+				--test_name:=to_unbounded_string(Argument(3)); -- rm v020
+				test_name:=to_unbounded_string(m1.strip_trailing_forward_slash(Argument(3))); -- mod v020
 
-		-- test loading begin
-		elsif action = "load" then
-			prog_position := "LD100";			
-			--test_name:=to_unbounded_string(Argument(2)); -- rm v020
-			--test_name:=to_unbounded_string(m1.strip_trailing_forward_slash(Argument(2))); -- ins v020
+				put ("test name      : ");	put(test_name); new_line(2);
 
-			if load_test 
-				(
-				test_name					=> m1.strip_trailing_forward_slash(Argument(2)),
-				interface_to_scan_master	=> universal_string_type.to_string(interface_to_scan_master),
-				directory_of_binary_files	=> to_string(directory_of_binary_files)
-				) then
-				prog_position := "LD110";
+				-- check if test directory containing the seq file exists
+				if exists (compose (to_string(test_name),to_string(test_name), "seq")) then
+
+					-- launch compiler
+					Spawn 
+						(  
+						Program_Name           => to_string(directory_of_binary_files) & "/compseq",
+						Args                   => 	(
+													1=> new String'(to_string(data_base)),
+													2=> new String'(to_string(test_name)) -- pass test name to bsm
+													),
+						Output_File_Descriptor => Standout,
+						Return_Code            => Result
+						);
+					-- evaluate result
+					if Result = 0 then advise_next_step_compile(to_string(test_name));
+					else
+						put("ERROR   while compiling test "& test_name &" ! Aborting ..."); new_line;
+						prog_position := "-----";		
+						raise Constraint_Error;
+						
+						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					end if;
+
+				else
+					prog_position := "CNE00"; 
+					raise constraint_error;
+				end if;
+
 			else
-				prog_position := "LD120";
-				set_exit_status(failure);
+				write_error_no_project;
 			end if;
-		-- test loading end
+		-- TEST COMPILATION END
 
 
 
 
-		-- RAM dump begin
-		elsif action = "dump" then
-			prog_position := "DP100";			
-			ram_addr:= Argument(2); -- page address bits [23:8]
 
-			if dump_ram
-				(
-				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
-				directory_of_binary_files	=> to_string(directory_of_binary_files),
-				ram_addr					=> ram_addr -- page address bits [23:8]
-				) then
-				prog_position := "DP110";
-			else
-				prog_position := "DP120";
-				set_exit_status(failure);
-			end if;
-		-- RAM dump end
-
-
-		-- RAM clear begin
-		elsif action = "clear" then
-			prog_position := "CLR10";
-			
-			if clear_ram
-				(
-				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
-				directory_of_binary_files	=> to_string(directory_of_binary_files)
-				) then
-				prog_position := "CLR20";
-				put_line("Please upload compiled tests now.");
-			else
-				prog_position := "CLR30";
-				set_exit_status(failure);
-			end if;
-		-- RAM clear end
-
-
-
-
-		-- test/step execution begin
-		-- WAITS FOR TEST END
-		elsif action = "run" then
-			prog_position := "RU100";
-			test_name:=to_unbounded_string(m1.strip_trailing_forward_slash(Argument(2)));
-			if arg_ct = 3 then
-				prog_position := "RU400";
-				m1_internal.step_mode:= m1_internal.type_step_mode'value(Argument(3));
-			end if;
-			
-			-- check if test exists
-			if exists (compose (to_string(test_name),to_string(test_name), "vec")) then
-				put_line ("test name      : " & test_name);
-				put_line ("step mode      : " & type_step_mode'image(m1_internal.step_mode)); new_line;
-
-				--bsm --run $run_mode $name  #launch single test/ISP
-				-- launch test
-				prog_position := "RU300";
-				case execute_test
+		when load =>
+		-- TEST LOADING BEGIN
+			if is_project_directory then
+				prog_position := "LD100";			
+				if load_test 
 					(
-					test_name 					=> to_string(test_name),
+					test_name					=> m1.strip_trailing_forward_slash(Argument(2)),
+					interface_to_scan_master	=> universal_string_type.to_string(interface_to_scan_master),
+					directory_of_binary_files	=> to_string(directory_of_binary_files)
+					) then
+					prog_position := "LD110";
+				else
+					prog_position := "LD120";
+					set_exit_status(failure);
+				end if;
+			else
+				write_error_no_project;
+			end if;
+		-- TEST LOADING END
+
+
+
+		when dump =>
+		-- RAM DUMP BEGIN
+			if is_project_directory then
+				prog_position := "DP100";			
+				ram_addr:= Argument(2); -- page address bits [23:8]
+
+				if dump_ram
+					(
 					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
 					directory_of_binary_files	=> to_string(directory_of_binary_files),
-					step_mode					=> step_mode
-					--execute_item				=> test
+					ram_addr					=> ram_addr -- page address bits [23:8]
+					) then
+					prog_position := "DP110";
+				else
+					prog_position := "DP120";
+					set_exit_status(failure);
+				end if;
+			else
+				write_error_no_project;
+			end if;
+		-- RAM DUMP END
+
+
+		when clear =>
+		-- RAM CLEAR BEGIN
+			if is_project_directory then
+				prog_position := "CLR10";
+				
+				if clear_ram
+					(
+					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
+					directory_of_binary_files	=> to_string(directory_of_binary_files)
+					) then
+					prog_position := "CLR20";
+					put_line("Please upload compiled tests now.");
+				else
+					prog_position := "CLR30";
+					set_exit_status(failure);
+				end if;
+			else
+				write_error_no_project;
+			end if;
+		-- RAM CLEAR END
+
+
+
+		when run =>
+		-- TEST/STEP EXECUTION BEGIN
+			if is_project_directory then
+				prog_position := "RU100";
+				test_name:=to_unbounded_string(m1.strip_trailing_forward_slash(Argument(2)));
+				if arg_ct = 3 then
+					prog_position := "RU400";
+					m1_internal.step_mode:= m1_internal.type_step_mode'value(Argument(3));
+				end if;
+				
+				-- check if test exists
+				if exists (compose (to_string(test_name),to_string(test_name), "vec")) then
+					put_line ("test name      : " & test_name);
+					put_line ("step mode      : " & type_step_mode'image(m1_internal.step_mode)); new_line;
+
+					--bsm --run $run_mode $name  #launch single test/ISP
+					-- launch test
+					prog_position := "RU300";
+					case execute_test
+						(
+						test_name 					=> to_string(test_name),
+						interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
+						directory_of_binary_files	=> to_string(directory_of_binary_files),
+						step_mode					=> step_mode
+						--execute_item				=> test
+						) is
+						-- CS: distinguish between executed step and test !
+						when pass =>
+							prog_position := "RU310";
+							new_line;
+							put_line("Test/Step '"& test_name &"' PASSED !");
+						when fail =>
+							prog_position := "RU320";
+							new_line;
+							put_line("Test/Step '"& test_name &"' FAILED !");
+							set_exit_status(failure);
+						when not_loaded =>
+							prog_position := "RU330";
+							new_line;
+							put_line("ERROR : Test data invalid or not loaded yet. Please upload test. Then try again.");
+							set_exit_status(failure);
+						when others =>
+							prog_position := "RU340";
+							new_line;
+							put_line("ERROR: Internal malfunction !");
+							put_line("Test/Step '"& test_name &"' FAILED !");
+							set_exit_status(failure);
+					end case;
+
+				else 
+					prog_position := "RU200";
+					put_line("ERROR    : Test '"& test_name &"' does not exist !");
+					raise constraint_error;
+				end if;
+			else
+				write_error_no_project;
+			end if;
+		-- TEST EXECUTION END
+
+
+		when break =>
+		-- SET BREAK POINT BEGIN
+			if is_project_directory then
+				prog_position := "BP100";
+				vector_id_breakpoint := type_vector_id_breakpoint'value(argument(2));
+
+				if vector_id_breakpoint = 0 then
+					put_line("breakpoint removed");
+				else
+					put_line("breakpoint set after");
+					put_line ("sxr id         : " & trim(type_vector_id_breakpoint'image(vector_id_breakpoint),left));
+					if arg_ct = 3 then
+						--prog_position := "BP200";
+						bit_position := type_sxr_break_position'value(argument(3));
+						put_line ("bit position   : " & trim(type_sxr_break_position'image(bit_position),left));
+					end if;
+				end if;
+
+				prog_position := "BP300";
+				case set_breakpoint
+					(
+					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
+					directory_of_binary_files	=> to_string(directory_of_binary_files),
+					vector_id_breakpoint		=> vector_id_breakpoint,
+					bit_position				=> bit_position
 					) is
-					-- CS: distinguish between executed step and test !
-					when pass =>
-						prog_position := "RU310";
-						new_line;
-						put_line("Test/Step '"& test_name &"' PASSED !");
-					when fail =>
-						prog_position := "RU320";
-						new_line;
-						put_line("Test/Step '"& test_name &"' FAILED !");
-						set_exit_status(failure);
-					when not_loaded =>
-						prog_position := "RU330";
-						new_line;
-						put_line("ERROR : Test data invalid or not loaded yet. Please upload test. Then try again.");
-						set_exit_status(failure);
+					when true =>
+						prog_position := "BP310";
 					when others =>
-						prog_position := "RU340";
+						prog_position := "BP320";
 						new_line;
 						put_line("ERROR: Internal malfunction !");
-						put_line("Test/Step '"& test_name &"' FAILED !");
-						set_exit_status(failure);
+						raise constraint_error;
 				end case;
-
-			else 
-				prog_position := "RU200";
-				put_line("ERROR    : Test '"& test_name &"' does not exist !");
-				raise constraint_error;
-			end if;
-		-- test execution end
-
-
-		-- set break point begin
-		elsif action = action_set_breakpoint then
-			prog_position := "BP100";
-			vector_id_breakpoint := type_vector_id_breakpoint'value(argument(2));
-
-			if vector_id_breakpoint = 0 then
-				put_line("breakpoint removed");
 			else
-				put_line("breakpoint set after");
-				put_line ("sxr id         : " & trim(type_vector_id_breakpoint'image(vector_id_breakpoint),left));
-				if arg_ct = 3 then
-					--prog_position := "BP200";
-					bit_position := type_sxr_break_position'value(argument(3));
-					put_line ("bit position   : " & trim(type_sxr_break_position'image(bit_position),left));
-				end if;
+				write_error_no_project;
 			end if;
-
-			prog_position := "BP300";
-			case set_breakpoint
-				(
-				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
-				directory_of_binary_files	=> to_string(directory_of_binary_files),
-				vector_id_breakpoint		=> vector_id_breakpoint,
-				bit_position				=> bit_position
-				) is
-				when true =>
-					prog_position := "BP310";
-				when others =>
-					prog_position := "BP320";
-					new_line;
-					put_line("ERROR: Internal malfunction !");
-					raise constraint_error;
-			end case;
-		-- set breakpoint end
+		-- SET BREAKPOINT END
 
 
 		-- test step execution begin
@@ -1649,9 +1708,8 @@ begin
 		-- test start end
 
 
-
-		-- query bsc status begin
-		elsif action = "status" then
+		when status =>
+		-- QUERY BSC STATUS BEGIN
 			prog_position := "QS100";
 			--prog_position := "RU1";
 			--test_name:=to_unbounded_string(Argument(2));
@@ -1666,10 +1724,10 @@ begin
 				prog_position := "QS130";
 				set_exit_status(failure);
 			end if;
-		-- query bsc status end
+		-- QUERY BSC STATUS END
 
-		-- show firmware begin
-		elsif action = "firmware" then
+		when firmware =>
+		-- SHOW FIRMWARE BEGIN
 			prog_position := "FW000";
 			if show_firmware
 				(
@@ -1681,12 +1739,10 @@ begin
 				prog_position := "FW200";
 				set_exit_status(failure);
 			end if;
-		-- show firmware end
+		-- SHOW FIRMWARE END
 
-
-
-		-- UUT power down begin
-		elsif action = "off" then
+		when off =>
+		-- UUT POWER DOWN BEGIN
 			prog_position := "SDN01";
 			if shutdown
 				(
@@ -1698,119 +1754,96 @@ begin
 				prog_position := "SDN20";
 				set_exit_status(failure);
 			end if;
-		-- UUT power down end
+		-- UUT POWER DOWN END
 
-
-
-		-- view test report begin
-		elsif action = "report" then
-			prog_position := "-----";
-			--test_name:=to_unbounded_string(Argument(2));
-			
-			-- check if test exists
-			if exists ("test_sequence_report.txt") then
-				--put ("creating PDF test report of "); new_line;
-				put ("PDF file name  : ");	put(Containing_Directory("proj_desc.txt") & "/test_sequence_report.pdf"); new_line;
-				
-				-- convert report txt file to pdf
-				Spawn 
-					(  
-					Program_Name           => to_string(directory_of_enscript) & "/enscript", -- -p last_run.pdf last_run.txt",
-					Args                   => 	(
-												1=> new String'("-p"),
-												2=> new String'("test_sequence_report.pdf"),
-												3=> new String'("test_sequence_report.txt")
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				-- evaluate result
-				if 
-					Result = 0 then put("done"); new_line;
-				elsif
-					Result = 1 then put("FAILED !"); new_line;
-					Set_Exit_Status(Failure);
-				else
-					prog_position := "-----";					
--- 					put("ERROR    : Malfunction while executing test '"& test_name &"' ! Aborting ..."); new_line;
--- 					put("code     :"); put(Result); new_line; 
-					raise constraint_error;
-				end if;
-
-
-				-- open pdf report
-				Spawn 
-					(  
-					Program_Name           => 	to_string(directory_of_binary_files) & "/open_report", -- "/usr/bin/okular", -- -p last_run.pdf last_run.txt",
-					Args                   => 	(
-												1=> new String'("test_sequence_report.pdf")
-												--2=> new String'("1>/dev/null") -- CS: suppress useless output of okular
-												--3=> new String'("last_run.txt")
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				-- evaluate result
-				if 
-					Result = 0 then put("done"); new_line;
-				elsif
-					Result = 1 then put("FAILED !"); new_line;
-					Set_Exit_Status(Failure);
-				else
-					prog_position := "-----";					
--- 					put("ERROR    : Malfunction while executing test '"& test_name &"' ! Aborting ..."); new_line;
--- 					put("code     :"); put(Result); new_line; 
-					raise constraint_error;
-				end if;
-
-
-			else 
+		when report =>
+		-- VIEW TEST REPORT BEGIN
+			if is_project_directory then
 				prog_position := "-----";
-				raise constraint_error;
+				
+				-- check if test exists
+				if exists ("test_sequence_report.txt") then
+					--put ("creating PDF test report of "); new_line;
+					put ("PDF file name  : ");	put(Containing_Directory("proj_desc.txt") & "/test_sequence_report.pdf"); new_line;
+					
+					-- convert report txt file to pdf
+					Spawn 
+						(  
+						Program_Name           => to_string(directory_of_enscript) & "/enscript", -- -p last_run.pdf last_run.txt",
+						Args                   => 	(
+													1=> new String'("-p"),
+													2=> new String'("test_sequence_report.pdf"),
+													3=> new String'("test_sequence_report.txt")
+													),
+						Output_File_Descriptor => Standout,
+						Return_Code            => Result
+						);
+					-- evaluate result
+					if 
+						Result = 0 then put("done"); new_line;
+					elsif
+						Result = 1 then put("FAILED !"); new_line;
+						Set_Exit_Status(Failure);
+					else
+						prog_position := "-----";					
+	-- 					put("ERROR    : Malfunction while executing test '"& test_name &"' ! Aborting ..."); new_line;
+	-- 					put("code     :"); put(Result); new_line; 
+						raise constraint_error;
+					end if;
+
+
+					-- open pdf report
+					Spawn 
+						(  
+						Program_Name           => 	to_string(directory_of_binary_files) & "/open_report", -- "/usr/bin/okular", -- -p last_run.pdf last_run.txt",
+						Args                   => 	(
+													1=> new String'("test_sequence_report.pdf")
+													--2=> new String'("1>/dev/null") -- CS: suppress useless output of okular
+													--3=> new String'("last_run.txt")
+													),
+						Output_File_Descriptor => Standout,
+						Return_Code            => Result
+						);
+					-- evaluate result
+					if 
+						Result = 0 then put("done"); new_line;
+					elsif
+						Result = 1 then put("FAILED !"); new_line;
+						Set_Exit_Status(Failure);
+					else
+						prog_position := "-----";					
+	-- 					put("ERROR    : Malfunction while executing test '"& test_name &"' ! Aborting ..."); new_line;
+	-- 					put("code     :"); put(Result); new_line; 
+						raise constraint_error;
+					end if;
+
+
+				else 
+					prog_position := "-----";
+					raise constraint_error;
+				end if;
+			else
+				write_error_no_project;
 			end if;
-		-- view test report end
+		-- VIEW TEST REPORT END
 
 
 
 
-
-		-- UUT power down begin
---		elsif action = "set" then
-			--prog_position := "RU1";
-			--test_name:=to_unbounded_string(Argument(2));
-			
-			-- check if test exists
-			--if exists (compose (to_string(test_name),to_string(test_name), "vec")) then
-			--	put ("running        : ");	put(test_name); new_line;
-			--	put ("mode           : ");	put("production"); new_line; --put(run_mode); new_line;
-				--bsm --run $run_mode $name  #launch single test/ISP
-				-- launch test
-			--set_directory ("/home/luno/ut");
---			gnat.directory_operations.change_dir ( "/home/luno" );
-			--ada.command_line (cd /home/luno/uut);
-		-- UUT power down end
-
-
-
-
-
-		else
+		when others =>
          	new_line;
-			put ("ERROR : Action '"& action &"' not supported !"); new_line;
-			put ("        For a list of available actions run command 'bsmcl' !"); new_line;
-			new_line;
-			prog_position := "-----";		
-			raise Constraint_Error;
+			put_line ("ERROR : Action not supported !");
+			put_line ("        For a list of available actions run command 'bsmcl' !");
+			prog_position := "-----";
+			raise constraint_error;
 
-			
-		end if;
 
-	--end if;
+
+	end case;
    
    new_line;
 
 	exception
-		--when Constraint_Error => 
 		when event: 
 			others =>
 				set_exit_status(failure);
@@ -1820,32 +1853,30 @@ begin
 					put_line("ERROR ! No configuration file '" & conf_directory & conf_file_name & "' found in home directory.");
 
 				elsif prog_position = "CRT00" then
-										--new_line;
+										--new_line; -- CS: loop through type_action
 										put ("ERROR ! No action specified ! What do you want to do ?"); new_line; 
 										put ("        Actions available are :");new_line;
-										put ("        - " & action_create_project & "    (set up a new project)"); new_line;									
-										put ("        - impcad    (import net and part lists from CAD system)"); new_line;
-										put ("        - join      (merge submodule with mainmodule after CAD import)"); new_line;									
-										put ("        - impbsdl   (import BSDL models)"); new_line;
-										put ("        - mknets    (make boundary scan nets)"); new_line;
-										put ("        - mkoptions (generate options file template)"); new_line;									
-										put ("        - chkpsn    (check entries made by operator in options file)"); new_line;
-										put ("        - generate  (generate a test with a certain profile)"); new_line;
-										put ("        - compile   (compile a test)"); new_line;
-										put ("        - load      (load a compiled test into the Boundary Scan Controller)"); new_line;
-										put ("        - clear     (clear entire RAM of the Boundary Scan Controller)"); new_line;
-										put ("        - dump      (view a RAM section of the Boundary Scan Controller (use for debugging only !))"); new_line;
-										put ("        - run       (run a test/step on your UUT/target and WAIT until test done)"); new_line;
-										put ("        - " & action_set_breakpoint & "     (set break point at step ID and bit position)"); new_line;
-										--put ("        - step      (execute a single test step on your UUT/target)"); new_line;
-										--put ("        - start     (start a test on your UUT/target system and DO NOT WAIT until end of test)"); new_line;
-										put ("        - off       (immediately stop a running test, shut down UUT power and disconnect TAP signals)"); new_line;
-										put ("        - status    (query Boundary Scan Controller status)"); new_line;
-										put ("        - report    (view the latest sequence execution results)"); new_line;	
-										put ("        - mkvmod    (create verilog model port list from main module skeleton.txt)"); new_line;
-										put ("        - " & action_request_help & "    (get examples and assistance)"); new_line;
-										put ("        - firmware  (get firmware versions)"); new_line;
-										put ("        Example: bsmcl" & action_set_breakpoint); new_line;
+										put ("        - create       (set up a new project)"); new_line;
+										put ("        - import_cad   (import net and part lists from CAD system)"); new_line;
+										put ("        - join_netlist (merge submodule with mainmodule after CAD import)"); new_line;									
+										put ("        - import_bsdl  (import BSDL models)"); new_line;
+										put ("        - mknets       (make boundary scan nets)"); new_line;
+										put ("        - mkoptions    (generate options file template)"); new_line;									
+										put ("        - chkpsn       (check entries made by operator in options file)"); new_line;
+										put ("        - generate     (generate a test with a certain profile)"); new_line;
+										put ("        - compile      (compile a test)"); new_line;
+										put ("        - load         (load a compiled test into the Boundary Scan Controller)"); new_line;
+										put ("        - clear        (clear entire RAM of the Boundary Scan Controller)"); new_line;
+										put ("        - dump         (view a RAM section of the Boundary Scan Controller (use for debugging only !))"); new_line;
+										put ("        - run          (run a test/step on your UUT/target and WAIT until test done)"); new_line;
+										put ("        - break        (set break point at step ID and bit position)"); new_line;
+										put ("        - off          (immediately stop a running test, shut down UUT power and disconnect TAP signals)"); new_line;
+										put ("        - status       (query Boundary Scan Controller status)"); new_line;
+										put ("        - report       (view the latest sequence execution results)"); new_line;	
+										put ("        - mkvmod       (create verilog model port list from main module skeleton.txt)"); new_line;
+										put ("        - help         (get examples and assistance)"); new_line;
+										put ("        - udbinfo      (get firmware versions)"); new_line;
+										--put ("        Example: bsmcl" & action_set_breakpoint); new_line;
 									
 				elsif prog_position = "PDS00" then
 						put ("ERROR : No project data found in current working directory !"); new_line;
