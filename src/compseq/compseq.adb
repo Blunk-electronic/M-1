@@ -2039,7 +2039,7 @@ procedure compseq is
 	procedure write_vector_file_header is
 		nat_scratch : natural;
 	begin
-		seq_io_unsigned_byte.create( vector_file_header, seq_io_unsigned_byte.out_file, name => temp_directory & '/' & vector_header_file_name);
+		seq_io_unsigned_byte.create( vector_file_header, seq_io_unsigned_byte.out_file, name => name_directory_temp & '/' & vector_header_file_name);
 
 		--separate major and minor compiler version and write them in header
 		nat_scratch := natural'value(compseq_version(1..3)); -- major number is the three digits before "."
@@ -2810,7 +2810,7 @@ begin
 	-- CAUTION: THIS IS A HACK AND NEEDS PROPER REWORK !!! -- CS
 	prog_position	:= 2040;
 	copy_file(
-		temp_directory & '/' & vector_header_file_name, -- from here
+		name_directory_temp & '/' & vector_header_file_name, -- from here
 		universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".vec"); -- to here
  
 

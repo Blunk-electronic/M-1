@@ -1838,7 +1838,7 @@ begin
 						ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli &
 							row_separator_0 & to_lower(type_action'image(import_cad)) & row_separator_0 & 
 							to_lower(type_format_cad'image(format_cad)) & row_separator_0 &
-							directory_cad & "/board.net");
+							name_directory_cad & "/board.net");
 --						ada.text_io.put_line(message_warning'length * row_separator_0 &
 
 -- 				elsif prog_position = "NLE00" then
@@ -1857,7 +1857,7 @@ begin
 						ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli &
 							row_separator_0 & to_lower(type_action'image(import_cad)) & row_separator_0 & 
 							to_lower(type_format_cad'image(format_cad)) & row_separator_0 &
-							directory_cad & "/board.net" & row_separator_0 & directory_cad & "/board.net");
+							name_directory_cad & "/board.net" & row_separator_0 & name_directory_cad & "/board.net");
 
 				elsif prog_position = "OAT00" then
 						new_line;									
