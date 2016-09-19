@@ -304,7 +304,7 @@ procedure compseq is
 	-- writes a given byte into vector_file
 	-- counts bytes and updates size_of_vector_file
 	begin
-		seq_io_unsigned_byte.write(vector_file, byte);
+		seq_io_unsigned_byte.write(file_vector, byte);
 		size_of_vector_file := size_of_vector_file + 1;
 	end write_byte_in_vector_file;
 
@@ -2039,18 +2039,18 @@ procedure compseq is
 	procedure write_vector_file_header is
 		nat_scratch : natural;
 	begin
-		seq_io_unsigned_byte.create( vector_file_header, seq_io_unsigned_byte.out_file, name => name_directory_temp & '/' & vector_header_file_name);
+		seq_io_unsigned_byte.create( file_vector_header, seq_io_unsigned_byte.out_file, name => name_directory_temp & '/' & vector_header_file_name);
 
 		--separate major and minor compiler version and write them in header
 		nat_scratch := natural'value(compseq_version(1..3)); -- major number is the three digits before "."
-    	seq_io_unsigned_byte.write(vector_file_header,unsigned_8(nat_scratch));
+    	seq_io_unsigned_byte.write(file_vector_header,unsigned_8(nat_scratch));
 			-- record in list file
 			write_listing (item => location, loc => size_of_vector_header);
 			write_listing (item => object_code, obj_code => unsigned_8(nat_scratch)); --(natural_to_string(nat_scratch,16,2)));
 		size_of_vector_header := size_of_vector_header + 1;
  
 		nat_scratch := natural'value(compseq_version(5..7)); -- minor number is the three digits after "."
-    	seq_io_unsigned_byte.write(vector_file_header,unsigned_8(nat_scratch));
+    	seq_io_unsigned_byte.write(file_vector_header,unsigned_8(nat_scratch));
 			-- record in list file
 			write_listing (item => object_code, obj_code => unsigned_8(nat_scratch));
 			write_listing (item => source_code, src_code => "compiler version " & compseq_version);
@@ -2058,22 +2058,22 @@ procedure compseq is
 
 		-- write vector file format, CS: not supported yet, default is 00h each
 		nat_scratch := natural'value(vector_format_version(1..3)); -- major number is the three digits before "."
-    	seq_io_unsigned_byte.write(vector_file_header,unsigned_8(nat_scratch)); -- vector file format major number
+    	seq_io_unsigned_byte.write(file_vector_header,unsigned_8(nat_scratch)); -- vector file format major number
 			-- record in list file
 			write_listing (item => location, loc => size_of_vector_header);
 			write_listing (item => object_code, obj_code => unsigned_8(nat_scratch));
 
 		nat_scratch := natural'value(vector_format_version(5..7)); -- vector file format minor number
-    	seq_io_unsigned_byte.write(vector_file_header,unsigned_8(nat_scratch)); -- vector file format minor number
+    	seq_io_unsigned_byte.write(file_vector_header,unsigned_8(nat_scratch)); -- vector file format minor number
 			-- record in list file
 			write_listing (item => object_code, obj_code => unsigned_8(nat_scratch));
 			write_listing (item => source_code, src_code => "vector format version " & vector_format_version);
 		size_of_vector_header := size_of_vector_header + 2;
  
-		--seq_io_unsigned_byte.write(vector_file_header, unsigned_8(summary.scanpath_ct)); -- this writes the number of active scanpaths
+		--seq_io_unsigned_byte.write(file_vector_header, unsigned_8(summary.scanpath_ct)); -- this writes the number of active scanpaths
 		build_active_scanpath_info; -- sets a bit for every active scanpath in active_scanpath_info
 		--put_line(standard_output,"active scanpath info: " & unsigned_8'image(active_scanpath_info));
-		seq_io_unsigned_byte.write(vector_file_header, active_scanpath_info); -- this writes a byte with a bit set for an active scanpath
+		seq_io_unsigned_byte.write(file_vector_header, active_scanpath_info); -- this writes a byte with a bit set for an active scanpath
 			-- record in list file
 			write_listing (item => location, loc => size_of_vector_header);
 			--write_listing (item => object_code, obj_code => unsigned_8(summary.scanpath_ct));
@@ -2114,7 +2114,7 @@ procedure compseq is
 			u4byte_scratch := (shift_left(u4byte_scratch,3*8)); -- clear bits 31..8 by shift left 24 bits
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
 	 		ubyte_scratch := unsigned_8(u4byte_scratch); -- take lowbyte
-			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 7..0 in file
+			seq_io_unsigned_byte.write(file_vector_header,ubyte_scratch); -- write bits 7..0 in file
 				-- record in list file
 				write_listing (item => location, loc => size_of_vector_header);
 				write_listing (item => object_code, obj_code => unsigned_8(ubyte_scratch));
@@ -2124,7 +2124,7 @@ procedure compseq is
 			u4byte_scratch := (shift_left(u4byte_scratch,2*8)); -- clear bits 31..16 by shift left 16 bit
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
 			ubyte_scratch := unsigned_8(u4byte_scratch);
-			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 15..8 in file
+			seq_io_unsigned_byte.write(file_vector_header,ubyte_scratch); -- write bits 15..8 in file
 				-- record in list file
 				write_listing (item => object_code, obj_code => unsigned_8(ubyte_scratch));
 			size_of_vector_header := size_of_vector_header + 1;
@@ -2133,7 +2133,7 @@ procedure compseq is
 			u4byte_scratch := (shift_left(u4byte_scratch,8)); -- clear bits 31..24 by shift left 8 bit
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
 	 		ubyte_scratch := unsigned_8(u4byte_scratch);
-			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 23..16 in file
+			seq_io_unsigned_byte.write(file_vector_header,ubyte_scratch); -- write bits 23..16 in file
 				-- record in list file
 				write_listing (item => object_code, obj_code => unsigned_8(ubyte_scratch));
 			size_of_vector_header := size_of_vector_header + 1;
@@ -2141,7 +2141,7 @@ procedure compseq is
 			u4byte_scratch := unsigned_32(size_of_vector_file);
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift right by 24 bits
 			ubyte_scratch := unsigned_8(u4byte_scratch); -- take highbyte
-			seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch); -- write bits 31..24 in file
+			seq_io_unsigned_byte.write(file_vector_header,ubyte_scratch); -- write bits 31..24 in file
 				-- record in list file
 				write_listing (item => object_code, obj_code => unsigned_8(ubyte_scratch));
 				write_listing (item => source_code, src_code => "base address scanpath" & positive'image(scanpath_being_compiled) 
@@ -2615,7 +2615,7 @@ begin
 	-- create vectorfile
 	prog_position	:= 30;
 	seq_io_unsigned_byte.create(
-		file	=> vector_file, 
+		file	=> file_vector, 
 		mode	=> seq_io_unsigned_byte.out_file, 
 		name 	=> universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".vec"
 		);
@@ -2773,7 +2773,7 @@ begin
 	-- CAUTION: THIS IS A HACK AND NEEDS PROPER REWORK !!! -- CS
 	prog_position	:= 2010;
 	seq_io_unsigned_byte.reset(
-		file 	=> vector_file,
+		file 	=> file_vector,
 		mode	=> seq_io_unsigned_byte.in_file);
 	prog_position	:= 2020;
 	--put_line("size of vec file:" & natural'image(size_of_vector_file));
@@ -2783,10 +2783,10 @@ begin
 	-- why ?: test_step_id is incremented on every test step per scanpath. since all scanpaths have equal test step counts
 	-- it must be divided by scanpath_ct to obtain the real number of steps.
 	put_line("test steps total:" & positive'image(test_step_id/summary.scanpath_ct) & " (incl. low level commands)");
- 	while not seq_io_unsigned_byte.end_of_file(vector_file) loop
+ 	while not seq_io_unsigned_byte.end_of_file(file_vector) loop
 
 		-- read byte from vector file
- 		seq_io_unsigned_byte.read(vector_file,ubyte_scratch);
+ 		seq_io_unsigned_byte.read(file_vector,ubyte_scratch);
 
 		-- as said in NOTE 1, the bytes 10 and 11 of the vector file are now replaced by the step count
 		-- CAUTION: THIS IS A HACK AND NEEDS PROPER REWORK !!! -- CS
@@ -2799,12 +2799,12 @@ begin
 		ct_tmp := ct_tmp + 1;
 
 		-- write byte in vector file header
-		seq_io_unsigned_byte.write(vector_file_header,ubyte_scratch);
+		seq_io_unsigned_byte.write(file_vector_header,ubyte_scratch);
 		size_of_vector_header := size_of_vector_header + 1;
  	end loop;
 	prog_position	:= 2030;
- 	seq_io_unsigned_byte.close(vector_file);
-	seq_io_unsigned_byte.close(vector_file_header);
+ 	seq_io_unsigned_byte.close(file_vector);
+	seq_io_unsigned_byte.close(file_vector_header);
 
 	-- make final vector file in test directory (overwrite old vector file by the final one)
 	-- CAUTION: THIS IS A HACK AND NEEDS PROPER REWORK !!! -- CS

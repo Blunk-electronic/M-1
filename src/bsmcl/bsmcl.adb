@@ -120,7 +120,7 @@ procedure bsmcl is
 	-- Checks if working directory is a project.
 		is_project : boolean;
 	begin
-		if exists(project_description) then
+		if exists(name_file_project_description) then
 			--put ("project        : ");  put(Containing_Directory("proj_desc.txt")); new_line;
 			is_project := true;
 		else
@@ -992,7 +992,7 @@ begin
 				if Result = 0 then 
 					put("... done"); new_line (2);
 					put("Recommended next steps :"); new_line (2);
-					put("  1. Now edit file '" & setup_and_templates_directory & test_init_template & "' with a text editor."); new_line;
+					put("  1. Now edit file '" & name_directory_setup_and_templates & name_file_test_init_template & "' with a text editor."); new_line;
 					put("     to prepare your test init sequence."); new_line (2);
 					put("  2. Generate tests using command 'bsmcl generate " & data_base & "'."); new_line;
 					
