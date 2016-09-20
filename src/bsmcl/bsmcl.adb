@@ -47,8 +47,8 @@ with ada.directories;	use ada.directories;
 with ada.environment_variables;
 
 with m1;
-with m1_internal; use m1_internal;
-with m1_numbers;
+with m1_internal; 	use m1_internal;
+with m1_numbers;	--use m1_numbers;
 with m1_files_and_directories; use m1_files_and_directories;
 
 procedure bsmcl is
@@ -57,26 +57,27 @@ procedure bsmcl is
 --	uut_dir			: Unbounded_String;
 	action			: type_action;
 	batch_file 		: Unbounded_string;
-	test_profile 	: Unbounded_string; -- CS: use type_test_profile
+	test_profile 	: type_test_profile;
 	test_name  		: Unbounded_string;
 	sequence_name 	: Unbounded_string;
 	ram_addr   		: string (1..4) := "0000"; -- page address bits [23:8]
 	data_base  		: Unbounded_string;
 
-	target_device	: unbounded_string;
-	device_package	: unbounded_string;
-	device_model	: unbounded_string;
+--	target_device	: unbounded_string;
+--	device_package	: unbounded_string;
+--	device_model	: unbounded_string;
 
-	algorithm		: unbounded_string;
-	target_pin		: unbounded_string;	
-	target_net		: unbounded_string;
-	retry_count		: unbounded_string;
-	retry_delay		: unbounded_string;
-	low_time		: unbounded_string;
-	high_time  		: unbounded_string;		
-	toggle_count	: unbounded_string;	
+--	algorithm		: unbounded_string;
+--	target_pin		: unbounded_string;	
+--	target_net		: unbounded_string;
+	retry_count		: type_sxr_retries;
+	retry_delay		: type_delay_value;
+
+	cycle_count		: positive; -- CS: use type_cycle_count as specified in mktoggle.adb
+	low_time		: type_delay_value;
+	high_time		: type_delay_value;
    
-	opt_file		: unbounded_string;
+--	opt_file		: unbounded_string;
 --	cad_format		: unbounded_string;
 	format_cad		: type_format_cad;
 --	net_list		: unbounded_string;
@@ -375,20 +376,19 @@ procedure bsmcl is
 			end advise_next_step_cad_import;
 
 
-		procedure advise_next_step_generate
-			-- version 1.0 / MBL
-			(
-			database : String;
-			testname : String
-			) is
+		procedure advise_next_step_generate is
 			begin
-				put("... done"); new_line (2);
-				put("Recommended next steps :"); new_line (2);
-				put("  1. Compile generated test using command 'bsmcl compile " & database & " " & testname & "'."); new_line(2);
-				put("     Following steps are optional for fine tuning:"); new_line(2);				
-				put("  2. Edit generated sequence file '" & testname & "/" & testname & ".seq' with a text editor."); new_line;				
-				put("     NOTE: On automatic test generation the sequence file will be overwritten !"); new_line;
-				put("  3. Compile modified test using command 'bsmcl compile " & database & " " & testname & "'."); new_line;				
+				put_line(done);
+				put_line("Recommended next steps:");
+				ada.text_io.put_line("  1. Compile generated test using command " & quote_single & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(compile)) &
+					row_separator_0 & universal_string_type.to_string(name_file_data_base) & row_separator_0 & 
+					universal_string_type.to_string(name_test) & quote_single);
+				put_line("Following steps are optional for fine tuning:");
+				put_line("  2. Edit generated sequence file " & quote_single & universal_string_type.to_string(name_test) & dot & file_extension_sequence &
+					quote_single & " with a text editor.");
+				put_line(message_note & "On automatic test generation the sequence file will be overwritten" & exclamation);
+				put_line("  3. Compile modified test sequence file.");
 			end advise_next_step_generate;
 
 
@@ -441,6 +441,21 @@ procedure bsmcl is
 			exclamation & row_separator_0 & aborting);
 		raise constraint_error;
 	end put_message_on_failed_cad_import;
+
+	function launch_mknets return natural is
+		result	: natural;
+	begin
+		spawn 
+			(  
+			program_name           => compose ( to_string(directory_of_binary_files), name_module_mknets),
+			args                   => 	(
+										1=> new string'(universal_string_type.to_string(name_file_data_base))
+										),
+			output_file_descriptor => standout,
+			return_code            => result
+			);
+		return result;
+	end launch_mknets;
 
 begin
 
@@ -789,17 +804,7 @@ begin
 				end if;
 
 				-- launch MKNETS
-				spawn 
-					(  
-					program_name           => compose ( to_string(directory_of_binary_files), name_module_mknets),
-					args                   => 	(
-												1=> new string'(universal_string_type.to_string(name_file_data_base))
-												),
-					output_file_descriptor => standout,
-					return_code            => result
-					);
-
-				if result = 0 then 
+				if launch_mknets = 0 then
 					put_line(done);
 					put_line("Recommended next step:");
 					put_line("  1. Edit configuration file " & quote_single & name_file_mkoptions_configuration & quote_single);
@@ -826,7 +831,6 @@ begin
 		-- MKOPTIONS BEGIN
 			if is_project_directory then
 				prog_position := "MKO00";
-
 				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
 
 				-- check if udb file exists
@@ -851,17 +855,7 @@ begin
 
 				-- relaunch MKNETS (resets udb to inital state equal to the state after BSDL importing)
 				put_line("relaunching " & name_module_mknets & "...");
-				spawn 
-					(  
-					program_name           => compose ( to_string(directory_of_binary_files), name_module_mknets),
-					args                   => 	(
-												1=> new string'(universal_string_type.to_string(name_file_data_base))
-												),
-					output_file_descriptor => standout,
-					return_code            => result
-					);
-
-				if result = 0 then 
+				if launch_mknets = 0 then
 					put_line(done);
 				else
 					put_line(message_error & "Building bscan nets failed" & exclamation & row_separator_0 & aborting);
@@ -905,71 +899,64 @@ begin
 			if is_project_directory then
 
 				prog_position := "CP100";
-				data_base:=to_unbounded_string(Argument(2));
+				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
 
 				-- check if udb file exists
-				if exists_database(Argument(2)) then null; -- raises exception if udb not given 
-				else 
-					prog_position := "DBE00";		
-					raise Constraint_Error;
+				prog_position := "CPO10";
+				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
+					raise constraint_error;
 				end if;
 
-				prog_position := "OP100";
-				opt_file:=to_unbounded_string(Argument(3));
+				-- derive name of options file from given database
+				prog_position := "CPO20";
+				name_file_options := universal_string_type.to_bounded_string
+					(
+					compose
+						(
+						name 		=> base_name(universal_string_type.to_string(name_file_data_base)),
+						extension	=> file_extension_options
+						)
+					); 
 
-				-- check if opt_file file exists
-				if exists_optfile(Argument(3)) then null; -- raises exception if opt file not given 
-				else 
-					prog_position := "OPE00";		
-					raise Constraint_Error;
+				-- check if options file exists
+				if not exists(universal_string_type.to_string(name_file_options)) then
+					put_line(message_error & "Options file " & quote_single &
+						universal_string_type.to_string(name_file_options) & quote_single & " does not exist " & exclamation);
+					raise constraint_error;
 				end if;
 
-				-- relaunch mknets
-				Spawn 
-					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/mknets",
-					Args                   => 	(
-												1=> new String'(to_string(data_base))
-												-- 2=> new String'(to_string(opt_file)) 
-												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
-					);
-				-- evaluate result
-				if Result = 0 then put("... done"); new_line;
+				-- relaunch MKNETS
+				put_line("relaunching " & name_module_mknets & "...");
+				if launch_mknets = 0 then
+					put_line(done);
 				else
-					put("ERROR while building bscan nets ! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
-					--Abort_Task (Current_Task); -- CS: not safe
+					put_line(message_error & "Building bscan nets failed" & exclamation & row_separator_0 & aborting);
+					raise constraint_error;
 				end if;
 
-				--put_line("checking classes ...");
-
-				-- launch chkpsn  
-				Spawn 
+				-- launch CHKPSN
+				spawn 
 					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/chkpsn",
-					Args                   => 	(
-												1=> new String'(to_string(data_base)),
-												2=> new String'(to_string(opt_file)) 
+					program_name           => compose ( to_string(directory_of_binary_files), name_module_chkpsn),
+					args                   => 	(
+												1=> new string'(universal_string_type.to_string(name_file_data_base)),
+												2=> new String'(universal_string_type.to_string(name_file_options))
 												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
+					output_file_descriptor => standout,
+					return_code            => result
 					);
-				-- evaluate result
-				if Result = 0 then 
-					put("... done"); new_line (2);
-					put("Recommended next steps :"); new_line (2);
-					put("  1. Now edit file '" & name_directory_setup_and_templates & name_file_test_init_template & "' with a text editor."); new_line;
-					put("     to prepare your test init sequence."); new_line (2);
-					put("  2. Generate tests using command 'bsmcl generate " & data_base & "'."); new_line;
-					
+
+				if result = 0 then
+					put_line(done);
+					put_line("Recommended next steps:");
+					put_line("  1. Edit file '" & name_directory_setup_and_templates & name_file_test_init_template & "' with a text editor.");
+					put_line("     to prepare your test init sequence.");
+					put_line("  2. Generate tests using command " & quote_single & name_module_cli & 
+						row_separator_0 & to_lower(type_action'image(generate)) & row_separator_0 
+						& universal_string_type.to_string(name_file_data_base) & quote_single);
 				else
-					put("ERROR while checking classes of primary and secondary nets ! Aborting ..."); new_line;
-					prog_position := "CP200";		
-					raise Constraint_Error;
-					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					put_line(message_error & "Checking net classes and dependencies failed" & exclamation & row_separator_0 & aborting);
+					raise constraint_error;
 				end if;
 			else
 				write_error_no_project;
@@ -982,232 +969,180 @@ begin
 		-- TEST GENERATION BEGIN
 			if is_project_directory then
 				prog_position := "GEN00";
-				data_base:=to_unbounded_string(Argument(2));
+				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
 
 				-- check if udb file exists
-				if exists_database(Argument(2)) then null; -- raises exception if udb not given 
-				else 
-					prog_position := "DBE00";		
-					raise Constraint_Error;
-				end if;
-				
-				prog_position := "TPR00";
-				put ("test profile   : ");
-				test_profile:=to_unbounded_string(Argument(3));
-				put(test_profile); new_line;
-					
-				if test_profile = "infrastructure" then
-					prog_position := "TNA00";			
-					test_name:=to_unbounded_string(Argument(4));
-					put ("test name      : ");	put(test_name); new_line; new_line;
-				
-					-- launch infra generator
-					Spawn 
-						(  
-						Program_Name           => to_string(directory_of_binary_files) & "/mkinfra",
-						Args                   => 	(
-													1=> new String'(to_string(data_base)),
-													2=> new String'(to_string(test_name)) -- pass test name to bsm
-													),
-						Output_File_Descriptor => Standout,
-						Return_Code            => Result
-						);
-					-- evaluate result
-					if Result = 0 then advise_next_step_generate(to_string(data_base),to_string(test_name));
-						
-					else
-						put("ERROR while generating test "& test_name &" ! Aborting ..."); new_line;
-						prog_position := "-----";		
-						raise Constraint_Error;
-						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
-					end if;
-
-				elsif test_profile = "interconnect" then
-					prog_position := "TNA00";			
-					test_name:=to_unbounded_string(Argument(4));
-					put ("test name      : ");	put(test_name); new_line; new_line;
-					-- launch interconnect generator
-					Spawn 
-						(  
-						Program_Name           => to_string(directory_of_binary_files) & "/mkintercon",
-						Args                   => 	(
-													1=> new String'(to_string(data_base)),
-													2=> new String'(to_string(test_name)) -- pass test name to bsm
-													),
-						Output_File_Descriptor => Standout,
-						Return_Code            => Result
-						);
-					-- evaluate result
-					if Result = 0 then advise_next_step_generate(to_string(data_base),to_string(test_name));
-				
-					else
-						put("ERROR   while generating test '"& test_name &"' ! Aborting ..."); new_line;
-						prog_position := "-----";		
-						raise Constraint_Error;
-						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
-					end if;
-				
-
-				elsif test_profile = "memconnect" then
-					prog_position := "TNA00";			
-					test_name:=to_unbounded_string(Argument(4));
-					put ("test name      : ");	put(test_name); new_line;
-					
-					prog_position := "TDV00";				
-					target_device:=to_unbounded_string(Argument(5));
-					put ("target device  : ");	put(target_device); new_line;
-					
-					prog_position := "DVM00";
-					device_model:=to_unbounded_string(Argument(6));
-					
-					-- check if model file exists
-					if exists_model(Argument(6)) then null; -- raises exception if model file not given 
-						else 
-							prog_position := "DMN00";		
-							raise Constraint_Error;
-					end if;
-					
-					prog_position := "DPC00";
-					device_package:=to_unbounded_string(Argument(7));
-					put ("package        : ");	put(device_package); new_line; new_line;
-
-					-- launch memconnect generator
-					prog_position := "LMC00"; -- ins v018
-					--put_line( bin_dir & "mkmemcon"); -- ins v018
-
-					Spawn 
-						(  
-						Program_Name           => to_string(directory_of_binary_files) & "/mkmemcon",
-						Args                   => 	(
-													1=> new String'(to_string(data_base)),
-													2=> new String'(to_string(test_name)), -- pass test name to bsm
-													3=> new String'(to_string(target_device)),
-													4=> new String'(to_string(device_model)),
-													5=> new String'(to_string(device_package))
-													),
-						Output_File_Descriptor => Standout,
-						Return_Code            => Result
-						);
-					--put_line(integer'image(result));
-	
-					-- evaluate result
-					if Result = 0 then 
-						prog_position := "LM000";	-- ins v018
-						advise_next_step_generate(to_string(data_base),to_string(test_name));
-
-					else
-						prog_position := "LM100";	-- ins v018
-						put("ERROR   while generating test "& test_name &" ! Aborting ..."); new_line;
-						prog_position := "MC000";	-- mod v018
-						raise Constraint_Error;
-						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
-					end if;
-
-
-
-				elsif test_profile = "clock" then
-					prog_position := "TNA00";			
-					test_name:=to_unbounded_string(Argument(4));
-					put ("test name      : ");	put(test_name); new_line;
-					
-					prog_position := "TDV00";					
-					target_device:=to_unbounded_string(Argument(5));
-					put ("target device  : ");	put(target_device); new_line;
-					
-					prog_position := "TPI00";				
-					target_pin:=to_unbounded_string(Argument(6));
-					put ("pin            : ");	put(target_pin); new_line;
-					
-					prog_position := "RYC00";									
-					retry_count:=to_unbounded_string(Argument(7));
-					put ("retry count    : ");	put(retry_count); new_line; --new_line;
-					
-					prog_position := "RDY00";				
-					retry_delay:=to_unbounded_string(Argument(8));
-					put ("retry delay    : ");	put(retry_delay); new_line; new_line;
-
-					-- launch clock sampling generator
-					Spawn 
-						(  
-						Program_Name           => to_string(directory_of_binary_files) & "/mkclock",
-						Args                   => 	(
-													1=> new String'(to_string(data_base)),
-													2=> new String'(to_string(test_name)), -- pass test name to bsm
-													3=> new String'("non_intrusive"),
-													4=> new String'(to_string(target_device)),
-													5=> new String'(to_string(target_pin)),
-													6=> new String'(to_string(retry_count)),
-													7=> new String'(to_string(retry_delay))
-													),
-						Output_File_Descriptor => Standout,
-						Return_Code            => Result
-						);
-					-- evaluate result
-					if Result = 0 then advise_next_step_generate(to_string(data_base),to_string(test_name));
-					
-					else
-						put("ERROR: While generating test "& test_name &" ! Aborting ..."); new_line;
-						prog_position := "-----";		
-						raise Constraint_Error;
-						
-						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
-					end if;
-
-
-
-				elsif test_profile = "toggle" then
-					prog_position := "TNA00";			
-					test_name:=to_unbounded_string(Argument(4));
-					put ("test name      : ");	put(test_name); new_line;
-					
-					prog_position := "TON00";				
-					target_net:=to_unbounded_string(Argument(5));
-					put ("target net     : ");	put(target_net); new_line;
-					
-					prog_position := "TCT00";									
-					toggle_count:=to_unbounded_string(Argument(6));
-					put ("cycle count    : ");	put(toggle_count); new_line; --new_line;
-					
-					prog_position := "TLT00";				
-					low_time:=to_unbounded_string(Argument(7));
-					put ("low time       : ");	put(low_time); new_line;
-
-					prog_position := "THT00";				
-					high_time:=to_unbounded_string(Argument(8));
-					put ("high time      : ");	put(high_time); new_line; new_line;
-
-					-- launch pin toggle generator
-					Spawn 
-						(  
-						Program_Name           => to_string(directory_of_binary_files) & "/mktoggle",
-						Args                   => 	(
-													1=> new String'(to_string(data_base)),
-													2=> new String'(to_string(test_name)),
-													-- 3=> new String'(to_string(target_device)),
-													3=> new String'(to_string(target_net)),
-													4=> new String'(to_string(toggle_count)),
-													5=> new String'(to_string(low_time)),
-													6=> new String'(to_string(high_time))
-													),
-						Output_File_Descriptor => Standout,
-						Return_Code            => Result
-						);
-					-- evaluate result
-					if Result = 0 then advise_next_step_generate(to_string(data_base),to_string(test_name));
-					
-					else
-						put("ERROR: While generating test "& test_name &" ! Aborting ..."); new_line;
-						prog_position := "TOG01";
-						raise Constraint_Error;
-						
-						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
-					end if;
-
-
-				-- if test profile not supported
-				else 
+				prog_position := "GEN10";
+				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
 					raise constraint_error;
 				end if;
+
+				prog_position := "GEN20";
+				test_profile := type_test_profile'value(argument(3));
+				put_line("test profile   : " & type_test_profile'image(test_profile)); new_line;
+
+				prog_position := "GEN30";
+				name_test :=  universal_string_type.to_bounded_string(argument(4));
+
+				case test_profile is
+					when infrastructure =>
+						-- launch INFRASTRUCTURE TEST GENERATOR
+						spawn 
+							(  
+							program_name           => compose ( to_string(directory_of_binary_files), name_module_mkinfra),
+							args                   => 	(
+														1=> new string'(universal_string_type.to_string(name_file_data_base)),
+														2=> new String'(universal_string_type.to_string(name_test))
+														),
+							output_file_descriptor => standout,
+							return_code            => result
+							);
+
+						if result = 0 then 
+							advise_next_step_generate;							
+						else
+							put_line(message_error & "Generating test failed" & exclamation & row_separator_0 & aborting);
+							raise constraint_error;
+						end if;
+
+					when interconnect =>
+						-- launch INTERCONNECT TEST GENERATOR
+						spawn 
+							(  
+							program_name           => compose ( to_string(directory_of_binary_files), name_module_mkintercon),
+							args                   => 	(
+														1=> new string'(universal_string_type.to_string(name_file_data_base)),
+														2=> new String'(universal_string_type.to_string(name_test))
+														),
+							output_file_descriptor => standout,
+							return_code            => result
+							);
+
+						if result = 0 then 
+							advise_next_step_generate;							
+						else
+							put_line(message_error & "Generating test failed" & exclamation & row_separator_0 & aborting);
+							raise constraint_error;
+						end if;
+				
+					when memconnect =>
+						prog_position := "TDV00";
+						target_device := universal_string_type.to_bounded_string(argument(5));
+						
+						prog_position := "DVM00";
+						name_file_model_memory := universal_string_type.to_bounded_string(argument(6));
+						
+						-- check if model file exists
+						prog_position := "DVM10";
+						if not exists(universal_string_type.to_string(name_file_model_memory)) then
+							put_line(message_error & "Model file " & quote_single &
+								universal_string_type.to_string(name_file_model_memory) & quote_single & " does not exist " & exclamation);
+							raise constraint_error;
+						end if;
+						
+						prog_position := "DPC00";
+						device_package := universal_string_type.to_bounded_string(argument(7));
+
+						-- launch memconnect generator
+						prog_position := "LMC00"; -- ins v018
+
+						-- launch MEMCONNECT TEST GENERATOR
+						spawn 
+							(  
+							program_name           => compose ( to_string(directory_of_binary_files), name_module_mkmemcon),
+							args                   => 	(
+														1=> new string'(universal_string_type.to_string(name_file_data_base)),
+														2=> new string'(universal_string_type.to_string(name_test)),
+														3=> new string'(universal_string_type.to_string(target_device)),
+														4=> new string'(universal_string_type.to_string(name_file_model_memory)),
+														5=> new string'(universal_string_type.to_string(device_package))
+														),
+							output_file_descriptor => standout,
+							return_code            => result
+							);
+
+						if result = 0 then 
+							advise_next_step_generate;
+						else
+							put_line(message_error & "Generating test failed" & exclamation & row_separator_0 & aborting);
+							raise constraint_error;
+						end if;
+
+
+					when clock =>
+						prog_position := "TDV00";					
+						target_device := universal_string_type.to_bounded_string(argument(5));
+						
+						prog_position := "TPI00";
+						target_pin := universal_string_type.to_bounded_string(argument(6));
+						
+						prog_position := "RYC00";
+						retry_count := type_sxr_retries'value(argument(7));
+
+						prog_position := "RDY00";				
+						retry_delay := type_delay_value'value(argument(8));
+
+						-- launch CLOCK SAMPLING GENERATOR
+						spawn 
+							(  
+							program_name           => compose ( to_string(directory_of_binary_files), name_module_mkclock),
+							args                   => 	(
+														1=> new string'(universal_string_type.to_string(name_file_data_base)),
+														2=> new string'(universal_string_type.to_string(name_test)),
+														3=> new string'("non_intrusive"), -- CS: global type_algorithm ? so far every test has its own type
+														4=> new string'(universal_string_type.to_string(target_device)),
+														5=> new string'(universal_string_type.to_string(target_pin)),
+														6=> new string'(type_sxr_retries'image(retry_count)),
+														7=> new string'(type_delay_value'image(retry_delay))
+														),
+							output_file_descriptor => standout,
+							return_code            => result
+							);
+
+						if result = 0 then
+							advise_next_step_generate;
+						else
+							put_line(message_error & "Generating test failed" & exclamation & row_separator_0 & aborting);
+							raise constraint_error;
+						end if;
+
+
+					when toggle =>
+						prog_position := "TON00";
+						target_net := universal_string_type.to_bounded_string(argument(5));
+						
+						cycle_count:= positive'value(argument(6));
+						
+						prog_position := "TLT00";				
+						low_time:= type_delay_value'value(argument(7));
+
+						prog_position := "THT00";				
+						high_time:= type_delay_value'value(argument(8));
+
+						-- launch PIN TOGGLE GENERATOR
+						spawn 
+							(  
+							program_name           => compose ( to_string(directory_of_binary_files), name_module_mktoggle),
+							args                   => 	(
+														1=> new string'(universal_string_type.to_string(name_file_data_base)),
+														2=> new string'(universal_string_type.to_string(name_test)),
+														3=> new string'(universal_string_type.to_string(target_net)),
+														4=> new string'(positive'image(cycle_count)),
+														5=> new string'(type_delay_value'image(low_time)),
+														6=> new string'(type_delay_value'image(high_time))
+														),
+							output_file_descriptor => standout,
+							return_code            => result
+							);
+
+						if result = 0 then
+							advise_next_step_generate;
+						else
+							put_line(message_error & "Generating test failed" & exclamation & row_separator_0 & aborting);
+							raise constraint_error;	
+						end if;
+
+				end case;
 
 			else
 				write_error_no_project;
@@ -1739,11 +1674,11 @@ begin
 							compose(name => "your_database", extension => file_extension_database) & row_separator_0 &
 							compose(name => "[options_file", extension => file_extension_options) & "]");
 	
-				elsif prog_position = "CPS00" then
-						new_line;									
-						put ("ERROR ! No database specified !"); new_line; 
-						--put ("        Actions available are : impcad, impbsdl, mknets, chkpsn, generate, compile, load, run"); new_line;
-						put ("        Example: bsmcl chkpsn MMU.udb"); new_line;
+				elsif prog_position = "CP100" then
+						put_line(message_error & "No database specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(chkpsn)) & row_separator_0 &
+							compose(name => "your_database", extension => file_extension_database));
 	
 				elsif prog_position = "GEN00" then
 						new_line;									
@@ -1823,10 +1758,11 @@ begin
 						--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
 						--put ("        Example: bsmcl impcad eagle5 cad/board.net cad/board.part"); new_line;
 
-				elsif prog_position = "TPR00" then --or if prog_position = "TPN" then
+				elsif prog_position = "GEN20" then --or if prog_position = "TPN" then
 						new_line(2);									
 						--if prog_position "TPR" then put ("ERROR ! Test profile not specified !"); new_line; 
 						--else put("ERROR : Specified test profile not supported !"); 
+						-- CS: use loop with type_test_profile
 						put("ERROR : Test profile either not specified or not supported !"); new_line;
 						put ("        Profiles available are : "); new_line;
 						put ("        - infrastructure"); new_line;
@@ -1836,40 +1772,51 @@ begin
 						put ("        - toggle"); new_line;									
 						put ("        Example: bsmcl generate MMU.udb infrastructure"); new_line;
 	
-				elsif prog_position = "TNA00" then
-						new_line;									
-						put ("ERROR ! Test name not specified !"); new_line; 
-						put ("        Example: bsmcl generate MMU.udb profile my_test_name"); new_line;
+				elsif prog_position = "GEN30" then
+						put_line(message_error & "Name of test not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(generate)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & "name_of_your_test"
+							);
 
 				elsif prog_position = "TDV00" then
-						new_line;									
-						put ("ERROR ! Target device not specified !"); new_line; 
-						put ("        Example: bsmcl generate MMU.udb memconnect my_test_name IC202"); new_line;
-
-				--elsif prog_position = "TOD" then
-				--		new_line;									
-				--		put ("ERROR ! Target device not specified !"); new_line; 
-				--		put ("        Example: bsmcl generate MMU.udb toggle my_test_name IC3"); new_line;
+						put_line(message_error & "Target device not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(generate)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
+							row_separator_0 & "IC3"
+							);
 
 				elsif prog_position = "DVM00" then
-						new_line;									
-						put ("ERROR ! Device model not specified !"); new_line; 
-						put ("        Example: bsmcl generate MMU.udb memconnect my_test_name RAM_IC202 models/U62256.txt"); new_line;
-
-				elsif prog_position = "DMN00" then
-						new_line;									
-						put ("        Make sure path and model file name are correct !"); new_line; 
-						put ("        Example: bsmcl generate MMU.udb memconnect my_test_name RAM_IC202 models/U62256.txt"); new_line;
+						put_line(message_error & "Device model not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(generate)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
+							row_separator_0 & universal_string_type.to_string(target_device) & row_separator_0 &
+							compose(name_directory_models, "MC256", file_extension_text)
+							);
 
 				elsif prog_position = "DPC00" then
-						new_line;									
-						put ("ERROR ! Device package not specified !"); new_line; 
-						put ("        Example: bsmcl generate MMU.udb memconnect my_test_name RAM_IC202 models/U62256.txt NDIP28"); new_line;
+						put_line(message_error & "Device model not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(generate)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
+							row_separator_0 & universal_string_type.to_string(target_device) & row_separator_0 &
+							compose(name_directory_models, "MC256", file_extension_text) & row_separator_0 & "TSSOP48"
+							);
 
 				elsif prog_position = "TPI00" then
-						new_line;									
-						put ("ERROR ! Receiver pin not specified !"); new_line; 
-						put ("        Example: bsmcl generate MMU.udb clock my_test_name IC7 56"); new_line;
+						put_line(message_error & "Receiver pin not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(generate)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
+							row_separator_0 & universal_string_type.to_string(target_device) & row_separator_0 & "71"
+							);
 
 				elsif prog_position = "TON00" then
 						new_line;									
@@ -1877,14 +1824,25 @@ begin
 						put ("        Example: bsmcl generate MMU.udb toggle my_test_name SIO_CLK"); new_line;
 
 				elsif prog_position = "RYC00" then
-						new_line;									
-						put ("ERROR ! Max retry count not specified !"); new_line; 
-						put ("        Example: bsmcl generate MMU.udb clock my_test_name IC7 56 10"); new_line;
+						put_line(message_error & "Max. retry count not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(generate)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
+							row_separator_0 & universal_string_type.to_string(target_device) & row_separator_0 & 
+							universal_string_type.to_string(target_pin) & row_separator_0 & "10"
+							);
 
 				elsif prog_position = "RDY00" then
-						new_line;									
-						put ("ERROR ! Retry delay (unit is sec) not specified !"); new_line; 
-						put ("        Example: bsmcl generate MMU.udb clock my_test_name IC7 56 1 "); new_line;
+						put_line(message_error & "Retry delay not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(generate)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
+							row_separator_0 & universal_string_type.to_string(target_device) & row_separator_0 & 
+							universal_string_type.to_string(target_pin) &
+							type_sxr_retries'image(retry_count) & row_separator_0 & "0.1"
+							);
 
 				elsif prog_position = "TCT00" then
 						new_line;									
