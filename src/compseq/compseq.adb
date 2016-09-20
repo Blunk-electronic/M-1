@@ -35,48 +35,36 @@
 --				   scanpaths is now calculated correctly.
 
 --   2016-07-29: - vector file dummy bytes (at pos. 10 and 11) removed. they now contain the step count (incl. low level commands)
+--	 2016-09-28: - cleaned up, made compiler and vector format constant
 
 --  todo:
 --	- write udb and project in compile listing
 
-with Ada.Text_IO;			use Ada.Text_IO;
-with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
-with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
---with Ada.Characters; 		use Ada.Characters;
-with Ada.Characters.Handling; 		use Ada.Characters.Handling;
---with ada.characters.conversions;	use ada.characters.conversions;
+with ada.text_io;				use ada.text_io;
+with ada.integer_text_io;		use ada.integer_text_io;
+with ada.float_text_io;			use ada.float_text_io;
+with ada.characters.handling; 	use ada.characters.handling;
 
 with m1; --use m1;
-with m1_internal; use m1_internal;
-with m1_firmware; use m1_firmware;
-with m1_numbers; use m1_numbers;
-with m1_files_and_directories; use m1_files_and_directories;
+with m1_internal; 				use m1_internal;
+with m1_firmware; 				use m1_firmware;
+with m1_numbers; 				use m1_numbers;
+with m1_files_and_directories; 	use m1_files_and_directories;
 
---with System.OS_Lib;   use System.OS_Lib;
-with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-with Ada.Strings.maps;	 	use Ada.Strings.maps;
-with Ada.Strings.Fixed; 	use Ada.Strings.Fixed;
-with Ada.Strings;		 	use Ada.Strings;
-with interfaces;			use interfaces;
---with Ada.Numerics;			use Ada.Numerics;
---with Ada.Numerics.Elementary_Functions;	use Ada.Numerics.Elementary_Functions;
+with ada.strings.fixed; 		use ada.strings.fixed;
+with ada.strings;		 		use ada.strings;
+with interfaces;				use interfaces;
 
---with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
---with Ada.Task_Identification;  use Ada.Task_Identification;
-with Ada.Exceptions; use Ada.Exceptions;
+with ada.exceptions; 			use ada.exceptions;
  
---with GNAT.OS_Lib;   	use GNAT.OS_Lib;
-with Ada.Command_Line;	use Ada.Command_Line;
-with Ada.Directories;	use Ada.Directories;
- 
--- with Ada.Calendar;				use Ada.Calendar;
--- with Ada.Calendar.Formatting;	use Ada.Calendar.Formatting;
--- with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
+with ada.command_line;			use ada.command_line;
+with ada.directories;			use ada.directories;
+
 
 procedure compseq is
 
-	compseq_version			: string (1..7) := "005.000";
-	vector_format_version	: string (1..7) := "000.000";
+	compseq_version			: constant string (1..7) := "005.000";
+	vector_format_version	: constant string (1..7) := "000.000";
 
 	prog_position 			: natural := 0;
 
@@ -257,8 +245,8 @@ procedure compseq is
 		put_line(compile_listing,"M-1 Compiler Compseq Version " & compseq_version & " listing/report");
 		put_line(compile_listing,"date: " & m1.date_now);
 		put_line(compile_listing,"source file: " 
-			& universal_string_type.to_string(test_name) 
-			& "/" & universal_string_type.to_string(test_name) & ".seq");
+			& universal_string_type.to_string(name_test) 
+			& "/" & universal_string_type.to_string(name_test) & ".seq");
 		new_line(compile_listing);
 		--put_line(compile_listing,"LOC(hex)       LINE    SOURCE CODE" );
 		put_line(compile_listing,"LOC(hex)       OBJ_CODE       SOURCE_CODE/MEANING" );
@@ -1511,7 +1499,7 @@ procedure compseq is
 
 			-- example of a journal:
 
--- 				test_name   dest_addr(hex)  size(dec)  comp_version  date(yyyy:mm:dd)  time(hh:mm:ss)
+-- 				name_test   dest_addr(hex)  size(dec)  comp_version  date(yyyy:mm:dd)  time(hh:mm:ss)
 -- 				-------------------------------------------------------------------------------------
 -- 				infra 00000000h 674 004.004 2016-04-13 14:25:46
 -- 				intercon1 00000300h 1755 004.004 2016-04-13 14:25:50
@@ -1565,13 +1553,13 @@ procedure compseq is
 
 
 	procedure write_journal is
-	-- writes test_name, destination_address, size, date in journal
+	-- writes name_test, destination_address, size, date in journal
 	-- if journal not exists, create a new one. append otherwise.
 
 		procedure write_numbers is
 		-- writes something like: infra 00000000h 674 004.004 2016-04-13 14:25:46
 		begin
-			put(file_journal,universal_string_type.to_string(test_name) 
+			put(file_journal,universal_string_type.to_string(name_test) 
 				& row_separator_0 & natural_to_string(destination_address,16,8) 
 				& natural'image(size_of_vector_file) 
 				& row_separator_0 & compseq_version
@@ -1589,7 +1577,7 @@ procedure compseq is
 		else
 			put_line("No journal found. Creating a new one ...");
 			create(file_journal,out_file,journal);
-			put_line(file_journal,"test_name   dest_addr(hex)  size(dec)  comp_version  date(yyyy:mm:dd)  time(hh:mm:ss)");
+			put_line(file_journal,"name_test   dest_addr(hex)  size(dec)  comp_version  date(yyyy:mm:dd)  time(hh:mm:ss)");
 			put_line(file_journal,"-------------------------------------------------------------------------------------");
 			write_numbers;
 		end if;
@@ -1601,7 +1589,7 @@ procedure compseq is
 		section_entered		: boolean := false;
 		line_of_file		: extended_string.bounded_string;
 	begin
-		reset(sequence_file);
+		reset(file_sequence);
 		line_counter := 0;
 		while not end_of_file
 			loop
@@ -1636,7 +1624,7 @@ procedure compseq is
 
 							-- search for test name and verify against test name given as argument
 							if get_field_from_line(line_of_file,1) = section_info_item.test_name then
-								if get_field_from_line(line_of_file,3) = universal_string_type.to_string(test_name) then
+								if get_field_from_line(line_of_file,3) = universal_string_type.to_string(name_test) then
 									ti.test_name_valid := true;
 								else
 									null;
@@ -1735,7 +1723,7 @@ procedure compseq is
 		end frequency_float_to_unsigned_8;
 		
 	begin
-		reset(sequence_file);
+		reset(file_sequence);
 		line_counter := 0;
 		while not end_of_file
 			loop
@@ -1986,7 +1974,7 @@ procedure compseq is
 		section_entered	: boolean := false;
 		line_of_file	: extended_string.bounded_string;
 	begin
-		reset(sequence_file);
+		reset(file_sequence);
 		line_counter := 0;
 		while not end_of_file
 			loop
@@ -2160,7 +2148,7 @@ procedure compseq is
 		begin
 			prog_position	:= 300;
 			put_line(standard_output," - sequence" & positive'image(id) & " ...");
-			reset(sequence_file);
+			reset(file_sequence);
 
 			prog_position	:= 310;
 			line_counter := 0;
@@ -2514,10 +2502,10 @@ procedure compseq is
 
 			-- delete all stale register files
 			prog_position	:= 220;
-			if exists(universal_string_type.to_string(test_name) 
-				& "/" & universal_string_type.to_string(test_name) & "_" & trim(positive'image(sp),left) & ".reg") then 
-					delete_file(universal_string_type.to_string(test_name) & "/" 
-					& universal_string_type.to_string(test_name) & "_" & trim(positive'image(sp),left) & ".reg"); 
+			if exists(universal_string_type.to_string(name_test) 
+				& "/" & universal_string_type.to_string(name_test) & "_" & trim(positive'image(sp),left) & ".reg") then 
+					delete_file(universal_string_type.to_string(name_test) & "/" 
+					& universal_string_type.to_string(name_test) & "_" & trim(positive'image(sp),left) & ".reg"); 
 			end if;
 
 			-- process active scanpaths only
@@ -2532,8 +2520,8 @@ procedure compseq is
 				prog_position	:= 240;
  				create( 
 					file => scanport(sp).register_file,
-					--name => (universal_string_type.to_string(test_name) & "/members_" & trim(natural'image(sp), side => left) & ".reg")
-					name => (universal_string_type.to_string(test_name) & "/" & register_file_prefix & trim(natural'image(sp), side => left) & register_file_suffix)
+					--name => (universal_string_type.to_string(name_test) & "/members_" & trim(natural'image(sp), side => left) & ".reg")
+					name => (universal_string_type.to_string(name_test) & "/" & register_file_prefix & trim(natural'image(sp), side => left) & register_file_suffix)
 					);
  
 				-- search for bic in the scanpath being processed
@@ -2600,15 +2588,15 @@ begin
  	put_line ("data base      : " & universal_string_type.to_string(name_file_data_base));
  
 	prog_position	:= 20;
- 	test_name:= universal_string_type.to_bounded_string(Argument(2));
- 	put_line ("test name      : " & universal_string_type.to_string(test_name));
+ 	name_test:= universal_string_type.to_bounded_string(Argument(2));
+ 	put_line ("test name      : " & universal_string_type.to_string(name_test));
 
 	-- create list file
 	prog_position	:= 25;
 	create(
 		file	=> compile_listing,
 		mode	=> out_file, 
-		name 	=> universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".lis"
+		name 	=> universal_string_type.to_string(name_test) & "/" & universal_string_type.to_string(name_test) & ".lis"
 		);
 	write_listing_header;
 
@@ -2617,10 +2605,10 @@ begin
 	seq_io_unsigned_byte.create(
 		file	=> file_vector, 
 		mode	=> seq_io_unsigned_byte.out_file, 
-		name 	=> universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".vec"
+		name 	=> universal_string_type.to_string(name_test) & "/" & universal_string_type.to_string(name_test) & ".vec"
 		);
 	--size_of_vec_file := natural'value(
-	--	file_size'image(size(universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".vec"))
+	--	file_size'image(size(universal_string_type.to_string(name_test) & "/" & universal_string_type.to_string(name_test) & ".vec"))
 	--	);
 	--put (size_of_vec_file);
 
@@ -2634,11 +2622,11 @@ begin
 
 	prog_position	:= 60;
 	open(
-		file	=> sequence_file,
+		file	=> file_sequence,
 		mode	=> in_file,
-		name	=> universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".seq"
+		name	=> universal_string_type.to_string(name_test) & "/" & universal_string_type.to_string(name_test) & ".seq"
 		);
-	set_input(sequence_file);
+	set_input(file_sequence);
 
 	prog_position	:= 70;
 	put_line("reading sequence file ...");
@@ -2811,7 +2799,7 @@ begin
 	prog_position	:= 2040;
 	copy_file(
 		name_directory_temp & '/' & vector_header_file_name, -- from here
-		universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".vec"); -- to here
+		universal_string_type.to_string(name_test) & "/" & universal_string_type.to_string(name_test) & ".vec"); -- to here
  
 
 	-- size_of_vector_header now contains the total size of the vector file 
@@ -2819,7 +2807,7 @@ begin
 	size_of_vector_file := size_of_vector_header;
 	-- do a cross checking of the file size: it must match the size returned by function "size"
 	if size_of_vector_file = natural(
-		size(universal_string_type.to_string(test_name) & "/" & universal_string_type.to_string(test_name) & ".vec")
+		size(universal_string_type.to_string(name_test) & "/" & universal_string_type.to_string(name_test) & ".vec")
 		) then null;
 	else
 		put_line("ERROR: Vector file size error !");

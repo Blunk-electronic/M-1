@@ -28,38 +28,25 @@
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
---
+--		2016-09-20: cleaned up
 
-
-with Ada.Text_IO;			use Ada.Text_IO;
---with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
---with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
-with Ada.Characters.Handling; use Ada.Characters.Handling;
-
---with System.OS_Lib;   use System.OS_Lib;
---with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-with Ada.Strings.Bounded; 	use Ada.Strings.Bounded;
-with Ada.Strings.Fixed; 	use Ada.Strings.Fixed;
-with Ada.Strings; 			use Ada.Strings;
-with Ada.Numerics;			use Ada.Numerics;
---with Ada.Numerics.Elementary_Functions;	use Ada.Numerics.Elementary_Functions;
-
---with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
---with Ada.Task_Identification;  use Ada.Task_Identification;
-with Ada.Exceptions; use Ada.Exceptions;
- 
-with GNAT.OS_Lib;   	use GNAT.OS_Lib;
-with Ada.Command_Line;	use Ada.Command_Line;
-with Ada.Directories;	use Ada.Directories;
+with ada.text_io;				use ada.text_io;
+with ada.characters.handling; 	use ada.characters.handling;
+with ada.strings.bounded; 		use ada.strings.bounded;
+with ada.strings.fixed; 		use ada.strings.fixed;
+with ada.strings; 				use ada.strings;
+with ada.exceptions; 			use ada.exceptions;
+with ada.command_line;			use ada.command_line;
+with ada.directories;			use ada.directories;
 
 with m1;
-with m1_internal; use m1_internal;
-with m1_numbers; use m1_numbers;
-with m1_files_and_directories; use m1_files_and_directories;
+with m1_internal; 				use m1_internal;
+with m1_numbers; 				use m1_numbers;
+with m1_files_and_directories; 	use m1_files_and_directories;
 
 procedure chkpsn is
 
-	version			: String (1..3) := "043";
+	version			: constant string (1..3) := "043";
 	prog_position	: string (1..6) := "------";
 	line_of_file	: extended_string.bounded_string;
 	line_counter						: natural := 0;
@@ -67,6 +54,7 @@ procedure chkpsn is
 	debug_level							: natural := 0;
 	udb_summary							: type_udb_summary;
 	data_base_backup_name				: universal_string_type.bounded_string;
+	data_base_file_preliminary			: ada.text_io.file_type;
 --	Previous_Output	: File_Type renames Current_Output;
 
 	name_of_current_primary_net			: extended_string.bounded_string;
@@ -1893,7 +1881,7 @@ begin
 	-- open options file
 	prog_position := "OPT001";
 	open( 
-		file => opt_file,
+		file => file_options,
 		mode => in_file,
 		name => universal_string_type.to_string(name_file_options)
 		);
@@ -1905,7 +1893,7 @@ begin
 	-- ptr_options_net points to generated options net list
 	prog_position := "OPT005";
 	put_line("reading options file ...");
-	Set_Input(opt_file); -- set data source
+	Set_Input(file_options); -- set data source
 	while not end_of_file
 		loop
 			prog_position := "OP5000";
@@ -2029,7 +2017,7 @@ begin
 	prog_position := "OPT100";
 	set_input(standard_input);
 	prog_position := "OPT105";
-	close(opt_file);
+	close(file_options);
 	-- options net list ready. pointer options_net_ptr points to list !
 	-- data base net list ready, pointer net_ptr points to list !
 
@@ -2056,12 +2044,12 @@ begin
 	-- open data base file
 	prog_position := "EX0500";
 	open( 
-		file => data_base_file,
+		file => file_data_base,
 		mode => in_file,
 		name => universal_string_type.to_string(name_file_data_base)
 		);
 
-	set_input(data_base_file); -- set data source
+	set_input(file_data_base); -- set data source
 	set_output(data_base_file_preliminary); -- set data sink
 	prog_position := "EX1000";
 	line_counter := 0;
@@ -2075,7 +2063,7 @@ begin
 		end loop;
 	prog_position := "EX2200";
 	set_input(standard_input);
-	close(data_base_file);
+	close(file_data_base);
 
 
 	prog_position := "NL1000";

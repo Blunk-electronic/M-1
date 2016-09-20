@@ -22,44 +22,21 @@
 --    along with this program.  If not, see <http://www.gnu.org/licenses/>. --
 ------------------------------------------------------------------------------
 
+with ada.text_io;		use ada.text_io;
+with ada.exceptions; 	use ada.exceptions;
+with ada.command_line;	use ada.command_line;
 
-with Ada.Text_IO;			use Ada.Text_IO;
-with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
-with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
-with Ada.Characters.Handling;
-use Ada.Characters.Handling;
-
---with System.OS_Lib;   use System.OS_Lib;
-with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-with Ada.Strings.Bounded; 	use Ada.Strings.Bounded;
-with Ada.Strings.Fixed; 	use Ada.Strings.Fixed;
-with Ada.Numerics;			use Ada.Numerics;
-with Ada.Numerics.Elementary_Functions;	use Ada.Numerics.Elementary_Functions;
-
-with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
-with Ada.Task_Identification;  use Ada.Task_Identification;
-with Ada.Exceptions; use Ada.Exceptions;
- 
-with GNAT.OS_Lib;   	use GNAT.OS_Lib;
-with Ada.Command_Line;	use Ada.Command_Line;
-with Ada.Directories;	use Ada.Directories;
- 
---with Ada.Calendar;				use Ada.Calendar;
---with Ada.Calendar.Formatting;	use Ada.Calendar.Formatting;
---with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
-
-with m1;
-with m1_internal; use m1_internal;
-with m1_files_and_directories; use m1_files_and_directories;
+with m1_internal; 				use m1_internal;
+with m1_files_and_directories; 	use m1_files_and_directories;
 
 procedure udbinfo is
 
-	version			: String (1..3) := "001";
+	version			: constant string (1..3) := "001";
 	prog_position	: natural := 0;
 
 	inquired_item	: type_item_udbinfo;
 	inquired_target	: universal_string_type.bounded_string;
-	separator					: string (1..1) := "#";
+	separator					: constant string (1..1) := "#";
 	separator_position			: natural;
 	length_of_inquired_target	: natural;
 	inquired_target_sub_1		: universal_string_type.bounded_string;

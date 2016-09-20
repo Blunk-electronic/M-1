@@ -1334,11 +1334,12 @@ procedure mkmemcon is
 
 		-- open model file as given via command line argument
 		open(
-			file => model, 
-			name => universal_string_type.to_string(model_file),
+			file => file_model_memory, 
+			name => universal_string_type.to_string(name_file_model_memory),
 			mode => in_file
 			);
-		set_input(model); -- all input comes from the model file from now on
+		set_input(file_model_memory); -- all input comes from the model file from now on
+		-- CS: close file_model_memory ?
 
 		while not end_of_file loop -- read model file
 			line_counter := line_counter + 1; -- count lines in model file
@@ -1410,8 +1411,8 @@ procedure mkmemcon is
 									compatibles		=> scratch_compatibles,
 									manufacturer	=> scratch_manufacturer,
 									data_base		=> name_file_data_base,  -- derived from cmd line argument
-									test_name		=> test_name, --  derived from cmd line argument
-									model_file		=> model_file,  -- derived from cmd line argument
+									test_name		=> name_test, --  derived from cmd line argument
+									model_file		=> name_file_model_memory,  -- derived from cmd line argument
 									device_name		=> target_device, -- derived from cmd line argument
 									device_package	=> device_package,  -- derived from cmd line argument
 									date			=> scratch_date,
@@ -1441,8 +1442,8 @@ procedure mkmemcon is
 									compatibles		=> scratch_compatibles,
 									manufacturer	=> scratch_manufacturer,
 									data_base		=> name_file_data_base,  -- derived from cmd line argument
-									test_name		=> test_name, --  derived from cmd line argument
-									model_file		=> model_file,  -- derived from cmd line argument
+									test_name		=> name_test, --  derived from cmd line argument
+									model_file		=> name_file_model_memory,  -- derived from cmd line argument
 									device_name		=> target_device,  -- derived from cmd line argument
 									device_package	=> device_package,  -- derived from cmd line argument
 									date			=> scratch_date,
@@ -1469,8 +1470,8 @@ procedure mkmemcon is
 								ptr_target := new type_target'(
 									class_target	=> CLUSTER,
 									data_base		=> name_file_data_base,  -- derived from cmd line argument
-									test_name		=> test_name, --  derived from cmd line argument
-									model_file		=> model_file,  -- derived from cmd line argument
+									test_name		=> name_test, --  derived from cmd line argument
+									model_file		=> name_file_model_memory,  -- derived from cmd line argument
 									device_name		=> target_device,  -- derived from cmd line argument
 									date			=> scratch_date,
 									version			=> scratch_version,
@@ -2206,9 +2207,9 @@ procedure mkmemcon is
 
 	begin -- write_info_section
 		-- create sequence file
-		create( sequence_file, 
-			name => (compose (universal_string_type.to_string(test_name), universal_string_type.to_string(test_name), "seq")));
-		set_output(sequence_file); -- set data sink
+		create( file_sequence, 
+			name => (compose (universal_string_type.to_string(name_test), universal_string_type.to_string(name_test), "seq")));
+		set_output(file_sequence); -- set data sink
 
 		put_line(section_mark.section & row_separator_0 & test_section.info);
 		put_line(" created by memory/module connections test generator version "& version);
@@ -2939,16 +2940,16 @@ begin
  	put_line ("data base      : " & universal_string_type.to_string(name_file_data_base));
  
 	prog_position	:= 20;
- 	test_name:= universal_string_type.to_bounded_string(Argument(2));
- 	put_line ("test name      : " & universal_string_type.to_string(test_name));
+ 	name_test:= universal_string_type.to_bounded_string(Argument(2));
+ 	put_line ("test name      : " & universal_string_type.to_string(name_test));
  
 	prog_position	:= 30;
  	target_device := universal_string_type.to_bounded_string(Argument(3));
  	put_line ("target device  : " & universal_string_type.to_string(target_device));
  
 	prog_position	:= 40;
- 	model_file := universal_string_type.to_bounded_string(Argument(4));
- 	put_line ("model file     : " & universal_string_type.to_string(model_file));
+ 	name_file_model_memory := universal_string_type.to_bounded_string(Argument(4));
+ 	put_line ("model file     : " & universal_string_type.to_string(name_file_model_memory));
  
 	prog_position	:= 50;
  	device_package := universal_string_type.to_bounded_string(Argument(5));
@@ -2978,7 +2979,7 @@ begin
 	-- create test directory
 	prog_position	:= 80;
 	create_test_directory(
-		test_name 			=> universal_string_type.to_string(test_name),
+		test_name 			=> universal_string_type.to_string(name_test),
 		warnings_enabled 	=> false
 		);
 
@@ -2997,12 +2998,12 @@ begin
 	set_output(standard_output);
 
 	prog_position	:= 140;
-	close(sequence_file);
+	close(file_sequence);
 
 	prog_position	:= 150;
 	write_diagnosis_netlist(
 		data_base	=>	universal_string_type.to_string(name_file_data_base),
-		test_name	=>	universal_string_type.to_string(test_name)
+		test_name	=>	universal_string_type.to_string(name_test)
 		);
 
 	exception

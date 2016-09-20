@@ -38,7 +38,7 @@ with ada.strings.fixed; 		use ada.strings.fixed;
 with ada.strings.bounded; 		use ada.strings.bounded;
 with ada.strings.unbounded; 	use ada.strings.unbounded;
 with ada.strings.unbounded.text_io; use ada.strings.unbounded.text_io;
-with ada.exceptions; use ada.exceptions;
+with ada.exceptions; 			use ada.exceptions;
 
  
 with gnat.os_lib;   	use gnat.os_lib;
@@ -82,11 +82,13 @@ procedure bsmcl is
 --	net_list		: unbounded_string;
 --	part_list		: unbounded_string;
 
-	v_model			: unbounded_string;
+--	v_model			: unbounded_string;
 --	project_name	: unbounded_string;
 
 	line			: unbounded_string;
-	skeleton_sub 	: unbounded_string;
+
+	--skeleton_sub 	: unbounded_string;
+	name_file_skeleton_submodule	: universal_string_type.bounded_string;
 
 	key				: String (1..1) := "n";
 	Result   		: Integer;
@@ -273,31 +275,18 @@ procedure bsmcl is
 
 
 
-		function exists_database
-			(
-			-- version 1.0 / MBL
-			-- verifies if given database exists
-			database	: string
-			) return Boolean is
-			
-			file_exists :	Boolean := false;
-			
-			begin
-				put ("database       : ");	put(database); new_line;				
-				
-				if exists (database) then
-					file_exists := true;
-				else
-					new_line;
-					--put ("ERROR ! Database '"& database &"' not found !"); 
-					put ("ERROR ! Database '"& data_base &"' does not exist ! Aborting ..."); 					
-					--new_line;
-					--put ("PROGRAM ABORTED !"); new_line; new_line;
-					--Abort_Task (Current_Task); -- CS: not safe
-				end if;
-				return file_exists;
-				
-			end exists_database;
+		function exists_database(database : string) return boolean is
+			file_exists : boolean := false;
+		begin
+			--put ("database       : ");	put(database); new_line;
+			if exists (database) then
+				file_exists := true;
+			else
+				put_line(message_error & "Database " & quote_single & database & quote_single &
+					" does not exist" & exclamation & row_separator_0 & aborting);
+			end if;
+			return file_exists;
+		end exists_database;
 
 
 
@@ -470,7 +459,6 @@ begin
 	case action is
 			
 		when create =>
-
 			-- MAKE PROJECT BEGIN
 			prog_position := "CRT05";
 			if is_project_directory then
@@ -519,7 +507,6 @@ begin
 			-- MAKE PROJECT END
 
 		when help =>
-
 			-- HELP BEGIN
 			case language is
 				when german => 
@@ -546,7 +533,6 @@ begin
 			-- HELP END
 
 
-
 		when import_cad =>
 			-- CAD IMPORT BEGIN
 			prog_position := "ICD00";
@@ -560,7 +546,6 @@ begin
 
 				case format_cad is
 					when orcad =>
-						-- check if netlist file exists
 						if exists_netlist(name_file_cad_net_list) then
 						
 							-- launch ORCAD importer
@@ -583,7 +568,6 @@ begin
 						end if;
 
 					when altium =>
-						-- check if netlist file exists
 						if exists_netlist(name_file_cad_net_list) then
 
 							-- launch ALTIUM importer
@@ -606,7 +590,6 @@ begin
 						end if;
 
 					when zuken =>
-						-- check if netlist file exists
 						if exists_netlist(name_file_cad_net_list) then
 					
 							-- launch ZUKEN importer
@@ -630,10 +613,7 @@ begin
 
 
 					when eagle =>
-						-- check if netlist file exists
 						if exists_netlist(name_file_cad_net_list) then
-					
-							-- check if partlist file exists
 							prog_position := "IPA00";
 							name_file_cad_part_list := universal_string_type.to_bounded_string(argument(4));
 							if exists_partlist(name_file_cad_part_list) then
@@ -674,7 +654,7 @@ begin
 
 				prog_position := "ACV00";
 				name_file_skeleton := universal_string_type.to_bounded_string(argument(2));
-				name_file_verilog_model := universal_string_type.to_bounded_string(argument(3));
+				name_file_model_verilog := universal_string_type.to_bounded_string(argument(3));
 										
 				-- LAUNCH VERILOG MODEL MAKER
 				spawn 
@@ -682,7 +662,7 @@ begin
 					program_name           => compose( to_string(directory_of_binary_files), name_module_mkvmod),
 					args                   => 	(
 												1=> new string'(universal_string_type.to_string(name_file_skeleton)),
-												2=> new string'(universal_string_type.to_string(name_file_verilog_model))
+												2=> new string'(universal_string_type.to_string(name_file_model_verilog))
 												),
 					output_file_descriptor => standout,
 					return_code            => result
@@ -706,47 +686,47 @@ begin
 			if is_project_directory then
 
 				prog_position := "JSM00";
-				skeleton_sub:=to_unbounded_string(Argument(2)); -- raises exception if skeleton submodule not given
+				name_file_skeleton_submodule := universal_string_type.to_bounded_string(argument(2));
 
-				-- check if skeleton submodule file exists
-				if exists_skeleton(Argument(2)) then null; -- raises exception if skeleton not given 
-				else 
+				if not exists(universal_string_type.to_string(name_file_skeleton_submodule)) then
 					prog_position := "JSN00";
-					raise Constraint_Error;
+					put_line(message_error & "Skeleton of submodule " & quote_single &
+						universal_string_type.to_string(name_file_skeleton_submodule) & quote_single & " does not exist " & exclamation);
+					raise constraint_error;
+				else
+					null;
+					--put_line("submodule      : " & universal_string_type.to_string(name_file_skeleton_submodule));
 				end if;
 										
 				-- check if skeleton main file exists
-				if exists("skeleton.txt") then null; -- raises exception if skeleton main not present
-				else 
+				if not exists("skeleton.txt") then
+					put_line(message_error & "No main module " & quote_single & name_file_skeleton_default & quote_single & " found " & exclamation);
+					ada.text_io.put_line(message_error'last * row_separator_0 & "It appears you have not imported any CAD data yet. Please import CAD data now.");
+					ada.text_io.put_line(message_error'last * row_separator_0 & message_example & row_separator_0 & name_module_cli & row_separator_0 & 
+						to_lower(type_action'image(import_cad)) & " format_cad netlist [partlist]");
 					prog_position := "SMN00";
-					raise Constraint_Error;
+					raise constraint_error;
 				end if;
 										
-										
 				-- launch netlist joiner
-				Spawn 
+				spawn 
 					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/joinnetlist",
-					Args                   => 	(
-												1=> new String'(to_string(skeleton_sub))
-												--2=> new String'(to_string(skeleton_sub))
+					program_name           => compose ( to_string(directory_of_binary_files), name_module_join_netlist),
+					args                   => 	(
+												1=> new string'(universal_string_type.to_string(name_file_skeleton_submodule))
 												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
+					output_file_descriptor => standout,
+					return_code            => result
 					);
-				-- evaluate result
-				if Result = 0 then
-						new_line;
-						put("... done"); new_line(2);
-						put("Recommended next step :"); new_line (2);
-						put("  1. Create boundary scan nets using command: 'bsmcl mknets'"); new_line;
 
+				if result = 0 then
+					put_line(done);
+					put_line("Recommended next step :");
+					put_line("  1. Create boundary scan nets using command: " & quote_single & name_module_cli & row_separator_0
+						& name_module_mknets & quote_single);
 				else
-					put("ERROR while joining netlists ! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
-					
-					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					put_line(message_error & "Joining netlists failed" & exclamation & aborting);
+					raise constraint_error;
 				end if;
 
 			else
@@ -760,39 +740,33 @@ begin
 			if is_project_directory then
 
 				prog_position := "IBL00";
-				data_base:=to_unbounded_string(Argument(2)); -- raises exception if udb not given
+				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
 
 				-- check if udb file exists
-				if exists_database(Argument(2)) then null; -- raises exception if udb not given 
-				else 
-					prog_position := "DBE00";		
-					raise Constraint_Error;
+				prog_position := "IBL10";
+				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
+					raise constraint_error;
 				end if;
 									
 				-- launch BSDL importer
-				Spawn 
+				spawn 
 					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/impbsdl",
-					Args                   => 	(
-												1=> new String'(to_string(data_base))
-												-- 2=> new String'(to_string(opt_file)) 
+					program_name           => compose ( to_string(directory_of_binary_files), name_module_importer_bsdl),
+					args                   => 	(
+												1=> new string'(universal_string_type.to_string(name_file_data_base))
 												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
+					output_file_descriptor => standout,
+					return_code            => result
 					);
-				-- evaluate result
-				if Result = 0 then
-						new_line;
-						put("... done"); new_line(2);
-						put("Recommended next step :"); new_line (2);
-						put("     Import CAD data files using command: 'bsmcl impcad cad_format'"); new_line;
 
+				if result = 0 then
+					put_line(done);
+					put_line("Recommended next step :");
+					put_line("  1. Import CAD data files using command: " & quote_single & name_module_cli & row_separator_0
+						& to_lower(type_action'image(import_cad)) & " format_cad" & quote_single);
 				else
-					put("ERROR   while importing BSDL files ! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
-				
-					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					put_line(message_error & "Importing BSDL files failed" & exclamation & row_separator_0 & aborting);
+					raise constraint_error;
 				end if;
 
 			else
@@ -806,40 +780,39 @@ begin
 		-- MKNETS BEGIN
 			if is_project_directory then
 				prog_position := "MKN00";
-				data_base:=to_unbounded_string(Argument(2)); -- raises exception if udb not given
+				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
 
 				-- check if udb file exists
-				if exists_database(Argument(2)) then null; -- raises exception if udb not given 
-				else 
-					prog_position := "DBE00";		
-					raise Constraint_Error;
+				prog_position := "MKN10";
+				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
+					raise constraint_error;
 				end if;
 
-				-- launch mknets
-				Spawn 
+				-- launch MKNETS
+				spawn 
 					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/mknets",
-					Args                   => 	(
-												1=> new String'(to_string(data_base))
-												-- 2=> new String'(to_string(opt_file)) 
+					program_name           => compose ( to_string(directory_of_binary_files), name_module_mknets),
+					args                   => 	(
+												1=> new string'(universal_string_type.to_string(name_file_data_base))
 												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
+					output_file_descriptor => standout,
+					return_code            => result
 					);
-				-- evaluate result
-				if 
-					Result = 0 then 
-						put("... done"); new_line(2);
-						put("Recommended next steps :"); new_line (2);
-						put("     Create options file for database '" & data_base & "' using command 'bsmcl mkoptions " & data_base & " your_target_options_file.opt'"); new_line;
+
+				if result = 0 then 
+					put_line(done);
+					put_line("Recommended next step:");
+					put_line("  1. Edit configuration file " & quote_single & name_file_mkoptions_configuration & quote_single);
+					put_line("  2. Create options file for database " & quote_single &
+						universal_string_type.to_string(name_file_data_base) & quote_single & " using command " &
+						quote_single & name_module_cli & row_separator_0 & to_lower(type_action'image(mkoptions)) & row_separator_0 &
+						universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+						compose(name => "[options_file", extension => file_extension_options) & "]" & quote_single);
 						--put("  2. Edit options file according to your needs using a text editor."); new_line;
 						--put("  3. Import BSDL model files using command: 'bsmcl impbsdl " & project_name & ".udb'"); new_line;
-						
 				else
-					put("ERROR   while building bscan nets ! Aborting ..."); new_line;
-					prog_position := "-----";		
-					raise Constraint_Error;
-					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					put_line(message_error & "Building bscan nets failed" & exclamation & row_separator_0 & aborting);
+					raise constraint_error;
 				end if;
 			else
 				write_error_no_project;
@@ -853,75 +826,71 @@ begin
 		-- MKOPTIONS BEGIN
 			if is_project_directory then
 				prog_position := "MKO00";
-				data_base:=to_unbounded_string(Argument(2)); -- raises exception if udb not given
+
+				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
 
 				-- check if udb file exists
-				if exists_database(Argument(2)) then null; -- raises exception if udb not given 
-				else 
-					prog_position := "DBE00";		
-					raise Constraint_Error;
+				prog_position := "MKO10";
+				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
+					raise constraint_error;
 				end if;
 
-				prog_position := "OP200";
-				-- ins v021 begin
+				-- If the name of the options file not specified by operator, use default name.
 				if arg_ct = 2 then
-					opt_file := to_unbounded_string(base_name(to_string(data_base)) & ".opt");
+					name_file_options := universal_string_type.to_bounded_string
+						(
+						compose(
+							name 		=> base_name(universal_string_type.to_string(name_file_data_base)),
+							extension 	=> file_extension_options
+							)
+						);
 				else
-					opt_file:=to_unbounded_string(Argument(3)); -- NOTE: the opt file given will be created by mkoptions
+					name_file_options := universal_string_type.to_bounded_string(argument(3)); 
+					-- NOTE: the opt file given will be created by mkoptions
 				end if;
 
-				-- relaunch mknets
-				Spawn 
+				-- relaunch MKNETS (resets udb to inital state equal to the state after BSDL importing)
+				put_line("relaunching " & name_module_mknets & "...");
+				spawn 
 					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/mknets",
-					Args                   => 	(
-												1=> new String'(to_string(data_base))
-												-- 2=> new String'(to_string(opt_file)) 
+					program_name           => compose ( to_string(directory_of_binary_files), name_module_mknets),
+					args                   => 	(
+												1=> new string'(universal_string_type.to_string(name_file_data_base))
 												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
+					output_file_descriptor => standout,
+					return_code            => result
 					);
-				-- evaluate result
-				if 
-					Result = 0 then
- 						put("... done"); new_line(2);
--- 						put("Recommended next steps :"); new_line (2);
--- 						put("     Create options file for database '" & data_base & "' using command 'bsmcl mkoptions " & data_base & " your_target_options_file.opt'"); new_line;
-						--put("  2. Edit options file according to your needs using a text editor."); new_line;
-						--put("  3. Import BSDL model files using command: 'bsmcl impbsdl " & project_name & ".udb'"); new_line;
-						
+
+				if result = 0 then 
+					put_line(done);
 				else
-					put("ERROR   while building bscan nets ! Aborting ..."); new_line;
-					--prog_position := "---";		
-					raise Constraint_Error;
-					--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+					put_line(message_error & "Building bscan nets failed" & exclamation & row_separator_0 & aborting);
+					raise constraint_error;
 				end if;
 
-
-				-- launch mkoptions
-				Spawn 
+				-- launch MKOPTIONS
+				spawn 
 					(  
-					Program_Name           => to_string(directory_of_binary_files) & "/mkoptions",
-					Args                   => 	(
-												1=> new String'(to_string(data_base)),
-												2=> new String'(to_string(opt_file)) 
+					program_name           => compose ( to_string(directory_of_binary_files), name_module_mkoptions),
+					args                   => 	(
+												1=> new string'(universal_string_type.to_string(name_file_data_base)),
+												2=> new String'(universal_string_type.to_string(name_file_options))
 												),
-					Output_File_Descriptor => Standout,
-					Return_Code            => Result
+					output_file_descriptor => standout,
+					return_code            => result
 					);
-				-- evaluate result
-				if 
-					Result = 0 then
-						put("... done"); new_line(2);
-						put("Recommended next steps :"); new_line (2);
-						put("  1. Edit options file '" & opt_file & "' according to your needs using a text editor."); new_line;
-						put("  2. Check primary/secondary dependencies and net classes using command 'bsmcl chkpsn " & data_base & " " & opt_file & "'"); new_line;
 
+				if result = 0 then
+					put_line(done);
+					put_line("Recommended next step:");
+					put_line(" 1. Edit options file" & row_separator_0 & quote_single & universal_string_type.to_string(name_file_options) &
+						quote_single & " according to your needs with a text editor.");
+					put_line(" 2. Check primary/secondary dependencies and net classes using command " & quote_single & name_module_cli &
+						row_separator_0 & to_lower(type_action'image(chkpsn)) & row_separator_0 & universal_string_type.to_string(name_file_data_base) &
+						row_separator_0 & universal_string_type.to_string(name_file_options) & quote_single);
 				else
-					put("ERROR while writing options file ! Aborting ..."); new_line;
-					prog_position := "OP300";		
-					raise Constraint_Error;
-					
+					put_line(message_error & "Creating options file failed" & exclamation & row_separator_0 & aborting);
+					raise constraint_error;
 				end if;
 
 			else
@@ -1746,40 +1715,29 @@ begin
 						put ("        A project directory must contain at least a file named 'proj_desc.txt' !"); new_line;									
 						
 				elsif prog_position = "IBL00" then
-						new_line;									
-						put ("ERROR ! No database specified !"); new_line; 
-						--put ("        Actions available are : impcad, impbsdl, mknets, chkpsn, generate, compile, load, run"); new_line;
-						put ("        Example: bsmcl impbsdl MMU.udb"); new_line;
+						put_line(message_error & "No database specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(import_bsdl)) & row_separator_0 &
+							compose(name => "your_database", extension => file_extension_database));
 	
 				elsif prog_position = "MKN00" then
-						new_line;									
-						put ("ERROR ! No database specified !"); new_line; 
-						--put ("        Actions available are : impcad, impbsdl, mknets, chkpsn, generate, compile, load, run"); new_line;
-						put ("        Example: bsmcl mknets MMU.udb"); new_line;
+						put_line(message_error & "No database specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(mknets)) & row_separator_0 &
+							compose(name => "your_database", extension => file_extension_database));
 	
 				elsif prog_position = "JSM00" then
-						new_line;									
-						put ("ERROR ! No submodule specified !"); new_line; 
-						--put ("        Actions available are : impcad, impbsdl, mknets, chkpsn, generate, compile, load, run"); new_line;
-						put ("        Run command 'ls *.txt' to get a list of available skeleton files !"); new_line; 									 																		
-						put ("        Then try example: bsmcl join skeleton_my_submodule.txt"); new_line;
-
-	
-				elsif prog_position = "JSN00" then
-						new_line;
-						put ("        Make sure path and name of skeleton submodule are correct !"); new_line;
-						put ("        Run command 'ls *.txt' to get a list of available skeleton files !"); new_line; 									 
-	
-				elsif prog_position = "SMN00" then
-						new_line;
-						put ("ERROR ! No main module 'skeleton.txt' found. !"); new_line;
-						put ("        It appears you have not imported any CAD data yet. Please import CAD data now."); new_line;
-						put ("        Example: bsmcl impcad cad_format net_list [partlist]"); new_line; 									 
+					put_line(message_error & "No submodule specified !");
+					ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli &
+						row_separator_0 & to_lower(type_action'image(join_netlist)) & row_separator_0 &
+						compose(name => "skeleton_submodule", extension => file_extension_text));
 	
 				elsif prog_position = "MKO00" then
-						new_line;									
-						put ("ERROR ! No database specified !"); new_line; 
-						put ("        Example: bsmcl mkoptions MMU.udb"); new_line;
+						put_line(message_error & "No database specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(mkoptions)) & row_separator_0 &
+							compose(name => "your_database", extension => file_extension_database) & row_separator_0 &
+							compose(name => "[options_file", extension => file_extension_options) & "]");
 	
 				elsif prog_position = "CPS00" then
 						new_line;									
@@ -1797,10 +1755,10 @@ begin
 						put ("ERROR ! No options file specified !"); new_line; 
 						put ("        Example: bsmcl chkpsn MMU.udb options_file.opt"); new_line;
 	
-				elsif prog_position = "OP200" then
-						new_line;									
-						put ("ERROR ! No options file specified !"); new_line; 
-						put ("        Example: bsmcl mkoptions MMU.udb options_file.opt"); new_line;
+-- 				elsif prog_position = "OP200" then
+-- 						new_line;									
+-- 						put ("ERROR ! No options file specified !"); new_line; 
+-- 						put ("        Example: bsmcl mkoptions MMU.udb options_file.opt"); new_line;
 	
 				elsif prog_position = "OPE00" then
 						new_line;									

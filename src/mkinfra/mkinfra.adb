@@ -69,17 +69,17 @@ procedure mkinfra is
 		colon_position : positive := 19;
 	begin
 		-- create sequence file
-		create( sequence_file, 
-			name => (compose (universal_string_type.to_string(test_name), universal_string_type.to_string(test_name), "seq")));
+		create( file_sequence, 
+			name => (compose (universal_string_type.to_string(name_test), universal_string_type.to_string(name_test), "seq")));
 
-			set_output(sequence_file); -- set data sink
+			set_output(file_sequence); -- set data sink
 
 			--put_line ("Section info");
 			put_line(section_mark.section & row_separator_0 & test_section.info);
 			put_line (" created by infra structure test generator version "& version);
 			put_line(row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & m1.date_now);
 			put_line(row_separator_0 & section_info_item.data_base & (colon_position-(2+section_info_item.data_base'last)) * row_separator_0 & ": " & universal_string_type.to_string(name_file_data_base));
-			put_line(row_separator_0 & section_info_item.test_name & (colon_position-(2+section_info_item.test_name'last)) * row_separator_0 & ": " & universal_string_type.to_string(test_name));
+			put_line(row_separator_0 & section_info_item.test_name & (colon_position-(2+section_info_item.test_name'last)) * row_separator_0 & ": " & universal_string_type.to_string(name_test));
 			put_line(row_separator_0 & section_info_item.test_profile & (colon_position-(2+section_info_item.test_profile'last)) * row_separator_0 & ": " & type_test_profile'image(test_profile));
 			put_line(row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(end_sdr));
 			put_line(row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(end_sir));
@@ -422,8 +422,8 @@ begin
  	put_line("data base      : " & universal_string_type.to_string(name_file_data_base));
 
 	prog_position	:= 20;
-	test_name := universal_string_type.to_bounded_string(argument(2));
-	put_line("test name      : " & universal_string_type.to_string(test_name));
+	name_test := universal_string_type.to_bounded_string(argument(2));
+	put_line("test name      : " & universal_string_type.to_string(name_test));
 
 	prog_position	:= 30;
 	if argument_count = 3 then
@@ -440,7 +440,7 @@ begin
 
 	create_temp_directory;
 	create_test_directory(
-		test_name 			=> universal_string_type.to_string(test_name),
+		test_name			=> universal_string_type.to_string(name_test),
 		warnings_enabled 	=> false
 		);
 
@@ -451,7 +451,7 @@ begin
 	write_sequences;
 
 	set_output(standard_output);
-	close(sequence_file);
+	close(file_sequence);
 
 
 	exception
