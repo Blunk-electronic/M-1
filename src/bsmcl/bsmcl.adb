@@ -1111,6 +1111,7 @@ begin
 						prog_position := "TON00";
 						target_net := universal_string_type.to_bounded_string(argument(5));
 						
+						prog_position := "TOC00";
 						cycle_count:= positive'value(argument(6));
 						
 						prog_position := "TLT00";				
@@ -1819,9 +1820,23 @@ begin
 							);
 
 				elsif prog_position = "TON00" then
-						new_line;									
-						put ("ERROR ! Target net not specified !"); new_line; 
-						put ("        Example: bsmcl generate MMU.udb toggle my_test_name SIO_CLK"); new_line;
+						put_line(message_error & "Target net not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(generate)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
+							row_separator_0 & "COUNTER_INPUT"
+							);
+
+				elsif prog_position = "TOC00" then
+						put_line(message_error & "Cycle count not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(generate)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
+							row_separator_0 & universal_string_type.to_string(target_net) & row_separator_0 & "10"
+							);
+
 
 				elsif prog_position = "RYC00" then
 						put_line(message_error & "Max. retry count not specified" & exclamation);
@@ -1844,20 +1859,26 @@ begin
 							type_sxr_retries'image(retry_count) & row_separator_0 & "0.1"
 							);
 
-				elsif prog_position = "TCT00" then
-						new_line;									
-						put ("ERROR ! Cycle count not specified !"); new_line; 
-						put ("        Example: bsmcl generate MMU.udb toggle my_test_name SIO_CLK 10"); new_line;
-
 				elsif prog_position = "TLT00" then
-						new_line;									
-						put ("ERROR ! Low time (unit is sec) not specified !"); new_line; 
-						put ("        Example: bsmcl generate MMU.udb toggle my_test_name SIO_CLK 10 2"); new_line;
+						put_line(message_error & "Low time (unit is sec) not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(generate)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
+							row_separator_0 & universal_string_type.to_string(target_net) &
+							type_sxr_retries'image(cycle_count) & row_separator_0 & "2"
+							);
 
 				elsif prog_position = "THT00" then
-						new_line;									
-						put ("ERROR ! High time (unit is sec) not specified !"); new_line; 
-						put ("        Example: bsmcl generate MMU.udb toggle my_test_name SIO_CLK 10 2 0.5"); new_line;
+						put_line(message_error & "High time (unit is sec) not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(generate)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
+							row_separator_0 & universal_string_type.to_string(target_net) &
+							type_sxr_retries'image(cycle_count) &
+							type_delay_value'image(low_time) & row_separator_0 & "0.2"
+							);
 
 				elsif prog_position = "PJN00" then
 						new_line;									
