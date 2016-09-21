@@ -57,12 +57,15 @@ procedure bsmcl is
 
 --	uut_dir			: Unbounded_String;
 	action			: type_action;
-	batch_file 		: Unbounded_string;
+--	batch_file 		: Unbounded_string;
 	test_profile 	: type_test_profile;
-	test_name  		: Unbounded_string;
-	sequence_name 	: Unbounded_string;
+--	test_name  		: Unbounded_string;
+--	sequence_name 	: Unbounded_string;
 --	ram_addr   		: string (1..4) := "0000"; -- page address bits [23:8]
-	data_base  		: Unbounded_string;
+--	data_base  		: Unbounded_string;
+
+	item_udb_class	: type_item_udbinfo;
+	item_udb_name	: universal_string_type.bounded_string;
 
 --	target_device	: unbounded_string;
 --	device_package	: unbounded_string;
@@ -240,130 +243,56 @@ procedure bsmcl is
 
 
 
-		function exists_netlist (netlist : universal_string_type.bounded_string) return boolean is
-		-- verifies if given netlist exists
-			file_exists : boolean := false;	
-		begin
-			prog_position := "NLE00";	
-			put_line(text_name_cad_net_list & "        : " & universal_string_type.to_string(netlist));
-			
-			if exists (universal_string_type.to_string(netlist)) then
-				file_exists := true;
-			else
-				put_line(message_error & text_name_cad_net_list & row_separator_0 & quote_single &
-					universal_string_type.to_string(netlist) & quote_single & " not found !"); 
-				raise constraint_error;
-			end if;
-			return file_exists;
-		end exists_netlist;
+	function exists_netlist (netlist : universal_string_type.bounded_string) return boolean is
+	-- verifies if given netlist exists
+		file_exists : boolean := false;	
+	begin
+		prog_position := "NLE00";	
+		put_line(text_name_cad_net_list & "        : " & universal_string_type.to_string(netlist));
+		
+		if exists (universal_string_type.to_string(netlist)) then
+			file_exists := true;
+		else
+			put_line(message_error & text_name_cad_net_list & row_separator_0 & quote_single &
+				universal_string_type.to_string(netlist) & quote_single & " not found !"); 
+			raise constraint_error;
+		end if;
+		return file_exists;
+	end exists_netlist;
 
 
-		function exists_partlist (partlist : universal_string_type.bounded_string) return boolean is
-		-- verifies if given partlist exists
-			file_exists : boolean := false;
-		begin
-			prog_position := "PLE00";	
-			put_line(text_name_cad_part_list & "       : " & universal_string_type.to_string(partlist));
-			
-			if exists(universal_string_type.to_string(partlist)) then
-				file_exists := true;
-			else
-				put_line(message_error & text_name_cad_net_list & row_separator_0 & quote_single &
-					universal_string_type.to_string(partlist) & quote_single & " not found !"); 
-				raise constraint_error;
-			end if;
-			return file_exists;
-		end exists_partlist;
-
-
-
-		function exists_database(database : string) return boolean is
-			file_exists : boolean := false;
-		begin
-			--put ("database       : ");	put(database); new_line;
-			if exists (database) then
-				file_exists := true;
-			else
-				put_line(message_error & "Database " & quote_single & database & quote_single &
-					" does not exist" & exclamation & row_separator_0 & aborting);
-			end if;
-			return file_exists;
-		end exists_database;
+	function exists_partlist (partlist : universal_string_type.bounded_string) return boolean is
+	-- verifies if given partlist exists
+		file_exists : boolean := false;
+	begin
+		prog_position := "PLE00";	
+		put_line(text_name_cad_part_list & "       : " & universal_string_type.to_string(partlist));
+		
+		if exists(universal_string_type.to_string(partlist)) then
+			file_exists := true;
+		else
+			put_line(message_error & text_name_cad_net_list & row_separator_0 & quote_single &
+				universal_string_type.to_string(partlist) & quote_single & " not found !"); 
+			raise constraint_error;
+		end if;
+		return file_exists;
+	end exists_partlist;
 
 
 
+	function exists_database(database : string) return boolean is
+		file_exists : boolean := false;
+	begin
+		--put ("database       : ");	put(database); new_line;
+		if exists (database) then
+			file_exists := true;
+		else
+			put_line(message_error & "Database " & quote_single & database & quote_single &
+				" does not exist" & exclamation & row_separator_0 & aborting);
+		end if;
+		return file_exists;
+	end exists_database;
 
-
-		function exists_optfile
-			(
-			-- version 1.0 / MBL
-			-- verifies if given optfile exists
-			optfile		: string
-			) return Boolean is
-			
-			file_exists :	Boolean := false;
-			
-			begin
-				put ("options file   : ");	put(optfile); new_line;				
-				
-				if exists (optfile) then
-					file_exists := true;
-				else
-					new_line;
-					put ("ERROR ! Options file '"& optfile &"' does not exist ! Aborting ..."); 					
-				end if;
-				return file_exists;
-				
-			end exists_optfile;
-
-
-
-
-		function exists_model
-			(
-			-- version 1.0 / MBL
-			-- verifies if given model file exists
-			modelfile		: string
-			) return Boolean is
-			
-			file_exists :	Boolean := false;
-			
-			begin
-				put ("model file     : ");	put(modelfile); new_line;				
-				
-				if exists (modelfile) then
-					file_exists := true;
-				else
-					new_line;
-					put ("ERROR ! Model file '"& modelfile &"' does not exist ! Aborting ..."); 					
-				end if;
-				return file_exists;
-				
-			end exists_model;
-
-
-
-		function exists_skeleton
-			(
-			-- version 1.0 / MBL
-			-- verifies if given skeleton file exists
-			skeleton_file : string
-			) return Boolean is
-			
-			file_exists :	Boolean := false;
-			
-			begin
-				put ("submodule      : ");	put(skeleton_file); new_line;				
-				
-				if exists (skeleton_file) then
-					file_exists := true;
-				else
-					new_line;
-					put ("ERROR ! Submodule '"& skeleton_file &"' does not exist ! Aborting ..."); 					
-				end if;
-				return file_exists;
-				
-			end exists_skeleton;
 
 
 
@@ -451,7 +380,6 @@ begin
 	put_line(name_system & " Command Line Interface Version "& version);
 	put_line(column_separator_2);
 	check_environment;
-
 		
 	prog_position := "CRT00";
 	arg_ct :=  argument_count;
@@ -508,7 +436,7 @@ begin
 			end if;
 			-- MAKE PROJECT END
 
-		when help =>
+		when help => -- CS: rework help files
 			-- HELP BEGIN
 			case language is
 				when german => 
@@ -950,6 +878,47 @@ begin
 			end if;
 		-- CHKPSN END
 
+		when udbinfo =>
+		-- QUERY UUT DATA BASE ITEM BEGIN
+			if is_project_directory then
+				prog_position := "UDQ00";
+				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
+
+				-- check if udb file exists
+				prog_position := "UDQ10";
+				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
+					raise constraint_error;
+				end if;
+
+				prog_position := "UDQ20";
+				item_udb_class := type_item_udbinfo'value(argument(3));
+
+				prog_position := "UDQ30";
+				item_udb_name := universal_string_type.to_bounded_string(argument(4));
+
+				spawn 
+					(  
+					program_name           => compose ( to_string(directory_of_binary_files), name_module_data_base_query),
+					args                   => 	(
+												1=> new string'(universal_string_type.to_string(name_file_data_base)),
+												2=> new string'(type_item_udbinfo'image(item_udb_class)),
+												3=> new string'(universal_string_type.to_string(item_udb_name))
+												),
+					output_file_descriptor => standout,
+					return_code            => result
+					);
+
+				case result is
+					when 0 => null; -- item found, everything is fine
+					when 2 => put_line(message_error & "Item not found" & exclamation & row_separator_0 &
+						"Check spelling and capitalization !"); 
+					when others =>
+						put_line(message_error & "Data base query failed" & exclamation);
+						raise constraint_error;
+				end case;
+
+			end if;
+		-- QUERY UUT DATA BASE ITEM END
 
 
 		when generate =>
@@ -1331,8 +1300,10 @@ begin
 						) is
 						-- CS: distinguish between executed step and test !
 						when pass =>
+							new_line;
 							put_line("Test/Step" & row_separator_0 & universal_string_type.to_string(name_test) & row_separator_0 & passed);
 						when fail =>
+							new_line;
 							put_line("Test/Step" & row_separator_0 & universal_string_type.to_string(name_test) & row_separator_0 & failed);
 							set_exit_status(failure);
 						when not_loaded =>
@@ -1361,15 +1332,11 @@ begin
 				prog_position := "BP100";
 				vector_id_breakpoint := type_vector_id_breakpoint'value(argument(2));
 
-				if vector_id_breakpoint = 0 then
-					put_line("breakpoint removed");
-				else
-					put_line("breakpoint set after");
-					put_line ("sxr id         : " & trim(type_vector_id_breakpoint'image(vector_id_breakpoint),left));
+				-- If vector_id_breakpoint greater zero, a breakpoint is to set. In this case a third argument may be 
+				-- given if a certain bit position is to halt after. Otherwise bit_position assumes zero.
+				if vector_id_breakpoint /= 0 then
 					if arg_ct = 3 then
-						--prog_position := "BP200";
 						bit_position := type_sxr_break_position'value(argument(3));
-						put_line ("bit position   : " & trim(type_sxr_break_position'image(bit_position),left));
 					end if;
 				end if;
 
@@ -1381,12 +1348,20 @@ begin
 					vector_id_breakpoint		=> vector_id_breakpoint,
 					bit_position				=> bit_position
 					) is
-					when true =>
-						prog_position := "BP310";
+					when true => -- setting breakpoint successful:
+						case vector_id_breakpoint is
+							when 0 => 
+								put_line("breakpoint removed");
+							when others =>
+								put_line("breakpoint set after ");
+								put_line("sxr id         : " & trim(type_vector_id_breakpoint'image(vector_id_breakpoint),left));
+								if bit_position /= 0 then
+									put_line ("bit position   : " & trim(type_sxr_break_position'image(bit_position),left));
+								end if;
+						end case;
+
 					when others =>
-						prog_position := "BP320";
-						new_line;
-						put_line("ERROR: Internal malfunction !");
+						put_line(message_error & "Setting breakpoint failed" & exclamation);
 						raise constraint_error;
 				end case;
 			else
@@ -1395,238 +1370,137 @@ begin
 		-- SET BREAKPOINT END
 
 
-		-- test step execution begin
--- 		elsif action = "step" then
--- 			prog_position := "ST100";
--- 			test_name:=to_unbounded_string(m1.strip_trailing_forward_slash(Argument(2)));
--- 			if arg_ct = 3 then
--- 				prog_position := "ST400";
--- 				m1_internal.step_mode:= m1_internal.type_step_mode'value(Argument(3));
--- 			end if;
--- 			
--- 			-- check if test exists
--- 			if exists (compose (to_string(test_name),to_string(test_name), "vec")) then
--- 				put_line ("test name      : " & test_name);
--- 				put_line ("step mode      : " & type_step_mode'image(m1_internal.step_mode)); new_line;
--- 
--- 				prog_position := "ST300";
--- 				case execute_test
--- 					(
--- 					test_name 					=> to_string(test_name),
--- 					interface_to_scan_master 	=> to_string(interface_to_scan_master),
--- 					directory_of_binary_files	=> to_string(directory_of_binary_files),
--- 					step_mode					=> step_mode,
--- 					execute_item				=> step
--- 					) is
--- 					when pass =>
--- 						prog_position := "ST310";
--- 						new_line;
--- 						put_line("Test STEP of '"& test_name &"' PASSED !");
--- 					when fail =>
--- 						prog_position := "ST320";
--- 						new_line;
--- 						put_line("Test STEP of '"& test_name &"' FAILED !");
--- 						set_exit_status(failure);
--- 					when not_loaded =>
--- 						prog_position := "ST330";
--- 						new_line;
--- 						put_line("ERROR : Test not loaded yet. Please upload test. Then try again.");
--- 						set_exit_status(failure);
--- 					when others =>
--- 						prog_position := "ST340";
--- 						new_line;
--- 						put_line("ERROR: Internal malfunction !");
--- 						put_line("Test '"& test_name &"' FAILED !");
--- 						set_exit_status(failure);
--- 				end case;
--- 
--- 			else 
--- 				prog_position := "ST200";
--- 				put_line("ERROR    : Test '"& test_name &"' does not exist !");
--- 				raise constraint_error;
--- 			end if;
--- 		-- test step execution end
-
-
 		-- test start begin
 		-- DOES NOT WAIT FOR TEST END
 		-- CS: CURRENTLY THERE IS NO NEED TO DO SUCH A THING !!!
--- 		elsif action = "start" then
--- 			prog_position := "-----";
--- 			--test_name:=to_unbounded_string(Argument(2)); -- rm v020
--- 			test_name:=to_unbounded_string(m1.strip_trailing_forward_slash(Argument(2))); -- mod v020
--- 			
--- 			-- check if test exists
--- 			if exists (compose (to_string(test_name),to_string(test_name), "vec")) then
--- 				put ("running        : ");	put(test_name); new_line;
--- 				put ("mode           : ");	put("production"); new_line; --put(run_mode); new_line;
--- 				--bsm --run $run_mode $name  #launch single test/ISP
--- 				-- launch test
--- 				Spawn 
--- 					(  
--- 					Program_Name           => to_string(directory_of_binary_files) & "/bsm",
--- 					Args                   => 	(
--- 												1=> new String'("--start"),
--- 												2=> new String'("production"), --(to_string(run_mode)), -- pass run mode to bsm
--- 												3=> new String'(to_string(test_name)) -- pass test name to bsm
--- 												),
--- 					Output_File_Descriptor => Standout,
--- 					Return_Code            => Result
--- 					);
--- 				-- evaluate result
--- 				if 
--- 					Result = 0 then put("Test '"& test_name &"' is RUNNING !"); new_line;
--- 				elsif
--- 					Result = 2 then put("Test '"& test_name &"' start FAILED !"); new_line;
--- 					Set_Exit_Status(Failure);
--- 				else
--- 					prog_position := "-----";					
--- 					put("ERROR    : Malfunction while starting test '"& test_name &"' ! Aborting ..."); new_line;
--- 					put("code     :"); put(Result); new_line; 
--- 					raise constraint_error;
--- 				end if;
--- 
--- 			else 
--- 				prog_position := "RU200";
--- 				raise constraint_error;
--- 			end if;
-		-- test start end
 
 
 		when status =>
 		-- QUERY BSC STATUS BEGIN
 			prog_position := "QS100";
-			--prog_position := "RU1";
-			--test_name:=to_unbounded_string(Argument(2));
+			-- status can be inquired anytime anywhere
 
-			if query_status
+			case query_status
 				(
 				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
 				directory_of_binary_files	=> to_string(directory_of_binary_files)
-				) then
-				prog_position := "QS120";
-			else
-				prog_position := "QS130";
-				set_exit_status(failure);
-			end if;
+				) is
+				when false => 
+					put_line(message_error & name_bsc & " status query failed" & exclamation);
+					raise constraint_error;
+				when others => null;
+			end case;
 		-- QUERY BSC STATUS END
 
 		when firmware =>
-		-- SHOW FIRMWARE BEGIN
+		-- QUERY FIRMWARE BEGIN
 			prog_position := "FW000";
-			if show_firmware
+			case show_firmware
 				(
 				interface_to_scan_master	=> universal_string_type.to_string(interface_to_scan_master),
 				directory_of_binary_files	=> to_string(directory_of_binary_files)
-				) then
-				prog_position := "FW100";
-			else
-				prog_position := "FW200";
-				set_exit_status(failure);
-			end if;
-		-- SHOW FIRMWARE END
+				) is
+				when false => 
+					put_line(message_error & name_bsc & " firmware query failed" & exclamation);
+					raise constraint_error;
+				when others => null;
+			end case;
+		-- QUERY FIRMWARE END
 
 		when off =>
 		-- UUT POWER DOWN BEGIN
 			prog_position := "SDN01";
-			if shutdown
+			case shutdown
 				(
 				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
 				directory_of_binary_files	=> to_string(directory_of_binary_files)
-				) then
-				prog_position := "SDN10";
-			else
-				prog_position := "SDN20";
-				set_exit_status(failure);
-			end if;
+				) is
+				when false =>
+					new_line;
+					put_line(message_error & "   UUT SHUTDOWN FAILED" & exclamation);
+					put_line(message_warning & " UUT NOT POWERED OFF" & exclamation);
+					raise constraint_error;
+				when true =>
+					new_line;
+					put_line("UUT has been shut down ! Scanports disconnected !");
+					put_line("Test" & row_separator_0 & failed);
+			end case;
 		-- UUT POWER DOWN END
 
-		when report =>
-		-- VIEW TEST REPORT BEGIN
-			if is_project_directory then
-				prog_position := "-----";
-				
-				-- check if test exists
-				if exists ("test_sequence_report.txt") then
-					--put ("creating PDF test report of "); new_line;
-					put ("PDF file name  : ");	put(Containing_Directory("proj_desc.txt") & "/test_sequence_report.pdf"); new_line;
-					
-					-- convert report txt file to pdf
-					Spawn 
-						(  
-						Program_Name           => to_string(directory_of_enscript) & "/enscript", -- -p last_run.pdf last_run.txt",
-						Args                   => 	(
-													1=> new String'("-p"),
-													2=> new String'("test_sequence_report.pdf"),
-													3=> new String'("test_sequence_report.txt")
-													),
-						Output_File_Descriptor => Standout,
-						Return_Code            => Result
-						);
-					-- evaluate result
-					if 
-						Result = 0 then put("done"); new_line;
-					elsif
-						Result = 1 then put("FAILED !"); new_line;
-						Set_Exit_Status(Failure);
-					else
-						prog_position := "-----";					
-	-- 					put("ERROR    : Malfunction while executing test '"& test_name &"' ! Aborting ..."); new_line;
-	-- 					put("code     :"); put(Result); new_line; 
-						raise constraint_error;
-					end if;
 
-
-					-- open pdf report
-					Spawn 
-						(  
-						Program_Name           => 	to_string(directory_of_binary_files) & "/open_report", -- "/usr/bin/okular", -- -p last_run.pdf last_run.txt",
-						Args                   => 	(
-													1=> new String'("test_sequence_report.pdf")
-													--2=> new String'("1>/dev/null") -- CS: suppress useless output of okular
-													--3=> new String'("last_run.txt")
-													),
-						Output_File_Descriptor => Standout,
-						Return_Code            => Result
-						);
-					-- evaluate result
-					if 
-						Result = 0 then put("done"); new_line;
-					elsif
-						Result = 1 then put("FAILED !"); new_line;
-						Set_Exit_Status(Failure);
-					else
-						prog_position := "-----";					
-	-- 					put("ERROR    : Malfunction while executing test '"& test_name &"' ! Aborting ..."); new_line;
-	-- 					put("code     :"); put(Result); new_line; 
-						raise constraint_error;
-					end if;
-
-
-				else 
-					prog_position := "-----";
-					raise constraint_error;
-				end if;
-			else
-				write_error_no_project;
-			end if;
-		-- VIEW TEST REPORT END
-
-
-
-
-		when others =>
-         	new_line;
-			put_line ("ERROR : Action not supported !");
-			put_line ("        For a list of available actions run command 'bsmcl' !");
-			prog_position := "-----";
-			raise constraint_error;
-
-
+-- 		when report => CS:
+-- 		-- VIEW TEST REPORT BEGIN
+-- 			if is_project_directory then
+-- 				prog_position := "-----";
+-- 				
+-- 				-- check if test exists
+-- 				if exists ("test_sequence_report.txt") then
+-- 					--put ("creating PDF test report of "); new_line;
+-- 					put ("PDF file name  : ");	put(Containing_Directory("proj_desc.txt") & "/test_sequence_report.pdf"); new_line;
+-- 					
+-- 					-- convert report txt file to pdf
+-- 					Spawn 
+-- 						(  
+-- 						Program_Name           => to_string(directory_of_enscript) & "/enscript", -- -p last_run.pdf last_run.txt",
+-- 						Args                   => 	(
+-- 													1=> new String'("-p"),
+-- 													2=> new String'("test_sequence_report.pdf"),
+-- 													3=> new String'("test_sequence_report.txt")
+-- 													),
+-- 						Output_File_Descriptor => Standout,
+-- 						Return_Code            => Result
+-- 						);
+-- 					-- evaluate result
+-- 					if 
+-- 						Result = 0 then put("done"); new_line;
+-- 					elsif
+-- 						Result = 1 then put("FAILED !"); new_line;
+-- 						Set_Exit_Status(Failure);
+-- 					else
+-- 						prog_position := "-----";					
+-- 	-- 					put("ERROR    : Malfunction while executing test '"& test_name &"' ! Aborting ..."); new_line;
+-- 	-- 					put("code     :"); put(Result); new_line; 
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 
+-- 					-- open pdf report
+-- 					Spawn 
+-- 						(  
+-- 						Program_Name           => 	to_string(directory_of_binary_files) & "/open_report", -- "/usr/bin/okular", -- -p last_run.pdf last_run.txt",
+-- 						Args                   => 	(
+-- 													1=> new String'("test_sequence_report.pdf")
+-- 													--2=> new String'("1>/dev/null") -- CS: suppress useless output of okular
+-- 													--3=> new String'("last_run.txt")
+-- 													),
+-- 						Output_File_Descriptor => Standout,
+-- 						Return_Code            => Result
+-- 						);
+-- 					-- evaluate result
+-- 					if 
+-- 						Result = 0 then put("done"); new_line;
+-- 					elsif
+-- 						Result = 1 then put("FAILED !"); new_line;
+-- 						Set_Exit_Status(Failure);
+-- 					else
+-- 						prog_position := "-----";					
+-- 	-- 					put("ERROR    : Malfunction while executing test '"& test_name &"' ! Aborting ..."); new_line;
+-- 	-- 					put("code     :"); put(Result); new_line; 
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 
+-- 				else 
+-- 					prog_position := "-----";
+-- 					raise constraint_error;
+-- 				end if;
+-- 			else
+-- 				write_error_no_project;
+-- 			end if;
+-- 		-- VIEW TEST REPORT END
 
 	end case;
    
-   new_line;
 
 	exception
 		when event: 
@@ -1657,7 +1531,7 @@ begin
 										put ("        - break        (set break point at step ID and bit position)"); new_line;
 										put ("        - off          (immediately stop a running test, shut down UUT power and disconnect TAP signals)"); new_line;
 										put ("        - status       (query Boundary Scan Controller status)"); new_line;
-										put ("        - report       (view the latest sequence execution results)"); new_line;	
+										--put ("        - report       (view the latest sequence execution results)"); new_line;	
 										put ("        - mkvmod       (create verilog model port list from main module skeleton.txt)"); new_line;
 										put ("        - help         (get examples and assistance)"); new_line;
 										put ("        - udbinfo      (get firmware versions)"); new_line;
@@ -1665,7 +1539,41 @@ begin
 									
 				elsif prog_position = "PDS00" then
 						put ("ERROR : No project data found in current working directory !"); new_line;
-						put ("        A project directory must contain at least a file named 'proj_desc.txt' !"); new_line;									
+						put ("        A project directory must contain at least a file named 'proj_desc.txt' !"); new_line;	
+
+				elsif prog_position = "UDQ00" then
+						put_line(message_error & "No database specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(udbinfo)) & row_separator_0 &
+							compose(name => "your_database", extension => file_extension_database));
+
+				elsif prog_position = "UDQ20" then
+						put_line(message_error & "Invalid item specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(udbinfo)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 & 
+							to_lower(type_item_udbinfo'image(bic)));
+						ada.text_io.put(message_error'last * row_separator_0 & "Items to inquire for are:" & row_separator_0);
+
+						-- show available items to inqure for
+						for i in 0..type_item_udbinfo'pos( type_item_udbinfo'last) loop
+							put(type_item_udbinfo'image(type_item_udbinfo'val(i)));
+							if i < type_item_udbinfo'pos( type_item_udbinfo'last) then put(" , "); end if;
+						end loop;
+
+				elsif prog_position = "UDQ30" then
+						put_line(message_error & "Item name not specified" & exclamation);
+						ada.text_io.put(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(udbinfo)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 & 
+							to_lower(type_item_udbinfo'image(item_udb_class)) & row_separator_0);
+						case item_udb_class is
+							when BIC => 		put_line("IC303");
+							--when REGISTER =>	put_line("IC303");
+							when NET =>			put_line("OSC_OUT");
+							--when PIN =>			put_line("IC303#3");
+							when SCC =>			put_line("IC303#4");
+						end case;
 						
 				elsif prog_position = "IBL00" then
 						put_line(message_error & "No database specified" & exclamation);
@@ -1699,9 +1607,10 @@ begin
 							compose(name => "your_database", extension => file_extension_database));
 	
 				elsif prog_position = "GEN00" then
-						new_line;									
-						put ("ERROR ! No database specified !"); new_line; 
-						put ("        Example: bsmcl generate MMU.udb"); new_line;
+						put_line(message_error & "No database specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(generate)) & row_separator_0 &
+							compose(name => "your_database", extension => file_extension_database));
 	
 				elsif prog_position = "OP100" then
 						new_line;									
@@ -1966,30 +1875,30 @@ begin
 						put_line(message_error & "Too little arguments specified !");
 						ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							name_module_mkvmod & row_separator_0 & name_file_skeleton_default & row_separator_0 &
-							"your_verilog_module (without .v extension)");  
+							"your_verilog_module (without extension");  
 
 				elsif prog_position = "BP100" then
 						new_line;
-						put_line ("ERROR ! Breakpoint coordinates missing or out of range !");
-						put_line ("        Example to set breakpoint after sxr 6 bit 715: bsmcl break 6 715 ");
-						put_line ("        Allowed ranges:");
-						put_line ("           sxr id      :" & type_vector_id_breakpoint'image(type_vector_id_breakpoint'first) &
+						put_line(message_error & "Breakpoint coordinates missing or out of range !");
+						ada.text_io.put(message_error'last * row_separator_0 & "Example command to set breakpoint after sxr 6 bit 715:");
+						put_line(row_separator_0 & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(break)) & row_separator_0 & "6 715");
+						ada.text_io.put_line(message_error'last * row_separator_0 & "Allowed ranges:");
+						ada.text_io.put_line(message_error'last * row_separator_0 & "sxr id      :" &
+							type_vector_id_breakpoint'image(type_vector_id_breakpoint'first) &
 							".." & trim(type_vector_id_breakpoint'image(type_vector_id_breakpoint'last),left));
-						put_line ("           bit position:" & type_sxr_break_position'image(type_sxr_break_position'first) &
+						ada.text_io.put_line(message_error'last * row_separator_0 & "bit position:" &
+							type_sxr_break_position'image(type_sxr_break_position'first) &
 							".." & trim(type_sxr_break_position'image(type_sxr_break_position'last),left));
-						put_line ("        To delete the breakpoint type: bsmcl break 0");
+						new_line;
+						ada.text_io.put_line(message_error'last * row_separator_0 & "To delete the breakpoint type command: " &
+							name_module_cli & row_separator_0 & to_lower(type_action'image(break)) & row_separator_0 & "0");
 				else
    
-					put("unexpected exception: ");
+					--put("unexpected exception: ");
 					put_line(exception_name(event));
 					put(exception_message(event)); new_line;
 					put_line("program error at position " & prog_position);
 				end if;
-
--- 				new_line;
--- 				put ("PROGRAM ABORTED !"); new_line; 
--- 				put_line(prog_position);
--- 				new_line;
---				Set_Exit_Status(Failure);
 
 end bsmcl;

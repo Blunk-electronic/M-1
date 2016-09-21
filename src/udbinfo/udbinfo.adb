@@ -22,6 +22,8 @@
 --    along with this program.  If not, see <http://www.gnu.org/licenses/>. --
 ------------------------------------------------------------------------------
 
+-- todo: set exit code 2 when item not found
+
 with ada.text_io;		use ada.text_io;
 with ada.exceptions; 	use ada.exceptions;
 with ada.command_line;	use ada.command_line;
