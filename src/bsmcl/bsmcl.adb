@@ -29,7 +29,7 @@
 --
 --   history of changes:
 --
---   todo:
+--   todo: - switch to turn of advises
 
 with ada.text_io;				use ada.text_io;
 with ada.characters.handling; 	use ada.characters.handling;
@@ -41,15 +41,16 @@ with ada.strings.unbounded.text_io; use ada.strings.unbounded.text_io;
 with ada.exceptions; 			use ada.exceptions;
 
  
-with gnat.os_lib;   	use gnat.os_lib;
-with ada.command_line;	use ada.command_line;
-with ada.directories;	use ada.directories;
+with gnat.os_lib;   			use gnat.os_lib;
+with ada.command_line;			use ada.command_line;
+with ada.directories;			use ada.directories;
 with ada.environment_variables;
 
 with m1;
-with m1_internal; 	use m1_internal;
-with m1_numbers;	--use m1_numbers;
-with m1_files_and_directories; use m1_files_and_directories;
+with m1_internal; 				use m1_internal;
+with m1_numbers;				use m1_numbers;
+with m1_files_and_directories; 	use m1_files_and_directories;
+with m1_firmware;				use m1_firmware;
 
 procedure bsmcl is
 	version			: constant string (1..3) := "024";
@@ -60,7 +61,7 @@ procedure bsmcl is
 	test_profile 	: type_test_profile;
 	test_name  		: Unbounded_string;
 	sequence_name 	: Unbounded_string;
-	ram_addr   		: string (1..4) := "0000"; -- page address bits [23:8]
+--	ram_addr   		: string (1..4) := "0000"; -- page address bits [23:8]
 	data_base  		: Unbounded_string;
 
 --	target_device	: unbounded_string;
@@ -366,62 +367,49 @@ procedure bsmcl is
 
 
 
-		procedure advise_next_step_cad_import is
-			begin
-				put("... done"); new_line (2);
-				put("Recommended next steps :"); new_line (2);
-				put("  1. Read header of file 'skeleton.txt' for warnings and import notes using a text editor."); new_line;
-				put("     If you have imported CAD data of a submodule, please also look into file 'skeleton_your_submodule.txt'."); new_line;				
-				put("  2. Create boundary scan nets using command: 'bsmcl mknets'"); new_line;
-			end advise_next_step_cad_import;
+	procedure advise_next_step_cad_import is -- CS: rework
+		begin
+			put("... done"); new_line (2);
+			put("Recommended next steps :"); new_line (2);
+			put("  1. Read header of file 'skeleton.txt' for warnings and import notes using a text editor."); new_line;
+			put("     If you have imported CAD data of a submodule, please also look into file 'skeleton_your_submodule.txt'."); new_line;				
+			put("  2. Create boundary scan nets using command: 'bsmcl mknets'"); new_line;
+		end advise_next_step_cad_import;
 
+	procedure advise_next_step_generate is
+	begin
+		put_line(done);
+		put_line("Recommended next steps:");
+		ada.text_io.put_line("  1. Compile generated test using command " & quote_single & name_module_cli & row_separator_0 &
+			to_lower(type_action'image(compile)) &
+			row_separator_0 & universal_string_type.to_string(name_file_data_base) & row_separator_0 & 
+			universal_string_type.to_string(name_test) & quote_single);
+		put_line("Following steps are optional for fine tuning:");
+		put_line("  2. Edit generated sequence file " & quote_single & universal_string_type.to_string(name_test) & dot & file_extension_sequence &
+			quote_single & " with a text editor.");
+		put_line(message_note & "On automatic test generation the sequence file will be overwritten" & exclamation);
+		put_line("  3. Compile modified test sequence file.");
+	end advise_next_step_generate;
 
-		procedure advise_next_step_generate is
-			begin
-				put_line(done);
-				put_line("Recommended next steps:");
-				ada.text_io.put_line("  1. Compile generated test using command " & quote_single & name_module_cli & row_separator_0 &
-					to_lower(type_action'image(compile)) &
-					row_separator_0 & universal_string_type.to_string(name_file_data_base) & row_separator_0 & 
-					universal_string_type.to_string(name_test) & quote_single);
-				put_line("Following steps are optional for fine tuning:");
-				put_line("  2. Edit generated sequence file " & quote_single & universal_string_type.to_string(name_test) & dot & file_extension_sequence &
-					quote_single & " with a text editor.");
-				put_line(message_note & "On automatic test generation the sequence file will be overwritten" & exclamation);
-				put_line("  3. Compile modified test sequence file.");
-			end advise_next_step_generate;
+	procedure advise_next_step_compile is
+	begin
+		put_line(done);
+		put_line("Recommended next steps:");
+		ada.text_io.put_line("  1. Upload compiled test to" & row_separator_0 & name_bsc & row_separator_0 & "with command " &
+			quote_single & name_module_cli & row_separator_0 &
+			to_lower(type_action'image(load)) & row_separator_0 &
+			universal_string_type.to_string(name_test) & quote_single);
+	end advise_next_step_compile;
 
-
-		procedure advise_next_step_compile
-			-- version 1.0 / MBL
-			(
-			--database : String;
-			testname : String
-			) is
-			begin
-				put("... done"); new_line (2);
-				put("Recommended next steps :"); new_line (2);
-				put("  1. Load compiled test into BSC using command 'bsmcl load " & testname & "'."); new_line;
-				--put("     If you have imported CAD data of a submodule, please also look into file 'skeleton_your_submodule.txt'."); new_line;				
-				--put("  2. Create boundary scan nets using command: 'bsmcl mknets'"); new_line;
-			end advise_next_step_compile;
-
-
-		procedure advise_next_step_load
-			-- version 1.0 / MBL
-			(
-			--database : String;
-			testname : String
-			) is
-			begin
-				put("... done"); new_line (2);
-				--put("Test '"& testname &"' ready for launch !"); new_line;
-				put("Recommended next steps :"); new_line (2);
-				put("  1. Launch loaded test using command 'bsmcl run " & testname & "'."); new_line;
-				--put("     If you have imported CAD data of a submodule, please also look into file 'skeleton_your_submodule.txt'."); new_line;				
-				--put("  2. Create boundary scan nets using command: 'bsmcl mknets'"); new_line;
-			end advise_next_step_load;
-
+	procedure advise_next_step_load is
+	begin
+		put_line(done);
+		put_line("Recommended next steps:");
+		ada.text_io.put_line("  1. Start test with command" & row_separator_0 &
+			quote_single & name_module_cli & row_separator_0 &
+			to_lower(type_action'image(run)) & row_separator_0 &
+			universal_string_type.to_string(name_test) & quote_single);
+	end advise_next_step_load;
 
 
 	procedure write_error_no_project is
@@ -460,7 +448,7 @@ procedure bsmcl is
 begin
 
 	new_line;
-	put("M-1 Command Line Interface Version "& version); new_line;
+	put_line(name_system & " Command Line Interface Version "& version);
 	put_line(column_separator_2);
 	check_environment;
 
@@ -477,8 +465,8 @@ begin
 			-- MAKE PROJECT BEGIN
 			prog_position := "CRT05";
 			if is_project_directory then
-				put_line(message_warning & "The current working directory is a " & name_system & " project already !");
-				ada.text_io.put_line(message_warning'length * row_separator_0 &
+				put_line(message_error & "The current working directory is a project already !");
+				ada.text_io.put_line(message_error'length * row_separator_0 &
 					"Nesting projects is not supported. Change into a valid project directory !");
 				raise constraint_error;
 			else
@@ -489,10 +477,9 @@ begin
 				-- launch project maker
 				spawn 
 					(  
-					program_name           => to_string(directory_of_binary_files) & "/mkproject",
+					program_name           => compose( to_string(directory_of_binary_files), name_module_mkproject),
 					args                   => 	(
 												1=> new string'(universal_string_type.to_string(name_project))
-												-- 2=> new string'(to_string(opt_file)) 
 												),
 					output_file_descriptor => standout,
 					return_code            => result
@@ -1157,47 +1144,53 @@ begin
 		-- TEST COMPILATION BEGIN
 			if is_project_directory then
 				prog_position := "CMP00";
-				data_base:=to_unbounded_string(Argument(2));
+				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
+				-- CS: derive database name from sequence file info section
 
 				-- check if udb file exists
-				if exists_database(Argument(2)) then null; -- raises exception if udb not given 
-				else 
-					prog_position := "DBE00";		
-					raise Constraint_Error;
+				prog_position := "CMP10";
+				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
+					raise constraint_error;
 				end if;
 							
-				prog_position := "CTN00";			
-				--test_name:=to_unbounded_string(Argument(3)); -- rm v020
-				test_name:=to_unbounded_string(m1.strip_trailing_forward_slash(Argument(3))); -- mod v020
+				prog_position := "CMP20";
+				name_test := universal_string_type.to_bounded_string(m1.strip_trailing_forward_slash(argument(3)));
+				-- CS: apply strip_trailing_forward_slash on test generation too
 
-				put ("test name      : ");	put(test_name); new_line(2);
-
+				prog_position := "CMP30";
 				-- check if test directory containing the seq file exists
-				if exists (compose (to_string(test_name),to_string(test_name), "seq")) then
+				if exists
+					(
+					compose
+						(
+						universal_string_type.to_string(name_test), -- test directory
+						universal_string_type.to_string(name_test), -- sequence file
+						file_extension_sequence	-- sequence file extension
+						)
+					) then
 
-					-- launch compiler
-					Spawn 
-						(  
-						Program_Name           => to_string(directory_of_binary_files) & "/compseq",
-						Args                   => 	(
-													1=> new String'(to_string(data_base)),
-													2=> new String'(to_string(test_name)) -- pass test name to bsm
+					-- launch COMPILER
+						spawn 
+							(  
+							program_name           => compose ( to_string(directory_of_binary_files), name_module_compiler),
+							args                   => 	(
+														1=> new string'(universal_string_type.to_string(name_file_data_base)),
+														2=> new string'(universal_string_type.to_string(name_test))
 													),
-						Output_File_Descriptor => Standout,
-						Return_Code            => Result
+						output_file_descriptor => standout,
+						return_code            => result
 						);
-					-- evaluate result
-					if Result = 0 then advise_next_step_compile(to_string(test_name));
+
+					if result = 0 then 
+						advise_next_step_compile;
 					else
-						put("ERROR   while compiling test "& test_name &" ! Aborting ..."); new_line;
-						prog_position := "-----";		
-						raise Constraint_Error;
-						
-						--put("code : "); put(Result); new_line; Abort_Task (Current_Task); -- CS: not safe
+						put_line(message_error & "Compiling test failed" & exclamation & row_separator_0 & aborting);
+						raise constraint_error;	
 					end if;
 
 				else
-					prog_position := "CNE00"; 
+					put_line(message_error & "Test " & quote_single & universal_string_type.to_string(name_test) & quote_single &
+						" incomplete or does not exist !");
 					raise constraint_error;
 				end if;
 
@@ -1213,17 +1206,39 @@ begin
 		when load =>
 		-- TEST LOADING BEGIN
 			if is_project_directory then
-				prog_position := "LD100";			
-				if load_test 
+				prog_position := "LD100";
+				name_test := universal_string_type.to_bounded_string(m1.strip_trailing_forward_slash(argument(2)));
+
+				prog_position := "LD105";
+				-- check if test directory containing the compiled sequence file (vec) exists
+				if exists
 					(
-					test_name					=> m1.strip_trailing_forward_slash(Argument(2)),
-					interface_to_scan_master	=> universal_string_type.to_string(interface_to_scan_master),
-					directory_of_binary_files	=> to_string(directory_of_binary_files)
+					compose
+						(
+						universal_string_type.to_string(name_test), -- test directory
+						universal_string_type.to_string(name_test), -- sequence file
+						file_extension_vector	-- sequence file extension
+						)
 					) then
-					prog_position := "LD110";
+
+					if load_test 
+						(
+						test_name					=> universal_string_type.to_string(name_test),
+						interface_to_scan_master	=> universal_string_type.to_string(interface_to_scan_master),
+						directory_of_binary_files	=> to_string(directory_of_binary_files)
+						) then
+						advise_next_step_load;
+					else
+						prog_position := "LD120";
+						put_line(message_error & "Test upload to" & row_separator_0 & name_bsc &
+							row_separator_0 & "failed" & exclamation);
+						raise constraint_error;
+					end if;
+
 				else
-					prog_position := "LD120";
-					set_exit_status(failure);
+					put_line(message_error & "Test " & quote_single & universal_string_type.to_string(name_test) & quote_single &
+						" not compiled yet or does not exist !");
+					raise constraint_error;
 				end if;
 			else
 				write_error_no_project;
@@ -1236,19 +1251,20 @@ begin
 		-- RAM DUMP BEGIN
 			if is_project_directory then
 				prog_position := "DP100";			
-				ram_addr:= Argument(2); -- page address bits [23:8]
+				mem_address_page := string_to_natural(argument(2)); -- page address bits [23:8]
 
 				if dump_ram
 					(
 					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
 					directory_of_binary_files	=> to_string(directory_of_binary_files),
-					ram_addr					=> ram_addr -- page address bits [23:8]
+					mem_addr_page				=> mem_address_page
 					) then
-					prog_position := "DP110";
+					null;
 				else
-					prog_position := "DP120";
-					set_exit_status(failure);
+					put_line(message_error & "Test upload to" & row_separator_0 & name_bsc & row_separator_0 & "failed" & exclamation);
+					raise constraint_error;
 				end if;
+
 			else
 				write_error_no_project;
 			end if;
@@ -1265,11 +1281,10 @@ begin
 					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
 					directory_of_binary_files	=> to_string(directory_of_binary_files)
 					) then
-					prog_position := "CLR20";
-					put_line("Please upload compiled tests now.");
+					put_line(name_bsc & " memory cleared. Please upload compiled tests now.");
 				else
-					prog_position := "CLR30";
-					set_exit_status(failure);
+					put_line(message_error & "Clearing memory failed" & exclamation);
+					raise constraint_error;
 				end if;
 			else
 				write_error_no_project;
@@ -1282,54 +1297,56 @@ begin
 		-- TEST/STEP EXECUTION BEGIN
 			if is_project_directory then
 				prog_position := "RU100";
-				test_name:=to_unbounded_string(m1.strip_trailing_forward_slash(Argument(2)));
+				name_test := universal_string_type.to_bounded_string(m1.strip_trailing_forward_slash(argument(2)));
+
+				-- optionally the step mode is given:
 				if arg_ct = 3 then
 					prog_position := "RU400";
-					m1_internal.step_mode:= m1_internal.type_step_mode'value(Argument(3));
+					step_mode := type_step_mode'value(argument(3));
 				end if;
 				
 				-- check if test exists
-				if exists (compose (to_string(test_name),to_string(test_name), "vec")) then
-					put_line ("test name      : " & test_name);
-					put_line ("step mode      : " & type_step_mode'image(m1_internal.step_mode)); new_line;
+				prog_position := "RU110";
+				if exists
+					(
+					compose
+						(
+						universal_string_type.to_string(name_test), -- test directory
+						universal_string_type.to_string(name_test), -- sequence file
+						file_extension_vector	-- sequence file extension
+						)
+					) then
+-- 				put_line ("test name      : " & test_name);
+-- 				put_line ("step mode      : " & type_step_mode'image(m1_internal.step_mode)); new_line;
 
-					--bsm --run $run_mode $name  #launch single test/ISP
 					-- launch test
 					prog_position := "RU300";
 					case execute_test
 						(
-						test_name 					=> to_string(test_name),
+						test_name 					=> universal_string_type.to_string(name_test),
 						interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
 						directory_of_binary_files	=> to_string(directory_of_binary_files),
 						step_mode					=> step_mode
-						--execute_item				=> test
+
 						) is
 						-- CS: distinguish between executed step and test !
 						when pass =>
-							prog_position := "RU310";
-							new_line;
-							put_line("Test/Step '"& test_name &"' PASSED !");
+							put_line("Test/Step" & row_separator_0 & universal_string_type.to_string(name_test) & row_separator_0 & passed);
 						when fail =>
-							prog_position := "RU320";
-							new_line;
-							put_line("Test/Step '"& test_name &"' FAILED !");
+							put_line("Test/Step" & row_separator_0 & universal_string_type.to_string(name_test) & row_separator_0 & failed);
 							set_exit_status(failure);
 						when not_loaded =>
-							prog_position := "RU330";
-							new_line;
-							put_line("ERROR : Test data invalid or not loaded yet. Please upload test. Then try again.");
+							put_line(message_error & "Test data invalid or not uploaded yet. Please upload test.");
 							set_exit_status(failure);
 						when others =>
-							prog_position := "RU340";
-							new_line;
-							put_line("ERROR: Internal malfunction !");
-							put_line("Test/Step '"& test_name &"' FAILED !");
+							put_line(message_error & "Internal malfunction" & exclamation);
+							put_line("Test/Step" & row_separator_0 & universal_string_type.to_string(name_test) & row_separator_0 & failed);
 							set_exit_status(failure);
 					end case;
 
 				else 
-					prog_position := "RU200";
-					put_line("ERROR    : Test '"& test_name &"' does not exist !");
+					put_line(message_error & "Test" & row_separator_0 & quote_single & universal_string_type.to_string(name_test) & quote_single &
+						row_separator_0 & "does not exist" & exclamation);
 					raise constraint_error;
 				end if;
 			else
@@ -1881,50 +1898,59 @@ begin
 							);
 
 				elsif prog_position = "PJN00" then
-						new_line;									
-						put ("ERROR ! Project name not specified !"); new_line; 
-						put ("        Example: bsmcl create new_project_name"); new_line;
+						put_line(message_error & "Project name not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(create)) & row_separator_0 & "your_new_project"
+							);
 
 				elsif prog_position = "CMP00" then
-						new_line;									
-						put ("ERROR ! No database specified !"); new_line; 
-						put ("        Example: bsmcl compile MMU.udb"); new_line;
+						put_line(message_error & "No database specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(compile)) & row_separator_0 &
+							compose(name => "your_database", extension => file_extension_database));
 
-				elsif prog_position = "CTN00" then
-						new_line;									
-						put ("ERROR ! Test name not specified !"); new_line; 
-						put ("        Example: bsmcl compile MMU.udb my_test_name"); new_line;
-
-
-				elsif prog_position = "CNE00" then
-						new_line;									
-						put ("ERROR : Test '"& test_name &"' has not been generated yet !"); new_line;
-						put ("        Please generate test, then try again."); new_line;
+				elsif prog_position = "CMP20" then
+						put_line(message_error & "Test name not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(compile)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							"your_test");
 
 				elsif prog_position = "LD100" then
-						new_line;									
-						put ("ERROR : Test name not specified !"); new_line;
-						put ("        Example: bsmcl load my_test_name"); new_line;
+						put_line(message_error & "Test name not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(load)) & row_separator_0 &
+							"your_test");
 
-				elsif prog_position = "LD200" or prog_position = "RU2" then
-						new_line;									
-						put ("ERROR : Test '"& test_name &"' either does not exist or has not been compiled yet !"); new_line;
-						put ("        Please generate/compile test, then try again."); new_line;
+				elsif prog_position = "DP100" then
+						put_line(message_error & "Specified page address invalid or out of range" & exclamation & 
+							row_separator_0 & "(radix missing (d/h/b) ?)");
+
+						ada.text_io.put_line(message_error'last * row_separator_0 & "Range (dec):" & row_separator_0 &
+							trim(type_mem_address_page'image(type_mem_address_page'first),left) & ".." &
+							trim(type_mem_address_page'image(type_mem_address_page'last),left) & dot);
+
+						ada.text_io.put_line(message_error'last * row_separator_0 & "Range (hex):" & row_separator_0 &
+							natural_to_string(natural_in => type_mem_address_page'first, base => 16) & ".." &
+							natural_to_string(natural_in => type_mem_address_page'last, base => 16) & dot);
+
 
 				elsif prog_position = "RU100" then
-						new_line;									
-						put ("ERROR : Test name not specified !"); new_line;
-						put ("        Example: bsmcl run my_test_name"); new_line;
+						put_line(message_error & "Test name not specified" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(run)) & row_separator_0 &
+							"your_test");
 
 				elsif prog_position = "RU400" then
-						new_line;									
-						put ("ERROR : Step mode not supported or invalid !"); new_line;
-						put ("        Example: bsmcl run my_test_name [step_mode]"); new_line;
-						put ("        Supported step modes are: ");
-						for p in 0..m1_internal.step_mode_count
+						put_line(message_error & "Step mode not supported or invalid" & exclamation);
+						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(run)) & row_separator_0 &
+							universal_string_type.to_string(name_test) & row_separator_0 & "[step_mode]");
+						ada.text_io.put(message_error'last * row_separator_0 & "Supported step modes: ");
+						for p in 0..step_mode_count
 						loop
-							put(m1_internal.type_step_mode'image(m1_internal.type_step_mode'val(p)));
-							if p < m1_internal.step_mode_count then put(" , "); end if;
+							put(type_step_mode'image(type_step_mode'val(p)));
+							if p < step_mode_count then put(" , "); end if;
 						end loop;
 						new_line;
 
