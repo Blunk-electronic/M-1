@@ -54,91 +54,32 @@ with m1_firmware;				use m1_firmware;
 
 procedure bsmcl is
 	version			: constant string (1..3) := "024";
-
---	uut_dir			: Unbounded_String;
-	action			: type_action;
---	batch_file 		: Unbounded_string;
-	test_profile 	: type_test_profile;
---	test_name  		: Unbounded_string;
---	sequence_name 	: Unbounded_string;
---	ram_addr   		: string (1..4) := "0000"; -- page address bits [23:8]
---	data_base  		: Unbounded_string;
+	prog_position	: string (1..5) := "-----";
 
 	item_udb_class	: type_item_udbinfo;
 	item_udb_name	: universal_string_type.bounded_string;
 
---	target_device	: unbounded_string;
---	device_package	: unbounded_string;
---	device_model	: unbounded_string;
-
---	algorithm		: unbounded_string;
---	target_pin		: unbounded_string;	
---	target_net		: unbounded_string;
 	retry_count		: type_sxr_retries;
 	retry_delay		: type_delay_value;
 
 	cycle_count		: positive; -- CS: use type_cycle_count as specified in mktoggle.adb
 	low_time		: type_delay_value;
 	high_time		: type_delay_value;
-   
---	opt_file		: unbounded_string;
---	cad_format		: unbounded_string;
-	format_cad		: type_format_cad;
---	net_list		: unbounded_string;
---	part_list		: unbounded_string;
 
---	v_model			: unbounded_string;
---	project_name	: unbounded_string;
-
-	line			: unbounded_string;
-
-	--skeleton_sub 	: unbounded_string;
-	name_file_skeleton_submodule	: universal_string_type.bounded_string;
-
-	key				: String (1..1) := "n";
-	Result   		: Integer;
-	prog_position	: String (1..5) := "-----";
+	result   		: integer; -- the return code of external programs
 
 	arg_ct			: natural;
-	arg_pt			: natural := 1;
-
-	conf_file				: Ada.Text_IO.File_Type;
-	help_file				: Ada.Text_IO.File_Type;
-	home_directory			: universal_string_type.bounded_string;
-	conf_directory			: constant string (1..5) := ".M-1/";
-	conf_file_name			: constant string (1..8) := "M-1.conf";
-	help_file_name_german	: constant string (1..15) := "help_german.txt";
-	help_file_name_english	: constant string (1..16) := "help_english.txt";
-	directory_of_backup		: unbounded_string;
-	directory_of_log		: unbounded_string;
-	directory_of_binary_files	: unbounded_string;
-	directory_of_enscript		: unbounded_string;
-	interface_to_scan_master	: universal_string_type.bounded_string;
+	arg_pt			: positive := 1;
 
 	vector_id_breakpoint	: type_vector_id_breakpoint;
 	bit_position			: type_sxr_break_position := 0; -- in case bit_position to break at is not provided, default used
 
-	type language_type is (german, english); -- move to m1_internal ?
-	language 	: language_type := english;
-
 	debug_mode			: natural := 0; -- default is no debug mode
 
-	function is_project_directory return boolean is
-	-- Checks if working directory is a project.
-		is_project : boolean;
-	begin
-		if exists(name_file_project_description) then
-			--put ("project        : ");  put(Containing_Directory("proj_desc.txt")); new_line;
-			is_project := true;
-		else
-			is_project := false;
-		end if; 
-		return is_project;
-	end is_project_directory;
 
 	procedure check_environment is
 		previous_input	: Ada.Text_IO.File_Type renames current_input;
-		line			: unbounded_string;
+		line			: extended_string.bounded_string;
 	begin
 		-- get home variable
 		prog_position := "ENV00";
@@ -146,94 +87,93 @@ procedure bsmcl is
 			raise constraint_error;
 		else
 			-- compose home directory name
-			home_directory := universal_string_type.to_bounded_string(ada.environment_variables.value("HOME")); -- this is the absolute path of the home directory
-			--put_line(to_string(home_directory));
+			set_home_directory;
+			--put_line(to_string(name_home_directory));
 		end if;
 
 		-- check if conf file exists	
 		prog_position := "ENV10";
-		if not exists ( universal_string_type.to_string(home_directory) & '/' & conf_directory & '/' & conf_file_name ) then 
+		if not exists
+				(
+				compose
+					(
+					containing_directory( universal_string_type.to_string(name_directory_home) & name_directory_separator & name_directory_configuration),
+					name_file_configuration 
+					)
+				) then 
 			raise constraint_error;
 		else
 			-- read configuration file
-			Open(
-				file => conf_file,
-				Mode => in_file,
-				Name => ( universal_string_type.to_string(home_directory) & '/' & conf_directory & '/' & conf_file_name )
+			open(
+				file => file_system_configuraion,
+				mode => in_file,
+				name => compose
+							(
+							containing_directory( universal_string_type.to_string(name_directory_home) & name_directory_separator & name_directory_configuration),
+							name_file_configuration 
+							)
 				);
-			set_input(conf_file);
+			set_input(file_system_configuraion);
+
 			while not end_of_file
 			loop
-				line := m1.remove_comment_from_line(get_line,"#");
-				--put_line(line);
+				line := remove_comment_from_line(extended_string.to_bounded_string(get_line));
+				if get_field_count(extended_string.to_string(line)) /= 0 then -- if line contains anything
+					--put_line(extended_string.to_string(line));
 
-				-- get language
-				if m1.get_field(line,1,' ') = "language" then 
-					prog_position := "ENV20";
-					language := language_type'value(m1.get_field(line,2,' '));
---					if debug_mode = 1 then 
---						put_line("language        : " & language_type'image(language));
---					end if;
-				end if;
-
-				-- get bin directory
-				if m1.get_field(line,1,' ') = "directory_of_binary_files" then 
-					prog_position := "ENV30";
-					if m1.get_field(line,2,' ')(1) /= '/' then -- if no heading /, take this as relative to home directory
-						directory_of_binary_files := to_unbounded_string(universal_string_type.to_string(home_directory)) & '/' &
-							to_unbounded_string(m1.get_field(line,2,' '));
-					else -- otherwise take this as an absolute path
-						directory_of_binary_files := to_unbounded_string(m1.get_field(line,2,' '));
+					-- get language
+					if get_field_from_line(line,1) = text_language then 
+						prog_position := "ENV20";
+						language := language_type'value(get_field_from_line(line,2));
 					end if;
 
---					if debug_mode = 1 then 
---						put_line("directory_of_binary_files : " & to_string(directory_of_binary_files));
---					end if;
-				end if;
-
-				-- get enscript directory
-				if m1.get_field(line,1,' ') = "directory_of_enscript" then 
-					prog_position := "ENV40";
-					if m1.get_field(line,2,' ')(1) /= '/' then -- if no heading /, take this as relative to home directory
-						directory_of_enscript := to_unbounded_string(universal_string_type.to_string(home_directory)) & '/' &
-							to_unbounded_string(m1.get_field(line,2,' '));
-					else -- otherwise take this as an absolute path
-						directory_of_enscript := to_unbounded_string(m1.get_field(line,2,' '));
+					-- get bin directory
+					if get_field_from_line(line,1) = text_directory_bin then 
+						prog_position := "ENV30";
+						if get_field_from_line(line,2)(1) /= '/' then -- if no heading /, take this as relative to home directory
+							name_directory_bin := universal_string_type.to_bounded_string
+								(
+								compose
+									(
+									universal_string_type.to_string(name_directory_home),
+									get_field_from_line(line,3)
+									)
+								);
+						else -- otherwise take this as an absolute path
+							name_directory_bin := universal_string_type.to_bounded_string(get_field_from_line(line,2));
+						end if;
 					end if;
 
---					if debug_mode = 1 then 
---						put_line("directory_of_enscript : " & to_string(directory_of_enscript));
---					end if;
-				end if;
+					-- get enscript directory
+					if get_field_from_line(line,1) = text_directory_enscript then 
+						prog_position := "ENV40";
+						if get_field_from_line(line,2)(1) /= '/' then -- if no heading /, take this as relative to home directory
+							name_directory_enscript := universal_string_type.to_bounded_string
+								(
+								compose
+									(
+									universal_string_type.to_string(name_directory_home),
+									get_field_from_line(line,2)
+									)	
+								);
+						else -- otherwise take this as an absolute path
+							name_directory_enscript := universal_string_type.to_bounded_string(get_field_from_line(line,2));
+						end if;
+	
+					end if;
 
-				-- get interface_to_scan_master
-				if m1.get_field(line,1,' ') = "interface_to_scan_master" then 
-					prog_position := "ENV50";
-					interface_to_scan_master := universal_string_type.to_bounded_string(m1.get_field(line,2,' ')); -- this must be an absolute path
---					if debug_mode = 1 then 
---						put_line("interface_to_scan_master : " & to_string(interface_to_scan_master));
---					end if;
-				end if;
+					-- get interface_to_scan_master
+					if get_field_from_line(line,1) = text_interface_bsc then 
+						prog_position := "ENV50";
+						interface_to_bsc := universal_string_type.to_bounded_string(get_field_from_line(line,2));
+					end if;
 
+				end if; -- if line contains anything useful
 
 			end loop;
-			close(conf_file);
+			close(file_system_configuraion);
 		end if;
 
-		-- check if help file exists	
-		prog_position := "ENV90";
-		case language is
-			when german => 
-				if not exists ( universal_string_type.to_string(home_directory) & "/" & conf_directory & help_file_name_german ) then 
-					put_line("ERROR : German help file missing !");
-				end if;
-			when english =>
-				if not exists ( universal_string_type.to_string(home_directory) & "/" & conf_directory & help_file_name_english ) then 
-					put_line("ERROR : English help file missing !");
-				end if;
-			when others =>
-				put_line("ERROR : Help file missing !");
-		end case;
 
 		if debug_mode = 1 then
 			put_line(column_separator_0);
@@ -364,7 +304,7 @@ procedure bsmcl is
 	begin
 		spawn 
 			(  
-			program_name           => compose ( to_string(directory_of_binary_files), name_module_mknets),
+			program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mknets),
 			args                   => 	(
 										1=> new string'(universal_string_type.to_string(name_file_data_base))
 										),
@@ -373,6 +313,13 @@ procedure bsmcl is
 			);
 		return result;
 	end launch_mknets;
+
+	procedure advise_on_bsc_error is
+	begin
+		put_line("Measures : - Check cable connection between PC and" & row_separator_0 & name_bsc & exclamation);
+		put_line("           - Make sure" & row_separator_0 & name_bsc & row_separator_0 & "is powered on" & dot);
+		put_line("           - Push YELLOW reset button on front panel of" & row_separator_0 & name_bsc & row_separator_0 & "then try again !");
+	end advise_on_bsc_error;
 
 begin
 
@@ -405,7 +352,7 @@ begin
 				-- launch project maker
 				spawn 
 					(  
-					program_name           => compose( to_string(directory_of_binary_files), name_module_mkproject),
+					program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_mkproject),
 					args                   => 	(
 												1=> new string'(universal_string_type.to_string(name_project))
 												),
@@ -436,32 +383,6 @@ begin
 			end if;
 			-- MAKE PROJECT END
 
-		when help => -- CS: rework help files
-			-- HELP BEGIN
-			case language is
-				when german => 
-					open(
-						file => help_file,
-						mode => in_file,
-						name => universal_string_type.to_string(home_directory) & "/" & conf_directory & help_file_name_german
-						);
-				when others =>
-					open(
-						file => help_file,
-						mode => in_file,
-						name => universal_string_type.to_string(home_directory) & "/" & conf_directory & help_file_name_english
-						);
-			end case;
-			set_input(help_file);
-
-			while not end_of_file
-			loop
-				line := get_line;
-				put_line(line);
-			end loop;
-			close(help_file);
-			-- HELP END
-
 
 		when import_cad =>
 			-- CAD IMPORT BEGIN
@@ -482,7 +403,7 @@ begin
 							new_line;
 							spawn 
 								(  
-								program_name           => compose( to_string(directory_of_binary_files), name_module_cad_importer_orcad),
+								program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_cad_importer_orcad),
 								args                   => 	(
 															1=> new string'(universal_string_type.to_string(name_file_cad_net_list))
 															),
@@ -504,7 +425,7 @@ begin
 							new_line;
 							spawn 
 								(  
-								program_name           => compose( to_string(directory_of_binary_files), name_module_cad_importer_altium),
+								program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_cad_importer_altium),
 								args                   => 	(
 															1=> new string'(universal_string_type.to_string(name_file_cad_net_list))
 															),
@@ -526,7 +447,7 @@ begin
 							new_line;
 							Spawn 
 								(  
-								program_name           => compose( to_string(directory_of_binary_files), name_module_cad_importer_zuken),
+								program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_cad_importer_zuken),
 								Args                   => 	(
 															1=> new String'(universal_string_type.to_string(name_file_cad_net_list))
 															),
@@ -552,7 +473,7 @@ begin
 								new_line;
 								spawn 
 									(  
-									program_name           => compose( to_string(directory_of_binary_files), name_module_cad_importer_eagle),
+									program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_cad_importer_eagle),
 									args                   => 	(
 																1=> new string'(universal_string_type.to_string(name_file_cad_net_list)),
 																2=> new string'(universal_string_type.to_string(name_file_cad_part_list))
@@ -577,7 +498,6 @@ begin
 			-- CAD IMPORT END
 
 
-
 		when mkvmod =>
 			-- MAKE VERILOG MODEL BEGIN
 			if is_project_directory then
@@ -589,7 +509,7 @@ begin
 				-- LAUNCH VERILOG MODEL MAKER
 				spawn 
 					(  
-					program_name           => compose( to_string(directory_of_binary_files), name_module_mkvmod),
+					program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_mkvmod),
 					args                   => 	(
 												1=> new string'(universal_string_type.to_string(name_file_skeleton)),
 												2=> new string'(universal_string_type.to_string(name_file_model_verilog))
@@ -641,7 +561,7 @@ begin
 				-- launch netlist joiner
 				spawn 
 					(  
-					program_name           => compose ( to_string(directory_of_binary_files), name_module_join_netlist),
+					program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_join_netlist),
 					args                   => 	(
 												1=> new string'(universal_string_type.to_string(name_file_skeleton_submodule))
 												),
@@ -681,7 +601,7 @@ begin
 				-- launch BSDL importer
 				spawn 
 					(  
-					program_name           => compose ( to_string(directory_of_binary_files), name_module_importer_bsdl),
+					program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_importer_bsdl),
 					args                   => 	(
 												1=> new string'(universal_string_type.to_string(name_file_data_base))
 												),
@@ -703,7 +623,6 @@ begin
 				write_error_no_project;
 			end if;
 		-- BSDL IMPORT END
-
 
 
 		when mknets =>
@@ -738,8 +657,6 @@ begin
 				write_error_no_project;
 			end if;
 		-- MKNETS END
-
-
 
 
 		when mkoptions =>
@@ -780,7 +697,7 @@ begin
 				-- launch MKOPTIONS
 				spawn 
 					(  
-					program_name           => compose ( to_string(directory_of_binary_files), name_module_mkoptions),
+					program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mkoptions),
 					args                   => 	(
 												1=> new string'(universal_string_type.to_string(name_file_data_base)),
 												2=> new String'(universal_string_type.to_string(name_file_options))
@@ -806,7 +723,6 @@ begin
 				write_error_no_project;
 			end if;
 		-- MKOPTIONS END
-
 
 
 		when chkpsn =>
@@ -852,7 +768,7 @@ begin
 				-- launch CHKPSN
 				spawn 
 					(  
-					program_name           => compose ( to_string(directory_of_binary_files), name_module_chkpsn),
+					program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_chkpsn),
 					args                   => 	(
 												1=> new string'(universal_string_type.to_string(name_file_data_base)),
 												2=> new String'(universal_string_type.to_string(name_file_options))
@@ -898,7 +814,7 @@ begin
 
 				spawn 
 					(  
-					program_name           => compose ( to_string(directory_of_binary_files), name_module_data_base_query),
+					program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_data_base_query),
 					args                   => 	(
 												1=> new string'(universal_string_type.to_string(name_file_data_base)),
 												2=> new string'(type_item_udbinfo'image(item_udb_class)),
@@ -945,7 +861,7 @@ begin
 						-- launch INFRASTRUCTURE TEST GENERATOR
 						spawn 
 							(  
-							program_name           => compose ( to_string(directory_of_binary_files), name_module_mkinfra),
+							program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mkinfra),
 							args                   => 	(
 														1=> new string'(universal_string_type.to_string(name_file_data_base)),
 														2=> new String'(universal_string_type.to_string(name_test))
@@ -965,7 +881,7 @@ begin
 						-- launch INTERCONNECT TEST GENERATOR
 						spawn 
 							(  
-							program_name           => compose ( to_string(directory_of_binary_files), name_module_mkintercon),
+							program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mkintercon),
 							args                   => 	(
 														1=> new string'(universal_string_type.to_string(name_file_data_base)),
 														2=> new String'(universal_string_type.to_string(name_test))
@@ -1005,7 +921,7 @@ begin
 						-- launch MEMCONNECT TEST GENERATOR
 						spawn 
 							(  
-							program_name           => compose ( to_string(directory_of_binary_files), name_module_mkmemcon),
+							program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mkmemcon),
 							args                   => 	(
 														1=> new string'(universal_string_type.to_string(name_file_data_base)),
 														2=> new string'(universal_string_type.to_string(name_test)),
@@ -1041,7 +957,7 @@ begin
 						-- launch CLOCK SAMPLING GENERATOR
 						spawn 
 							(  
-							program_name           => compose ( to_string(directory_of_binary_files), name_module_mkclock),
+							program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mkclock),
 							args                   => 	(
 														1=> new string'(universal_string_type.to_string(name_file_data_base)),
 														2=> new string'(universal_string_type.to_string(name_test)),
@@ -1079,7 +995,7 @@ begin
 						-- launch PIN TOGGLE GENERATOR
 						spawn 
 							(  
-							program_name           => compose ( to_string(directory_of_binary_files), name_module_mktoggle),
+							program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mktoggle),
 							args                   => 	(
 														1=> new string'(universal_string_type.to_string(name_file_data_base)),
 														2=> new string'(universal_string_type.to_string(name_test)),
@@ -1105,8 +1021,6 @@ begin
 				write_error_no_project;
 			end if;
 		-- TEST GENERATION END
-
-
 
 
 		when compile =>
@@ -1141,7 +1055,7 @@ begin
 					-- launch COMPILER
 						spawn 
 							(  
-							program_name           => compose ( to_string(directory_of_binary_files), name_module_compiler),
+							program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_compiler),
 							args                   => 	(
 														1=> new string'(universal_string_type.to_string(name_file_data_base)),
 														2=> new string'(universal_string_type.to_string(name_test))
@@ -1169,9 +1083,6 @@ begin
 		-- TEST COMPILATION END
 
 
-
-
-
 		when load =>
 		-- TEST LOADING BEGIN
 			if is_project_directory then
@@ -1193,14 +1104,15 @@ begin
 					if load_test 
 						(
 						test_name					=> universal_string_type.to_string(name_test),
-						interface_to_scan_master	=> universal_string_type.to_string(interface_to_scan_master),
-						directory_of_binary_files	=> to_string(directory_of_binary_files)
+						interface_to_scan_master	=> universal_string_type.to_string(interface_to_bsc),
+						directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
 						) then
 						advise_next_step_load;
 					else
 						prog_position := "LD120";
 						put_line(message_error & "Test upload to" & row_separator_0 & name_bsc &
 							row_separator_0 & "failed" & exclamation);
+						advise_on_bsc_error;
 						raise constraint_error;
 					end if;
 
@@ -1215,7 +1127,6 @@ begin
 		-- TEST LOADING END
 
 
-
 		when dump =>
 		-- RAM DUMP BEGIN
 			if is_project_directory then
@@ -1224,13 +1135,14 @@ begin
 
 				if dump_ram
 					(
-					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
-					directory_of_binary_files	=> to_string(directory_of_binary_files),
+					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
+					directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin),
 					mem_addr_page				=> mem_address_page
 					) then
 					null;
 				else
 					put_line(message_error & "Test upload to" & row_separator_0 & name_bsc & row_separator_0 & "failed" & exclamation);
+					advise_on_bsc_error;
 					raise constraint_error;
 				end if;
 
@@ -1247,19 +1159,19 @@ begin
 				
 				if clear_ram
 					(
-					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
-					directory_of_binary_files	=> to_string(directory_of_binary_files)
+					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
+					directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
 					) then
 					put_line(name_bsc & " memory cleared. Please upload compiled tests now.");
 				else
 					put_line(message_error & "Clearing memory failed" & exclamation);
+					advise_on_bsc_error;
 					raise constraint_error;
 				end if;
 			else
 				write_error_no_project;
 			end if;
 		-- RAM CLEAR END
-
 
 
 		when run =>
@@ -1293,8 +1205,8 @@ begin
 					case execute_test
 						(
 						test_name 					=> universal_string_type.to_string(name_test),
-						interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
-						directory_of_binary_files	=> to_string(directory_of_binary_files),
+						interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
+						directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin),
 						step_mode					=> step_mode
 
 						) is
@@ -1312,6 +1224,7 @@ begin
 						when others =>
 							put_line(message_error & "Internal malfunction" & exclamation);
 							put_line("Test/Step" & row_separator_0 & universal_string_type.to_string(name_test) & row_separator_0 & failed);
+							advise_on_bsc_error;
 							set_exit_status(failure);
 					end case;
 
@@ -1343,8 +1256,8 @@ begin
 				prog_position := "BP300";
 				case set_breakpoint
 					(
-					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
-					directory_of_binary_files	=> to_string(directory_of_binary_files),
+					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
+					directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin),
 					vector_id_breakpoint		=> vector_id_breakpoint,
 					bit_position				=> bit_position
 					) is
@@ -1362,6 +1275,7 @@ begin
 
 					when others =>
 						put_line(message_error & "Setting breakpoint failed" & exclamation);
+						advise_on_bsc_error;
 						raise constraint_error;
 				end case;
 			else
@@ -1382,11 +1296,12 @@ begin
 
 			case query_status
 				(
-				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
-				directory_of_binary_files	=> to_string(directory_of_binary_files)
+				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
+				directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
 				) is
 				when false => 
 					put_line(message_error & name_bsc & " status query failed" & exclamation);
+					advise_on_bsc_error;
 					raise constraint_error;
 				when others => null;
 			end case;
@@ -1397,11 +1312,12 @@ begin
 			prog_position := "FW000";
 			case show_firmware
 				(
-				interface_to_scan_master	=> universal_string_type.to_string(interface_to_scan_master),
-				directory_of_binary_files	=> to_string(directory_of_binary_files)
+				interface_to_scan_master	=> universal_string_type.to_string(interface_to_bsc),
+				directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
 				) is
 				when false => 
 					put_line(message_error & name_bsc & " firmware query failed" & exclamation);
+					advise_on_bsc_error;
 					raise constraint_error;
 				when others => null;
 			end case;
@@ -1412,13 +1328,14 @@ begin
 			prog_position := "SDN01";
 			case shutdown
 				(
-				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_scan_master),
-				directory_of_binary_files	=> to_string(directory_of_binary_files)
+				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
+				directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
 				) is
 				when false =>
 					new_line;
 					put_line(message_error & "   UUT SHUTDOWN FAILED" & exclamation);
 					put_line(message_warning & " UUT NOT POWERED OFF" & exclamation);
+					advise_on_bsc_error;
 					raise constraint_error;
 				when true =>
 					new_line;
@@ -1509,38 +1426,39 @@ begin
 				set_output(standard_output);
 
 				if prog_position = "ENV10" then
-					put_line("ERROR ! No configuration file '" & conf_directory & conf_file_name & "' found in home directory.");
+					put_line(message_error & "No configuration file " & quote_single & name_file_configuration & quote_single &
+					" found" & exclamation);
 
 				elsif prog_position = "CRT00" then
-										--new_line; -- CS: loop through type_action
-										put ("ERROR ! No action specified ! What do you want to do ?"); new_line; 
-										put ("        Actions available are :");new_line;
-										put ("        - create       (set up a new project)"); new_line;
-										put ("        - import_cad   (import net and part lists from CAD system)"); new_line;
-										put ("        - join_netlist (merge submodule with mainmodule after CAD import)"); new_line;									
-										put ("        - import_bsdl  (import BSDL models)"); new_line;
-										put ("        - mknets       (make boundary scan nets)"); new_line;
-										put ("        - mkoptions    (generate options file template)"); new_line;									
-										put ("        - chkpsn       (check entries made by operator in options file)"); new_line;
-										put ("        - generate     (generate a test with a certain profile)"); new_line;
-										put ("        - compile      (compile a test)"); new_line;
-										put ("        - load         (load a compiled test into the Boundary Scan Controller)"); new_line;
-										put ("        - clear        (clear entire RAM of the Boundary Scan Controller)"); new_line;
-										put ("        - dump         (view a RAM section of the Boundary Scan Controller (use for debugging only !))"); new_line;
-										put ("        - run          (run a test/step on your UUT/target and WAIT until test done)"); new_line;
-										put ("        - break        (set break point at step ID and bit position)"); new_line;
-										put ("        - off          (immediately stop a running test, shut down UUT power and disconnect TAP signals)"); new_line;
-										put ("        - status       (query Boundary Scan Controller status)"); new_line;
-										--put ("        - report       (view the latest sequence execution results)"); new_line;	
-										put ("        - mkvmod       (create verilog model port list from main module skeleton.txt)"); new_line;
-										put ("        - help         (get examples and assistance)"); new_line;
-										put ("        - udbinfo      (get firmware versions)"); new_line;
-										--put ("        Example: bsmcl" & action_set_breakpoint); new_line;
+					put_line(message_error & "Action missing or invalid" & exclamation & row_separator_0 & "What do you want to do ? Actions available:");
+					for a in 0..type_action'pos(type_action'last) loop
+						put(to_lower(type_action'image(type_action'val(a))));
+						-- CS: add line break after 5 items
+						if a < type_action'pos(type_action'last) then put(" , "); end if;
+					end loop;
+-- 
+-- 										put ("        - create       (set up a new project)"); new_line;
+-- 										put ("        - import_cad   (import net and part lists from CAD system)"); new_line;
+-- 										put ("        - join_netlist (merge submodule with mainmodule after CAD import)"); new_line;									
+-- 										put ("        - import_bsdl  (import BSDL models)"); new_line;
+-- 										put ("        - mknets       (make boundary scan nets)"); new_line;
+-- 										put ("        - mkoptions    (generate options file template)"); new_line;									
+-- 										put ("        - chkpsn       (check entries made by operator in options file)"); new_line;
+-- 										put ("        - generate     (generate a test with a certain profile)"); new_line;
+-- 										put ("        - compile      (compile a test)"); new_line;
+-- 										put ("        - load         (load a compiled test into the Boundary Scan Controller)"); new_line;
+-- 										put ("        - clear        (clear entire RAM of the Boundary Scan Controller)"); new_line;
+-- 										put ("        - dump         (view a RAM section of the Boundary Scan Controller (use for debugging only !))"); new_line;
+-- 										put ("        - run          (run a test/step on your UUT/target and WAIT until test done)"); new_line;
+-- 										put ("        - break        (set break point at step ID and bit position)"); new_line;
+-- 										put ("        - off          (immediately stop a running test, shut down UUT power and disconnect TAP signals)"); new_line;
+-- 										put ("        - status       (query Boundary Scan Controller status)"); new_line;
+-- 										--put ("        - report       (view the latest sequence execution results)"); new_line;	
+-- 										put ("        - mkvmod       (create verilog model port list from main module skeleton.txt)"); new_line;
+-- 										put ("        - help         (get examples and assistance)"); new_line;
+-- 										put ("        - udbinfo      (get firmware versions)"); new_line;
+-- 										--put ("        Example: bsmcl" & action_set_breakpoint); new_line;
 									
-				elsif prog_position = "PDS00" then
-						put ("ERROR : No project data found in current working directory !"); new_line;
-						put ("        A project directory must contain at least a file named 'proj_desc.txt' !"); new_line;	
-
 				elsif prog_position = "UDQ00" then
 						put_line(message_error & "No database specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
@@ -1611,93 +1529,55 @@ begin
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
 							compose(name => "your_database", extension => file_extension_database));
-	
-				elsif prog_position = "OP100" then
-						new_line;									
-						put ("ERROR ! No options file specified !"); new_line; 
-						put ("        Example: bsmcl chkpsn MMU.udb options_file.opt"); new_line;
-	
--- 				elsif prog_position = "OP200" then
--- 						new_line;									
--- 						put ("ERROR ! No options file specified !"); new_line; 
--- 						put ("        Example: bsmcl mkoptions MMU.udb options_file.opt"); new_line;
-	
-				elsif prog_position = "OPE00" then
-						new_line;									
-						put ("        Make sure path and options file name are correct !"); new_line; 
-						put ("        Example: bsmcl chkpsn MMU.udb options_file.opt"); new_line;
 					
-				elsif prog_position = "DBE00" then
-						new_line;
-						put ("        Make sure path and database file name are correct !"); new_line; 
-	
 				elsif prog_position = "ICD00" then
 						new_line;									
-						put_line(message_error & "CAD format not specified or not supported !"); 
-						put ("        Formats available are :"); new_line; -- CS: use a loop with type_format_cad
-						--put ("        - eagle4"); new_line; 
-						put ("        - altium"); new_line;
-						put ("        - eagle6"); new_line;									
-						put ("        - orcad"); new_line;
-						put ("        - zuken"); new_line;
-						put ("        Example: bsmcl impcad eagle5"); new_line;
-	
-				elsif prog_position = "NCF00" then
-						new_line;									
-						put ("ERROR ! Unsupported CAD format specified !"); new_line; 
-						put ("        Formats available are :"); new_line;
-						--put ("        - eagle4"); new_line; 
-						put ("        - altium"); new_line;
-						put ("        - eagle6"); new_line;									
-						put ("        - orcad"); new_line;
-						put ("        - zuken"); new_line;
-						put ("        Example: bsmcl impcad eagle5"); new_line;
+						put_line(message_error & "CAD format not supported or missing" & exclamation & row_separator_0 & "Supported formats are :");
+						for f in 0..type_format_cad'pos(type_format_cad'last) loop
+							put(to_lower(type_format_cad'image(type_format_cad'val(f))));
+							-- CS: add line break after 5 items
+							if f < type_format_cad'pos(type_format_cad'last) then put(" , "); end if;
+						end loop;	
 	
 				elsif prog_position = "INE00" then
 						put_line(message_error & text_name_cad_net_list & " not specified " & exclamation);
 						ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli &
 							row_separator_0 & to_lower(type_action'image(import_cad)) & row_separator_0 & 
 							to_lower(type_format_cad'image(format_cad)) & row_separator_0 &
-							name_directory_cad & "/board.net");
---						ada.text_io.put_line(message_warning'length * row_separator_0 &
-
--- 				elsif prog_position = "NLE00" then
--- 						new_line;									
--- 						--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
--- 						put ("        Example: bsmcl impcad format cad/board.net"); new_line;
-
--- 				elsif prog_position = "PLE00" then
--- 						new_line;									
--- 						put ("        Make sure path and partlist file name are correct !"); new_line; 
--- 						--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
--- 						put ("        Example: bsmcl impcad format cad/board.net cad/board.part"); new_line;
+							compose(containing_directory => name_directory_cad, name => "board", extension => "net"));
 
 				elsif prog_position = "IPA00" then
 						put_line(message_error & text_name_cad_part_list & " not specified " & exclamation);
 						ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli &
 							row_separator_0 & to_lower(type_action'image(import_cad)) & row_separator_0 & 
 							to_lower(type_format_cad'image(format_cad)) & row_separator_0 &
-							name_directory_cad & "/board.net" & row_separator_0 & name_directory_cad & "/board.net");
+							compose(
+								containing_directory => containing_directory(universal_string_type.to_string(name_file_cad_net_list)),
+								--containing_directory => name_directory_cad,
+								name => base_name(universal_string_type.to_string(name_file_cad_net_list)),
+								extension => extension(universal_string_type.to_string(name_file_cad_net_list))
+								) &
+							row_separator_0 & -- we assume the partlist lives in the same directory as the netlist:
+							compose(
+								containing_directory => containing_directory(universal_string_type.to_string(name_file_cad_net_list)),
+								name => "board", extension => "part"
+								)
+							);
 
-				elsif prog_position = "OAT00" then
-						new_line;									
-						put ("CANCELLED by operator !"); new_line;
-						--put ("        Formats available are : eagle4, eagle5, Conti_1"); new_line;
-						--put ("        Example: bsmcl impcad eagle5 cad/board.net cad/board.part"); new_line;
-
-				elsif prog_position = "GEN20" then --or if prog_position = "TPN" then
-						new_line(2);									
-						--if prog_position "TPR" then put ("ERROR ! Test profile not specified !"); new_line; 
-						--else put("ERROR : Specified test profile not supported !"); 
-						-- CS: use loop with type_test_profile
-						put("ERROR : Test profile either not specified or not supported !"); new_line;
-						put ("        Profiles available are : "); new_line;
-						put ("        - infrastructure"); new_line;
-						put ("        - interconnect"); new_line;									
-						put ("        - memconnect"); new_line;									
-						put ("        - clock"); new_line;
-						put ("        - toggle"); new_line;									
-						put ("        Example: bsmcl generate MMU.udb infrastructure"); new_line;
+				elsif prog_position = "GEN20" then
+						new_line;
+						put_line(message_error & "Test profile not supported or missing" & exclamation & row_separator_0 & "Supported profiles are :");
+						for p in 0..type_test_profile'pos(type_test_profile'last) loop
+							put(to_lower(type_test_profile'image(type_test_profile'val(p))));
+							-- CS: add line break after 5 items
+							if p < type_test_profile'pos(type_test_profile'last) then put(" , "); end if;
+						end loop;
+						new_line(2);
+						put_line(message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(generate)) & row_separator_0 &
+							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_lower(type_test_profile'image(infrastructure))
+							);
 	
 				elsif prog_position = "GEN30" then
 						put_line(message_error & "Name of test not specified" & exclamation);
@@ -1862,13 +1742,6 @@ begin
 							if p < step_mode_count then put(" , "); end if;
 						end loop;
 						new_line;
-
-
-				elsif prog_position = "LD300" or prog_position = "RU3" or prog_position = "BP320" then
-						new_line;									
-						put("Measures : - Check cable connection between PC and BSC !"); new_line;
-						put("           - Make sure BSC is powered on (RED 'FAIL' LED flashes) !"); new_line;					
-						put("           - Push YELLOW reset button on BSC, then try again !"); new_line;															
 
 				elsif prog_position = "ACV00" then
 						new_line;
