@@ -1,9 +1,0 @@
- SubSection chain 1
- 	
-	
-
-	IC2 pq208 models/xc3s400_pq208.bsd option remove_pin_prefix p
-        IC1 vo20 models/xcf04s_vo20.bsd
-
-	
- EndSubSection
