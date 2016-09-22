@@ -123,7 +123,7 @@ procedure bsmcl is
 					-- get language
 					if get_field_from_line(line,1) = text_language then 
 						prog_position := "ENV20";
-						language := language_type'value(get_field_from_line(line,2));
+						language := type_language'value(get_field_from_line(line,2));
 					end if;
 
 					-- get bin directory
@@ -235,15 +235,18 @@ procedure bsmcl is
 	end exists_database;
 
 
+	-- ADVISE MESSAGES BEGIN
 
-
-	procedure advise_next_step_cad_import is -- CS: rework
+	procedure advise_next_step_cad_import is
 		begin
-			put("... done"); new_line (2);
-			put("Recommended next steps :"); new_line (2);
-			put("  1. Read header of file 'skeleton.txt' for warnings and import notes using a text editor."); new_line;
-			put("     If you have imported CAD data of a submodule, please also look into file 'skeleton_your_submodule.txt'."); new_line;				
-			put("  2. Create boundary scan nets using command: 'bsmcl mknets'"); new_line;
+		put_line(done);
+		put_line("Recommended next steps:");
+		put_line("  1. Read header of file" & row_separator_0 & quote_single & name_file_skeleton_default & quote_single & row_separator_0 &
+			"for warnings and notes with a text editor.");
+		put_line("     If you have imported CAD data of a submodule, please also look into file" & row_separator_0 &
+			quote_single & "skeleton_your_submodule." & file_extension_text & quote_single & dot);
+		put_line("  2. Create boundary scan nets with command:" & row_separator_0 & quote_single & name_module_cli & row_separator_0 &
+			name_module_mknets & quote_single);
 		end advise_next_step_cad_import;
 
 	procedure advise_next_step_generate is
@@ -280,6 +283,9 @@ procedure bsmcl is
 			to_lower(type_action'image(run)) & row_separator_0 &
 			universal_string_type.to_string(name_test) & quote_single);
 	end advise_next_step_load;
+
+	-- ADVISE MESSAGES END
+
 
 
 	procedure write_error_no_project is
@@ -336,7 +342,16 @@ begin
 	put_line ("action         : " & type_action'image(action));
 
 	case action is
-			
+
+		when configuration =>
+			-- DISPLAY CONFIGURATION
+			prog_position := "CNF00";
+			put_line("directory home     : " & universal_string_type.to_string(name_directory_home));
+			put_line("language           : " & type_language'image(language));
+			put_line("directory bin      : " & universal_string_type.to_string(name_directory_bin));
+			put_line("directory enscript : " & universal_string_type.to_string(name_directory_enscript));
+			put_line("interface bsc      : " & universal_string_type.to_string(interface_to_bsc));
+
 		when create =>
 			-- MAKE PROJECT BEGIN
 			prog_position := "CRT05";
@@ -1538,7 +1553,11 @@ begin
 							put(to_lower(type_format_cad'image(type_format_cad'val(f))));
 							-- CS: add line break after 5 items
 							if f < type_format_cad'pos(type_format_cad'last) then put(" , "); end if;
-						end loop;	
+						end loop;
+						new_line;
+						put_line(message_example & name_module_cli &
+							row_separator_0 & to_lower(type_action'image(import_cad)) & row_separator_0 & 
+							to_lower(type_format_cad'image(zuken)));
 	
 				elsif prog_position = "INE00" then
 						put_line(message_error & text_name_cad_net_list & " not specified " & exclamation);
