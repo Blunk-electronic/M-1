@@ -88,7 +88,6 @@ procedure bsmcl is
 		else
 			-- compose home directory name
 			set_home_directory;
-			--put_line(to_string(name_home_directory));
 		end if;
 
 		-- check if conf file exists	
@@ -130,7 +129,8 @@ procedure bsmcl is
 					-- get bin directory
 					if get_field_from_line(line,1) = text_directory_bin then 
 						prog_position := "ENV30";
-						if get_field_from_line(line,2)(1) /= '/' then -- if no heading /, take this as relative to home directory
+						if get_field_from_line(line,2)(1) /= name_directory_separator(1) then -- we compare characters here
+						-- if no heading /, take this as relative to home directory
 							name_directory_bin := universal_string_type.to_bounded_string
 								(
 								compose
@@ -147,7 +147,8 @@ procedure bsmcl is
 					-- get enscript directory
 					if get_field_from_line(line,1) = text_directory_enscript then 
 						prog_position := "ENV40";
-						if get_field_from_line(line,2)(1) /= '/' then -- if no heading /, take this as relative to home directory
+						if get_field_from_line(line,2)(1) /= name_directory_separator(1) then -- we compare characters here
+						-- if no heading /, take this as relative to home directory
 							name_directory_enscript := universal_string_type.to_bounded_string
 								(
 								compose
@@ -188,7 +189,7 @@ procedure bsmcl is
 		file_exists : boolean := false;	
 	begin
 		prog_position := "NLE00";	
-		put_line(text_name_cad_net_list & "        : " & universal_string_type.to_string(netlist));
+		--put_line(text_name_cad_net_list & "        : " & universal_string_type.to_string(netlist));
 		
 		if exists (universal_string_type.to_string(netlist)) then
 			file_exists := true;
@@ -206,7 +207,7 @@ procedure bsmcl is
 		file_exists : boolean := false;
 	begin
 		prog_position := "PLE00";	
-		put_line(text_name_cad_part_list & "       : " & universal_string_type.to_string(partlist));
+		--put_line(text_name_cad_part_list & "       : " & universal_string_type.to_string(partlist));
 		
 		if exists(universal_string_type.to_string(partlist)) then
 			file_exists := true;
