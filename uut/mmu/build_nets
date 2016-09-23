@@ -1,6 +1,15 @@
 #! /bin/bash
 
 set -e
+if [ ! -e tmp ] 
+	then
+		mkdir tmp
+fi
+
+if [ ! -e bak ] 
+	then
+		mkdir bak
+fi
 
 # initialize databases
 cp mmu_seed.txt mmu_default.udb
