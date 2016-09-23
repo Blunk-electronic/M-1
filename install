@@ -1,5 +1,5 @@
-#! /bin/sh
-version=006
+#! /bin/bash
+version=007
 
 #CS: check for ada compiler, gcc, make, ...
 #CS: check for kermit
@@ -99,9 +99,9 @@ else
 	echo "- examples in uut directory ..."
 	cp -R -u uut/ $HOME/$lib_examples_uut_dir/
 	[ $? -ne 0 ] && exit 1	
-	echo "- documentation directory ..."
-	cp -R -u doc/ $HOME/$lib_examples_uut_dir/
-	[ $? -ne 0 ] && exit 1		
+	#echo "- documentation directory ..."
+	#cp -R -u doc/ $HOME/$lib_examples_uut_dir/
+	#[ $? -ne 0 ] && exit 1		
 fi
 
 echo "compiling and installing ..."
