@@ -71,7 +71,6 @@ procedure impbsdl is
 
 	Line			: Unbounded_string;
 	count_members	: Natural := 0; -- holds number of chain members
-	dummy			: Integer;
 
 
 	type single_member is

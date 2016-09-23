@@ -1,4 +1,8 @@
 #! /bin/bash
+
+# This is the install script for System M-1. 
+# If started with option "-make" the binaries will not be built.
+
 version=007
 
 set -e
@@ -50,8 +54,8 @@ procedure_make()
 #CS: ask user if configuration directory should be updated.
 
 echo "copying script files in" $dest_script_dir "..."
-echo "WARNING ! Already existing script files residing there will be overwritten !"
-procedure_operator_confirmation
+#echo "WARNING ! Already existing script files residing there will be overwritten !"
+#procedure_operator_confirmation
 	
 procedure_copy_script impaltium
 procedure_copy_script impeagle6x
@@ -82,8 +86,8 @@ if [ ! -e $HOME/$lib_examples_uut_dir ]
 		#echo "- documentation directory  ..."		
 		#cp -R doc/ $HOME/$lib_examples_uut_dir/
 	else
-		echo "WARNING ! Updating device libraries, examples and documentation in "$HOME/$lib_examples_uut_dir "?"
-		procedure_operator_confirmation
+		#echo "WARNING ! Updating device libraries, examples and documentation in "$HOME/$lib_examples_uut_dir "?"
+		#procedure_operator_confirmation
 		echo "updating:"
 		echo "- lib directory ..."
 		cp -R -u lib/ $HOME/$lib_examples_uut_dir/
@@ -93,22 +97,26 @@ if [ ! -e $HOME/$lib_examples_uut_dir ]
 		#cp -R -u doc/ $HOME/$lib_examples_uut_dir/
 fi
 
-echo "compiling and installing ..."
-procedure_make bsmcl
-procedure_make chkpsn
-procedure_make udbinfo
-procedure_make compseq
-procedure_make impbsdl
-procedure_make impzuken
-procedure_make joinnetlist
-procedure_make mkinfra
-procedure_make mkintercon
-procedure_make mkmemcon
-procedure_make mknets
-procedure_make mkoptions
-procedure_make mktoggle
-procedure_make mkclock
-procedure_make mkvmod
+if [ ! "$1" = "-make" ] 
+	then
+		echo "compiling and installing ..."
+		set +e
+		procedure_make bsmcl
+		procedure_make chkpsn
+		procedure_make udbinfo
+		procedure_make compseq
+		procedure_make impbsdl
+		procedure_make impzuken
+		procedure_make joinnetlist
+		procedure_make mkinfra
+		procedure_make mkintercon
+		procedure_make mkmemcon
+		procedure_make mknets
+		procedure_make mkoptions
+		procedure_make mktoggle
+		procedure_make mkclock
+		procedure_make mkvmod
+fi
 
 echo done
 exit

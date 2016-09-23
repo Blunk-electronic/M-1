@@ -1,4 +1,7 @@
 #! /bin/bash
+
+# This is the uninstall script for System M-1. 
+
 version=001
 
 set -e
@@ -30,13 +33,16 @@ procedure_operator_confirmation()
 procedure_make()
 	{
 	target=$1
-	echo "-" $target
-	cd src/$target # change into source dir
-	make clean # clean up
-# 	make # compile
-	make uninstall # uninstall
-# 	make clean # clean up
-	cd - # change back to origin dir
+	if [ -e src/$target ]
+		then
+		#	echo "-" $target
+			cd src/$target # change into source dir
+		#	make clean # clean up
+		# 	make # compile
+			make uninstall # uninstall
+		# 	make clean # clean up
+			cd - # change back to origin dir
+	fi
 	}
 
 conf_directory=$HOME/.M-1
