@@ -9,7 +9,10 @@ procedure_remove_script()
 	{
 	name=$1
 	#echo "-" $name
-	rm $dest_script_dir/$name
+	if [ -e $dest_script_dir/$name ] 
+		then
+			rm $dest_script_dir/$name
+	fi
 	}
 
 procedure_operator_confirmation()
@@ -65,10 +68,11 @@ procedure_remove_script run_continuous
 procedure_remove_script set_breakpoint
 
 lib_examples_uut_dir=M-1
-if [ -e $HOME/$lib_examples_uut_dir ] then
-	echo "delete lib, examples, doc and uut directory" $lib_examples_uut_dir
-	#procedure_operator_confirmation
-	rm -rf $HOME/$lib_examples_uut_dir
+if [ -e $HOME/$lib_examples_uut_dir ] 
+	then
+		echo "delete lib, examples, doc and uut directory" $lib_examples_uut_dir
+		#procedure_operator_confirmation
+		rm -rf $HOME/$lib_examples_uut_dir
 fi
 
 #echo "uninstalling ..."

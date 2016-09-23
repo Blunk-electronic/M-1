@@ -71,25 +71,26 @@ procedure_copy_script run_continuous
 procedure_copy_script set_breakpoint
 
 lib_examples_uut_dir=M-1
-if [ ! -e $HOME/$lib_examples_uut_dir ]; then
-	echo "creating lib, examples, doc and uut directory  ..."
-	mkdir $HOME/$lib_examples_uut_dir
-	echo "- uut directory  ..."	
-	cp -R uut/ $HOME/$lib_examples_uut_dir/
-	echo "- lib directory  ..."		
-	cp -R lib/ $HOME/$lib_examples_uut_dir/
-	#echo "- documentation directory  ..."		
-	#cp -R doc/ $HOME/$lib_examples_uut_dir/
-else
-	echo "WARNING ! Updating device libraries, examples and documentation in "$HOME/$lib_examples_uut_dir "?"
-	procedure_operator_confirmation
-	echo "updating:"
-	echo "- lib directory ..."
-	cp -R -u lib/ $HOME/$lib_examples_uut_dir/
-	echo "- examples in uut directory ..."
-	cp -R -u uut/ $HOME/$lib_examples_uut_dir/
-	#echo "- documentation directory ..."
-	#cp -R -u doc/ $HOME/$lib_examples_uut_dir/
+if [ ! -e $HOME/$lib_examples_uut_dir ]
+	then
+		echo "creating lib, examples, doc and uut directory  ..."
+		mkdir $HOME/$lib_examples_uut_dir
+		echo "- uut directory  ..."	
+		cp -R uut/ $HOME/$lib_examples_uut_dir/
+		echo "- lib directory  ..."		
+		cp -R lib/ $HOME/$lib_examples_uut_dir/
+		#echo "- documentation directory  ..."		
+		#cp -R doc/ $HOME/$lib_examples_uut_dir/
+	else
+		echo "WARNING ! Updating device libraries, examples and documentation in "$HOME/$lib_examples_uut_dir "?"
+		procedure_operator_confirmation
+		echo "updating:"
+		echo "- lib directory ..."
+		cp -R -u lib/ $HOME/$lib_examples_uut_dir/
+		echo "- examples in uut directory ..."
+		cp -R -u uut/ $HOME/$lib_examples_uut_dir/
+		#echo "- documentation directory ..."
+		#cp -R -u doc/ $HOME/$lib_examples_uut_dir/
 fi
 
 echo "compiling and installing ..."
