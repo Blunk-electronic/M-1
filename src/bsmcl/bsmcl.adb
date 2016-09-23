@@ -1,4 +1,4 @@
---t----------------------------------------------------------------------------
+------------------------------------------------------------------------------
 --                                                                          --
 --                    SYSTEM M-1 MODULE BSMCL                               --
 --                                                                          --
@@ -46,7 +46,6 @@ with ada.command_line;			use ada.command_line;
 with ada.directories;			use ada.directories;
 with ada.environment_variables;
 
-with m1;
 with m1_internal; 				use m1_internal;
 with m1_numbers;				use m1_numbers;
 with m1_files_and_directories; 	use m1_files_and_directories;
@@ -74,16 +73,13 @@ procedure bsmcl is
 	vector_id_breakpoint	: type_vector_id_breakpoint;
 	bit_position			: type_sxr_break_position := 0; -- in case bit_position to break at is not provided, default used
 
-	debug_mode			: natural := 0; -- default is no debug mode
-
-
 	procedure check_environment is
 		previous_input	: Ada.Text_IO.File_Type renames current_input;
 		line			: extended_string.bounded_string;
 	begin
 		-- get home variable
 		prog_position := "ENV00";
-		if not ada.environment_variables.exists("HOME") then
+		if not ada.environment_variables.exists(name_environment_var_home) then
 			raise constraint_error;
 		else
 			-- compose home directory name
@@ -96,8 +92,9 @@ procedure bsmcl is
 				(
 				compose
 					(
-					containing_directory( universal_string_type.to_string(name_directory_home) & name_directory_separator & name_directory_configuration),
-					name_file_configuration 
+					containing_directory => universal_string_type.to_string(name_directory_home) & name_directory_separator &
+						name_directory_configuration,
+					name => name_file_configuration 
 					)
 				) then 
 			raise constraint_error;
@@ -108,8 +105,9 @@ procedure bsmcl is
 				mode => in_file,
 				name => compose
 							(
-							containing_directory( universal_string_type.to_string(name_directory_home) & name_directory_separator & name_directory_configuration),
-							name_file_configuration 
+							containing_directory => universal_string_type.to_string(name_directory_home) & name_directory_separator &
+								name_directory_configuration,
+							name => name_file_configuration 
 							)
 				);
 			set_input(file_system_configuraion);
@@ -175,10 +173,6 @@ procedure bsmcl is
 			close(file_system_configuraion);
 		end if;
 
-
-		if debug_mode = 1 then
-			put_line(column_separator_0);
-		end if;
 		set_input(previous_input);
 	end check_environment;
 
@@ -796,7 +790,7 @@ begin
 				if result = 0 then
 					put_line(done);
 					put_line("Recommended next steps:");
-					put_line("  1. Edit file '" & name_directory_setup_and_templates & name_file_test_init_template & "' with a text editor.");
+					put_line("  1. Edit file '" & name_directory_setup_and_templates & name_directory_separator & name_file_test_init_template & "' with a text editor.");
 					put_line("     to prepare your test init sequence.");
 					put_line("  2. Generate tests using command " & quote_single & name_module_cli & 
 						row_separator_0 & to_lower(type_action'image(generate)) & row_separator_0 
@@ -870,7 +864,7 @@ begin
 				put_line("test profile   : " & type_test_profile'image(test_profile)); new_line;
 
 				prog_position := "GEN30";
-				name_test :=  universal_string_type.to_bounded_string(argument(4));
+				name_test :=  universal_string_type.to_bounded_string(strip_trailing_forward_slash(argument(4)));
 
 				case test_profile is
 					when infrastructure =>
@@ -1053,8 +1047,7 @@ begin
 				end if;
 							
 				prog_position := "CMP20";
-				name_test := universal_string_type.to_bounded_string(m1.strip_trailing_forward_slash(argument(3)));
-				-- CS: apply strip_trailing_forward_slash on test generation too
+				name_test := universal_string_type.to_bounded_string(strip_trailing_forward_slash(argument(3)));
 
 				prog_position := "CMP30";
 				-- check if test directory containing the seq file exists
@@ -1103,7 +1096,7 @@ begin
 		-- TEST LOADING BEGIN
 			if is_project_directory then
 				prog_position := "LD100";
-				name_test := universal_string_type.to_bounded_string(m1.strip_trailing_forward_slash(argument(2)));
+				name_test := universal_string_type.to_bounded_string(strip_trailing_forward_slash(argument(2)));
 
 				prog_position := "LD105";
 				-- check if test directory containing the compiled sequence file (vec) exists
@@ -1145,47 +1138,37 @@ begin
 
 		when dump =>
 		-- RAM DUMP BEGIN
-			if is_project_directory then
-				prog_position := "DP100";			
-				mem_address_page := string_to_natural(argument(2)); -- page address bits [23:8]
+			prog_position := "DP100";
+			mem_address_page := string_to_natural(argument(2)); -- page address bits [23:8]
 
-				if dump_ram
-					(
-					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
-					directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin),
-					mem_addr_page				=> mem_address_page
-					) then
-					null;
-				else
-					put_line(message_error & "Test upload to" & row_separator_0 & name_bsc & row_separator_0 & "failed" & exclamation);
-					advise_on_bsc_error;
-					raise constraint_error;
-				end if;
-
+			if dump_ram
+				(
+				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
+				directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin),
+				mem_addr_page				=> mem_address_page
+				) then
+				null;
 			else
-				write_error_no_project;
+				put_line(message_error & "Test upload to" & row_separator_0 & name_bsc & row_separator_0 & "failed" & exclamation);
+				advise_on_bsc_error;
+				raise constraint_error;
 			end if;
 		-- RAM DUMP END
 
 
 		when clear =>
 		-- RAM CLEAR BEGIN
-			if is_project_directory then
-				prog_position := "CLR10";
-				
-				if clear_ram
-					(
-					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
-					directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
-					) then
-					put_line(name_bsc & " memory cleared. Please upload compiled tests now.");
-				else
-					put_line(message_error & "Clearing memory failed" & exclamation);
-					advise_on_bsc_error;
-					raise constraint_error;
-				end if;
+			prog_position := "CLR10";
+			if clear_ram
+				(
+				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
+				directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
+				) then
+				put_line(name_bsc & " memory cleared. Please upload compiled tests now.");
 			else
-				write_error_no_project;
+				put_line(message_error & "Clearing memory failed" & exclamation);
+				advise_on_bsc_error;
+				raise constraint_error;
 			end if;
 		-- RAM CLEAR END
 
@@ -1194,7 +1177,7 @@ begin
 		-- TEST/STEP EXECUTION BEGIN
 			if is_project_directory then
 				prog_position := "RU100";
-				name_test := universal_string_type.to_bounded_string(m1.strip_trailing_forward_slash(argument(2)));
+				name_test := universal_string_type.to_bounded_string(strip_trailing_forward_slash(argument(2)));
 
 				-- optionally the step mode is given:
 				if arg_ct = 3 then
@@ -1213,8 +1196,6 @@ begin
 						file_extension_vector	-- sequence file extension
 						)
 					) then
--- 				put_line ("test name      : " & test_name);
--- 				put_line ("step mode      : " & type_step_mode'image(m1_internal.step_mode)); new_line;
 
 					-- launch test
 					prog_position := "RU300";
@@ -1309,7 +1290,6 @@ begin
 		-- QUERY BSC STATUS BEGIN
 			prog_position := "QS100";
 			-- status can be inquired anytime anywhere
-
 			case query_status
 				(
 				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
