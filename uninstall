@@ -1,0 +1,92 @@
+#! /bin/bash
+version=001
+
+set -e
+dest_script_dir=$HOME/bin
+echo "System M-1 uninstaller version" $version
+
+procedure_remove_script()
+	{
+	name=$1
+	#echo "-" $name
+	rm $dest_script_dir/$name
+	}
+
+procedure_operator_confirmation()
+	{
+	echo -n "proceed ? (y/n): "
+	read key
+	echo
+	[ ! $key = "y" ] && 
+		{
+		echo "installation aborted by operator"
+		exit 1
+		}
+	}
+
+procedure_make()
+	{
+	target=$1
+	echo "-" $target
+	cd src/$target # change into source dir
+	make clean # clean up
+# 	make # compile
+	make uninstall # uninstall
+# 	make clean # clean up
+	cd - # change back to origin dir
+	}
+
+conf_directory=$HOME/.M-1
+[ -e conf_directory ] && 
+	{
+	echo "delete configuration directory" $conf_directory
+#	procedure_operator_confirmation
+	rm -rf $conf_directory
+	}
+
+echo "delete script files in" $dest_script_dir "..."
+#procedure_operator_confirmation
+	
+procedure_remove_script impaltium
+procedure_remove_script impeagle6x
+procedure_remove_script imporcad
+procedure_remove_script open_report
+procedure_remove_script run_and_log_sequence
+procedure_remove_script clrram
+procedure_remove_script diag
+procedure_remove_script dump_outram
+procedure_remove_script loadtest
+procedure_remove_script runtest
+procedure_remove_script stoptest
+procedure_remove_script version
+procedure_remove_script stop_sequence
+procedure_remove_script mkproject
+procedure_remove_script run_continuous
+procedure_remove_script set_breakpoint
+
+lib_examples_uut_dir=M-1
+if [ -e $HOME/$lib_examples_uut_dir ] then
+	echo "delete lib, examples, doc and uut directory" $lib_examples_uut_dir
+	#procedure_operator_confirmation
+	rm -rf $HOME/$lib_examples_uut_dir
+fi
+
+#echo "uninstalling ..."
+procedure_make bsmcl
+procedure_make chkpsn
+procedure_make udbinfo
+procedure_make compseq
+procedure_make impbsdl
+procedure_make impzuken
+procedure_make joinnetlist
+procedure_make mkinfra
+procedure_make mkintercon
+procedure_make mkmemcon
+procedure_make mknets
+procedure_make mkoptions
+procedure_make mktoggle
+procedure_make mkclock
+procedure_make mkvmod
+
+echo done
+exit

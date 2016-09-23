@@ -1,6 +1,8 @@
 #! /bin/bash
 version=007
 
+set -e
+
 #CS: check for ada compiler, gcc, make, ...
 #CS: check for kermit
 
@@ -13,7 +15,6 @@ procedure_copy_script()
 	name=$1
 	#echo "-" $name
 	cp $source_script_dir/$name $dest_script_dir
-	[ $? -ne 0 ] && exit 1		
 	}
 
 procedure_operator_confirmation()
@@ -33,15 +34,10 @@ procedure_make()
 	target=$1
 	echo "-" $target
 	cd src/$target # change into source dir
-	[ $? -ne 0 ] && exit 1	
 	make clean # clean up
-	#[ $? -ne 0 ] && exit 1			
 	make # compile
-	[ $? -ne 0 ] && exit 1
 	make install # install
-	[ $? -ne 0 ] && exit 1	
 	make clean # clean up
-	[ $? -ne 0 ] && exit 1		
 	cd - # change back to origin dir
 	}
 
@@ -50,7 +46,6 @@ procedure_make()
 	{
 	echo "creating configuration directory (if not existing already) ..."
 	cp -R conf/.M-1 $HOME
-	[ $? -ne 0 ] && exit 1
 	}
 #CS: ask user if configuration directory should be updated.
 
@@ -79,29 +74,22 @@ lib_examples_uut_dir=M-1
 if [ ! -e $HOME/$lib_examples_uut_dir ]; then
 	echo "creating lib, examples, doc and uut directory  ..."
 	mkdir $HOME/$lib_examples_uut_dir
-	[ $? -ne 0 ] && exit 1
 	echo "- uut directory  ..."	
 	cp -R uut/ $HOME/$lib_examples_uut_dir/
-	[ $? -ne 0 ] && exit 1
 	echo "- lib directory  ..."		
 	cp -R lib/ $HOME/$lib_examples_uut_dir/
-	[ $? -ne 0 ] && exit 1
 	#echo "- documentation directory  ..."		
 	#cp -R doc/ $HOME/$lib_examples_uut_dir/
-	#[ $? -ne 0 ] && exit 1
 else
 	echo "WARNING ! Updating device libraries, examples and documentation in "$HOME/$lib_examples_uut_dir "?"
 	procedure_operator_confirmation
 	echo "updating:"
 	echo "- lib directory ..."
 	cp -R -u lib/ $HOME/$lib_examples_uut_dir/
-	[ $? -ne 0 ] && exit 1
 	echo "- examples in uut directory ..."
 	cp -R -u uut/ $HOME/$lib_examples_uut_dir/
-	[ $? -ne 0 ] && exit 1	
 	#echo "- documentation directory ..."
 	#cp -R -u doc/ $HOME/$lib_examples_uut_dir/
-	#[ $? -ne 0 ] && exit 1		
 fi
 
 echo "compiling and installing ..."
@@ -121,6 +109,5 @@ procedure_make mktoggle
 procedure_make mkclock
 procedure_make mkvmod
 
-exit
 echo done
 exit
