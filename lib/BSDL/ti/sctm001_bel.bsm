@@ -1,0 +1,160 @@
+-------------------------------------------------------------------------------
+--  TI SN74BCT8240A                                                          --
+--     IEEE Std 1149.1 (JTAG) Boundary-Scan Test Device                      --
+--     with Octal Inverting Buffers                                          --
+-------------------------------------------------------------------------------
+--  Created by    : Texas Instruments Incorporated                           --
+--  Documentation : SN74BCT8240A Data Sheet (SCBS067)                        --
+--  Product Status: Released to Production (RTP)                             --
+--  BSDL revision : 2.2                                                      --
+--  BSDL status   : Production                                               --
+--  Date created  : 05/01/94                                                 --
+--  Last modified : 2016-08-18 / MBL / Blunk electronic                      --
+--  Modification history -                                                   --
+--      - fixed safe value                                                   --
+-------------------------------------------------------------------------------
+--                                                                           --
+--                             IMPORTANT NOTICE                              --
+--                                                                           --
+--  Texas Instruments (TI) reserves the right to make changes to its         --
+--  products or to discontinue any semiconductor product or service without  --
+--  notice, and advises its customers to obtain the latest version of        --
+--  relevant information to verify, before placing orders, that the          --
+--  information being relied on is current.                                  --
+--                                                                           --
+--  TI warrants performance of its semiconductor products and related        --
+--  software to the specifications applicable at the time of sale in         --
+--  accordance with TI's standard warranty. Testing and other quality        --
+--  control techniques are utilized to the extent TI deems necessary to      --
+--  support this warranty. Specific testing of all parameters of each        --
+--  device is not necessarily performed, except those mandated by            --
+--  government requirements.                                                 --
+--                                                                           --
+--  Certain applications using semiconductor products may involve potential  --
+--  risks of death, personal injury, or severe property or environmental     --
+--  damage ("Critical Applications").                                        --
+--                                                                           --
+--  TI SEMICONDUCTOR PRODUCTS ARE NOT DESIGNED, INTENDED, AUTHORIZED, OR     --
+--  WARRANTED TO BE SUITABLE FOR USE IN LIFE-SUPPORT APPLICATIONS, DEVICES   --
+--  OR SYSTEMS OR OTHER CRITICAL APPLICATIONS.                               --
+--                                                                           --
+--  Inclusion of TI products in such applications is understood to be fully  --
+--  at the risk of the customer. Use of TI products in such applications     --
+--  requires the written approval of an appropriate TI officer. Questions    --
+--  concerning potential risk applications should be directed to TI through  --
+--  a local SC sales office.                                                 --
+--                                                                           --
+--  In order to minimize risks associated with the customer's applications,  --
+--  adequate design and operating safeguards should be provided by the       --
+--  customer to minimize inherent or procedural hazards.                     --
+--                                                                           --
+--  TI assumes no liability for applications assistance, customer product    --
+--  design, software performance, or infringement of patents or services     --
+--  described herein. Nor does TI warrant or represent that any license,     --
+--  either express or implied, is granted under any patent right, copyright, --
+--  mask work right, or other intellectual property right of TI covering or  --
+--  relating to any combination, machine, or process in which such           --
+--  semiconductor products or services might be or are used.                 --
+--                                                                           --
+--            Copyright (c) 1997, Texas Instruments Incorporated             --
+--                                                                           --
+-------------------------------------------------------------------------------
+
+entity sn74bct8240a is
+
+    generic (PHYSICAL_PIN_MAP : string := "UNDEFINED");
+
+    port (OE_NEG1:in bit;
+          Y1:out bit_vector(1 to 4);
+          Y2:out bit_vector(1 to 4);
+          A1:in bit_vector(1 to 4);
+          A2:in bit_vector(1 to 4);
+          OE_NEG2:in bit;
+          GND, VCC:linkage bit;
+          TDO:out bit;
+          TDI, TMS, TCK:in bit;
+          NC:linkage bit_vector(1 to 4));
+
+    use STD_1149_1_1990.all; -- Get standard attributes and definitions
+
+    attribute PIN_MAP of sn74bct8240a : entity is PHYSICAL_PIN_MAP;
+
+    constant JT : PIN_MAP_STRING := "OE_NEG1:1, Y1:(2,3,4,5)," &
+                  "Y2:(7,8,9,10), A1:(23,22,21,20)," &
+                  "A2:(19,17,16,15), OE_NEG2:24, GND:6," &
+                  "VCC:18, TDO:11, TDI:14, TMS:12, TCK:13";
+
+    constant DW : PIN_MAP_STRING := "OE_NEG1:1, Y1:(2,3,4,5)," &
+                  "Y2:(7,8,9,10), A1:(23,22,21,20)," &
+                  "A2:(19,17,16,15), OE_NEG2:24, GND:6," &
+                  "VCC:18, TDO:11, TDI:14, TMS:12, TCK:13";
+
+    constant NT : PIN_MAP_STRING := "OE_NEG1:1, Y1:(2,3,4,5)," &
+                  "Y2:(7,8,9,10), A1:(23,22,21,20)," &
+                  "A2:(19,17,16,15), OE_NEG2:24, GND:6," &
+                  "VCC:18, TDO:11, TDI:14, TMS:12, TCK:13";
+
+    constant FK : PIN_MAP_STRING := "OE_NEG1:9, Y1:(10,11,12,13)," &
+                  "Y2:(16,17,18,19), A1:(6,5,4,3)," &
+                  "A2:(2,27,26,25), OE_NEG2:7, GND:14, VCC:28," &
+                  "TDO:20, TDI:24, TMS:21, TCK:23, NC:(1,8,15,22)";
+
+    attribute TAP_SCAN_IN    of TDI : signal is true;
+    attribute TAP_SCAN_MODE  of TMS : signal is true;
+    attribute TAP_SCAN_OUT   of TDO : signal is true;
+    attribute TAP_SCAN_CLOCK of TCK : signal is (20.0e6, BOTH);
+
+    attribute INSTRUCTION_LENGTH of sn74bct8240a : entity is
+ 8;
+    attribute INSTRUCTION_OPCODE of sn74bct8240a : entity is
+            "EXTEST (00000000, 10000000), " &
+            "BYPASS (11111111, 10000100, 00000101, 10001000, 00000001), " &
+            "SAMPLE (00000010, 10000010), " &
+            "INTEST (00000011, 10000011), " &
+            "HIGHZ  (00000110, 10000110), " &  -- Bypass with outputs high-z
+            "CLAMP  (00000111, 10000111), " &  -- Bypass with bs value
+            "RUNT   (00001001, 10001001), " &  -- Boundary run test
+            "READBN (00001010, 10001010), " &  -- Boundary read normal mode
+            "READBT (00001011, 10001011), " &  -- Boundary read test mode
+            "CELLTST(00001100, 10001100), " &  -- Boundary selftest normal mode
+            "TOPHIP (00001101, 10001101), " &  -- Boundary toggle out test mode
+            "SCANCN (00001110, 10001110), " &  -- BCR scan normal mode
+            "SCANCT (00001111, 10001111)  " ;  -- BCR scan test mode
+
+    attribute INSTRUCTION_CAPTURE of sn74bct8240a : entity is "10000001";
+    attribute INSTRUCTION_DISABLE of sn74bct8240a : entity is "HIGHZ";
+    attribute INSTRUCTION_GUARD   of sn74bct8240a : entity is "CLAMP";
+
+    attribute REGISTER_ACCESS of sn74bct8240a : entity is
+            "BOUNDARY (EXTEST, SAMPLE, INTEST, READBN, READBT, CELLTST),"  &
+            "BYPASS   (BYPASS, HIGHZ, CLAMP, RUNT, TOPHIP)," &
+            "BCR[2]   (SCANCN, SCANCT)" ;
+
+    attribute BOUNDARY_CELLS    of sn74bct8240a : entity is "BC_1";
+    attribute BOUNDARY_LENGTH   of sn74bct8240a : entity is 18;
+    attribute BOUNDARY_REGISTER of sn74bct8240a : entity is
+
+    "0  (BC_1, Y2(4), output3, X, 16, 1, Z),"  & -- these outputs controlled
+    "1  (BC_1, Y2(3), output3, x, 16, 1, Z),"  & -- by cell 16
+    "2  (BC_1, Y2(2), output3, X, 16, 1, Z),"  &
+    "3  (BC_1, Y2(1), output3, X, 16, 1, Z),"  &
+    "4  (BC_1, Y1(4), output3, X, 17, 1, Z),"  & -- these outputs controlled
+    "5  (BC_1, Y1(3), output3, X, 17, 1, Z),"  & -- by cell 17
+    "6  (BC_1, Y1(2), output3, X, 17, 1, Z),"  &
+    "7  (BC_1, Y1(1), output3, X, 17, 1, Z),"  &
+    "8  (BC_1, A2(4), input, X),"   &
+    "9  (BC_1, A2(3), input, X),"   &
+    "10 (BC_1, A2(2), input, X),"   &
+    "11 (BC_1, A2(1), input, X),"   &
+    "12 (BC_1, A1(4), input, X),"   &
+    "13 (BC_1, A1(3), input, X),"   &
+    "14 (BC_1, A1(2), input, X),"   &
+    "15 (BC_1, A1(1), input, X),"   &
+  --  "16 (BC_1, OE_NEG2, input, X)," &
+    "16 (BC_1, OE_NEG2, input, 1)," & -- safe value changed from x to 1 / MBL
+    "16 (BC_1, *, control, 1),"     &
+    "17 (BC_1, OE_NEG1, input, 1)," &
+  --  "17 (BC_1, *, control, x)" ;
+    "17 (BC_1, *, control, 1)" ; -- safe value changed from x to 1 / MBL
+
+end sn74bct8240a;
