@@ -86,9 +86,9 @@ if [ ! -e $HOME/$lib_examples_uut_dir ]; then
 	echo "- lib directory  ..."		
 	cp -R lib/ $HOME/$lib_examples_uut_dir/
 	[ $? -ne 0 ] && exit 1
-	echo "- documentation directory  ..."		
-	cp -R doc/ $HOME/$lib_examples_uut_dir/
-	[ $? -ne 0 ] && exit 1
+	#echo "- documentation directory  ..."		
+	#cp -R doc/ $HOME/$lib_examples_uut_dir/
+	#[ $? -ne 0 ] && exit 1
 else
 	echo "WARNING ! Updating device libraries, examples and documentation in "$HOME/$lib_examples_uut_dir "?"
 	procedure_operator_confirmation
