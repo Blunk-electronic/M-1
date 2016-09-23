@@ -1436,10 +1436,6 @@ procedure impbsdl is
 
 
 
-	function umask( mask : integer ) return integer;
-		pragma import( c, umask );
-
-
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
@@ -1451,7 +1447,7 @@ begin
 	data_base:=to_unbounded_string(Argument(1));
 	put ("data base           : ");	put(data_base); new_line;
 
-	dummy := umask ( 003 );
+
 
 
 	--#make backup of given udb
