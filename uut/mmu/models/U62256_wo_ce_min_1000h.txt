@@ -1,0 +1,53 @@
+Section info
+	value		UM62256
+	compatibles	62256
+	date		2016-05-24
+	version		2.0
+	status		experimental
+	author		MBL / Blunk electronic
+	class		RAM
+	manufacturer	UMC
+	write_protect	false
+	protocol	parallel
+	ram_type	SRAM
+EndSection
+
+
+Section port_pin_map NDIP28
+		data inout D[7:0] 19 18 17 16 15 13 12 11
+		address in A[14:0] 1 26 2 23 21 24 25 3 4 5 6 7 8 9 10
+		option address min 1000h
+--		control in CE	20
+		control in OE 	22
+		control in WE 	27
+EndSection
+
+------------------------------------------------------------------------------
+
+Section prog
+	SubSection init
+		-- step port value
+		step 1	ADDR	drive 7FFFh 		DATA drive 00h		CTRL drive 11b
+	EndSubSection
+
+	SubSection write
+		--Option wordcount 1
+		--Option 
+		-- step port value
+		step 2	ADDR	drive ATG		DATA drive ATG		CTRL drive 10b
+		step 3	ADDR	drive ATG		DATA drive ATG		CTRL drive 11b
+	EndSubSection
+
+	SubSection read
+		-- step port value
+		--step 6  ADDR    drive ATG       DATA drive HIGHZ  CTRL drive 11b
+		--step 4	ADDR	drive highz		DATA expect ATG		CTRL drive 01b
+		step 4	ADDR	drive ATG		DATA expect ATG		CTRL drive 01b
+	EndSubSection
+
+	SubSection disable
+		-- step port value
+		step 5	ADDR	drive 7FFFh 	DATA drive FFh	CTRL drive 11b
+	EndSubSection
+	
+EndSection

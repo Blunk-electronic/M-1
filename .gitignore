@@ -15,4 +15,26 @@ DEADJOE
 *.epf
 *.epf.in
 eagle.rc
-testbench
+
+#UUTs
+# files in test directories:
+uut/*/*/*.seq
+uut/*/*/*.vec
+uut/*/*/*.lis
+uut/*/*/*.reg
+uut/*/*/*.csv
+uut/*/*/netlist.txt
+uut/*/*/readme.txt
+
+# files in uut root directory
+uut/*/*.udb
+uut/*/*.csv
+
+# others
+uut/*/setup/journal.txt
+uut/*/bak
+
+
+
+
+
