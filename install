@@ -11,6 +11,9 @@ set -e
 #CS: check for kermit
 
 source_script_dir=scripts
+source_img_dir=img
+
+dest_conf_dir=$HOME/.M-1
 dest_script_dir=$HOME/bin
 echo "System M-1 installer version" $version
 
@@ -45,13 +48,20 @@ procedure_make()
 	cd - # change back to origin dir
 	}
 
-
-[ ! -e $HOME/.M-1 ] && 
+[ ! -e $dest_conf_dir ] && 
 	{
-	echo "creating configuration directory (if not existing already) ..."
+	echo "creating hidden configuration directory" $dest_conf_dir "..."
 	cp -R conf/.M-1 $HOME
 	}
 #CS: ask user if configuration directory should be updated.
+
+echo "copying image files in" $dest_conf_dir/img "..."
+[ ! -e $dest_conf_dir/img ] && 
+	{
+	mkdir $dest_conf_dir/img
+	}
+cp -rf $source_img_dir/*.png $dest_conf_dir/img
+
 
 echo "copying script files in" $dest_script_dir "..."
 #echo "WARNING ! Already existing script files residing there will be overwritten !"
