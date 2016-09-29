@@ -48,6 +48,15 @@ procedure_make()
 	cd - # change back to origin dir
 	}
 
+procedure_gnatmake()
+	{
+	target=$1
+	echo "-" $target
+	cd src/$target # change into source dir
+	./make.sh
+	cd - # change back to origin dir
+	}
+
 [ ! -e $dest_conf_dir ] && 
 	{
 	echo "creating hidden configuration directory" $dest_conf_dir "..."
@@ -126,6 +135,7 @@ if [ ! "$1" = "-make" ]
 		procedure_make mktoggle
 		procedure_make mkclock
 		procedure_make mkvmod
+		procedure_gnatmake bsmgui
 fi
 
 echo done
