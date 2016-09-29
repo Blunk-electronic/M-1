@@ -1,22 +1,27 @@
-with Gtk.Widget;  use Gtk.Widget;
-with Gtk.Button;  use Gtk.Button;
-with Glib.Object;
+with gtk.widget;  				use gtk.widget;
+with gtk.button;  				use gtk.button;
+with gtk.image;					use gtk.image;
+with gtk.file_chooser_button;	use gtk.file_chooser_button;
+with glib.object;
 
-with Gdk.Event;
+with gdk.event;
 
-package hello_cb is
-   function main_del
-     (Self  : access Gtk_Widget_Record'Class;
-      Event : Gdk.Event.Gdk_Event)
-      return  Boolean;
-   procedure main_quit (Self : access Gtk_Widget_Record'Class);
-   procedure button_clicked (Self : access Gtk_Button_Record'Class);
-   procedure button_quit (Self : access Gtk_Widget_Record'Class);
+package bsmgui_cb is
 
+	button_start_stop_test		: gtk_button;
+	button_start_stop_script	: gtk_button;
 
+	chooser_set_uut		: gtk_file_chooser_button;
+	chooser_set_script	: gtk_file_chooser_button;
+	chooser_set_test	: gtk_file_chooser_button;
 
-	procedure button_quit_clicked (self : access gtk_button_record'class);
+	img_status			: gtk.image.gtk_image;
+
 	procedure terminate_main (self : access gtk_widget_record'class);
-	procedure set_uut (self : access gtk_button_record'class); -- return boolean;
+	procedure set_project (self : access gtk_file_chooser_button_record'class);
+	procedure set_script (self : access gtk_file_chooser_button_record'class);
+	procedure set_test (self : access gtk_file_chooser_button_record'class);
+	procedure start_stop_test (self : access gtk_button_record'class);
+	procedure start_stop_script (self : access gtk_button_record'class);
 
-end hello_cb;
+end bsmgui_cb;
