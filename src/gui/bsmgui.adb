@@ -51,14 +51,14 @@ with gtk.button;     	use gtk.button;
 with gtk.Vbutton_Box;	use gtk.Vbutton_Box;
 with gtk.label;			use gtk.label;
 with gtk.image;			use gtk.image;
-with gtk.file_chooser;	use gtk.file_chooser;
+with gtk.file_chooser;			use gtk.file_chooser;
 with gtk.file_chooser_button;	use gtk.file_chooser_button;
-with gtkada.handlers; 	use gtkada.handlers;
+with gtkada.handlers; 			use gtkada.handlers;
 with glib.object;
 with gdk.event;
 
 
-with hello_cb; use hello_cb;
+with bsmgui_cb; 		use bsmgui_cb;
 
 procedure bsmgui is
 
@@ -67,35 +67,27 @@ procedure bsmgui is
 	box_back		: gtk_box;
 	box_head		: gtk_hbox;
 	box_bottom		: gtk_hbox;
---	box_selection	: gtk_box;
 	box_selection_label		: gtk_vbox;
 	box_selection_directory	: gtk_vbox;
 	box_start_stop			: gtk_vbox;
 
---	button_box_selection : gtk_vbutton_box;
+-- 	button_start_stop_test		: gtk_button;
+-- 	button_start_stop_script	: gtk_button;
 
-	--button_quit 	: gtk_button;
--- 	button_set_uut	: gtk_button;
--- 	button_select	: gtk_button;
-	button_start_stop_test		: gtk_button;
-	button_start_stop_script	: gtk_button;
+	label_uut			: gtk.label.gtk_label;
+	label_script		: gtk.label.gtk_label;
+	label_test			: gtk.label.gtk_label;
+-- 	chooser_set_uut		: gtk_file_chooser_button;
+-- 	chooser_set_script	: gtk_file_chooser_button;
+-- 	chooser_set_test	: gtk_file_chooser_button;
 
-	label_uut		: gtk.label.gtk_label;
-	label_script	: gtk.label.gtk_label;
-	label_test		: gtk.label.gtk_label;
-	chooser_set_uut		: gtk_file_chooser_button;
-	chooser_set_script	: gtk_file_chooser_button;
-	chooser_set_test	: gtk_file_chooser_button;
+-- 	img_status			: gtk.image.gtk_image;
 
-	img_status		: gtk.image.gtk_image;
-
---	label_head		: gtk.label.gtk_label;
-	label_bottom	: gtk.label.gtk_label;
---	label_test2		: gtk.label.gtk_label;
 
 
 begin
-	set_home_directory; -- sets variable name_directory_home (absolute path !)
+	-- read system configuration file and set variables: name_directory_home, language, name_directory_bin, name_directory_enscript, interface_to_bsc
+	check_environment;
 
 --  Initialize GtkAda.
 	gtk.main.init;
@@ -103,12 +95,6 @@ begin
 	-- create the  main window
 	gtk_new (window_main);
 	window_main.set_title ("BOUNDARY SCAN TEST SYSTEM M-1");
-
-   -- When the window emits the "delete-event" signal (which is emitted
-   -- by GTK+ in response to an event coming from the window manager,
-   -- usually as a result of clicking the "close" window control), we
-   -- ask it to call the on_delete_event() function as defined above.
-   --Win.On_Delete_Event (main_del'Access);
 
 	-- connect the "destroy" signal
 	window_main.on_destroy (terminate_main'access); -- close window
@@ -131,11 +117,7 @@ begin
 	set_spacing (box_head, 20);
 
 
-	
--- 	gtk_new_vbox (box_selection, false, 0);
--- 	pack_start (box_head, box_selection, true, true, 0);
-
-	-- create and place box_selection_label in box_head
+	-- BOX SELECTION LABELS
 	gtk_new_vbox (box_selection_label);
 	pack_start (box_head, box_selection_label, true, true, 5);
 	show (box_selection_label);
@@ -149,46 +131,49 @@ begin
 	pack_start (box_selection_label, label_test, true, true, 5);
 	show (label_test);
 
+	-- BOX SELECTION CHOOSERS
 	gtk_new_vbox (box_selection_directory);
 	pack_start (box_head, box_selection_directory, true, true, 5);
 	show (box_selection_directory);
  	gtk_new (chooser_set_uut, "UUT", action_select_folder);
+
+	-- set default projects directory
+	if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_directory_home) & name_directory_separator & name_directory_projects_default) then
+		put_line("project directory default: " & universal_string_type.to_string(name_directory_home) &
+			name_directory_separator & name_directory_projects_default);
+	end if;
+
  	pack_start (box_selection_directory, chooser_set_uut);
  	show (chooser_set_uut);
  	gtk_new (chooser_set_script, "Script", action_open);
  	pack_start (box_selection_directory, chooser_set_script);
+	set_sensitive (chooser_set_script, false);
  	show (chooser_set_script);
  	gtk_new (chooser_set_test, "Test", action_select_folder);
  	pack_start (box_selection_directory, chooser_set_test);
+	set_sensitive (chooser_set_test, false);
  	show (chooser_set_test);
 
+	-- BOX START / STOP BUTTON
 	gtk_new_vbox (box_start_stop);
 	pack_start (box_head, box_start_stop, true, true, 5);
 	show (box_start_stop);
 	gtk_new (button_start_stop_script, "Start Script");
 	pack_start (box_start_stop, button_start_stop_script, true, true, 5);
+	set_sensitive (button_start_stop_script, false);
 	show (button_start_stop_script);
 	gtk_new (button_start_stop_test, "Start Test");
 	pack_start (box_start_stop, button_start_stop_test, true, true, 5);
+	set_sensitive (button_start_stop_test, false);
 	show (button_start_stop_test);
 
-
-
-
--- 	gtk_new (label_head, "HEAD");
--- 	pack_start (box_head, label_head, true, true, 5);
--- 	show (label_head);
-
--- 	gtk_new (label_bottom, "BOTTOM");
--- 	pack_start (box_bottom, label_bottom, true, true, 5);
--- 	show (label_bottom);
-
+	-- STATUS WINDOW
 	gtk_new (img_status, 
 		universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
 		compose
 			(
 			containing_directory => name_directory_configuration_images,
-			name => name_file_image_request_upload,
+			name => name_file_image_ready,
 			extension => file_extension_png
 			)
 		);
@@ -197,65 +182,13 @@ begin
 
 
 
--- 
--- 	gtk_new (label_script, "SCR");
--- 	pack_start (box_selection, label_script, true, true, 5);
--- 	show (label_script);
--- 
--- 
--- 
--- 
--- 	gtk_new (box_selection_directory);
--- 	pack_start (box_selection, box_selection_directory, true, true, 5);
--- 	show (box_selection_directory);
--- 
+	-- BUTTONS CLICKED
+	chooser_set_uut.on_file_set(set_project'access);
+	chooser_set_script.on_file_set(set_script'access);
+	chooser_set_test.on_file_set(set_test'access);
 
-
-
-
-
-
-
-
-
-
-	-- create "set UUT" button and pack it into box_selection
--- 	gtk_new (button_set_uut, "Set UUT");
--- 	pack_start (button_box_selection, button_set_uut, true, true, 5);
--- 	show (button_set_uut);
-
--- 	gtk_new (label_uut_name, "UUT");
--- 	pack_start (box_selection, label_uut_name, false, false, 5);
--- 	show (label_uut_name);
-
--- 
-
-
-
-	--button_set_uut.on_clicked (set_uut'access);
-	--button_set_uut.on_clicked (button_quit_clicked'access);
-
-	-- create "select" button and pack it into box_selection
-
-
-	-- create a button with label
-	--gtk_new (button_quit, "QUIT");
-
-	-- connect the click signal
-	--button_quit.on_clicked (button_quit_clicked'access);
-
-	-- connect the "clicked" signal of the button_quit to destroy function
--- 	widget_callback.object_connect
--- 		(
--- 		button_quit,
--- 		"clicked",
--- 		widget_callback.to_marshaller (terminate_main'access),
--- 		window_main
--- 		);
-
-	-- This packs the button into the window. A Gtk_Window inherits from
-	-- Gtk_Bin which is a special container that can only have one child.
---	window_main.add (button_quit);
+	button_start_stop_test.on_clicked(start_stop_test'access);
+	button_start_stop_script.on_clicked(start_stop_script'access);
 
 	--  Show the window
 	window_main.show_all;

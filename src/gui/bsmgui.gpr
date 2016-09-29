@@ -2,13 +2,13 @@ with "gtkada";
 
  project bsmgui is
 -- 
- 	for Exec_Dir use "bin";
--- 	for Object_Dir use "obj";
- 	for Source_Dirs use ("." , "src" , "src/include"); --, "src/gtkada");
+ 	for exec_dir use "bin";
+ 	for object_dir use "obj";
+ 	for source_dirs use ("." , "src" , "src/include");
 -- 
--- 	for Library_Kind use "static";
+-- 	for library_kind use "static";
 -- 
- 	for Main use ("bsmgui");
+ 	for main use ("bsmgui");
 -- 
  end bsmgui;
 
