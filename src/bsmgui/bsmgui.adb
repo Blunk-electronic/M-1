@@ -57,8 +57,8 @@ with gtkada.handlers; 			use gtkada.handlers;
 with glib.object;
 with gdk.event;
 
-
 with bsmgui_cb; 		use bsmgui_cb;
+
 
 procedure bsmgui is
 
@@ -166,6 +166,10 @@ begin
 	pack_start (box_start_stop, button_start_stop_test, true, true, 5);
 	set_sensitive (button_start_stop_test, false);
 	show (button_start_stop_test);
+	gtk_new (button_abort_shutdown, "ABORT/POWER OFF");
+	pack_start (box_start_stop, button_abort_shutdown, true, true, 5);
+	show (button_abort_shutdown);
+
 
 	-- STATUS WINDOW
 	gtk_new (img_status, 
@@ -189,6 +193,7 @@ begin
 
 	button_start_stop_test.on_clicked(start_stop_test'access);
 	button_start_stop_script.on_clicked(start_stop_script'access);
+	button_abort_shutdown.on_clicked(abort_shutdown'access);
 
 	--  Show the window
 	window_main.show_all;

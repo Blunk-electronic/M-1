@@ -56,6 +56,10 @@ package body bsmgui_cb is
 		result 	: natural;
 		dead	: boolean;
 	begin
+		set_sensitive (chooser_set_uut, false);
+		set_sensitive (chooser_set_script, false);
+		set_sensitive (chooser_set_test, false);
+		set_sensitive (button_start_stop_script, false);
 		put_line ("start_stop_test: " & universal_string_type.to_string(name_test));
 		set_directory(universal_string_type.to_string(name_project));
 
@@ -69,9 +73,12 @@ package body bsmgui_cb is
 				extension => file_extension_png
 				)
 			);
-		while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
+		--button_abort_shutdown.on_clicked(abort_shutdown'access);
+		while gtk.main.events_pending loop 
+			dead := gtk.main.main_iteration; 
+		end loop;
 
-		put_line(universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli);
+		--put_line(universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli);
 		spawn 
 			(  
 			program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
@@ -110,6 +117,10 @@ package body bsmgui_cb is
 
 		end if;
 
+		set_sensitive (chooser_set_uut, true);
+		set_sensitive (chooser_set_script, true);
+		set_sensitive (chooser_set_test, true);
+		set_sensitive (button_start_stop_script, true);
 	end start_stop_test;
 
 
@@ -117,6 +128,10 @@ package body bsmgui_cb is
 		result 	: natural;
 		dead	: boolean;
 	begin
+		set_sensitive (chooser_set_uut, false);
+		set_sensitive (chooser_set_script, false);
+		set_sensitive (chooser_set_test, false);
+		set_sensitive (button_start_stop_test, false);
 		put_line ("start_stop_script: " & universal_string_type.to_string(name_script));
 		set_directory(universal_string_type.to_string(name_project));
 
@@ -169,7 +184,76 @@ package body bsmgui_cb is
 
 		end if;
 
-
+		set_sensitive (chooser_set_uut, true);
+		set_sensitive (chooser_set_script, true);
+		set_sensitive (chooser_set_test, true);
+		set_sensitive (button_start_stop_test, true);
 	end start_stop_script;
+
+
+	procedure abort_shutdown (self : access gtk_button_record'class) is
+		result 	: natural;
+--		dead	: boolean;
+	begin
+		set_sensitive (chooser_set_uut, false);
+		set_sensitive (chooser_set_script, false);
+		set_sensitive (chooser_set_test, false);
+		set_sensitive (button_start_stop_test, false);
+		--set_directory(universal_string_type.to_string(name_project));
+
+		put_line(aborting);
+-- CS: image for abort ?
+-- 		set(img_status, 
+-- 			universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+-- 			compose
+-- 				(
+-- 				containing_directory => name_directory_configuration_images,
+-- 				name => name_file_image_run,
+-- 				extension => file_extension_png
+-- 				)
+-- 			);
+-- 		while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
+
+		spawn 
+			(  
+			program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
+			args                   => 	(
+										1=> new string'(to_lower(type_action'image(off)))
+										),
+			output_file_descriptor => standout,
+			return_code            => result
+			);
+
+		if result = 0 then
+			put_line(successful);
+			set(img_status, 
+				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+				compose
+					(
+					containing_directory => name_directory_configuration_images,
+					name => name_file_image_aborted,
+					extension => file_extension_png
+					)
+				);
+
+		else
+			put_line(failed);
+			set(img_status, 
+				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+				compose
+					(
+					containing_directory => name_directory_configuration_images,
+					name => name_file_image_abort_failed,
+					extension => file_extension_png
+					)
+				);
+
+		end if;
+
+		set_sensitive (chooser_set_uut, true);
+		set_sensitive (chooser_set_script, true);
+		set_sensitive (chooser_set_test, true);
+		set_sensitive (button_start_stop_test, true);
+	end abort_shutdown;
 
 end bsmgui_cb;
