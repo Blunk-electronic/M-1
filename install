@@ -9,9 +9,13 @@ set -e
 
 #CS: check for ada compiler, gcc, make, ...
 #CS: check for kermit
+#CS: check for gtk3-devel
 #CS: check for gtkada. must be installed from:
-# https://github.com/AdaCore/gtkada/archive/gtkada-3.4.1.tar.gz
-# at the same directory level as lbr_ada
+# https://github.com/AdaCore/gtkada/archive/gtkada-3.4.1.tar.gz (at the same directory level as lbr_ada)
+# gtkada installation:
+#  - ./configure
+#  - make
+#  - make install (requires root privileges)
 
 source_script_dir=scripts
 source_img_dir=img
