@@ -73,10 +73,14 @@ package body bsmgui_cb is
 				extension => file_extension_png
 				)
 			);
-		--button_abort_shutdown.on_clicked(abort_shutdown'access);
+		
 		while gtk.main.events_pending loop 
 			dead := gtk.main.main_iteration; 
+			--button_abort_shutdown.on_clicked(abort_shutdown'access);
+			--dead := gtk.main.main_iteration_do(false);
+			--put_line(dot);
 		end loop;
+	
 
 		--put_line(universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli);
 		spawn 

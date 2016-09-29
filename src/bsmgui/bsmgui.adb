@@ -48,7 +48,6 @@ with gtk.widget;  		use gtk.widget;
 with gtk.window; 		use gtk.window;
 with gtk.box;			use gtk.box;
 with gtk.button;     	use gtk.button;
-with gtk.Vbutton_Box;	use gtk.Vbutton_Box;
 with gtk.label;			use gtk.label;
 with gtk.image;			use gtk.image;
 with gtk.file_chooser;			use gtk.file_chooser;
@@ -58,7 +57,6 @@ with glib.object;
 with gdk.event;
 
 with bsmgui_cb; 		use bsmgui_cb;
-
 
 procedure bsmgui is
 
@@ -71,18 +69,9 @@ procedure bsmgui is
 	box_selection_directory	: gtk_vbox;
 	box_start_stop			: gtk_vbox;
 
--- 	button_start_stop_test		: gtk_button;
--- 	button_start_stop_script	: gtk_button;
-
 	label_uut			: gtk.label.gtk_label;
 	label_script		: gtk.label.gtk_label;
 	label_test			: gtk.label.gtk_label;
--- 	chooser_set_uut		: gtk_file_chooser_button;
--- 	chooser_set_script	: gtk_file_chooser_button;
--- 	chooser_set_test	: gtk_file_chooser_button;
-
--- 	img_status			: gtk.image.gtk_image;
-
 
 
 begin
