@@ -3,12 +3,15 @@
 # This is the install script for System M-1. 
 # If started with option "-make" the binaries will not be built.
 
-version=007
+version=008
 
 set -e
 
 #CS: check for ada compiler, gcc, make, ...
 #CS: check for kermit
+#CS: check for gtkada. must be installed from:
+# https://github.com/AdaCore/gtkada/archive/gtkada-3.4.1.tar.gz
+# at the same directory level as lbr_ada
 
 source_script_dir=scripts
 source_img_dir=img
