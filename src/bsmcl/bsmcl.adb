@@ -28,6 +28,7 @@
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
+--		procedure check_environment moved to m1_internal.adb
 --
 --   todo: - switch to turn of advises
 
@@ -52,7 +53,7 @@ with m1_files_and_directories; 	use m1_files_and_directories;
 with m1_firmware;				use m1_firmware;
 
 procedure bsmcl is
-	version			: constant string (1..3) := "024";
+	version			: constant string (1..3) := "025";
 	prog_position	: string (1..5) := "-----";
 
 	item_udb_class	: type_item_udbinfo;
@@ -72,110 +73,6 @@ procedure bsmcl is
 
 	vector_id_breakpoint	: type_vector_id_breakpoint;
 	bit_position			: type_sxr_break_position := 0; -- in case bit_position to break at is not provided, default used
-
-	procedure check_environment is
-		previous_input	: Ada.Text_IO.File_Type renames current_input;
-		line			: extended_string.bounded_string;
-	begin
-		-- get home variable
-		prog_position := "ENV00";
-		if not ada.environment_variables.exists(name_environment_var_home) then
-			raise constraint_error;
-		else
-			-- compose home directory name
-			set_home_directory;
-		end if;
-
-		-- check if conf file exists	
-		prog_position := "ENV10";
-		if not exists
-				(
-				compose
-					(
-					containing_directory => universal_string_type.to_string(name_directory_home) & name_directory_separator &
-						name_directory_configuration,
-					name => name_file_configuration 
-					)
-				) then 
-			raise constraint_error;
-		else
-			-- read configuration file
-			open(
-				file => file_system_configuraion,
-				mode => in_file,
-				name => compose
-							(
-							containing_directory => universal_string_type.to_string(name_directory_home) & name_directory_separator &
-								name_directory_configuration,
-							name => name_file_configuration 
-							)
-				);
-			set_input(file_system_configuraion);
-
-			while not end_of_file
-			loop
-				line := remove_comment_from_line(extended_string.to_bounded_string(get_line));
-				if get_field_count(extended_string.to_string(line)) /= 0 then -- if line contains anything
-					--put_line(extended_string.to_string(line));
-
-					-- get language
-					if get_field_from_line(line,1) = text_language then 
-						prog_position := "ENV20";
-						language := type_language'value(get_field_from_line(line,2));
-					end if;
-
-					-- get bin directory
-					if get_field_from_line(line,1) = text_directory_bin then 
-						prog_position := "ENV30";
-						if get_field_from_line(line,2)(1) /= name_directory_separator(1) then -- we compare characters here
-						-- if no heading /, take this as relative to home directory
-							name_directory_bin := universal_string_type.to_bounded_string
-								(
-								compose
-									(
-									universal_string_type.to_string(name_directory_home),
-									get_field_from_line(line,3)
-									)
-								);
-						else -- otherwise take this as an absolute path
-							name_directory_bin := universal_string_type.to_bounded_string(get_field_from_line(line,2));
-						end if;
-					end if;
-
-					-- get enscript directory
-					if get_field_from_line(line,1) = text_directory_enscript then 
-						prog_position := "ENV40";
-						if get_field_from_line(line,2)(1) /= name_directory_separator(1) then -- we compare characters here
-						-- if no heading /, take this as relative to home directory
-							name_directory_enscript := universal_string_type.to_bounded_string
-								(
-								compose
-									(
-									universal_string_type.to_string(name_directory_home),
-									get_field_from_line(line,2)
-									)	
-								);
-						else -- otherwise take this as an absolute path
-							name_directory_enscript := universal_string_type.to_bounded_string(get_field_from_line(line,2));
-						end if;
-	
-					end if;
-
-					-- get interface_to_scan_master
-					if get_field_from_line(line,1) = text_interface_bsc then 
-						prog_position := "ENV50";
-						interface_to_bsc := universal_string_type.to_bounded_string(get_field_from_line(line,2));
-					end if;
-
-				end if; -- if line contains anything useful
-
-			end loop;
-			close(file_system_configuraion);
-		end if;
-
-		set_input(previous_input);
-	end check_environment;
-
 
 
 	function exists_netlist (netlist : universal_string_type.bounded_string) return boolean is
