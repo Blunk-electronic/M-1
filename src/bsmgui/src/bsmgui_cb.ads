@@ -3,8 +3,9 @@ with gtk.button;  				use gtk.button;
 with gtk.image;					use gtk.image;
 with gtk.file_chooser_button;	use gtk.file_chooser_button;
 with glib.object;
-
 with gdk.event;
+
+with gnat.os_lib;   			use gnat.os_lib;
 
 package bsmgui_cb is
 
@@ -25,5 +26,9 @@ package bsmgui_cb is
 	procedure start_stop_test (self : access gtk_button_record'class);
 	procedure start_stop_script (self : access gtk_button_record'class);
 	procedure abort_shutdown (self : access gtk_button_record'class);
+
+	pid		: process_id := invalid_pid;
+	type type_status_test is (stopped, running);
+	status_test : type_status_test := stopped;
 
 end bsmgui_cb;
