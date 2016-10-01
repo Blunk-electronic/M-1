@@ -86,63 +86,41 @@ package body bsmgui_cb is
 					);
 				
 				while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
-
-				--put_line(universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli);
-				pid := non_blocking_spawn 
-					(  
-					program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
-					args                   => 	(
-												1=> new string'(to_lower(type_action'image(run))),
-												2=> new string'(simple_name(universal_string_type.to_string(name_test))),
-		 										3=> new string'("off"),
-		 										4=> new string'("&")
-												)
-		-- 			output_file_descriptor => standout,
-		-- 			return_code            => result
+				result := system
+					(
+					universal_string_type.to_string(name_directory_bin) &
+					name_directory_separator &
+					name_module_cli & row_separator_0 &
+					to_lower(type_action'image(run)) & row_separator_0 &
+					simple_name(universal_string_type.to_string(name_test)) & row_separator_0 &
+					"off &" & ASCII.NUL 
 					);
-				if pid = invalid_pid then
-					put_line(message_error & " test spawning failed");
-				else
-					put_line("test started with proc id: " & integer'image(pid_to_integer(pid)));
-					status_test := running;
-				end if;
 
---				while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
-				wait_process(pid,success);
-				if success then
-					put_line("test finished");
-				end if;
+				status_test := running;
 
-
--- 				while result = 0
--- 					loop
--- 						result := system( "sleep 0.5; ps -A | grep bsmcl" & ASCII.NUL );
--- 						while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
--- 					end loop;
-
--- 				for i in 1..10 loop
--- 					delay 1.0;
--- 					while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
--- 					spawn 
--- 						(  
--- 						program_name           => "/bin/ps",
--- 						args                   => 	(
--- 													1=> new string'("-p"),
--- 													2=> new string'(trim(integer'image(pid_to_integer(pid)),left))
--- 													),
--- 						output_file_descriptor => standout,
--- 						return_code            => result
--- 						);
--- 					if result = 0 then
--- 						put_line("still running...");
--- 					else
--- 						put_line("ended");
--- 						exit;
--- 					end if;
--- 				end loop;
+				for i in 1..10 loop
+					delay 1.0;
+					while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
+					spawn 
+						(  
+						program_name           => "/bin/pidof",
+						args                   => 	(
+													--1=> new string'("-p"),
+													1=> new string'("bsmcl")
+													),
+						output_file_descriptor => standout,
+						return_code            => result
+						);
+					if result = 0 then
+						put_line("still running...");
+					else
+						put_line("TEST END");
+						-- CS: get exit code
+						exit;
+					end if;
+				end loop;
 
 
-				put_line("TEST END");
 
 
 
@@ -153,21 +131,74 @@ package body bsmgui_cb is
 
 			when running =>
 				put_line ("aborting test: " & universal_string_type.to_string(name_test));
-				put_line ("with proc id :" & integer'image(pid_to_integer(pid)));
-				spawn 
-					(  
-					program_name           => "/bin/kill",
-					args                   => 	(
-												1=> new string'(integer'image(pid_to_integer(pid)))
-												),
-		 			output_file_descriptor => standout,
-		 			return_code            => result
-					);
+-- 				put_line ("with proc id :" & integer'image(pid_to_integer(pid)));
+-- 				spawn 
+-- 					(  
+-- 					program_name           => "/bin/kill",
+-- 					args                   => 	(
+-- 												1=> new string'("$(pidof"),
+-- 												2=> new string'("bsmcl)")
+-- 												),
+-- 		 			output_file_descriptor => standout,
+-- 		 			return_code            => result
+-- 					);
+
+				result := system( "p=$(pidof bsmcl); kill $p; sleep 1" & ASCII.NUL );
+
 				if result = 0 then
 					put_line("kill successful");
+
+					spawn 
+						(  
+						program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
+						args                   => 	(
+													1=> new string'(to_lower(type_action'image(off)))
+													),
+						output_file_descriptor => standout,
+						return_code            => result
+						);
+
+					if result = 0 then
+						put_line(successful);
+						set(img_status, 
+							universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+							compose
+								(
+								containing_directory => name_directory_configuration_images,
+								name => name_file_image_aborted,
+								extension => file_extension_png
+								)
+							);
+
+					else
+						put_line(failed);
+						set(img_status, 
+							universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+							compose
+								(
+								containing_directory => name_directory_configuration_images,
+								name => name_file_image_abort_failed,
+								extension => file_extension_png
+								)
+							);
+					end if;
+
 				else
 					put_line("kill failed");
+					put_line(failed);
+					set(img_status, 
+						universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+						compose
+							(
+							containing_directory => name_directory_configuration_images,
+							name => name_file_image_abort_failed,
+							extension => file_extension_png
+							)
+						);
+
 				end if;
+
+
 
 				status_test := stopped;
 				set_label(button_start_stop_test,"START");
@@ -189,15 +220,6 @@ package body bsmgui_cb is
 -- 
 -- 		else
 -- 			put_line(failed);
--- 			set(img_status, 
--- 				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
--- 				compose
--- 					(
--- 					containing_directory => name_directory_configuration_images,
--- 					name => name_file_image_fail,
--- 					extension => file_extension_png
--- 					)
--- 				);
 -- 
 -- 		end if;
 
