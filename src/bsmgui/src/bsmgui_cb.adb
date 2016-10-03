@@ -61,8 +61,11 @@ package body bsmgui_cb is
 		success	: boolean := false;
  		function system( cmd : string ) return integer;
  		pragma Import( C, system );
+		--file_thrash_bin : ada.text_io.file_type;
 
 	begin
+		--open(file => file_thrash_bin, name => "/dev/null", mode => out_file);
+
 		set_sensitive (chooser_set_uut, false);
 		set_sensitive (chooser_set_script, false);
 		set_sensitive (chooser_set_test, false);
@@ -70,9 +73,9 @@ package body bsmgui_cb is
 		set_directory(universal_string_type.to_string(name_project));
 
 		case status_test is
-			when stopped =>
+			when stopped | finished =>
 				--set_sensitive (button_start_stop_script, false);
-				set_label(button_start_stop_test,"STOP");
+				set_label(button_start_stop_test,"STOP"); -- CS: variable for label
 				put_line ("start test: " & universal_string_type.to_string(name_test));
 
 				set(img_status, 
@@ -93,39 +96,41 @@ package body bsmgui_cb is
 					name_module_cli & row_separator_0 &
 					to_lower(type_action'image(run)) & row_separator_0 &
 					simple_name(universal_string_type.to_string(name_test)) & row_separator_0 &
-					"off &" & ASCII.NUL 
+					to_lower(type_step_mode'image(off)) & row_separator_0 & "&" & ASCII.NUL 
 					);
 
 				status_test := running;
 
-				for i in 1..10 loop
-					delay 1.0;
+				--for i in 1..100 loop -- CS: use variables or infinite loop ?
+				result := 0;
+				while result = 0 loop
+					delay gui_refresh_rate;
 					while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
 					spawn 
 						(  
-						program_name           => "/bin/pidof",
+						program_name           => "/bin/pidof", -- CS: needs variable setup by environment check
 						args                   => 	(
 													--1=> new string'("-p"),
-													1=> new string'("bsmcl")
+													1=> new string'(name_module_cli)
 													),
-						output_file_descriptor => standout,
+						output_file_descriptor => standout, -- CS: send it to /dev/null
 						return_code            => result
 						);
-					if result = 0 then
-						put_line("still running...");
-					else
-						put_line("TEST END");
+					--if result = 0 then
+					--	put_line("still running...");
+					--else
+					--	put_line("TEST END");
 						-- CS: get exit code
-						exit;
-					end if;
-				end loop;
+					--	exit;
+					--end if;
+				end loop;	
 
 
 
 
 
-
-
+				set_label(button_start_stop_test,"START"); -- CS: variable for label
+				status_test := finished;
 
 
 
@@ -143,10 +148,11 @@ package body bsmgui_cb is
 -- 		 			return_code            => result
 -- 					);
 
-				result := system( "p=$(pidof bsmcl); kill $p; sleep 1" & ASCII.NUL );
+				--result := system( "p=$(pidof bsmcl); kill $p; sleep 1" & ASCII.NUL );
+				result := system( "p=$(pidof " & name_module_cli & "); kill $p; sleep 1" & ASCII.NUL ); -- CS: variable for delay value
 
 				if result = 0 then
-					put_line("kill successful");
+					--put_line("kill successful");
 
 					spawn 
 						(  
@@ -159,7 +165,7 @@ package body bsmgui_cb is
 						);
 
 					if result = 0 then
-						put_line(successful);
+						--put_line(successful);
 						set(img_status, 
 							universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
 							compose
@@ -184,7 +190,7 @@ package body bsmgui_cb is
 					end if;
 
 				else
-					put_line("kill failed");
+					--put_line("kill failed");
 					put_line(failed);
 					set(img_status, 
 						universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/

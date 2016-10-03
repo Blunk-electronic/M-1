@@ -60,18 +60,19 @@ with bsmgui_cb; 		use bsmgui_cb;
 
 procedure bsmgui is
 
-	version			: string (1..3) := "015";
-	window_main 	: gtk_window;
-	box_back		: gtk_box;
-	box_head		: gtk_hbox;
-	box_bottom		: gtk_hbox;
+	version					: string (1..3) := "015";
+
+	window_main 			: gtk_window;
+	box_back				: gtk_box;
+	box_head				: gtk_hbox;
+	box_bottom				: gtk_hbox;
 	box_selection_label		: gtk_vbox;
 	box_selection_directory	: gtk_vbox;
 	box_start_stop			: gtk_vbox;
 
-	label_uut			: gtk.label.gtk_label;
-	label_script		: gtk.label.gtk_label;
-	label_test			: gtk.label.gtk_label;
+	label_uut				: gtk.label.gtk_label;
+	label_script			: gtk.label.gtk_label;
+	label_test				: gtk.label.gtk_label;
 
 
 begin

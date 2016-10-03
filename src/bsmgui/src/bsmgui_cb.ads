@@ -9,6 +9,8 @@ with gnat.os_lib;   			use gnat.os_lib;
 
 package bsmgui_cb is
 
+	gui_refresh_rate		: duration := 0.5;
+
 	button_start_stop_test		: gtk_button;
 	button_start_stop_script	: gtk_button;
 	button_abort_shutdown		: gtk_button;
@@ -28,7 +30,7 @@ package bsmgui_cb is
 	procedure abort_shutdown (self : access gtk_button_record'class);
 
 	pid		: process_id := invalid_pid;
-	type type_status_test is (stopped, running);
+	type type_status_test is (stopped, finished, running);
 	status_test : type_status_test := stopped;
 
 end bsmgui_cb;
