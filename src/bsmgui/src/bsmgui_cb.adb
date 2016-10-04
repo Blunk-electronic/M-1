@@ -61,8 +61,9 @@ package body bsmgui_cb is
 		success	: boolean := false;
  		function system( cmd : string ) return integer;
  		pragma Import( C, system );
-		--file_thrash_bin : ada.text_io.file_type;
-
+		input_file : ada.text_io.file_type;
+		line	: extended_string.bounded_string;
+		field_count	: natural;
 	begin
 		--open(file => file_thrash_bin, name => "/dev/null", mode => out_file);
 
@@ -78,6 +79,7 @@ package body bsmgui_cb is
 				set_label(button_start_stop_test,"STOP"); -- CS: variable for label
 				put_line ("start test: " & universal_string_type.to_string(name_test));
 
+				-- UPDATE STATUS IMAGE TO "RUNNING"
 				set(img_status, 
 					universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
 					compose
@@ -88,7 +90,8 @@ package body bsmgui_cb is
 						)
 					);
 				
-				while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
+				-- LAUNCH TEST
+				while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop; -- refresh gui
 				result := system
 					(
 					universal_string_type.to_string(name_directory_bin) &
@@ -99,9 +102,11 @@ package body bsmgui_cb is
 					to_lower(type_step_mode'image(off)) & row_separator_0 & "&" & ASCII.NUL 
 					);
 
+				-- set test status to "running" so that next click on "test start" button takes us in case status_test "running"
 				status_test := running;
 
-				--for i in 1..100 loop -- CS: use variables or infinite loop ?
+				-- WAIT UNTIL TEST FINISHES
+				-- This is achieved by polling the process id of name_module_cli until the process finishes.
 				result := 0;
 				while result = 0 loop
 					delay gui_refresh_rate;
@@ -116,18 +121,66 @@ package body bsmgui_cb is
 						output_file_descriptor => standout, -- CS: send it to /dev/null
 						return_code            => result
 						);
-					--if result = 0 then
-					--	put_line("still running...");
-					--else
-					--	put_line("TEST END");
-						-- CS: get exit code
-					--	exit;
-					--end if;
-				end loop;	
+				end loop;
 
+				-- EVALUATE TEST RESULT FILE (created by name_module_cli once test has finished).
+				-- Depending on the test result (PASSED/FAILED) this file contains the single word PASSED or FAILED upon which
+				-- the status image is updated. The file must exist. If missing, no status image update happens.
+				if exists (compose 
+								(
+								current_directory & name_directory_separator & name_directory_temp,
+								name_file_test_result
+								)) then
+					open(
+						file => input_file,
+						mode => in_file,
+						name => (compose 
+										(
+										current_directory & name_directory_separator & name_directory_temp,
+										name_file_test_result
+										))
+						);
+					set_input(input_file);
 
-
-
+					-- reading test result file commences here:
+					while not end_of_file loop
+						line := extended_string.to_bounded_string(get_line);
+						--put_line(extended_string.to_string(line));
+						field_count := get_field_count(extended_string.to_string(line));
+						if field_count = 1 then
+							if get_field_from_line(text_in => line, position => 1) = passed then
+								--put_line(passed);
+								-- UPDATE STATUS IMAGE TO "PASS"
+								set(img_status, 
+									universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+									compose
+										(
+										containing_directory => name_directory_configuration_images,
+										name => name_file_image_pass,
+										extension => file_extension_png
+										)
+									);
+							else
+								--put_line(failed);
+								-- UPDATE STATUS IMAGE TO "FAIL"
+								set(img_status, 
+									universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+									compose
+										(
+										containing_directory => name_directory_configuration_images,
+										name => name_file_image_fail,
+										extension => file_extension_png
+										)
+									);
+							end if;
+						end if;
+					end loop;
+					close(input_file);
+					set_input(standard_input);
+				else
+					put_line(message_error & " Test result file " & quote_single & name_file_test_result & quote_single & " missing" & exclamation);
+					raise constraint_error;
+				end if;
 
 				set_label(button_start_stop_test,"START"); -- CS: variable for label
 				status_test := finished;
@@ -136,24 +189,12 @@ package body bsmgui_cb is
 
 			when running =>
 				put_line ("aborting test: " & universal_string_type.to_string(name_test));
--- 				put_line ("with proc id :" & integer'image(pid_to_integer(pid)));
--- 				spawn 
--- 					(  
--- 					program_name           => "/bin/kill",
--- 					args                   => 	(
--- 												1=> new string'("$(pidof"),
--- 												2=> new string'("bsmcl)")
--- 												),
--- 		 			output_file_descriptor => standout,
--- 		 			return_code            => result
--- 					);
 
-				--result := system( "p=$(pidof bsmcl); kill $p; sleep 1" & ASCII.NUL );
+				-- Kill process name_module_cli.
 				result := system( "p=$(pidof " & name_module_cli & "); kill $p; sleep 1" & ASCII.NUL ); -- CS: variable for delay value
 
+				-- When killed, shutdown UUT.
 				if result = 0 then
-					--put_line("kill successful");
-
 					spawn 
 						(  
 						program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
@@ -164,8 +205,7 @@ package body bsmgui_cb is
 						return_code            => result
 						);
 
-					if result = 0 then
-						--put_line(successful);
+					if result = 0 then -- shutdown successful
 						set(img_status, 
 							universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
 							compose
@@ -176,8 +216,7 @@ package body bsmgui_cb is
 								)
 							);
 
-					else
-						put_line(failed);
+					else -- shutdown failed
 						set(img_status, 
 							universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
 							compose
@@ -189,9 +228,7 @@ package body bsmgui_cb is
 							);
 					end if;
 
-				else
-					--put_line("kill failed");
-					put_line(failed);
+				else -- process name_module_cli could not be killed
 					set(img_status, 
 						universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
 						compose
@@ -214,15 +251,6 @@ package body bsmgui_cb is
 
 -- 		if result = 0 then
 -- 			put_line(passed);
--- 			set(img_status, 
--- 				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
--- 				compose
--- 					(
--- 					containing_directory => name_directory_configuration_images,
--- 					name => name_file_image_pass,
--- 					extension => file_extension_png
--- 					)
--- 				);
 -- 
 -- 		else
 -- 			put_line(failed);

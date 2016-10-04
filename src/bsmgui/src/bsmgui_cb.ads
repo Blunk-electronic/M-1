@@ -9,7 +9,7 @@ with gnat.os_lib;   			use gnat.os_lib;
 
 package bsmgui_cb is
 
-	gui_refresh_rate		: duration := 0.5;
+	gui_refresh_rate		: duration := 0.1;
 
 	button_start_stop_test		: gtk_button;
 	button_start_stop_script	: gtk_button;

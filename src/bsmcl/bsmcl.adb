@@ -219,6 +219,39 @@ procedure bsmcl is
 		put_line("           - Push YELLOW reset button on front panel of" & row_separator_0 & name_bsc & row_separator_0 & "then try again !");
 	end advise_on_bsc_error;
 
+	procedure make_result_file (result : string) is
+	-- Creates a temporarily file (in directory tmp) that contains the single word PASSED or FAILED.
+	-- The graphical user interface reads this file in order to set the status image to FAIL or PASS.
+	begin
+		--put_line(standard_output,"create result file");
+		--put_line(standard_output,current_directory);
+		create ( file_test_result, name => (compose 
+										(
+										current_directory & name_directory_separator & name_directory_temp,
+										name_file_test_result
+										))
+				); 
+		put_line (file_test_result, result);
+		close (file_test_result);
+		--put_line(standard_output,"created result file");
+	end make_result_file;
+
+	procedure delete_result_file is
+	-- Deletes the temporarily file (created by make_result_file) (in directory tmp).
+	begin
+		--put_line(standard_output,"delete result file");
+		if exists (name_file_test_result) then
+			delete_file(name => (compose 
+									(
+									current_directory & name_directory_separator & name_directory_temp,
+									name_directory_temp,
+									name_file_test_result
+									))
+				);
+			--put_line(standard_output,"delete result file");
+		end if;
+	end delete_result_file;
+
 begin
 
 	new_line;
@@ -1082,6 +1115,9 @@ begin
 					step_mode := type_step_mode'value(argument(3));
 				end if;
 				
+				-- Remove stale result file (in temp directory) from previous runs.
+				delete_result_file;
+
 				-- check if test exists
 				prog_position := "RU110";
 				if exists
@@ -1105,20 +1141,27 @@ begin
 
 						) is
 						-- CS: distinguish between executed step and test !
+
+						-- Depending on the test result (fail or pass) a temp file is created that holds the single word PASSED or FAILED.
+						-- The gui needs this file in order to updae the status image to PASS or FAIL
 						when pass =>
 							new_line;
 							put_line("Test/Step" & row_separator_0 & universal_string_type.to_string(name_test) & row_separator_0 & passed);
+							make_result_file(passed);
 						when fail =>
 							new_line;
 							put_line("Test/Step" & row_separator_0 & universal_string_type.to_string(name_test) & row_separator_0 & failed);
+							make_result_file(failed);
 							set_exit_status(failure);
 						when not_loaded =>
 							put_line(message_error & "Test data invalid or not uploaded yet. Please upload test.");
+							make_result_file(failed);
 							set_exit_status(failure);
 						when others =>
 							put_line(message_error & "Internal malfunction" & exclamation);
 							put_line("Test/Step" & row_separator_0 & universal_string_type.to_string(name_test) & row_separator_0 & failed);
 							advise_on_bsc_error;
+							make_result_file(failed);
 							set_exit_status(failure);
 					end case;
 
@@ -1219,6 +1262,7 @@ begin
 		when off =>
 		-- UUT POWER DOWN BEGIN
 			prog_position := "SDN01";
+			delete_result_file; -- Remove stale result file (in temp directory) from previous runs.
 			case shutdown
 				(
 				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
@@ -1234,6 +1278,9 @@ begin
 					new_line;
 					put_line("UUT has been shut down ! Scanports disconnected !");
 					put_line("Test" & row_separator_0 & failed);
+					make_result_file(failed); -- Create temp file that holds the single word FAILED.
+						-- The gui needs this file in order to updae the status image to FAIL.
+
 			end case;
 		-- UUT POWER DOWN END
 
