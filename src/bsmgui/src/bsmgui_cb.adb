@@ -1,10 +1,10 @@
-with ada.strings; 				use ada.strings;
-with ada.strings.fixed; 		use ada.strings.fixed;
-with ada.text_io; 				use ada.text_io;
+--with ada.strings; 				use ada.strings;
+--with ada.strings.fixed; 		use ada.strings.fixed;
+--with ada.text_io; 				use ada.text_io;
 with ada.characters.handling; 	use ada.characters.handling;
 with ada.directories;			use ada.directories;
 with gnat.os_lib;   			use gnat.os_lib;
-with ada.environment_variables;	--use ada.environment_variables;
+--with ada.environment_variables;	--use ada.environment_variables;
 with gtk.main;
 with m1_internal; 				use m1_internal;
 with m1_files_and_directories; 	use m1_files_and_directories;
@@ -55,15 +55,114 @@ package body bsmgui_cb is
 	end set_test;
 
 
+
+	procedure evaluate_result_file is
+	-- EVALUATE TEST RESULT FILE (created by name_module_cli once test has finished).
+	-- Depending on the test result (PASSED/FAILED) this file contains the single word PASSED or FAILED upon which
+	-- the status image is updated. The file must exist. If missing, no status image update happens.
+		input_file 	: ada.text_io.file_type;
+		line		: extended_string.bounded_string;
+		field_count	: natural;
+	begin
+		if exists (compose 
+						(
+						current_directory & name_directory_separator & name_directory_temp,
+						name_file_test_result
+						)) then
+			open(
+				file => input_file,
+				mode => in_file,
+				name => (compose 
+								(
+								current_directory & name_directory_separator & name_directory_temp,
+								name_file_test_result
+								))
+				);
+			set_input(input_file);
+
+			-- reading test result file commences here:
+			while not end_of_file loop
+				line := extended_string.to_bounded_string(get_line);
+				--put_line(extended_string.to_string(line));
+				field_count := get_field_count(extended_string.to_string(line));
+				if field_count = 1 then
+					if get_field_from_line(text_in => line, position => 1) = passed then
+						--put_line(passed);
+						-- UPDATE STATUS IMAGE TO "PASS"
+						set(img_status, 
+							universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+							compose
+								(
+								containing_directory => name_directory_configuration_images,
+								name => name_file_image_pass,
+								extension => file_extension_png
+								)
+							);
+					else
+						--put_line(failed);
+						-- UPDATE STATUS IMAGE TO "FAIL"
+						set(img_status, 
+							universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+							compose
+								(
+								containing_directory => name_directory_configuration_images,
+								name => name_file_image_fail,
+								extension => file_extension_png
+								)
+							);
+					end if;
+				end if;
+			end loop;
+			close(input_file);
+			set_input(standard_input);
+		else
+			put_line(message_error & " Test result file " & quote_single & name_file_test_result & quote_single & " missing" & exclamation);
+			raise constraint_error;
+		end if;
+	end evaluate_result_file;
+
+	procedure shutdown_uut is
+		result : natural;
+	begin
+		delay time_to_free_the_interface; -- CS: poll interface until no blocked any more
+		spawn 
+			(  
+			program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
+			args                   => 	(
+										1=> new string'(to_lower(type_action'image(off)))
+										),
+			output_file_descriptor => standout,
+			return_code            => result
+			);
+
+		if result = 0 then -- shutdown successful
+			set(img_status, 
+				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+				compose
+					(
+					containing_directory => name_directory_configuration_images,
+					name => name_file_image_aborted,
+					extension => file_extension_png
+					)
+				);
+
+		else -- shutdown failed
+			set(img_status, 
+				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+				compose
+					(
+					containing_directory => name_directory_configuration_images,
+					name => name_file_image_abort_failed,
+					extension => file_extension_png
+					)
+				);
+		end if;
+	end shutdown_uut;
+
+
 	procedure start_stop_test (self : access gtk_button_record'class) is
 		result 	: natural := 0;
 		dead	: boolean;
-		success	: boolean := false;
- 		function system( cmd : string ) return integer;
- 		pragma Import( C, system );
-		input_file : ada.text_io.file_type;
-		line	: extended_string.bounded_string;
-		field_count	: natural;
 	begin
 		--open(file => file_thrash_bin, name => "/dev/null", mode => out_file);
 
@@ -90,7 +189,7 @@ package body bsmgui_cb is
 						)
 					);
 				
-				-- LAUNCH TEST
+				-- LAUNCH TEST (via name_module_cli and send it into background)
 				while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop; -- refresh gui
 				result := system
 					(
@@ -123,65 +222,7 @@ package body bsmgui_cb is
 						);
 				end loop;
 
-				-- EVALUATE TEST RESULT FILE (created by name_module_cli once test has finished).
-				-- Depending on the test result (PASSED/FAILED) this file contains the single word PASSED or FAILED upon which
-				-- the status image is updated. The file must exist. If missing, no status image update happens.
-				if exists (compose 
-								(
-								current_directory & name_directory_separator & name_directory_temp,
-								name_file_test_result
-								)) then
-					open(
-						file => input_file,
-						mode => in_file,
-						name => (compose 
-										(
-										current_directory & name_directory_separator & name_directory_temp,
-										name_file_test_result
-										))
-						);
-					set_input(input_file);
-
-					-- reading test result file commences here:
-					while not end_of_file loop
-						line := extended_string.to_bounded_string(get_line);
-						--put_line(extended_string.to_string(line));
-						field_count := get_field_count(extended_string.to_string(line));
-						if field_count = 1 then
-							if get_field_from_line(text_in => line, position => 1) = passed then
-								--put_line(passed);
-								-- UPDATE STATUS IMAGE TO "PASS"
-								set(img_status, 
-									universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-									compose
-										(
-										containing_directory => name_directory_configuration_images,
-										name => name_file_image_pass,
-										extension => file_extension_png
-										)
-									);
-							else
-								--put_line(failed);
-								-- UPDATE STATUS IMAGE TO "FAIL"
-								set(img_status, 
-									universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-									compose
-										(
-										containing_directory => name_directory_configuration_images,
-										name => name_file_image_fail,
-										extension => file_extension_png
-										)
-									);
-							end if;
-						end if;
-					end loop;
-					close(input_file);
-					set_input(standard_input);
-				else
-					put_line(message_error & " Test result file " & quote_single & name_file_test_result & quote_single & " missing" & exclamation);
-					raise constraint_error;
-				end if;
-
+				evaluate_result_file;
 				set_label(button_start_stop_test,"START"); -- CS: variable for label
 				status_test := finished;
 
@@ -195,39 +236,7 @@ package body bsmgui_cb is
 
 				-- When killed, shutdown UUT.
 				if result = 0 then
-					spawn 
-						(  
-						program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
-						args                   => 	(
-													1=> new string'(to_lower(type_action'image(off)))
-													),
-						output_file_descriptor => standout,
-						return_code            => result
-						);
-
-					if result = 0 then -- shutdown successful
-						set(img_status, 
-							universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-							compose
-								(
-								containing_directory => name_directory_configuration_images,
-								name => name_file_image_aborted,
-								extension => file_extension_png
-								)
-							);
-
-					else -- shutdown failed
-						set(img_status, 
-							universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-							compose
-								(
-								containing_directory => name_directory_configuration_images,
-								name => name_file_image_abort_failed,
-								extension => file_extension_png
-								)
-							);
-					end if;
-
+					shutdown_uut;
 				else -- process name_module_cli could not be killed
 					set(img_status, 
 						universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
@@ -238,10 +247,7 @@ package body bsmgui_cb is
 							extension => file_extension_png
 							)
 						);
-
 				end if;
-
-
 
 				status_test := stopped;
 				set_label(button_start_stop_test,"START");
@@ -265,64 +271,93 @@ package body bsmgui_cb is
 
 
 	procedure start_stop_script (self : access gtk_button_record'class) is
-		result 	: natural;
+		result 	: natural := 0;
 		dead	: boolean;
 	begin
 		set_sensitive (chooser_set_uut, false);
 		set_sensitive (chooser_set_script, false);
 		set_sensitive (chooser_set_test, false);
 		set_sensitive (button_start_stop_test, false);
-		put_line ("start_stop_script: " & universal_string_type.to_string(name_script));
+
 		set_directory(universal_string_type.to_string(name_project));
 
-		put_line(m1_internal.running);
-		set(img_status, 
-			universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-			compose
-				(
-				containing_directory => name_directory_configuration_images,
-				name => name_file_image_run,
-				extension => file_extension_png
-				)
-			);
-		while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
+		-- Remove stale result file (in temp directory) from previous runs.
+		delete_result_file; -- This does not require any scripts to do so on start-up.
 
-		spawn 
-			(  
-			program_name           => universal_string_type.to_string(name_script),
-			args                   => 	(
-										1=> new string'("")
-										),
-			output_file_descriptor => standout,
-			return_code            => result
-			);
+		case status_script is
+			when stopped | finished =>
+				set_label(button_start_stop_script,"STOP"); -- CS: variable for label
+				put_line ("start script: " & universal_string_type.to_string(name_script));
+
+				-- UPDATE STATUS IMAGE TO "RUNNING"
+				set(img_status, 
+					universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+					compose
+						(
+						containing_directory => name_directory_configuration_images,
+						name => name_file_image_run,
+						extension => file_extension_png
+						)
+					);
 
 
-		if result = 0 then
-			put_line(passed);
-			set(img_status, 
-				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-				compose
+				-- LAUNCH SCRIPT (as an external program in the background)
+				while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
+				result := system
 					(
-					containing_directory => name_directory_configuration_images,
-					name => name_file_image_pass,
-					extension => file_extension_png
-					)
-				);
+					universal_string_type.to_string(name_script) & row_separator_0 & "&" & ASCII.NUL 
+					);
 
-		else
-			put_line(failed);
-			set(img_status, 
-				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-				compose
-					(
-					containing_directory => name_directory_configuration_images,
-					name => name_file_image_fail,
-					extension => file_extension_png
-					)
-				);
+				-- set test status to "running" so that next click on "script start" button takes us in case status_script "running"
+				status_script := running;
 
-		end if;
+				-- WAIT UNTIL SCRIPT FINISHES
+				-- This is achieved by polling the process id of the script until the process finishes.
+				result := 0;
+				while result = 0 loop
+					delay gui_refresh_rate;
+					while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
+					spawn 
+						(  
+						program_name           => "/bin/pidof", -- CS: needs variable setup by environment check
+						args                   => 	(
+													1=> new string'("-x"),
+													2=> new string'(universal_string_type.to_string(name_script))
+													),
+						output_file_descriptor => standout, -- CS: send it to /dev/null
+						return_code            => result
+						);
+				end loop;
+
+				evaluate_result_file; -- All scripts require to write the result file at the end of the script !
+				set_label(button_start_stop_script,"START"); -- CS: variable for label
+				status_script := finished;
+
+			when running =>
+				put_line ("aborting script: " & universal_string_type.to_string(name_script));
+
+				-- Kill process name_script.
+				result := system( "p=$(pidof -x " & universal_string_type.to_string(name_script) & "); kill $p; sleep 1" & ASCII.NUL ); -- CS: variable for delay value
+
+				-- When killed, shutdown UUT.
+				if result = 0 then
+					--put_line ("aborting ....");
+					shutdown_uut;
+				else
+					set(img_status, 
+						universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+						compose
+							(
+							containing_directory => name_directory_configuration_images,
+							name => name_file_image_abort_failed,
+							extension => file_extension_png
+							)
+						);
+				end if;
+
+				status_script := stopped;
+				set_label(button_start_stop_script,"START");
+		end case;
 
 		set_sensitive (chooser_set_uut, true);
 		set_sensitive (chooser_set_script, true);
@@ -333,7 +368,6 @@ package body bsmgui_cb is
 
 	procedure abort_shutdown (self : access gtk_button_record'class) is
 		result 	: natural;
---		dead	: boolean;
 	begin
 		set_sensitive (chooser_set_uut, false);
 		set_sensitive (chooser_set_script, false);
@@ -342,17 +376,6 @@ package body bsmgui_cb is
 		--set_directory(universal_string_type.to_string(name_project));
 
 		put_line(aborting);
--- CS: image for abort ?
--- 		set(img_status, 
--- 			universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
--- 			compose
--- 				(
--- 				containing_directory => name_directory_configuration_images,
--- 				name => name_file_image_run,
--- 				extension => file_extension_png
--- 				)
--- 			);
--- 		while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
 
 		spawn 
 			(  

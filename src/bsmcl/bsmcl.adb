@@ -219,38 +219,6 @@ procedure bsmcl is
 		put_line("           - Push YELLOW reset button on front panel of" & row_separator_0 & name_bsc & row_separator_0 & "then try again !");
 	end advise_on_bsc_error;
 
-	procedure make_result_file (result : string) is
-	-- Creates a temporarily file (in directory tmp) that contains the single word PASSED or FAILED.
-	-- The graphical user interface reads this file in order to set the status image to FAIL or PASS.
-	begin
-		--put_line(standard_output,"create result file");
-		--put_line(standard_output,current_directory);
-		create ( file_test_result, name => (compose 
-										(
-										current_directory & name_directory_separator & name_directory_temp,
-										name_file_test_result
-										))
-				); 
-		put_line (file_test_result, result);
-		close (file_test_result);
-		--put_line(standard_output,"created result file");
-	end make_result_file;
-
-	procedure delete_result_file is
-	-- Deletes the temporarily file (created by make_result_file) (in directory tmp).
-	begin
-		--put_line(standard_output,"delete result file");
-		if exists (name_file_test_result) then
-			delete_file(name => (compose 
-									(
-									current_directory & name_directory_separator & name_directory_temp,
-									name_directory_temp,
-									name_file_test_result
-									))
-				);
-			--put_line(standard_output,"delete result file");
-		end if;
-	end delete_result_file;
 
 begin
 
