@@ -52,6 +52,7 @@ with gtk.label;			use gtk.label;
 with gtk.image;			use gtk.image;
 with gtk.file_chooser;			use gtk.file_chooser;
 with gtk.file_chooser_button;	use gtk.file_chooser_button;
+with gtk.file_filter;			use gtk.file_filter;
 with gtkada.handlers; 			use gtkada.handlers;
 with glib.object;
 with gdk.event;
@@ -73,6 +74,9 @@ procedure bsmgui is
 	label_uut				: gtk.label.gtk_label;
 	label_script			: gtk.label.gtk_label;
 	label_test				: gtk.label.gtk_label;
+
+	filter_scripts			: gtk_file_filter;
+	--filter_tests			: gtk_file_filter;
 
 
 begin
@@ -135,10 +139,15 @@ begin
 
  	pack_start (box_selection_directory, chooser_set_uut);
  	show (chooser_set_uut);
+
  	gtk_new (chooser_set_script, "Script", action_open);
  	pack_start (box_selection_directory, chooser_set_script);
 	set_sensitive (chooser_set_script, false);
+	gtk_new(filter_scripts);
+	add_pattern (filter_scripts, "*." & file_extension_script);
+	set_filter (chooser_set_script, filter_scripts);
  	show (chooser_set_script);
+
  	gtk_new (chooser_set_test, "Test", action_select_folder);
  	pack_start (box_selection_directory, chooser_set_test);
 	set_sensitive (chooser_set_test, false);
