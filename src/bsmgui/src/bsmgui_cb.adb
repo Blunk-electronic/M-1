@@ -55,6 +55,7 @@ package body bsmgui_cb is
 
 	procedure set_project (self : access gtk_file_chooser_button_record'class) is
 	begin
+	-- CS: check if this is a valid project directory
 		name_project := universal_string_type.to_bounded_string(gtk.file_chooser_button.get_current_folder(self));
 
 			put_line("set project:" & universal_string_type.to_string(name_project));
@@ -73,6 +74,7 @@ package body bsmgui_cb is
 
 
 	procedure set_script (self : access gtk_file_chooser_button_record'class) is
+	-- CS: check if this is a valid script (even if the file filter selects *.sh)
 	begin
 		set_sensitive (button_start_stop_script, true);
 		name_script := universal_string_type.to_bounded_string(gtk.file_chooser_button.get_filename(self));
@@ -82,6 +84,7 @@ package body bsmgui_cb is
 
 	procedure set_test (self : access gtk_file_chooser_button_record'class) is
 	begin
+	-- CS: check if this is a test directory with a vector file
 		set_sensitive (button_start_stop_test, true);
 		name_test := universal_string_type.to_bounded_string(gtk.file_chooser_button.get_filename(self));
 		put_line("set test: " & universal_string_type.to_string(name_test));
