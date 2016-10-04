@@ -2,7 +2,7 @@
 
 # This is the uninstall script for System M-1. 
 
-version=001
+version=002
 
 set -e
 dest_script_dir=$HOME/bin
@@ -43,6 +43,15 @@ procedure_make()
 		# 	make clean # clean up
 			cd - # change back to origin dir
 	fi
+	}
+
+procedure_gnatmake()
+	{
+	target=$1
+	echo "-" $target
+	cd src/$target # change into source dir
+	./make_clean.sh
+	cd - # change back to origin dir
 	}
 
 conf_directory=$HOME/.M-1
@@ -97,6 +106,7 @@ procedure_make mkoptions
 procedure_make mktoggle
 procedure_make mkclock
 procedure_make mkvmod
+procedure_gnatmake bsmgui
 
 echo done
 exit
