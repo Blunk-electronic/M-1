@@ -52,6 +52,11 @@ package bsmgui_cb is
 	button_start_stop_script	: gtk_button;
 	button_abort_shutdown		: gtk_button;
 
+	text_label_button_test_start	: constant string (1..10) := "START TEST";
+	text_label_button_test_stop		: constant string (1..9)  := "STOP TEST";
+	text_label_button_script_start	: constant string (1..12) := "START SCRIPT";
+	text_label_button_script_stop	: constant string (1..11) := "STOP SCRIPT";
+
 	chooser_set_uut		: gtk_file_chooser_button;
 	chooser_set_script	: gtk_file_chooser_button;
 	chooser_set_test	: gtk_file_chooser_button;

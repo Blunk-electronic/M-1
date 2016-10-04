@@ -157,11 +157,11 @@ begin
 	gtk_new_vbox (box_start_stop);
 	pack_start (box_head, box_start_stop, true, true, 5);
 	show (box_start_stop);
-	gtk_new (button_start_stop_script, "Start Script");
+	gtk_new (button_start_stop_script, text_label_button_script_start);
 	pack_start (box_start_stop, button_start_stop_script, true, true, 5);
 	set_sensitive (button_start_stop_script, false);
 	show (button_start_stop_script);
-	gtk_new (button_start_stop_test, "Start Test");
+	gtk_new (button_start_stop_test, text_label_button_test_start);
 	pack_start (box_start_stop, button_start_stop_test, true, true, 5);
 	set_sensitive (button_start_stop_test, false);
 	show (button_start_stop_test);

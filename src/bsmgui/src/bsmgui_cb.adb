@@ -211,7 +211,7 @@ package body bsmgui_cb is
 		case status_test is
 			when stopped | finished =>
 				--set_sensitive (button_start_stop_script, false);
-				set_label(button_start_stop_test,"STOP"); -- CS: variable for label
+				set_label(button_start_stop_test,text_label_button_test_stop);
 				put_line ("start test: " & universal_string_type.to_string(name_test));
 
 				-- UPDATE STATUS IMAGE TO "RUNNING"
@@ -259,7 +259,7 @@ package body bsmgui_cb is
 				end loop;
 
 				evaluate_result_file;
-				set_label(button_start_stop_test,"START"); -- CS: variable for label
+				set_label(button_start_stop_test,text_label_button_test_start);
 				status_test := finished;
 
 
@@ -286,7 +286,7 @@ package body bsmgui_cb is
 				end if;
 
 				status_test := stopped;
-				set_label(button_start_stop_test,"START");
+				set_label(button_start_stop_test,text_label_button_test_start);
 		end case;
 
 
@@ -322,7 +322,7 @@ package body bsmgui_cb is
 
 		case status_script is
 			when stopped | finished =>
-				set_label(button_start_stop_script,"STOP"); -- CS: variable for label
+				set_label(button_start_stop_script,text_label_button_script_stop);
 				put_line ("start script: " & universal_string_type.to_string(name_script));
 
 				-- UPDATE STATUS IMAGE TO "RUNNING"
@@ -366,7 +366,7 @@ package body bsmgui_cb is
 				end loop;
 
 				evaluate_result_file; -- All scripts require to write the result file at the end of the script !
-				set_label(button_start_stop_script,"START"); -- CS: variable for label
+				set_label(button_start_stop_script,text_label_button_script_start);
 				status_script := finished;
 
 			when running =>
@@ -392,7 +392,7 @@ package body bsmgui_cb is
 				end if;
 
 				status_script := stopped;
-				set_label(button_start_stop_script,"START");
+				set_label(button_start_stop_script,text_label_button_script_start);
 		end case;
 
 		set_sensitive (chooser_set_uut, true);
