@@ -2,7 +2,7 @@
 
 set -e
 
-version=019
+version=020
 install_dir=$HOME/.M-1/snippets
 
 echo project creator version $version;
@@ -18,32 +18,30 @@ if [ -e $project_name ]
 	read key
 	#echo
 	[ "$key" = "y" ] && 
-		{
-		rm -rf $project_name;
-
-		mkdir $project_name;
-		mkdir $project_name/tmp;
-		mkdir $project_name/bak;
-		mkdir $project_name/cad;
-		mkdir $project_name/doc;
-		mkdir $project_name/models;
-		mkdir $project_name/setup;
-		mkdir $project_name/scripts;
-		mkdir $project_name/msg;
-
-		echo "Project description:" > $project_name/proj_desc.txt
-
-		cp $install_dir/scanpath.txt $project_name/$project_name.udb
-		cp $install_dir/test_init_general.txt $project_name/setup/
-		cp $install_dir/mkoptions.conf $project_name/
-		}
-
+	{
+	rm -rf $project_name;
+	}
 	[ "$key" != "y" ] && 
-		{
-		echo "CANCELLED ! Project '"$project_name"' left untouched."
-		exit 2
-		}
+	{
+	echo "CANCELLED ! Project '"$project_name"' left untouched."
+	exit 2
+	}
     }
 fi
 
-exit 0
+mkdir $project_name;
+mkdir $project_name/tmp;
+mkdir $project_name/bak;
+mkdir $project_name/cad;
+mkdir $project_name/doc;
+mkdir $project_name/models;
+mkdir $project_name/setup;
+mkdir $project_name/scripts;
+mkdir $project_name/msg;
+
+echo "Project description:" > $project_name/proj_desc.txt
+
+cp $install_dir/scanpath.txt $project_name/$project_name.udb
+cp $install_dir/test_init_general.txt $project_name/setup/
+cp $install_dir/mkoptions.conf $project_name/
+exit
