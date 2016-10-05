@@ -79,6 +79,7 @@ package body bsmgui_cb is
 		set_sensitive (button_start_stop_script, true);
 		name_script := universal_string_type.to_bounded_string(gtk.file_chooser_button.get_filename(self));
 		put_line("set script: " & universal_string_type.to_string(name_script));
+		script_valid := true;
 	end set_script;
 
 
@@ -88,6 +89,7 @@ package body bsmgui_cb is
 		set_sensitive (button_start_stop_test, true);
 		name_test := universal_string_type.to_bounded_string(gtk.file_chooser_button.get_filename(self));
 		put_line("set test: " & universal_string_type.to_string(name_test));
+		test_valid := true;
 	end set_test;
 
 
@@ -253,7 +255,8 @@ package body bsmgui_cb is
 													--1=> new string'("-p"),
 													1=> new string'(name_module_cli)
 													),
-						output_file_descriptor => standout, -- CS: send it to /dev/null
+						output_file_descriptor => trash_bin_text,
+
 						return_code            => result
 						);
 				end loop;
@@ -289,20 +292,14 @@ package body bsmgui_cb is
 				set_label(button_start_stop_test,text_label_button_test_start);
 		end case;
 
-
-
--- 		if result = 0 then
--- 			put_line(passed);
--- 
--- 		else
--- 			put_line(failed);
--- 
--- 		end if;
-
+		-- enable choosers
 		set_sensitive (chooser_set_uut, true);
 		set_sensitive (chooser_set_script, true);
 		set_sensitive (chooser_set_test, true);
-		set_sensitive (button_start_stop_script, true);
+		-- if a valid script has be set before, enable script button.
+		if script_valid then 
+			set_sensitive (button_start_stop_script, true);			
+		end if;
 	end start_stop_test;
 
 
@@ -357,10 +354,10 @@ package body bsmgui_cb is
 						(  
 						program_name           => "/bin/pidof", -- CS: needs variable setup by environment check
 						args                   => 	(
-													1=> new string'("-x"),
+													1=> new string'("-x"), -- x option makes pidof search for scripts
 													2=> new string'(universal_string_type.to_string(name_script))
 													),
-						output_file_descriptor => standout, -- CS: send it to /dev/null
+						output_file_descriptor => trash_bin_text,
 						return_code            => result
 						);
 				end loop;
@@ -372,7 +369,7 @@ package body bsmgui_cb is
 			when running =>
 				put_line ("aborting script: " & universal_string_type.to_string(name_script));
 
-				-- Kill process name_script.
+				-- Kill process name_script. -- x option makes pidof search for scripts
 				result := system( "p=$(pidof -x " & universal_string_type.to_string(name_script) & "); kill $p; sleep 1" & ASCII.NUL ); -- CS: variable for delay value
 
 				-- When killed, shutdown UUT.
@@ -395,10 +392,14 @@ package body bsmgui_cb is
 				set_label(button_start_stop_script,text_label_button_script_start);
 		end case;
 
+		-- enable choosers
 		set_sensitive (chooser_set_uut, true);
 		set_sensitive (chooser_set_script, true);
 		set_sensitive (chooser_set_test, true);
-		set_sensitive (button_start_stop_test, true);
+		-- if a valid testt has be set before, enable script button.
+		if test_valid then
+			set_sensitive (button_start_stop_test, true);			
+		end if;
 	end start_stop_script;
 
 

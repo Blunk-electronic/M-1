@@ -157,6 +157,9 @@ begin
 	gtk_new_vbox (box_start_stop);
 	pack_start (box_head, box_start_stop, true, true, 5);
 	show (box_start_stop);
+	gtk_new (button_abort_shutdown, "ABORT/POWER OFF");
+	pack_start (box_start_stop, button_abort_shutdown, true, true, 5);
+	show (button_abort_shutdown);
 	gtk_new (button_start_stop_script, text_label_button_script_start);
 	pack_start (box_start_stop, button_start_stop_script, true, true, 5);
 	set_sensitive (button_start_stop_script, false);
@@ -165,9 +168,6 @@ begin
 	pack_start (box_start_stop, button_start_stop_test, true, true, 5);
 	set_sensitive (button_start_stop_test, false);
 	show (button_start_stop_test);
-	gtk_new (button_abort_shutdown, "ABORT/POWER OFF");
-	pack_start (box_start_stop, button_abort_shutdown, true, true, 5);
-	show (button_abort_shutdown);
 
 
 	-- STATUS WINDOW
