@@ -73,5 +73,7 @@ if [ "$2" = "-run" ]
 		bsmcl run LED_D401
 fi
 
+echo "PASSED" > tmp/test_result.tmp
+
 exit
 

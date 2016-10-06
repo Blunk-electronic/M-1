@@ -12,5 +12,7 @@ bsmcl run sram_ic203
 bsmcl run osc
 bsmcl run LED_D401
 
+echo "PASSED" > tmp/test_result.tmp
+
 exit
 
