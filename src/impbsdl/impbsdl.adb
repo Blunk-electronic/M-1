@@ -722,6 +722,8 @@ procedure impbsdl is
 											when ':' => scratch := scratch & ' ';
 											when others => scratch := scratch & char_current; -- append other characters to scratch
 										end case;
+									elsif char_current = ascii.ht then -- replace horizontal tabs by space
+										scratch := scratch & ' ';
 	 								end if;
 
 								end loop;
@@ -732,7 +734,7 @@ procedure impbsdl is
 	--			Set_Output(Standard_Output);
 	--			scratch := split_line(scratch,false,'=');
 
-	--			put (scratch); new_line(2);
+--				put (scratch); new_line(2);
 	--			Abort_Task(Current_Task);
 
 				-- delete header of port line,
