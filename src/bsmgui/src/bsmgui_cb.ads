@@ -46,7 +46,6 @@ with m1_internal; 				use m1_internal;
 package bsmgui_cb is
 
 	gui_refresh_rate			: duration := 0.1;
-	time_to_free_the_interface	: duration := 2.0;
 
 	button_start_stop_test		: gtk_button;
 	button_start_stop_script	: gtk_button;
@@ -84,5 +83,7 @@ package bsmgui_cb is
 
 	-- here useless stuff goes (when external program "pidof" is running)
 	trash_bin_text : file_descriptor := open_read_write (name => "/dev/null", fmode => text);
+
+	abort_pending : boolean := false;
 
 end bsmgui_cb;

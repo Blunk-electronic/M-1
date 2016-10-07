@@ -162,7 +162,7 @@ package body bsmgui_cb is
 	procedure shutdown_uut is
 		result : natural;
 	begin
-		delay time_to_free_the_interface; -- CS: poll interface until no blocked any more
+		delay 2.0;
 		spawn 
 			(  
 			program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
@@ -261,17 +261,21 @@ package body bsmgui_cb is
 						);
 				end loop;
 
-				evaluate_result_file;
-				set_label(button_start_stop_test,text_label_button_test_start);
+				if not abort_pending then
+					evaluate_result_file;
+					set_label(button_start_stop_test,text_label_button_test_start);
+				end if;
+
 				status_test := finished;
 
 
 
 			when running =>
+				abort_pending := true;
 				put_line ("aborting test: " & universal_string_type.to_string(name_test));
 
 				-- Kill process name_module_cli.
-				result := system( "p=$(pidof " & name_module_cli & "); kill $p; sleep 1" & ASCII.NUL ); -- CS: variable for delay value
+				result := system( "p=$(pidof " & name_module_cli & "); kill $p" & ASCII.NUL );
 
 				-- When killed, shutdown UUT.
 				if result = 0 then
@@ -290,6 +294,7 @@ package body bsmgui_cb is
 
 				status_test := stopped;
 				set_label(button_start_stop_test,text_label_button_test_start);
+				abort_pending := false;
 		end case;
 
 		-- enable choosers
@@ -362,19 +367,38 @@ package body bsmgui_cb is
 						);
 				end loop;
 
-				evaluate_result_file; -- All scripts require to write the result file at the end of the script !
-				set_label(button_start_stop_script,text_label_button_script_start);
+				if not abort_pending then
+					evaluate_result_file; -- All scripts require to write the result file at the end of the script !
+					set_label(button_start_stop_script,text_label_button_script_start);
+				end if;
+
 				status_script := finished;
 
 			when running =>
+				abort_pending := true;
 				put_line ("aborting script: " & universal_string_type.to_string(name_script));
 
 				-- Kill process name_script. -- x option makes pidof search for scripts
-				result := system( "p=$(pidof -x " & universal_string_type.to_string(name_script) & "); kill $p; sleep 1" & ASCII.NUL ); -- CS: variable for delay value
+				result := system( "p=$(pidof -x " & simple_name(universal_string_type.to_string(name_script)) & "); kill $p" & ASCII.NUL );
+				-- CS: test result ?
+				result := system( "p=$(pidof " & name_module_cli & "); kill $p" & ASCII.NUL );
+				--result := system( "p=$(pidof " & name_module_kermit & "); kill $p" & ASCII.NUL );
+
+-- 				spawn 
+-- 					(  
+-- 					program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & "killer.sh",
+-- 					args                   => 	(
+-- 												--1=> new string'("-x"), -- x option makes pidof search for scripts
+-- 												1=> new string'(simple_name(universal_string_type.to_string(name_script)))
+-- 												),
+-- 					output_file_descriptor => standout,
+-- 					return_code            => result
+-- 					);
+
 
 				-- When killed, shutdown UUT.
 				if result = 0 then
-					--put_line ("aborting ....");
+					--put_line ("killing ....");
 					shutdown_uut;
 				else
 					set(img_status, 
@@ -390,6 +414,7 @@ package body bsmgui_cb is
 
 				status_script := stopped;
 				set_label(button_start_stop_script,text_label_button_script_start);
+				abort_pending := false;
 		end case;
 
 		-- enable choosers
@@ -412,32 +437,20 @@ package body bsmgui_cb is
 		set_sensitive (button_start_stop_test, false);
 		--set_directory(universal_string_type.to_string(name_project));
 
+		abort_pending := true;
 		put_line(aborting);
 
-		spawn 
-			(  
-			program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
-			args                   => 	(
-										1=> new string'(to_lower(type_action'image(off)))
-										),
-			output_file_descriptor => standout,
-			return_code            => result
-			);
+		result := system( "p=$(pidof -x " & simple_name(universal_string_type.to_string(name_script)) & "); kill $p" & ASCII.NUL );
+		-- CS: test result ?
+		result := system( "p=$(pidof " & name_module_cli & "); kill $p" & ASCII.NUL );
+		-- CS: test result ?
+		--result := system( "p=$(pidof " & name_module_kermit & "); kill $p" & ASCII.NUL );
+		-- CS: test result ?
 
 		if result = 0 then
-			put_line(successful);
-			set(img_status, 
-				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-				compose
-					(
-					containing_directory => name_directory_configuration_images,
-					name => name_file_image_aborted,
-					extension => file_extension_png
-					)
-				);
-
+			--put_line ("killing ....");
+			shutdown_uut;
 		else
-			put_line(failed);
 			set(img_status, 
 				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
 				compose
@@ -447,13 +460,51 @@ package body bsmgui_cb is
 					extension => file_extension_png
 					)
 				);
-
 		end if;
+
+-- 
+-- 		spawn 
+-- 			(  
+-- 			program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
+-- 			args                   => 	(
+-- 										1=> new string'(to_lower(type_action'image(off)))
+-- 										),
+-- 			output_file_descriptor => standout,
+-- 			return_code            => result
+-- 			);
+-- 
+-- 		if result = 0 then
+-- 			put_line(successful);
+-- 			set(img_status, 
+-- 				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+-- 				compose
+-- 					(
+-- 					containing_directory => name_directory_configuration_images,
+-- 					name => name_file_image_aborted,
+-- 					extension => file_extension_png
+-- 					)
+-- 				);
+-- 
+-- 		else
+-- 			put_line(failed);
+-- 			set(img_status, 
+-- 				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+-- 				compose
+-- 					(
+-- 					containing_directory => name_directory_configuration_images,
+-- 					name => name_file_image_abort_failed,
+-- 					extension => file_extension_png
+-- 					)
+-- 				);
+-- 
+-- 		end if;
 
 		set_sensitive (chooser_set_uut, true);
 		set_sensitive (chooser_set_script, true);
 		set_sensitive (chooser_set_test, true);
 		set_sensitive (button_start_stop_test, true);
+
+		abort_pending := false;
 	end abort_shutdown;
 
 end bsmgui_cb;
