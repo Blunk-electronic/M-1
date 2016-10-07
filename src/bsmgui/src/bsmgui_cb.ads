@@ -47,6 +47,11 @@ package bsmgui_cb is
 
 	gui_refresh_rate			: duration := 0.1;
 
+	-- After killing processes, it takes this time for the interface to become free
+	-- for other commands.
+	time_for_interface_to_become_free : duration := 1.0; 
+
+
 	button_start_stop_test		: gtk_button;
 	button_start_stop_script	: gtk_button;
 	button_abort_shutdown		: gtk_button;

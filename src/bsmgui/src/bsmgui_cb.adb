@@ -54,21 +54,47 @@ package body bsmgui_cb is
 
 
 	procedure set_project (self : access gtk_file_chooser_button_record'class) is
+		result : natural;
 	begin
 	-- CS: check if this is a valid project directory
 		name_project := universal_string_type.to_bounded_string(gtk.file_chooser_button.get_current_folder(self));
 
-			put_line("set project:" & universal_string_type.to_string(name_project));
+		-- if project changes, clear bsc ram
+		if universal_string_type.to_string(name_project) /= universal_string_type.to_string(name_project_previous) then
+			delay time_for_interface_to_become_free;
+			spawn 
+				(  
+				program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
+				args                   => 	(
+											1=> new string'(to_lower(type_action'image(clear)))
+											),
+				output_file_descriptor => standout,
+				return_code            => result
+				);
 
-			if chooser_set_test.set_current_folder(universal_string_type.to_string(name_project)) then 
-				put_line("project preset for test: " & universal_string_type.to_string(name_project));
-			end if;
-			if chooser_set_script.set_current_folder(universal_string_type.to_string(name_project)) then 
-				put_line("project preset for script: " & universal_string_type.to_string(name_project));
+			if result = 0 then -- ram clearing successful
+				name_project_previous := name_project; -- update name_project_previous to current name
+
+				-- reset test and script choosers to project root directory
+				if chooser_set_test.set_current_folder(universal_string_type.to_string(name_project)) then 
+					put_line("project preset for test: " & universal_string_type.to_string(name_project));
+				end if;
+				if chooser_set_script.set_current_folder(universal_string_type.to_string(name_project)) then 
+					put_line("project preset for script: " & universal_string_type.to_string(name_project));
+				end if;
+
+				put_line("set project:" & universal_string_type.to_string(name_project));
+
+			else
+				raise constraint_error;
 			end if;
 
-			set_sensitive (chooser_set_test, true);
-			set_sensitive (chooser_set_script, true);
+			
+		end if;
+
+		-- enable test and script choosers
+		set_sensitive (chooser_set_test, true);
+		set_sensitive (chooser_set_script, true);
 
 	end set_project;
 
@@ -162,7 +188,7 @@ package body bsmgui_cb is
 	procedure shutdown_uut is
 		result : natural;
 	begin
-		delay 2.0;
+		delay time_for_interface_to_become_free;
 		spawn 
 			(  
 			program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
