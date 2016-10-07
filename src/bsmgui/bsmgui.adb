@@ -78,6 +78,64 @@ procedure bsmgui is
 	filter_scripts			: gtk_file_filter;
 	--filter_tests			: gtk_file_filter;
 
+	procedure read_last_session is
+		file_session	: ada.text_io.file_type;
+		line			: extended_string.bounded_string;
+	begin
+		put_line("reading last session ...");
+		open(	file => file_session,
+				mode => in_file,
+				name => compose
+							(
+							containing_directory => universal_string_type.to_string(name_directory_home) & name_directory_separator &
+								name_directory_configuration,
+							name => name_file_configuration_session 
+							)
+			);
+		set_input(file_session);
+
+		while not end_of_file
+		loop
+			line := remove_comment_from_line(extended_string.to_bounded_string(get_line));
+			--put_line(extended_string.to_string(line));
+			if get_field_count(extended_string.to_string(line)) /= 0 then -- if line contains anything
+				
+				-- get project
+				if get_field_from_line(line,1) = "project" then 
+					name_project := universal_string_type.to_bounded_string(get_field_from_line(line,2));
+					put_line("project: " & universal_string_type.to_string(name_project));
+				end if;
+
+				-- get script
+				if get_field_from_line(line,1) = "script" then 
+					name_script := universal_string_type.to_bounded_string( 
+								(
+								universal_string_type.to_string(name_project) &
+								name_directory_separator & 
+								get_field_from_line(line,2)
+								));
+					put_line("script: " & universal_string_type.to_string(name_script));
+				end if;
+
+				-- get test
+				if get_field_from_line(line,1) = "test" then 
+					name_test := universal_string_type.to_bounded_string( 
+								(
+								universal_string_type.to_string(name_project) &
+								name_directory_separator & 
+								get_field_from_line(line,2)
+								));
+					put_line("test: " & universal_string_type.to_string(name_test));
+				end if;
+
+
+			end if;
+		end loop;
+
+		close(file_session);
+
+	end read_last_session;
+
 
 begin
 	-- read system configuration file and set variables: name_directory_home, language, name_directory_bin, name_directory_enscript, interface_to_bsc
@@ -132,10 +190,10 @@ begin
  	gtk_new (chooser_set_uut, "UUT", action_select_folder);
 
 	-- set default projects directory
-	if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_directory_home) & name_directory_separator & name_directory_projects_default) then
-		put_line("project directory default: " & universal_string_type.to_string(name_directory_home) &
-			name_directory_separator & name_directory_projects_default);
-	end if;
+-- 	if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_directory_home) & name_directory_separator & name_directory_projects_default) then
+-- 		put_line("project directory default: " & universal_string_type.to_string(name_directory_home) &
+-- 			name_directory_separator & name_directory_projects_default);
+-- 	end if;
 
  	pack_start (box_selection_directory, chooser_set_uut);
  	show (chooser_set_uut);
@@ -153,6 +211,7 @@ begin
 	set_sensitive (chooser_set_test, false);
  	show (chooser_set_test);
 
+
 	-- BOX START / STOP BUTTON
 	gtk_new_vbox (box_start_stop);
 	pack_start (box_head, box_start_stop, true, true, 5);
@@ -168,6 +227,26 @@ begin
 	pack_start (box_start_stop, button_start_stop_test, true, true, 5);
 	set_sensitive (button_start_stop_test, false);
 	show (button_start_stop_test);
+
+	-- restore last session
+	read_last_session;
+	if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_project)) then
+		-- reset test and script choosers to project root directory
+		if chooser_set_test.set_current_folder(universal_string_type.to_string(name_test)) then 
+			--put_line("project preset for test: " & universal_string_type.to_string(name_test));
+			set_sensitive (chooser_set_test, true);
+			set_sensitive (button_start_stop_test, true);
+		end if;
+		--if chooser_set_script.set_current_folder(universal_string_type.to_string(name_project)) then
+		if chooser_set_script.set_filename(universal_string_type.to_string(name_script)) then  
+			--put_line("project preset for script: " & universal_string_type.to_string(name_project));
+			set_sensitive (chooser_set_script, true);
+			set_sensitive (button_start_stop_script, true);
+		end if;
+
+		--put_line("project set");
+	end if;
+
 
 
 	-- STATUS WINDOW

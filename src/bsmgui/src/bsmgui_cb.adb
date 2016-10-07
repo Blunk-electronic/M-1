@@ -130,7 +130,7 @@ package body bsmgui_cb is
 	begin
 		if exists (compose 
 						(
-						current_directory & name_directory_separator & name_directory_temp,
+						universal_string_type.to_string(name_project) & name_directory_separator & name_directory_temp,
 						name_file_test_result
 						)) then
 			open(
@@ -138,7 +138,7 @@ package body bsmgui_cb is
 				mode => in_file,
 				name => (compose 
 								(
-								current_directory & name_directory_separator & name_directory_temp,
+								universal_string_type.to_string(name_project) & name_directory_separator & name_directory_temp,
 								name_file_test_result
 								))
 				);
