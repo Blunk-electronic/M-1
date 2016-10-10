@@ -46,7 +46,7 @@ package body bsmgui_cb is
 
 	procedure write_session_file_headline is
 	begin
-		put_line( file_session, "-- THIS FILE HOLDS THE SETTINGS OF THE LAST GUI SESSION"); -- CS: date ?
+		put_line( file_session, "-- THIS FILE HOLDS THE SETTINGS OF THE LAST GUI SESSION");
 		put_line( file_session, "-- date: " & m1_internal.date_now);
 	end write_session_file_headline;
 
@@ -137,8 +137,8 @@ package body bsmgui_cb is
 
 		-- write current project, script and test in session configuration file
 		put_line( file_session, text_project & row_separator_0 & universal_string_type.to_string(name_project));
-		put_line( file_session, text_script & row_separator_0 & simple_name(universal_string_type.to_string(name_script)));
-		put_line( file_session, text_test & row_separator_0 & simple_name(universal_string_type.to_string(name_test)));
+		put_line( file_session, text_script & row_separator_0 & simple_name(universal_string_type.to_string(name_script))); -- CS: check if script valid ?
+		put_line( file_session, text_test & row_separator_0 & simple_name(universal_string_type.to_string(name_test))); -- CS: check if test valid ?
 		close(file_session);
 
 		put_line (name_module_gui & " terminated");
@@ -151,70 +151,103 @@ package body bsmgui_cb is
 	procedure set_project (self : access gtk_file_chooser_button_record'class) is
 		result : natural;
 	begin
-	-- CS: check if this is a valid project directory
 		name_project := universal_string_type.to_bounded_string(gtk.file_chooser_button.get_current_folder(self));
+		-- Check if this is a valid project directory.
+		if valid_project(universal_string_type.to_string(name_project)) then
 
-		-- if project changes, clear bsc ram
-		if universal_string_type.to_string(name_project) /= universal_string_type.to_string(name_project_previous) then
-			delay time_for_interface_to_become_free;
-			spawn 
-				(  
-				program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
-				args                   => 	(
-											1=> new string'(to_lower(type_action'image(clear)))
-											),
-				output_file_descriptor => standout,
-				return_code            => result
-				);
+			-- IF PROJECT CHANGES: 
+			--    clear bsc ram
+			--    set project as requested
+			--    set script to project directory as default
+			--    set test to project directory as default
+			if universal_string_type.to_string(name_project) /= universal_string_type.to_string(name_project_previous) then
+				delay time_for_interface_to_become_free;
+				spawn 
+					(  
+					program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
+					args                   => 	(
+												1=> new string'(to_lower(type_action'image(clear)))
+												),
+					output_file_descriptor => standout,
+					return_code            => result
+					);
 
-			if result = 0 then -- ram clearing successful
-				name_project_previous := name_project; -- update name_project_previous to current name
+				if result = 0 then -- ram clearing successful
+					name_project_previous := name_project; -- update name_project_previous to current name
+					put_line("set project: " & universal_string_type.to_string(name_project));
 
-				put_line("set project: " & universal_string_type.to_string(name_project));
+					-- Reset test and script choosers to project root directory as default.
+					-- Disable start buttons. 
+					if set_filename(chooser_set_script,universal_string_type.to_string(name_project)) then 
+						put_line("set script: " & universal_string_type.to_string(name_project));
+						set_sensitive (button_start_stop_script, false);
+					end if;
 
-				-- reset test and script choosers to project root directory
-				--if chooser_set_script.set_current_folder(universal_string_type.to_string(name_project)) then 
-				if set_filename(chooser_set_script,universal_string_type.to_string(name_project)) then 
-					put_line("set script: " & universal_string_type.to_string(name_project));
+					if set_current_folder(chooser_set_test,universal_string_type.to_string(name_project)) then  
+						put_line("set test: " & universal_string_type.to_string(name_project));
+						set_sensitive (button_start_stop_test, false);
+					end if;
+
+				else
+					set_status_image(fail);
+					raise constraint_error;
 				end if;
-
-				--if chooser_set_test.set_current_folder(universal_string_type.to_string(name_project)) then
-				if set_current_folder(chooser_set_test,universal_string_type.to_string(name_project)) then  
-					put_line("project preset for test: " & universal_string_type.to_string(name_project));
-				end if;
-
-			else
-				set_status_image(fail);
-				raise constraint_error;
 			end if;
 
-			
+			-- enable test and script choosers
+			set_sensitive (chooser_set_test, true);
+			set_sensitive (chooser_set_script, true);
+
+		else
+			put_line(message_error & "Invalid project" & exclamation);
+
+			if set_filename(chooser_set_script,universal_string_type.to_string(name_project)) then 
+				null;
+			end if;
+			if set_current_folder(chooser_set_test,universal_string_type.to_string(name_project)) then 
+				null;
+			end if;
+
+			-- disable test and script choosers
+			set_sensitive (chooser_set_test, false);
+			set_sensitive (chooser_set_script, false);
+
+			-- disable start buttons
+			set_sensitive (button_start_stop_script, false);
+			set_sensitive (button_start_stop_test, false);
 		end if;
 
-		-- enable test and script choosers
-		set_sensitive (chooser_set_test, true);
-		set_sensitive (chooser_set_script, true);
 
 	end set_project;
 
 
 	procedure set_script (self : access gtk_file_chooser_button_record'class) is
-	-- CS: check if this is a valid script (even if the file filter selects *.sh)
 	begin
-		set_sensitive (button_start_stop_script, true);
 		name_script := universal_string_type.to_bounded_string(gtk.file_chooser_button.get_filename(self));
-		put_line("set script: " & universal_string_type.to_string(name_script));
-		script_valid := true;
+		if valid_script(universal_string_type.to_string(name_script)) then
+			put_line("set script: " & universal_string_type.to_string(name_script));
+			--script_valid := true;
+			set_sensitive (button_start_stop_script, true);
+		else
+			put_line(message_error & "Script invalid" & exclamation);
+			set_sensitive (button_start_stop_script, false);
+		end if;
 	end set_script;
 
 
 	procedure set_test (self : access gtk_file_chooser_button_record'class) is
 	begin
-	-- CS: check if this is a test directory with a vector file
-		set_sensitive (button_start_stop_test, true);
 		name_test := universal_string_type.to_bounded_string(gtk.file_chooser_button.get_filename(self));
-		put_line("set test: " & universal_string_type.to_string(name_test));
-		test_valid := true;
+
+		-- If test is compiled, enable start button.
+		if test_compiled(universal_string_type.to_string(name_test)) then
+			put_line("set test: " & universal_string_type.to_string(name_test));
+			--test_valid := true;
+			set_sensitive (button_start_stop_test, true);
+		else 
+			put_line(message_error & "Test invalid or not compiled yet" & exclamation);
+			set_sensitive (button_start_stop_test, false);
+		end if;
 	end set_test;
 
 
@@ -378,9 +411,9 @@ package body bsmgui_cb is
 		set_sensitive (chooser_set_script, true);
 		set_sensitive (chooser_set_test, true);
 		-- if a valid script has be set before, enable script button.
-		if script_valid then 
+		--if script_valid then 
 			set_sensitive (button_start_stop_script, true);			
-		end if;
+		--end if;
 	end start_stop_test;
 
 
@@ -469,9 +502,9 @@ package body bsmgui_cb is
 		set_sensitive (chooser_set_script, true);
 		set_sensitive (chooser_set_test, true);
 		-- if a valid testt has be set before, enable script button.
-		if test_valid then
+		--if test_valid then
 			set_sensitive (button_start_stop_test, true);			
-		end if;
+		--end if;
 	end start_stop_script;
 
 
@@ -482,6 +515,7 @@ package body bsmgui_cb is
 		set_sensitive (chooser_set_script, false);
 		set_sensitive (chooser_set_test, false);
 		set_sensitive (button_start_stop_test, false);
+		set_sensitive (button_start_stop_script, false);
 		--set_directory(universal_string_type.to_string(name_project));
 
 		abort_pending := true;
@@ -501,12 +535,20 @@ package body bsmgui_cb is
 			set_status_image(abort_fail);
 		end if;
 
+		if valid_project(universal_string_type.to_string(name_project)) then
+			if valid_script(universal_string_type.to_string(name_script)) then
+				set_sensitive (button_start_stop_script, true);
+				set_sensitive (chooser_set_script, true);
+			end if;
+			if test_compiled(universal_string_type.to_string(name_test)) then
+				set_sensitive (button_start_stop_test, true);
+				set_sensitive (chooser_set_test, true);
+			end if;
+		end if;
+
 		set_sensitive (chooser_set_uut, true);
-		-- CS: if script valid then
-			set_sensitive (chooser_set_script, true);
-		-- CS: if test valid then
-			set_sensitive (chooser_set_test, true);
-			set_sensitive (button_start_stop_test, true);
+
+
 
 		abort_pending := false;
 	end abort_shutdown;

@@ -87,11 +87,11 @@ package bsmgui_cb is
 
 	type type_status_script is (stopped, finished, running);
 	status_script : type_status_script := stopped;
-	script_valid : boolean := false; -- true once a valid script has been set by the operator
+	--script_valid : boolean := false; -- true once a valid script has been set by the operator
 
 	type type_status_test is (stopped, finished, running);
 	status_test : type_status_test := stopped;
-	test_valid : boolean := false; -- true once a valid test has been set by the operator
+	--test_valid : boolean := false; -- true once a valid test has been set by the operator
 
 	-- here useless stuff goes (when external program "pidof" is running)
 	trash_bin_text : file_descriptor := open_read_write (name => "/dev/null", fmode => text);

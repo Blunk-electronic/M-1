@@ -113,6 +113,12 @@ procedure bsmgui is
 					if get_field_from_line(line,1) = text_project then 
 						name_project := universal_string_type.to_bounded_string(get_field_from_line(line,2));
 						put_line(text_project & ": " & universal_string_type.to_string(name_project));
+
+						if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_project)) then
+							null;
+						end if;
+						--put_line("set project: " & universal_string_type.to_string(name_project));
+
 					end if;
 					-- CS: check if project exists
 
@@ -125,6 +131,12 @@ procedure bsmgui is
 									get_field_from_line(line,2)
 									));
 						put_line(text_script & ": " & universal_string_type.to_string(name_script));
+
+						if set_filename(chooser_set_script,universal_string_type.to_string(name_script)) then  
+							put_line("set script: " & universal_string_type.to_string(name_script));
+							set_sensitive (button_start_stop_script, true);
+						end if;
+
 					end if;
 					-- CS: check if script exists
 
@@ -137,31 +149,27 @@ procedure bsmgui is
 									get_field_from_line(line,2)
 									));
 						put_line(text_test & ": " & universal_string_type.to_string(name_test));
+
+						-- Test if test has been compiled yet. If not compiled (or invalid) default to project root directory.
+						if test_compiled(universal_string_type.to_string(name_test)) then
+							if set_current_folder(chooser_set_test,universal_string_type.to_string(name_test)) then 
+								put_line("set test: " & universal_string_type.to_string(name_test));
+								set_sensitive (button_start_stop_test, true);
+							end if;
+						else
+							put_line(message_warning & "Test invalid or not compiled yet" & exclamation);
+							if set_current_folder(chooser_set_test,universal_string_type.to_string(name_project)) then 
+								null;
+							end if;
+							set_sensitive (button_start_stop_test, false);
+						end if;
+
 					end if;
-					-- CS: check if test exists
 
 				end if;
 			end loop;
 			close(file_session);
 
-			if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_project)) then
-				put_line("set project: " & universal_string_type.to_string(name_project));
-
-				-- reset test and script choosers to project root directory
-				if set_filename(chooser_set_script,universal_string_type.to_string(name_script)) then  
-					put_line("set script: " & universal_string_type.to_string(name_script));
-					set_sensitive (chooser_set_script, true);
-					set_sensitive (button_start_stop_script, true);
-				end if;
-
-				if set_current_folder(chooser_set_test,universal_string_type.to_string(name_test)) then 
-					put_line("set test: " & universal_string_type.to_string(name_test));
-					set_sensitive (chooser_set_test, true);
-					set_sensitive (button_start_stop_test, true);
-				end if;
-
-				--put_line("project set");
-			end if;
 
 
 
@@ -217,6 +225,10 @@ procedure bsmgui is
 			set_sensitive (button_start_stop_script, false);
 			set_sensitive (button_start_stop_test, false);
 		end if;
+
+
+		set_sensitive (chooser_set_test, true);
+		set_sensitive (chooser_set_script, true);
 
 
 	end read_last_session;
