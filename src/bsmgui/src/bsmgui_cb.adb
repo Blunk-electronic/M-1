@@ -173,11 +173,13 @@ package body bsmgui_cb is
 				put_line("set project: " & universal_string_type.to_string(name_project));
 
 				-- reset test and script choosers to project root directory
-				if chooser_set_script.set_current_folder(universal_string_type.to_string(name_project)) then 
-					put_line("project preset for script: " & universal_string_type.to_string(name_project));
+				--if chooser_set_script.set_current_folder(universal_string_type.to_string(name_project)) then 
+				if set_filename(chooser_set_script,universal_string_type.to_string(name_project)) then 
+					put_line("set script: " & universal_string_type.to_string(name_project));
 				end if;
 
-				if chooser_set_test.set_current_folder(universal_string_type.to_string(name_project)) then 
+				--if chooser_set_test.set_current_folder(universal_string_type.to_string(name_project)) then
+				if set_current_folder(chooser_set_test,universal_string_type.to_string(name_project)) then  
 					put_line("project preset for test: " & universal_string_type.to_string(name_project));
 				end if;
 

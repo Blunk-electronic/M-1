@@ -145,17 +145,19 @@ procedure bsmgui is
 			close(file_session);
 
 			if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_project)) then
+				put_line("set project: " & universal_string_type.to_string(name_project));
+
 				-- reset test and script choosers to project root directory
-				if chooser_set_test.set_current_folder(universal_string_type.to_string(name_test)) then 
-					--put_line("project preset for test: " & universal_string_type.to_string(name_test));
-					set_sensitive (chooser_set_test, true);
-					set_sensitive (button_start_stop_test, true);
-				end if;
-				--if chooser_set_script.set_current_folder(universal_string_type.to_string(name_project)) then
-				if chooser_set_script.set_filename(universal_string_type.to_string(name_script)) then  
-					--put_line("project preset for script: " & universal_string_type.to_string(name_project));
+				if set_filename(chooser_set_script,universal_string_type.to_string(name_script)) then  
+					put_line("set script: " & universal_string_type.to_string(name_script));
 					set_sensitive (chooser_set_script, true);
 					set_sensitive (button_start_stop_script, true);
+				end if;
+
+				if set_current_folder(chooser_set_test,universal_string_type.to_string(name_test)) then 
+					put_line("set test: " & universal_string_type.to_string(name_test));
+					set_sensitive (chooser_set_test, true);
+					set_sensitive (button_start_stop_test, true);
 				end if;
 
 				--put_line("project set");
@@ -203,11 +205,11 @@ procedure bsmgui is
 				null;
 			end if;
 
-			if chooser_set_test.set_current_folder(universal_string_type.to_string(name_test)) then 
+			if chooser_set_script.set_filename(universal_string_type.to_string(name_script)) then  
 				null;
 			end if;
 
-			if chooser_set_script.set_filename(universal_string_type.to_string(name_script)) then  
+			if set_current_folder(chooser_set_test,universal_string_type.to_string(name_test)) then  
 				null;
 			end if;
 
@@ -270,25 +272,23 @@ begin
 	gtk_new_vbox (box_selection_directory);
 	pack_start (box_head, box_selection_directory, true, true, 5);
 	show (box_selection_directory);
+
+	-- chooser UUT
  	gtk_new (chooser_set_uut, to_upper(text_project), action_select_folder);
-
-	-- set default projects directory
--- 	if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_directory_home) & name_directory_separator & name_directory_projects_default) then
--- 		put_line("project directory default: " & universal_string_type.to_string(name_directory_home) &
--- 			name_directory_separator & name_directory_projects_default);
--- 	end if;
-
  	pack_start (box_selection_directory, chooser_set_uut);
  	show (chooser_set_uut);
 
+	-- chooser script
  	gtk_new (chooser_set_script, text_script, action_open);
  	pack_start (box_selection_directory, chooser_set_script);
 	set_sensitive (chooser_set_script, false);
+	-- filter 
 	gtk_new(filter_scripts);
 	add_pattern (filter_scripts, "*." & file_extension_script);
 	set_filter (chooser_set_script, filter_scripts);
  	show (chooser_set_script);
 
+	-- chooser test
  	gtk_new (chooser_set_test, text_test, action_select_folder);
  	pack_start (box_selection_directory, chooser_set_test);
 	set_sensitive (chooser_set_test, false);
