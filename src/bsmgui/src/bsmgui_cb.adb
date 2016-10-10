@@ -44,10 +44,105 @@ with m1_files_and_directories; 	use m1_files_and_directories;
 
 package body bsmgui_cb is
 
+	procedure write_session_file_headline is
+	begin
+		put_line( file_session, "-- THIS FILE HOLDS THE SETTINGS OF THE LAST GUI SESSION"); -- CS: date ?
+		put_line( file_session, "-- date: " & m1_internal.date_now);
+	end write_session_file_headline;
+
+	procedure set_status_image(status : in type_status_image) is
+	begin
+		case status is
+			when fail =>
+				set(img_status, 
+					universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+					compose
+						(
+						containing_directory => name_directory_configuration_images,
+						name => name_file_image_fail,
+						extension => file_extension_png
+						)
+					);
+
+			when pass =>
+				set(img_status, 
+					universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+					compose
+						(
+						containing_directory => name_directory_configuration_images,
+						name => name_file_image_pass,
+						extension => file_extension_png
+						)
+					);
+
+			when ready =>
+				set(img_status, 
+					universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+					compose
+						(
+						containing_directory => name_directory_configuration_images,
+						name => name_file_image_ready,
+						extension => file_extension_png
+						)
+					);
+
+			when running =>
+				set(img_status, 
+					universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+					compose
+						(
+						containing_directory => name_directory_configuration_images,
+						name => name_file_image_run,
+						extension => file_extension_png
+						)
+					);
+
+			when aborted =>
+				set(img_status, 
+					universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+					compose
+						(
+						containing_directory => name_directory_configuration_images,
+						name => name_file_image_aborted,
+						extension => file_extension_png
+						)
+					);
+
+			when abort_fail =>
+				set(img_status, 
+					universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
+					compose
+						(
+						containing_directory => name_directory_configuration_images,
+						name => name_file_image_abort_failed,
+						extension => file_extension_png
+						)
+					);
+
+
+		end case;
+	end set_status_image;
+
 	procedure terminate_main (self : access gtk_widget_record'class) is
 	begin
-		put_line ("terminated");
-		--destroy (self);
+		create( file => file_session, name => compose
+						(
+						containing_directory => universal_string_type.to_string(name_directory_home) & name_directory_separator &
+							name_directory_configuration,
+						name => name_file_configuration_session 
+						)
+			);
+		-- write info headline
+		write_session_file_headline;
+
+		-- write current project, script and test in session configuration file
+		put_line( file_session, text_project & row_separator_0 & universal_string_type.to_string(name_project));
+		put_line( file_session, text_script & row_separator_0 & simple_name(universal_string_type.to_string(name_script)));
+		put_line( file_session, text_test & row_separator_0 & simple_name(universal_string_type.to_string(name_test)));
+		close(file_session);
+
+		put_line (name_module_gui & " terminated");
+
 		gtk.main.main_quit;
 	end terminate_main;
 
@@ -75,17 +170,19 @@ package body bsmgui_cb is
 			if result = 0 then -- ram clearing successful
 				name_project_previous := name_project; -- update name_project_previous to current name
 
+				put_line("set project: " & universal_string_type.to_string(name_project));
+
 				-- reset test and script choosers to project root directory
-				if chooser_set_test.set_current_folder(universal_string_type.to_string(name_project)) then 
-					put_line("project preset for test: " & universal_string_type.to_string(name_project));
-				end if;
 				if chooser_set_script.set_current_folder(universal_string_type.to_string(name_project)) then 
 					put_line("project preset for script: " & universal_string_type.to_string(name_project));
 				end if;
 
-				put_line("set project:" & universal_string_type.to_string(name_project));
+				if chooser_set_test.set_current_folder(universal_string_type.to_string(name_project)) then 
+					put_line("project preset for test: " & universal_string_type.to_string(name_project));
+				end if;
 
 			else
+				set_status_image(fail);
 				raise constraint_error;
 			end if;
 
@@ -153,27 +250,11 @@ package body bsmgui_cb is
 					if get_field_from_line(text_in => line, position => 1) = passed then
 						--put_line(passed);
 						-- UPDATE STATUS IMAGE TO "PASS"
-						set(img_status, 
-							universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-							compose
-								(
-								containing_directory => name_directory_configuration_images,
-								name => name_file_image_pass,
-								extension => file_extension_png
-								)
-							);
+						set_status_image(pass);
 					else
 						--put_line(failed);
 						-- UPDATE STATUS IMAGE TO "FAIL"
-						set(img_status, 
-							universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-							compose
-								(
-								containing_directory => name_directory_configuration_images,
-								name => name_file_image_fail,
-								extension => file_extension_png
-								)
-							);
+						set_status_image(fail);
 					end if;
 				end if;
 			end loop;
@@ -200,26 +281,9 @@ package body bsmgui_cb is
 			);
 
 		if result = 0 then -- shutdown successful
-			set(img_status, 
-				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-				compose
-					(
-					containing_directory => name_directory_configuration_images,
-					name => name_file_image_aborted,
-					extension => file_extension_png
-					)
-				);
-
+			set_status_image(aborted);
 		else -- shutdown failed
-			set(img_status, 
-				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-				compose
-					(
-					containing_directory => name_directory_configuration_images,
-					name => name_file_image_abort_failed,
-					extension => file_extension_png
-					)
-				);
+			set_status_image(abort_fail);
 		end if;
 	end shutdown_uut;
 
@@ -243,15 +307,7 @@ package body bsmgui_cb is
 				put_line ("start test: " & universal_string_type.to_string(name_test));
 
 				-- UPDATE STATUS IMAGE TO "RUNNING"
-				set(img_status, 
-					universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-					compose
-						(
-						containing_directory => name_directory_configuration_images,
-						name => name_file_image_run,
-						extension => file_extension_png
-						)
-					);
+				set_status_image(running);
 				
 				-- LAUNCH TEST (via name_module_cli and send it into background)
 				while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop; -- refresh gui
@@ -307,15 +363,7 @@ package body bsmgui_cb is
 				if result = 0 then
 					shutdown_uut;
 				else -- process name_module_cli could not be killed
-					set(img_status, 
-						universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-						compose
-							(
-							containing_directory => name_directory_configuration_images,
-							name => name_file_image_abort_failed,
-							extension => file_extension_png
-							)
-						);
+					set_status_image(abort_fail);
 				end if;
 
 				status_test := stopped;
@@ -354,16 +402,7 @@ package body bsmgui_cb is
 				put_line ("start script: " & universal_string_type.to_string(name_script));
 
 				-- UPDATE STATUS IMAGE TO "RUNNING"
-				set(img_status, 
-					universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-					compose
-						(
-						containing_directory => name_directory_configuration_images,
-						name => name_file_image_run,
-						extension => file_extension_png
-						)
-					);
-
+				set_status_image(running);
 
 				-- LAUNCH SCRIPT (as an external program in the background)
 				while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
@@ -410,32 +449,12 @@ package body bsmgui_cb is
 				result := system( "p=$(pidof " & name_module_cli & "); kill $p" & ASCII.NUL );
 				--result := system( "p=$(pidof " & name_module_kermit & "); kill $p" & ASCII.NUL );
 
--- 				spawn 
--- 					(  
--- 					program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & "killer.sh",
--- 					args                   => 	(
--- 												--1=> new string'("-x"), -- x option makes pidof search for scripts
--- 												1=> new string'(simple_name(universal_string_type.to_string(name_script)))
--- 												),
--- 					output_file_descriptor => standout,
--- 					return_code            => result
--- 					);
-
-
 				-- When killed, shutdown UUT.
 				if result = 0 then
 					--put_line ("killing ....");
 					shutdown_uut;
 				else
-					set(img_status, 
-						universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-						compose
-							(
-							containing_directory => name_directory_configuration_images,
-							name => name_file_image_abort_failed,
-							extension => file_extension_png
-							)
-						);
+					set_status_image(abort_fail);
 				end if;
 
 				status_script := stopped;
@@ -477,58 +496,15 @@ package body bsmgui_cb is
 			--put_line ("killing ....");
 			shutdown_uut;
 		else
-			set(img_status, 
-				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-				compose
-					(
-					containing_directory => name_directory_configuration_images,
-					name => name_file_image_abort_failed,
-					extension => file_extension_png
-					)
-				);
+			set_status_image(abort_fail);
 		end if;
 
--- 
--- 		spawn 
--- 			(  
--- 			program_name           => universal_string_type.to_string(name_directory_bin) & name_directory_separator & name_module_cli,
--- 			args                   => 	(
--- 										1=> new string'(to_lower(type_action'image(off)))
--- 										),
--- 			output_file_descriptor => standout,
--- 			return_code            => result
--- 			);
--- 
--- 		if result = 0 then
--- 			put_line(successful);
--- 			set(img_status, 
--- 				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
--- 				compose
--- 					(
--- 					containing_directory => name_directory_configuration_images,
--- 					name => name_file_image_aborted,
--- 					extension => file_extension_png
--- 					)
--- 				);
--- 
--- 		else
--- 			put_line(failed);
--- 			set(img_status, 
--- 				universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
--- 				compose
--- 					(
--- 					containing_directory => name_directory_configuration_images,
--- 					name => name_file_image_abort_failed,
--- 					extension => file_extension_png
--- 					)
--- 				);
--- 
--- 		end if;
-
 		set_sensitive (chooser_set_uut, true);
-		set_sensitive (chooser_set_script, true);
-		set_sensitive (chooser_set_test, true);
-		set_sensitive (button_start_stop_test, true);
+		-- CS: if script valid then
+			set_sensitive (chooser_set_script, true);
+		-- CS: if test valid then
+			set_sensitive (chooser_set_test, true);
+			set_sensitive (button_start_stop_test, true);
 
 		abort_pending := false;
 	end abort_shutdown;

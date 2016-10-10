@@ -67,6 +67,10 @@ package bsmgui_cb is
 
 	img_status			: gtk.image.gtk_image;
 
+	-- The image that displays in bright red, green, yellow the result of an action.
+	type type_status_image is (fail, pass, ready, running, aborted, abort_fail);
+	procedure set_status_image(status : in type_status_image);
+
 	procedure terminate_main (self : access gtk_widget_record'class);
 	procedure set_project (self : access gtk_file_chooser_button_record'class);
 	procedure set_script (self : access gtk_file_chooser_button_record'class);
@@ -74,6 +78,9 @@ package bsmgui_cb is
 	procedure start_stop_test (self : access gtk_button_record'class);
 	procedure start_stop_script (self : access gtk_button_record'class);
 	procedure abort_shutdown (self : access gtk_button_record'class);
+
+	file_session	: ada.text_io.file_type;
+	procedure write_session_file_headline;
 
 	function system( cmd : string ) return integer;
 	pragma import( c, system );

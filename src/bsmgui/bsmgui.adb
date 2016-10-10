@@ -33,6 +33,7 @@
 
 --pragma Ada_2012;
 with ada.text_io; 				use ada.text_io;
+with ada.characters.handling;	use ada.characters.handling;
 with ada.directories;			use ada.directories;
 
 with m1_internal; 				use m1_internal;
@@ -82,57 +83,139 @@ procedure bsmgui is
 		file_session	: ada.text_io.file_type;
 		line			: extended_string.bounded_string;
 	begin
-		put_line("reading last session ...");
-		open(	file => file_session,
-				mode => in_file,
-				name => compose
+		if exists (compose
 							(
 							containing_directory => universal_string_type.to_string(name_directory_home) & name_directory_separator &
 								name_directory_configuration,
 							name => name_file_configuration_session 
 							)
-			);
-		set_input(file_session);
+					) then
 
-		while not end_of_file
-		loop
-			line := remove_comment_from_line(extended_string.to_bounded_string(get_line));
-			--put_line(extended_string.to_string(line));
-			if get_field_count(extended_string.to_string(line)) /= 0 then -- if line contains anything
-				
-				-- get project
-				if get_field_from_line(line,1) = "project" then 
-					name_project := universal_string_type.to_bounded_string(get_field_from_line(line,2));
-					put_line("project: " & universal_string_type.to_string(name_project));
-				end if;
-
-				-- get script
-				if get_field_from_line(line,1) = "script" then 
-					name_script := universal_string_type.to_bounded_string( 
+			put_line("reading last session ...");
+			open(	file => file_session,
+					mode => in_file,
+					name => compose
 								(
-								universal_string_type.to_string(name_project) &
-								name_directory_separator & 
-								get_field_from_line(line,2)
-								));
-					put_line("script: " & universal_string_type.to_string(name_script));
+								containing_directory => universal_string_type.to_string(name_directory_home) & name_directory_separator &
+									name_directory_configuration,
+								name => name_file_configuration_session 
+								)
+				);
+			set_input(file_session);
+
+			while not end_of_file
+			loop
+				line := remove_comment_from_line(extended_string.to_bounded_string(get_line));
+				--put_line(extended_string.to_string(line));
+				if get_field_count(extended_string.to_string(line)) /= 0 then -- if line contains anything
+					
+					-- get project
+					if get_field_from_line(line,1) = text_project then 
+						name_project := universal_string_type.to_bounded_string(get_field_from_line(line,2));
+						put_line(text_project & ": " & universal_string_type.to_string(name_project));
+					end if;
+					-- CS: check if project exists
+
+					-- get script
+					if get_field_from_line(line,1) = text_script then 
+						name_script := universal_string_type.to_bounded_string( 
+									(
+									universal_string_type.to_string(name_project) &
+									name_directory_separator & 
+									get_field_from_line(line,2)
+									));
+						put_line(text_script & ": " & universal_string_type.to_string(name_script));
+					end if;
+					-- CS: check if script exists
+
+					-- get test
+					if get_field_from_line(line,1) = text_test then 
+						name_test := universal_string_type.to_bounded_string( 
+									(
+									universal_string_type.to_string(name_project) &
+									name_directory_separator & 
+									get_field_from_line(line,2)
+									));
+						put_line(text_test & ": " & universal_string_type.to_string(name_test));
+					end if;
+					-- CS: check if test exists
+
+				end if;
+			end loop;
+			close(file_session);
+
+			if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_project)) then
+				-- reset test and script choosers to project root directory
+				if chooser_set_test.set_current_folder(universal_string_type.to_string(name_test)) then 
+					--put_line("project preset for test: " & universal_string_type.to_string(name_test));
+					set_sensitive (chooser_set_test, true);
+					set_sensitive (button_start_stop_test, true);
+				end if;
+				--if chooser_set_script.set_current_folder(universal_string_type.to_string(name_project)) then
+				if chooser_set_script.set_filename(universal_string_type.to_string(name_script)) then  
+					--put_line("project preset for script: " & universal_string_type.to_string(name_project));
+					set_sensitive (chooser_set_script, true);
+					set_sensitive (button_start_stop_script, true);
 				end if;
 
-				-- get test
-				if get_field_from_line(line,1) = "test" then 
-					name_test := universal_string_type.to_bounded_string( 
-								(
-								universal_string_type.to_string(name_project) &
-								name_directory_separator & 
-								get_field_from_line(line,2)
-								));
-					put_line("test: " & universal_string_type.to_string(name_test));
-				end if;
-
-
+				--put_line("project set");
 			end if;
-		end loop;
 
-		close(file_session);
+
+
+
+		else
+			-- NO SESSION FILE EXISTS -> CREATE A NEW ONE 
+			put_line("no session found, creating a new one ...");
+			--create_session_configuration_file;
+			create( file => file_session, name => compose
+							(
+							containing_directory => universal_string_type.to_string(name_directory_home) & name_directory_separator &
+								name_directory_configuration,
+							name => name_file_configuration_session 
+							)
+				);
+			-- write info headline
+			write_session_file_headline;
+
+			-- The project directory will be $HOME/M-1/uut (default)
+			put_line( file_session, text_project & row_separator_0 &
+				universal_string_type.to_string(name_directory_home) &
+				name_directory_separator &
+				name_directory_projects_default
+				);
+
+			-- Since there is no project set yet, no script and no test can be set. So just write the identifiers:
+			put_line( file_session, text_script);
+			put_line( file_session, text_test);
+			close(file_session);
+
+			-- Set the project name, script and test to the default directory
+			name_project := universal_string_type.to_bounded_string(
+								universal_string_type.to_string(name_directory_home) &
+								name_directory_separator &
+								name_directory_projects_default
+							);
+			name_script := name_project;
+			name_test := name_project;
+
+			if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_project)) then
+				null;
+			end if;
+
+			if chooser_set_test.set_current_folder(universal_string_type.to_string(name_test)) then 
+				null;
+			end if;
+
+			if chooser_set_script.set_filename(universal_string_type.to_string(name_script)) then  
+				null;
+			end if;
+
+			-- Disable start buttons
+			set_sensitive (button_start_stop_script, false);
+			set_sensitive (button_start_stop_test, false);
+		end if;
+
 
 	end read_last_session;
 
@@ -146,7 +229,7 @@ begin
 
 	-- create the  main window
 	gtk_new (window_main);
-	window_main.set_title ("BOUNDARY SCAN TEST SYSTEM M-1");
+	window_main.set_title (name_system);
 
 	-- connect the "destroy" signal
 	window_main.on_destroy (terminate_main'access); -- close window
@@ -173,13 +256,13 @@ begin
 	gtk_new_vbox (box_selection_label);
 	pack_start (box_head, box_selection_label, true, true, 5);
 	show (box_selection_label);
-	gtk_new (label_uut, "UUT");
+	gtk_new (label_uut, to_upper(text_project));
 	pack_start (box_selection_label, label_uut, true, true, 5);
 	show (label_uut);
-	gtk_new (label_script, "SCR");
+	gtk_new (label_script, to_upper(text_script));
 	pack_start (box_selection_label, label_script, true, true, 5);
 	show (label_script);
-	gtk_new (label_test, "TEST");
+	gtk_new (label_test, to_upper(text_test));
 	pack_start (box_selection_label, label_test, true, true, 5);
 	show (label_test);
 
@@ -187,7 +270,7 @@ begin
 	gtk_new_vbox (box_selection_directory);
 	pack_start (box_head, box_selection_directory, true, true, 5);
 	show (box_selection_directory);
- 	gtk_new (chooser_set_uut, "UUT", action_select_folder);
+ 	gtk_new (chooser_set_uut, to_upper(text_project), action_select_folder);
 
 	-- set default projects directory
 -- 	if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_directory_home) & name_directory_separator & name_directory_projects_default) then
@@ -198,7 +281,7 @@ begin
  	pack_start (box_selection_directory, chooser_set_uut);
  	show (chooser_set_uut);
 
- 	gtk_new (chooser_set_script, "Script", action_open);
+ 	gtk_new (chooser_set_script, text_script, action_open);
  	pack_start (box_selection_directory, chooser_set_script);
 	set_sensitive (chooser_set_script, false);
 	gtk_new(filter_scripts);
@@ -206,7 +289,7 @@ begin
 	set_filter (chooser_set_script, filter_scripts);
  	show (chooser_set_script);
 
- 	gtk_new (chooser_set_test, "Test", action_select_folder);
+ 	gtk_new (chooser_set_test, text_test, action_select_folder);
  	pack_start (box_selection_directory, chooser_set_test);
 	set_sensitive (chooser_set_test, false);
  	show (chooser_set_test);
@@ -230,38 +313,13 @@ begin
 
 	-- restore last session
 	read_last_session;
-	if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_project)) then
-		-- reset test and script choosers to project root directory
-		if chooser_set_test.set_current_folder(universal_string_type.to_string(name_test)) then 
-			--put_line("project preset for test: " & universal_string_type.to_string(name_test));
-			set_sensitive (chooser_set_test, true);
-			set_sensitive (button_start_stop_test, true);
-		end if;
-		--if chooser_set_script.set_current_folder(universal_string_type.to_string(name_project)) then
-		if chooser_set_script.set_filename(universal_string_type.to_string(name_script)) then  
-			--put_line("project preset for script: " & universal_string_type.to_string(name_project));
-			set_sensitive (chooser_set_script, true);
-			set_sensitive (button_start_stop_script, true);
-		end if;
-
-		--put_line("project set");
-	end if;
-
 
 
 	-- STATUS WINDOW
-	gtk_new (img_status, 
-		universal_string_type.to_string(name_directory_home) & name_directory_separator & -- /home/user/
-		compose
-			(
-			containing_directory => name_directory_configuration_images,
-			name => name_file_image_ready,
-			extension => file_extension_png
-			)
-		);
+	gtk_new (img_status);
+	set_status_image(ready);
 	pack_start (box_bottom, img_status, true, true, 10);
 	show (img_status);
-
 
 
 	-- BUTTONS CLICKED
