@@ -80,9 +80,12 @@ procedure bsmgui is
 	--filter_tests			: gtk_file_filter;
 
 	procedure read_last_session is
+	-- Reads session configuration file (.M-1/session.conf) and restores project, script and test.
 		file_session	: ada.text_io.file_type;
 		line			: extended_string.bounded_string;
 	begin
+		-- First make sure the configuration file exists. It does not exist after a brand new installation.
+		-- It will be created when operator quits the gui.
 		if exists (compose
 							(
 							containing_directory => universal_string_type.to_string(name_directory_home) & name_directory_separator &
@@ -91,7 +94,8 @@ procedure bsmgui is
 							)
 					) then
 
-			put_line("reading last session ...");
+			-- open the configuration file
+			put_line("restoring last session ...");
 			open(	file => file_session,
 					mode => in_file,
 					name => compose
@@ -105,22 +109,24 @@ procedure bsmgui is
 
 			while not end_of_file
 			loop
-				line := remove_comment_from_line(extended_string.to_bounded_string(get_line));
+				line := remove_comment_from_line(extended_string.to_bounded_string(get_line)); -- comments start with "--"
 				--put_line(extended_string.to_string(line));
 				if get_field_count(extended_string.to_string(line)) /= 0 then -- if line contains anything
 					
 					-- get project
 					if get_field_from_line(line,1) = text_project then 
 						name_project := universal_string_type.to_bounded_string(get_field_from_line(line,2));
-						put_line(text_project & ": " & universal_string_type.to_string(name_project));
-
-						if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_project)) then
-							null;
+						-- check if project is valid
+						if valid_project(universal_string_type.to_string(name_project)) then
+							--put_line(text_project & ": " & universal_string_type.to_string(name_project));
+							if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_project)) then
+								put_line("set project: " & universal_string_type.to_string(name_project));
+							end if;
+						else
+							put_line(message_error & "Project " & quote_single &
+								universal_string_type.to_string(name_project) & quote_single & " invalid" & exclamation);
 						end if;
-						--put_line("set project: " & universal_string_type.to_string(name_project));
-
 					end if;
-					-- CS: check if project exists
 
 					-- get script
 					if get_field_from_line(line,1) = text_script then 
@@ -130,15 +136,18 @@ procedure bsmgui is
 									name_directory_separator & 
 									get_field_from_line(line,2)
 									));
-						put_line(text_script & ": " & universal_string_type.to_string(name_script));
 
-						if set_filename(chooser_set_script,universal_string_type.to_string(name_script)) then  
-							put_line("set script: " & universal_string_type.to_string(name_script));
-							set_sensitive (button_start_stop_script, true);
+						-- check if script is valid
+						if valid_script(universal_string_type.to_string(name_script)) then
+							if set_filename(chooser_set_script,universal_string_type.to_string(name_script)) then  
+								put_line("set script: " & universal_string_type.to_string(name_script));
+								set_sensitive (button_start_stop_script, true);
+							end if;
+						else
+							put_line(message_error & "Script " & quote_single &
+								universal_string_type.to_string(name_script) & quote_single & " invalid" & exclamation);
 						end if;
-
 					end if;
-					-- CS: check if script exists
 
 					-- get test
 					if get_field_from_line(line,1) = text_test then 
@@ -148,8 +157,8 @@ procedure bsmgui is
 									name_directory_separator & 
 									get_field_from_line(line,2)
 									));
-						put_line(text_test & ": " & universal_string_type.to_string(name_test));
 
+						-- check if test is valid
 						-- Test if test has been compiled yet. If not compiled (or invalid) default to project root directory.
 						if test_compiled(universal_string_type.to_string(name_test)) then
 							if set_current_folder(chooser_set_test,universal_string_type.to_string(name_test)) then 

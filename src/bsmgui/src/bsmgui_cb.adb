@@ -31,13 +31,9 @@
 --
 --   todo: 
 
---with ada.strings; 				use ada.strings;
---with ada.strings.fixed; 		use ada.strings.fixed;
---with ada.text_io; 				use ada.text_io;
 with ada.characters.handling; 	use ada.characters.handling;
 with ada.directories;			use ada.directories;
 with gnat.os_lib;   			use gnat.os_lib;
---with ada.environment_variables;	--use ada.environment_variables;
 with gtk.main;
 with m1_internal; 				use m1_internal;
 with m1_files_and_directories; 	use m1_files_and_directories;
@@ -47,6 +43,7 @@ package body bsmgui_cb is
 	procedure write_session_file_headline is
 	begin
 		put_line( file_session, "-- THIS FILE HOLDS THE SETTINGS OF THE LAST GUI SESSION");
+		put_line( file_session, "-- DO NOT EDIT !");
 		put_line( file_session, "-- date: " & m1_internal.date_now);
 	end write_session_file_headline;
 
@@ -183,7 +180,7 @@ package body bsmgui_cb is
 						set_sensitive (button_start_stop_script, false);
 					end if;
 
-					if set_current_folder(chooser_set_test,universal_string_type.to_string(name_project)) then  
+					if set_filename(chooser_set_test,universal_string_type.to_string(name_project)) then  
 						put_line("set test: " & universal_string_type.to_string(name_project));
 						set_sensitive (button_start_stop_test, false);
 					end if;
@@ -195,8 +192,10 @@ package body bsmgui_cb is
 			end if;
 
 			-- enable test and script choosers
+			-- update status image to "ready"
 			set_sensitive (chooser_set_test, true);
 			set_sensitive (chooser_set_script, true);
+			set_status_image(ready);
 
 		else
 			put_line(message_error & "Invalid project" & exclamation);
@@ -215,38 +214,63 @@ package body bsmgui_cb is
 			-- disable start buttons
 			set_sensitive (button_start_stop_script, false);
 			set_sensitive (button_start_stop_test, false);
+
+			set_status_image(fail);
 		end if;
-
-
 	end set_project;
 
 
 	procedure set_script (self : access gtk_file_chooser_button_record'class) is
 	begin
-		name_script := universal_string_type.to_bounded_string(gtk.file_chooser_button.get_filename(self));
-		if valid_script(universal_string_type.to_string(name_script)) then
-			put_line("set script: " & universal_string_type.to_string(name_script));
-			--script_valid := true;
-			set_sensitive (button_start_stop_script, true);
+		-- The script must be inside the current project directory.
+		if containing_directory(gtk.file_chooser_button.get_filename(self)) = universal_string_type.to_string(name_project) then
+
+			-- Update script name. If valid, update status image.
+			name_script := universal_string_type.to_bounded_string(gtk.file_chooser_button.get_filename(self));
+
+			if valid_script(universal_string_type.to_string(name_script)) then
+				put_line("set script: " & universal_string_type.to_string(name_script));
+				--script_valid := true;
+				set_sensitive (button_start_stop_script, true);
+				set_status_image(ready);
+			else
+				put_line(message_error & "Script invalid" & exclamation);
+				set_sensitive (button_start_stop_script, false);
+				set_status_image(fail);
+			end if;
 		else
-			put_line(message_error & "Script invalid" & exclamation);
-			set_sensitive (button_start_stop_script, false);
+			if set_filename(chooser_set_script,universal_string_type.to_string(name_project)) then
+				put_line(message_error & "Script outside current project" & exclamation);
+			end if;
+			-- CS: find a way to jail the operator in the current project directory
 		end if;
 	end set_script;
 
 
 	procedure set_test (self : access gtk_file_chooser_button_record'class) is
 	begin
-		name_test := universal_string_type.to_bounded_string(gtk.file_chooser_button.get_filename(self));
+		-- The test must be inside the current project directory.
+		if containing_directory(gtk.file_chooser_button.get_filename(self)) = universal_string_type.to_string(name_project) then
 
-		-- If test is compiled, enable start button.
-		if test_compiled(universal_string_type.to_string(name_test)) then
-			put_line("set test: " & universal_string_type.to_string(name_test));
-			--test_valid := true;
-			set_sensitive (button_start_stop_test, true);
-		else 
-			put_line(message_error & "Test invalid or not compiled yet" & exclamation);
-			set_sensitive (button_start_stop_test, false);
+			-- Update test name. If valid, update status image.
+			name_test := universal_string_type.to_bounded_string(gtk.file_chooser_button.get_filename(self));
+
+			-- If test is compiled, enable start button.
+			if test_compiled(universal_string_type.to_string(name_test)) then
+				put_line("set test: " & universal_string_type.to_string(name_test));
+				--test_valid := true;
+				set_sensitive (button_start_stop_test, true);
+				set_status_image(ready);
+			else 
+				put_line(message_error & "Test invalid or not compiled yet" & exclamation);
+				set_sensitive (button_start_stop_test, false);
+				set_status_image(fail);
+			end if;
+		else
+			if set_filename(chooser_set_test,universal_string_type.to_string(name_project)) then
+				put_line(message_error & "Test outside current project" & exclamation);
+			end if;
+			-- CS: find a way to jail the operator in the current project directory
 		end if;
 	end set_test;
 
@@ -327,11 +351,10 @@ package body bsmgui_cb is
 		result 	: natural := 0;
 		dead	: boolean;
 	begin
-		--open(file => file_thrash_bin, name => "/dev/null", mode => out_file);
-
 		set_sensitive (chooser_set_uut, false);
 		set_sensitive (chooser_set_script, false);
 		set_sensitive (chooser_set_test, false);
+		set_sensitive (button_start_stop_script, false);
 
 		set_directory(universal_string_type.to_string(name_project));
 
@@ -367,9 +390,8 @@ package body bsmgui_cb is
 					while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
 					spawn 
 						(  
-						program_name           => "/bin/pidof", -- CS: needs variable setup by environment check
+						program_name           => name_module_pidof,
 						args                   => 	(
-													--1=> new string'("-p"),
 													1=> new string'(name_module_cli)
 													),
 						output_file_descriptor => trash_bin_text,
@@ -392,7 +414,8 @@ package body bsmgui_cb is
 				put_line ("aborting test: " & universal_string_type.to_string(name_test));
 
 				-- Kill process name_module_cli.
-				result := system( "p=$(pidof " & name_module_cli & "); kill $p" & ASCII.NUL );
+				--result := system( "p=$(pidof " & name_module_cli & "); kill $p" & ASCII.NUL );
+				result := system( "p=$(" & name_module_pidof & row_separator_0 & name_module_cli & "); kill $p" & ASCII.NUL );
 
 				-- When killed, shutdown UUT.
 				if result = 0 then
@@ -410,10 +433,7 @@ package body bsmgui_cb is
 		set_sensitive (chooser_set_uut, true);
 		set_sensitive (chooser_set_script, true);
 		set_sensitive (chooser_set_test, true);
-		-- if a valid script has be set before, enable script button.
-		--if script_valid then 
-			set_sensitive (button_start_stop_script, true);			
-		--end if;
+		set_sensitive (button_start_stop_script, true);			
 	end start_stop_test;
 
 
@@ -457,7 +477,7 @@ package body bsmgui_cb is
 					while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
 					spawn 
 						(  
-						program_name           => "/bin/pidof", -- CS: needs variable setup by environment check
+						program_name           => name_module_pidof,
 						args                   => 	(
 													1=> new string'("-x"), -- x option makes pidof search for scripts
 													2=> new string'(universal_string_type.to_string(name_script))
@@ -478,10 +498,12 @@ package body bsmgui_cb is
 				abort_pending := true;
 				put_line ("aborting script: " & universal_string_type.to_string(name_script));
 
-				-- Kill process name_script. -- x option makes pidof search for scripts
-				result := system( "p=$(pidof -x " & simple_name(universal_string_type.to_string(name_script)) & "); kill $p" & ASCII.NUL );
+				-- Kill process name_script. -- x option makes pidof searching for scripts
+				--result := system( "p=$(pidof -x " & simple_name(universal_string_type.to_string(name_script)) & "); kill $p" & ASCII.NUL );
+				result := system( "p=$(" & name_module_pidof & " -x " & simple_name(universal_string_type.to_string(name_script)) & "); kill $p" & ASCII.NUL );
 				-- CS: test result ?
-				result := system( "p=$(pidof " & name_module_cli & "); kill $p" & ASCII.NUL );
+				--result := system( "p=$(pidof " & name_module_cli & "); kill $p" & ASCII.NUL );
+				result := system( "p=$(" & name_module_pidof & row_separator_0 & name_module_cli & "); kill $p" & ASCII.NUL );
 				--result := system( "p=$(pidof " & name_module_kermit & "); kill $p" & ASCII.NUL );
 
 				-- When killed, shutdown UUT.
@@ -501,16 +523,17 @@ package body bsmgui_cb is
 		set_sensitive (chooser_set_uut, true);
 		set_sensitive (chooser_set_script, true);
 		set_sensitive (chooser_set_test, true);
-		-- if a valid testt has be set before, enable script button.
-		--if test_valid then
-			set_sensitive (button_start_stop_test, true);			
-		--end if;
+		set_sensitive (button_start_stop_test, true);			
 	end start_stop_script;
 
 
 	procedure abort_shutdown (self : access gtk_button_record'class) is
 		result 	: natural;
+		dead	: boolean;
 	begin
+		abort_pending := true;
+		put_line(aborting);
+
 		set_sensitive (chooser_set_uut, false);
 		set_sensitive (chooser_set_script, false);
 		set_sensitive (chooser_set_test, false);
@@ -518,22 +541,23 @@ package body bsmgui_cb is
 		set_sensitive (button_start_stop_script, false);
 		--set_directory(universal_string_type.to_string(name_project));
 
-		abort_pending := true;
-		put_line(aborting);
-
-		result := system( "p=$(pidof -x " & simple_name(universal_string_type.to_string(name_script)) & "); kill $p" & ASCII.NUL );
+		while gtk.main.events_pending loop dead := gtk.main.main_iteration; end loop;
+		--result := system( "p=$(pidof -x " & simple_name(universal_string_type.to_string(name_script)) & "); kill $p" & ASCII.NUL );
+		result := system( "p=$(" & name_module_pidof & " -x " & simple_name(universal_string_type.to_string(name_script)) & "); kill $p" & ASCII.NUL );
 		-- CS: test result ?
-		result := system( "p=$(pidof " & name_module_cli & "); kill $p" & ASCII.NUL );
+		--result := system( "p=$(pidof " & name_module_cli & "); kill $p" & ASCII.NUL );
+		result := system( "p=$(" & name_module_pidof & row_separator_0 & name_module_cli & "); kill $p" & ASCII.NUL );
 		-- CS: test result ?
 		--result := system( "p=$(pidof " & name_module_kermit & "); kill $p" & ASCII.NUL );
 		-- CS: test result ?
 
 		if result = 0 then
-			--put_line ("killing ....");
-			shutdown_uut;
+			null;
 		else
 			set_status_image(abort_fail);
 		end if;
+
+		shutdown_uut;
 
 		if valid_project(universal_string_type.to_string(name_project)) then
 			if valid_script(universal_string_type.to_string(name_script)) then
@@ -548,9 +572,8 @@ package body bsmgui_cb is
 
 		set_sensitive (chooser_set_uut, true);
 
-
-
 		abort_pending := false;
+
 	end abort_shutdown;
 
 end bsmgui_cb;
