@@ -29,6 +29,7 @@
 --
 --   history of changes:
 --
+-- todo: create tmp and bak directory
 
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
