@@ -30,7 +30,7 @@
 --   history of changes:
 --
 
--- todo: 
+-- todo: abort if DH or DL nets used (because in non-intrusive mode, extest not used)
 
 
 with ada.text_io;				use ada.text_io;

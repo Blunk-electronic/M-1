@@ -29,7 +29,8 @@
 --
 --   history of changes:
 --
--- todo: create tmp and bak directory
+-- todo: - create tmp and bak directory
+--       - bug: package gets ignored (see trc project)
 
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;

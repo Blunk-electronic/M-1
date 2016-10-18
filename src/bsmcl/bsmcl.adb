@@ -1519,13 +1519,14 @@ begin
 							);
 
 				elsif prog_position = "DPC00" then
-						put_line(message_error & "Device model not specified" & exclamation);
+						put_line(message_error & "Device package not specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
 							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
 							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
 							row_separator_0 & universal_string_type.to_string(target_device) & row_separator_0 &
-							compose(name_directory_models, "MC256", file_extension_text) & row_separator_0 & "TSSOP48"
+							universal_string_type.to_string(name_file_model_memory) &
+							row_separator_0 & "TSSOP48"
 							);
 
 				elsif prog_position = "TPI00" then
