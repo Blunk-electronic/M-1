@@ -1779,15 +1779,16 @@ procedure compseq is
 													);
 							end if;
 
---	type type_voltage_out is new type_voltage range 1.8 .. 3.3;
---	type type_threshold_tdi is new type_voltage range 0.1 .. 3.3;
---	type type_driver_characteristic is (push_pull , weak0, weak1, tie_high, tie_low, high_z);
 
 							-- VOLTAGES AND DRIVER CHARACTERISTICS FOR PORT 1:
 
 							-- search for option voltage_out_port_1. if not found, default to lowest value
 							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.voltage_out_port_1 then
 								so.voltage_out_port_1 := type_voltage_out'value(get_field_from_line(line_of_file,2));
+								-- check if voltage is supported by bsc
+								if not is_voltage_out_discrete(so.voltage_out_port_1) then
+									raise constraint_error;
+								end if;
 							end if;
 
 							-- search for option tck_driver_port_1. if not found, use default
@@ -1821,12 +1822,16 @@ procedure compseq is
 							-- search for option voltage_out_port_2. if not found, default to lowest value
 							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.voltage_out_port_2 then
 								so.voltage_out_port_2 := type_voltage_out'value(get_field_from_line(line_of_file,2));
+								-- check if voltage is supported by bsc
+								if not is_voltage_out_discrete(so.voltage_out_port_2) then
+									raise constraint_error;
+								end if;
 							end if;
 
 							-- search for option voltage_out_port_2. if not found, default to lowest value
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.voltage_out_port_2 then
-								so.voltage_out_port_2 := type_voltage_out'value(get_field_from_line(line_of_file,2));
-							end if;
+							--if get_field_from_line(line_of_file,1) = section_scanpath_options_item.voltage_out_port_2 then
+							--	so.voltage_out_port_2 := type_voltage_out'value(get_field_from_line(line_of_file,2));
+							--end if;
 
 							-- search for option tck_driver_port_2. if not found, use default
 							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.tck_driver_port_2 then
