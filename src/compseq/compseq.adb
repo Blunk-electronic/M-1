@@ -36,6 +36,7 @@
 
 --   2016-07-29: - vector file dummy bytes (at pos. 10 and 11) removed. they now contain the step count (incl. low level commands)
 --	 2016-09-28: - cleaned up, made compiler and vector format constant
+--	 2016-10-26: - cleaned up, scanport output voltage is checked for a supported discrete value
 
 --  todo:
 --	- write udb and project in compile listing
