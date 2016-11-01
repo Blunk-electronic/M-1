@@ -36,12 +36,13 @@ with ada.text_io;				use ada.text_io;
 with ada.characters.handling;   use ada.characters.handling;
 -- 
 -- --with System.OS_Lib;   use System.OS_Lib;
--- with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
---with ada.characters;			use ada.characters;
+with ada.strings.unbounded; 	use ada.strings.unbounded;
+with ada.characters;			use ada.characters;
+with ada.characters.latin_1;	use ada.characters.latin_1;
 --with ada.characters.handling;	use ada.characters.handling;
 --with ada.characters.conversions;use ada.characters.conversions;
 with ada.strings; 				use ada.strings;
---with ada.strings.maps;			use ada.strings.maps;
+with ada.strings.maps;			use ada.strings.maps;
 with ada.strings.bounded; 		use ada.strings.bounded;
 with ada.strings.fixed; 		use ada.strings.fixed;
 -- with Ada.Numerics;			use Ada.Numerics;
@@ -73,6 +74,7 @@ procedure impbsdl is
 		file_bsdl 		: ada.text_io.file_type;
 		line_of_file	: extended_string.bounded_string;
 		line_counter	: natural := 0;
+		--entry_line_count: positive := 1;
 
 		type type_bsdl_entry;
 		type type_ptr_bsdl_entry is access all type_bsdl_entry;
@@ -87,12 +89,56 @@ procedure impbsdl is
 			list			: in out type_ptr_bsdl_entry;
 			line			: in extended_string.bounded_string
 			) is
+			line_cleaned_up	: extended_string.bounded_string;
+			--characters_to_replace : character_set;
+			--number_of_char_to_replace : natural := 0;
+			--ctrl_map : character_mapping := to_mapping("ab","cd");
+			--ctrl_map : character_mapping := to_mapping(latin_1.cr, latin_1.space);
 		begin
+			--characters_to_replace := to_set(latin_1.cr);
+			--characters_to_replace := to_set(latin_1.ht);
+			--number_of_char_to_replace := extended_string.count(line,characters_to_replace);
+
+			line_cleaned_up := line;
+			--entry_line_count := entry_line_count + 1;
+			--put_line(standard_output,extended_string.to_string(line));
+
+			-- replace control characters by space
+ 			for c in 1..extended_string.length(line_cleaned_up) loop
+				if is_control(extended_string.element(line_cleaned_up,c)) then
+					extended_string.replace_element(line_cleaned_up,c,latin_1.space);
+				end if;
+
+-- 				if c < extended_string.length(line_cleaned_up) then
+-- 					if extended_string.element(line_cleaned_up,c) = latin_1.space and extended_string.element(line_cleaned_up,c+1) = latin_1.space then
+-- 						null;
+-- 						put_line(standard_output,"test");
+-- 						put_line(standard_output,extended_string.to_string(line_cleaned_up));
+-- 						extended_string.delete(line_cleaned_up,c,c);
+-- 					end if;
+-- 				end if;
+			end loop;
+			
 			list := new type_bsdl_entry'(
 				next		=> list,
-				line		=> line
+				line		=> line_cleaned_up
 				);
 		end add_line_to_bsdl_entry;
+
+		function get_entry return string is
+			e : type_ptr_bsdl_entry := ptr_bsdl_entry;
+			--line : string (1..entry_line_count * extended_string.max_length);
+			line : unbounded_string;
+			--entry_start : positive := 1;
+			--entry_end : positive := 1;
+		begin
+			while e /= null loop
+				--put_line(standard_output,extended_string.to_string(e.line));
+				line := to_unbounded_string(extended_string.to_string(e.line)) & row_separator_0 & line;
+				e := e.next;
+			end loop;
+			return to_string(line);
+		end get_entry;
 
 	begin
 		set_output(file_data_base_preliminary);
@@ -109,7 +155,8 @@ procedure impbsdl is
 				if get_field_count(extended_string.to_string(line_of_file)) > 0 then -- if line contains anything
 					add_line_to_bsdl_entry(list => ptr_bsdl_entry, line => line_of_file);
 					if extended_string.index(line_of_file, ";") > 0 then
-						null;
+						put_line(file_data_base_preliminary,get_entry);
+						ptr_bsdl_entry := null;
 					end if;
 
 				--put_line(get_entry);
