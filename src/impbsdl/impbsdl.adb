@@ -57,7 +57,7 @@ with gnat.os_lib;   		use gnat.os_lib;
 with ada.command_line;		use ada.command_line;
 with ada.directories;		use ada.directories;
 
-with m1; use m1;
+with m1; --use m1;
 with m1_internal; 				use m1_internal;
 with m1_numbers; 				use m1_numbers;
 with m1_files_and_directories; 	use m1_files_and_directories;
@@ -73,41 +73,42 @@ procedure impbsdl is
 		bic				: type_ptr_bscan_ic_pre := ptr_bic_pre;
 		file_bsdl 		: ada.text_io.file_type;
 		line_of_file	: extended_string.bounded_string;
-		line_counter	: natural := 0;
+		bsdl_string		: unbounded_string;
+--		line_counter	: natural := 0;
 		--entry_line_count: positive := 1;
 
-		type type_bsdl_entry;
-		type type_ptr_bsdl_entry is access all type_bsdl_entry;
-		type type_bsdl_entry is
-			record
-				next		: type_ptr_bsdl_entry;
-				line		: extended_string.bounded_string;
-			end record;
-		ptr_bsdl_entry : type_ptr_bsdl_entry;
-
-		procedure add_line_to_bsdl_entry (
-			list			: in out type_ptr_bsdl_entry;
-			line			: in extended_string.bounded_string
-			) is
-			line_cleaned_up	: extended_string.bounded_string;
-			--characters_to_replace : character_set;
-			--number_of_char_to_replace : natural := 0;
-			--ctrl_map : character_mapping := to_mapping("ab","cd");
-			--ctrl_map : character_mapping := to_mapping(latin_1.cr, latin_1.space);
-		begin
-			--characters_to_replace := to_set(latin_1.cr);
-			--characters_to_replace := to_set(latin_1.ht);
-			--number_of_char_to_replace := extended_string.count(line,characters_to_replace);
-
-			line_cleaned_up := line;
-			--entry_line_count := entry_line_count + 1;
-			--put_line(standard_output,extended_string.to_string(line));
-
-			-- replace control characters by space
- 			for c in 1..extended_string.length(line_cleaned_up) loop
-				if is_control(extended_string.element(line_cleaned_up,c)) then
-					extended_string.replace_element(line_cleaned_up,c,latin_1.space);
-				end if;
+-- 		type type_bsdl_entry;
+-- 		type type_ptr_bsdl_entry is access all type_bsdl_entry;
+-- 		type type_bsdl_entry is
+-- 			record
+-- 				next		: type_ptr_bsdl_entry;
+-- 				line		: extended_string.bounded_string;
+-- 			end record;
+-- 		ptr_bsdl_entry : type_ptr_bsdl_entry;
+-- 
+-- 		procedure add_line_to_bsdl_entry (
+-- 			list			: in out type_ptr_bsdl_entry;
+-- 			line			: in extended_string.bounded_string
+-- 			) is
+-- 			line_cleaned_up	: extended_string.bounded_string;
+-- 			--characters_to_replace : character_set;
+-- 			--number_of_char_to_replace : natural := 0;
+-- 			--ctrl_map : character_mapping := to_mapping("ab","cd");
+-- 			--ctrl_map : character_mapping := to_mapping(latin_1.cr, latin_1.space);
+-- 		begin
+-- 			--characters_to_replace := to_set(latin_1.cr);
+-- 			--characters_to_replace := to_set(latin_1.ht);
+-- 			--number_of_char_to_replace := extended_string.count(line,characters_to_replace);
+-- 
+-- 			line_cleaned_up := line;
+-- 			--entry_line_count := entry_line_count + 1;
+-- 			--put_line(standard_output,extended_string.to_string(line));
+-- 
+-- 			-- replace control characters by space
+--  			for c in 1..extended_string.length(line_cleaned_up) loop
+-- 				if is_control(extended_string.element(line_cleaned_up,c)) then
+-- 					extended_string.replace_element(line_cleaned_up,c,latin_1.space);
+-- 				end if;
 
 -- 				if c < extended_string.length(line_cleaned_up) then
 -- 					if extended_string.element(line_cleaned_up,c) = latin_1.space and extended_string.element(line_cleaned_up,c+1) = latin_1.space then
@@ -117,28 +118,305 @@ procedure impbsdl is
 -- 						extended_string.delete(line_cleaned_up,c,c);
 -- 					end if;
 -- 				end if;
-			end loop;
-			
-			list := new type_bsdl_entry'(
-				next		=> list,
-				line		=> line_cleaned_up
-				);
-		end add_line_to_bsdl_entry;
+-- 			end loop;
+-- 			
+-- 			list := new type_bsdl_entry'(
+-- 				next		=> list,
+-- 				line		=> line_cleaned_up
+-- 				);
+-- 		end add_line_to_bsdl_entry;
+-- 
+-- 		function get_entry return string is
+-- 			e : type_ptr_bsdl_entry := ptr_bsdl_entry;
+-- 			--line : string (1..entry_line_count * extended_string.max_length);
+-- 			line : unbounded_string;
+-- 			--entry_start : positive := 1;
+-- 			--entry_end : positive := 1;
+-- 		begin
+-- 			while e /= null loop
+-- 				--put_line(standard_output,extended_string.to_string(e.line));
+-- 				line := to_unbounded_string(extended_string.to_string(e.line)) & row_separator_0 & line;
+-- 				e := e.next;
+-- 			end loop;
+-- 			return to_string(line);
+-- 		end get_entry;
 
-		function get_entry return string is
-			e : type_ptr_bsdl_entry := ptr_bsdl_entry;
-			--line : string (1..entry_line_count * extended_string.max_length);
-			line : unbounded_string;
-			--entry_start : positive := 1;
-			--entry_end : positive := 1;
+		function get_field(
+				text_in 	: in string;
+				position 	: in positive;
+				ifs 		: in character := latin_1.space;
+				trailer 	: boolean := false;
+				trailer_to 	: in character := latin_1.semicolon
+				) return string is
+			field			: unbounded_string;				-- field content to return (NOTE: gets converted to string on return) -- CS: use bounded string
+			character_count	: natural := text_in'length;	-- number of characters in given string
+			subtype type_character_pointer is natural range 0..character_count;
+			char_pt			: type_character_pointer;		-- points to character being processed inside the given string
+			field_ct		: natural := 0;					-- field counter (the first field found gets number 1 assigned)
+			inside_field	: boolean := true;				-- true if char_pt points inside a field
+			char_current	: character;					-- holds current character being processed
+			char_last		: character := ifs;				-- holds character processed previous to char_current
 		begin
-			while e /= null loop
-				--put_line(standard_output,extended_string.to_string(e.line));
-				line := to_unbounded_string(extended_string.to_string(e.line)) & row_separator_0 & line;
-				e := e.next;
+			if character_count > 0 then
+				char_pt := 1;
+				for char_pt in 1..character_count loop
+				--while char_pt <= character_count loop
+					char_current := text_in(char_pt); 
+					if char_current = ifs then
+						inside_field := false;
+					else
+						inside_field := true;
+					end if;
+	
+					-- count fields if ifs is followed by a non-ifs character
+					if (char_last = ifs and char_current /= ifs) then
+						field_ct := field_ct + 1;
+					end if;
+
+					case trailer is
+						when false =>
+							-- if targeted field reached
+							if position = field_ct then
+								if inside_field then -- if inside field
+									field := field & char_current; -- append current character to field
+									--field_pt := field_pt + 1;
+								end if;
+							else
+								-- if next field reached, abort and return field content
+								if field_ct > position then 
+										exit;
+								end if;
+							end if;
+
+						when true =>
+							-- if targeted field reached or passed
+							if position <= field_ct then
+								if char_current = trailer_to then
+									exit;
+								else
+									field := field & char_current; -- append current character to field
+								end if;
+							end if;
+					end case;
+
+					-- save last character
+					char_last := char_current;
+				end loop;
+			else
+				null;
+			end if;
+			return to_string(field);
+		end get_field;
+
+		function strip_quotes (text_in : in string) return string is
+		begin
+			return text_in(text_in'first+1..text_in'last-1);
+		end strip_quotes;
+
+		function get_bit_pattern (text_in : in string; width : in positive) return string is
+			--scratch : unbounded_string;
+			text_out : string (1..width);
+			pattern_start : boolean := false;
+			text_out_pt : positive := 1; -- CS: subtype of width
+		begin
+			for c in 1..text_in'length loop
+				case text_in(c) is
+					when latin_1.quotation => pattern_start := true;
+					when 'x' | 'X' =>
+						if pattern_start then
+							text_out(text_out_pt) := text_in(c);
+							text_out_pt := text_out_pt + 1;
+						end if;
+					when '0' =>
+						if pattern_start then
+							text_out(text_out_pt) := text_in(c);
+							text_out_pt := text_out_pt + 1;
+						end if;
+					when '1' =>
+						if pattern_start then
+							text_out(text_out_pt) := text_in(c);
+							text_out_pt := text_out_pt + 1;
+						end if;
+					when others => null;
+				end case;
 			end loop;
-			return to_string(line);
-		end get_entry;
+			return text_out;
+		end get_bit_pattern;
+
+		procedure parse_bsdl (bsdl_string : in string) is
+			character_position 	: positive := 1;
+			field_position		: positive := 1;
+			field_count			: positive := get_field_count(bsdl_string);
+
+			length_instruction_register		: type_register_length;
+			length_boundary_register		: type_register_length;
+			idcode_register_found			: boolean := false;
+			usercode_register_found			: boolean := false;
+			trst_pin						: boolean := false;
+
+			-- BSDL keywords -- NOTE: some of them also used as UDB keywords
+			text_bsdl_entity				: constant string (1..6) := "entity";
+			text_bsdl_attribute				: constant string (1..9) := "attribute";
+			text_bsdl_instruction_length	: constant string (1..18) := "instruction_length";
+			text_bsdl_instruction_capture	: constant string (1..19) := "instruction_capture";
+			text_bsdl_idcode_register		: constant string (1..15) := "idcode_register";
+			text_bsdl_usercode_register		: constant string (1..17) := "usercode_register";
+			text_bsdl_boundary_length		: constant string (1..15) := "boundary_length";
+			text_bsdl_tap_scan_reset		: constant string (1..14) := "tap_scan_reset";
+			text_bsdl_of					: constant string (1..2) := "of";
+
+			-- UDB keywords
+			text_udb_none							: constant string (1..4) := "none";
+			text_udb_instruction_register_length 	: constant string (1..27) := "instruction_register_length";
+			text_udb_boundary_register_length		: constant string (1..24) := "boundary_register_length";
+			text_udb_trst_pin						: constant string (1..8) := "trst_pin";
+			text_udb_available						: constant string (1..9) := "available";
+
+		begin
+			set_output(file_data_base_preliminary);
+			--put_line(bsdl_string);
+			if to_lower(get_field(bsdl_string,1)) = text_bsdl_entity then
+				put_line(2 * row_separator_0 & "value" & row_separator_0 & get_field(bsdl_string,2));
+
+				-- instruction register length
+				--put_line(standard_output,text_bsdl_instruction_length);
+				for f in 1..field_count loop
+					if to_lower(get_field(bsdl_string,f)) = text_bsdl_attribute then
+						if to_lower(get_field(bsdl_string,f+1)) = text_bsdl_instruction_length then
+							if to_lower(get_field(bsdl_string,f+2)) = text_bsdl_of then
+								length_instruction_register := type_register_length'value
+									(
+									get_field
+										(
+										get_field
+											(
+											get_field(bsdl_string,f+2,trailer => true),
+											ifs => ':',
+											position => 2
+											),
+										position => 3
+										)
+									);
+
+								put_line(2 * row_separator_0 & text_udb_instruction_register_length & row_separator_0 &
+									trim(type_register_length'image(length_instruction_register),left));
+								exit;
+							end if;
+						end if;
+					end if;
+				end loop;
+
+				-- instruction capture
+				for f in 1..field_count loop
+					if to_lower(get_field(bsdl_string,f)) = text_bsdl_attribute then
+						if to_lower(get_field(bsdl_string,f+1)) = text_bsdl_instruction_capture then
+							if to_lower(get_field(bsdl_string,f+2)) = text_bsdl_of then
+								put_line(2 * row_separator_0 & text_bsdl_instruction_capture & row_separator_0 & 
+									get_bit_pattern(get_field(bsdl_string,f+2,trailer => true),width => length_instruction_register)
+									);
+								exit;
+							end if;
+						end if;
+					end if;
+				end loop;
+
+				-- idcode register
+				put(2 * row_separator_0 & text_bsdl_idcode_register & row_separator_0);
+				for f in 1..field_count loop
+					if to_lower(get_field(bsdl_string,f)) = text_bsdl_attribute then
+						if to_lower(get_field(bsdl_string,f+1)) = text_bsdl_idcode_register then
+							idcode_register_found := true;
+							if to_lower(get_field(bsdl_string,f+2)) = text_bsdl_of then
+								put_line(get_bit_pattern(get_field(bsdl_string,f+2,trailer => true),width => bic_idcode_register_length));
+								exit;
+							end if;
+						end if;
+					end if;
+				end loop;
+				if not idcode_register_found then
+					put_line(text_udb_none);
+				end if;
+
+				-- usercode register
+				put(2 * row_separator_0 & text_bsdl_usercode_register & row_separator_0);
+				for f in 1..field_count loop
+					if to_lower(get_field(bsdl_string,f)) = text_bsdl_attribute then
+						if to_lower(get_field(bsdl_string,f+1)) = text_bsdl_usercode_register then
+							usercode_register_found := true;
+							if to_lower(get_field(bsdl_string,f+2)) = text_bsdl_of then
+								put_line(get_bit_pattern(get_field(bsdl_string,f+2,trailer => true),width => bic_usercode_register_length));
+								exit;
+							end if;
+						end if;
+					end if;
+				end loop;
+				if not usercode_register_found then
+					put_line(text_udb_none);
+				end if;
+
+				-- boundary length
+				for f in 1..field_count loop
+					if to_lower(get_field(bsdl_string,f)) = text_bsdl_attribute then
+						if to_lower(get_field(bsdl_string,f+1)) = text_bsdl_boundary_length then
+							if to_lower(get_field(bsdl_string,f+2)) = text_bsdl_of then
+								length_boundary_register := type_register_length'value
+									(
+									get_field
+										(
+										get_field
+											(
+											get_field(bsdl_string,f+2,trailer => true),
+											ifs => ':',
+											position => 2
+											),
+										position => 3
+										)
+									);
+
+								put_line(2 * row_separator_0 & text_udb_boundary_register_length & row_separator_0 &
+									trim(type_register_length'image(length_boundary_register),left));
+								exit;
+							end if;
+						end if;
+					end if;
+				end loop;
+
+				-- trst pin
+				put(2 * row_separator_0 & text_udb_trst_pin & row_separator_0);
+				for f in 1..field_count loop
+					if to_lower(get_field(bsdl_string,f)) = text_bsdl_attribute then
+						if to_lower(get_field(bsdl_string,f+1)) = text_bsdl_tap_scan_reset then
+							if to_lower(get_field(bsdl_string,f+2)) = text_bsdl_of then
+								trst_pin := boolean'value(
+									get_field
+										(
+										get_field
+											(
+											get_field(bsdl_string,f+2,trailer => true),
+											ifs => ':',
+											position => 2
+											),
+										position => 3
+										)
+									);
+								exit;
+							end if;
+						end if;
+					end if;
+				end loop;
+				if trst_pin then
+					put_line(text_udb_available);
+				else
+					put_line(text_udb_none);
+				end if;
+
+				-- safebits
+
+			else
+				put_line(message_error & "no entity found !");
+				raise constraint_error;
+			end if;
+		end parse_bsdl;
 
 	begin
 		set_output(file_data_base_preliminary);
@@ -147,31 +425,38 @@ procedure impbsdl is
 			put_line(standard_output,"model file " & extended_string.to_string(bic.model_file));
 			open(file => file_bsdl, mode => in_file, name => extended_string.to_string(bic.model_file));
 			set_input(file_bsdl);
-			ptr_bsdl_entry := null;
+			--ptr_bsdl_entry := null;
+			bsdl_string := to_unbounded_string("");
 			while not end_of_file loop
-				line_counter := line_counter + 1;
+				--line_counter := line_counter + 1;
 				line_of_file := extended_string.to_bounded_string(get_line);
 				line_of_file := remove_comment_from_line(line_of_file);
 				if get_field_count(extended_string.to_string(line_of_file)) > 0 then -- if line contains anything
-					add_line_to_bsdl_entry(list => ptr_bsdl_entry, line => line_of_file);
-					if extended_string.index(line_of_file, ";") > 0 then
-						put_line(file_data_base_preliminary,get_entry);
-						ptr_bsdl_entry := null;
-					end if;
 
-				--put_line(get_entry);
--- 			put_line(2 * row_separator_0 & "value");
--- 			put_line(2 * row_separator_0 & "instruction_register_length");
--- 			put_line(2 * row_separator_0 & "instruction_capture");
--- 			put_line(2 * row_separator_0 & "idcode_register");
+					-- convert lines from bsdl file to a single string
+					for c in 1..extended_string.length(line_of_file) loop
+						if is_control(extended_string.element(line_of_file,c)) then -- control char. replaced by space
+							bsdl_string := bsdl_string & latin_1.space;
+						elsif extended_string.element(line_of_file,c) = latin_1.semicolon then -- add extra space after semicolon
+							bsdl_string := bsdl_string & latin_1.semicolon & latin_1.space;
+						else
+							bsdl_string := bsdl_string & extended_string.element(line_of_file,c);
+						end if;
+					end loop;
+
 -- 			put_line(2 * row_separator_0 & "usercode_register");
 -- 			put_line(2 * row_separator_0 & "boundary_register_length");
 -- 			put_line(2 * row_separator_0 & "trst_pin available");
 
 				end if; -- if line contains anything
 			end loop;
+
+			--put_line(file_data_base_preliminary,to_string(bsdl_string));
+			parse_bsdl(to_string(bsdl_string));
+
 			close(file_bsdl);
 			put_line(row_separator_0 & section_mark.endsubsection & row_separator_0 & universal_string_type.to_string(bic.name));
+			new_line;
 			bic := bic.next;
 		end loop;
 
@@ -199,7 +484,7 @@ begin
 	create_bak_directory;
 
 	-- backup data base section scanpath_configuration (incl. comments)
-	extract_section( 
+	m1.extract_section( 
 		universal_string_type.to_string(name_file_data_base),
 		name_directory_bak & name_directory_separator & universal_string_type.to_string(name_file_data_base),
 		section_mark.section,
@@ -207,7 +492,7 @@ begin
 		section_scanpath_configuration
 		);
 
-	extract_section( 
+	m1.extract_section( 
 		universal_string_type.to_string(name_file_data_base),
 		name_file_data_base_preliminary,
 		section_mark.section,
