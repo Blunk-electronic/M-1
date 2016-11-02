@@ -262,6 +262,7 @@ procedure impbsdl is
 			text_bsdl_idcode_register		: constant string (1..15) := "idcode_register";
 			text_bsdl_usercode_register		: constant string (1..17) := "usercode_register";
 			text_bsdl_boundary_length		: constant string (1..15) := "boundary_length";
+			text_bsdl_boundary_register		: constant string (1..17) := "boundary_register";
 			text_bsdl_tap_scan_reset		: constant string (1..14) := "tap_scan_reset";
 			text_bsdl_of					: constant string (1..2) := "of";
 
@@ -411,6 +412,16 @@ procedure impbsdl is
 				end if;
 
 				-- safebits
+				for f in 1..field_count loop
+					if to_lower(get_field(bsdl_string,f)) = text_bsdl_attribute then
+						if to_lower(get_field(bsdl_string,f+1)) = text_bsdl_boundary_register then
+							if to_lower(get_field(bsdl_string,f+2)) = text_bsdl_of then
+								put_line(get_field(bsdl_string,f+2,trailer => true));
+								exit;
+							end if;
+						end if;
+					end if;
+				end loop;
 
 			else
 				put_line(message_error & "no entity found !");
