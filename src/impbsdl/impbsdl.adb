@@ -65,9 +65,9 @@ with m1_files_and_directories; 	use m1_files_and_directories;
 
 procedure impbsdl is
 
-	version			: String (1..3) := "0xx";
+	version			: string (1..3) := "0x1";
 	udb_summary		: type_udb_summary;
-
+	prog_position	: natural := 0;
 
 	procedure read_bsld_models is
 		bic				: type_ptr_bscan_ic_pre := ptr_bic_pre;
@@ -75,71 +75,6 @@ procedure impbsdl is
 		line_of_file	: extended_string.bounded_string;
 		bsdl_string		: unbounded_string;
 --		line_counter	: natural := 0;
-		--entry_line_count: positive := 1;
-
--- 		type type_bsdl_entry;
--- 		type type_ptr_bsdl_entry is access all type_bsdl_entry;
--- 		type type_bsdl_entry is
--- 			record
--- 				next		: type_ptr_bsdl_entry;
--- 				line		: extended_string.bounded_string;
--- 			end record;
--- 		ptr_bsdl_entry : type_ptr_bsdl_entry;
--- 
--- 		procedure add_line_to_bsdl_entry (
--- 			list			: in out type_ptr_bsdl_entry;
--- 			line			: in extended_string.bounded_string
--- 			) is
--- 			line_cleaned_up	: extended_string.bounded_string;
--- 			--characters_to_replace : character_set;
--- 			--number_of_char_to_replace : natural := 0;
--- 			--ctrl_map : character_mapping := to_mapping("ab","cd");
--- 			--ctrl_map : character_mapping := to_mapping(latin_1.cr, latin_1.space);
--- 		begin
--- 			--characters_to_replace := to_set(latin_1.cr);
--- 			--characters_to_replace := to_set(latin_1.ht);
--- 			--number_of_char_to_replace := extended_string.count(line,characters_to_replace);
--- 
--- 			line_cleaned_up := line;
--- 			--entry_line_count := entry_line_count + 1;
--- 			--put_line(standard_output,extended_string.to_string(line));
--- 
--- 			-- replace control characters by space
---  			for c in 1..extended_string.length(line_cleaned_up) loop
--- 				if is_control(extended_string.element(line_cleaned_up,c)) then
--- 					extended_string.replace_element(line_cleaned_up,c,latin_1.space);
--- 				end if;
-
--- 				if c < extended_string.length(line_cleaned_up) then
--- 					if extended_string.element(line_cleaned_up,c) = latin_1.space and extended_string.element(line_cleaned_up,c+1) = latin_1.space then
--- 						null;
--- 						put_line(standard_output,"test");
--- 						put_line(standard_output,extended_string.to_string(line_cleaned_up));
--- 						extended_string.delete(line_cleaned_up,c,c);
--- 					end if;
--- 				end if;
--- 			end loop;
--- 			
--- 			list := new type_bsdl_entry'(
--- 				next		=> list,
--- 				line		=> line_cleaned_up
--- 				);
--- 		end add_line_to_bsdl_entry;
--- 
--- 		function get_entry return string is
--- 			e : type_ptr_bsdl_entry := ptr_bsdl_entry;
--- 			--line : string (1..entry_line_count * extended_string.max_length);
--- 			line : unbounded_string;
--- 			--entry_start : positive := 1;
--- 			--entry_end : positive := 1;
--- 		begin
--- 			while e /= null loop
--- 				--put_line(standard_output,extended_string.to_string(e.line));
--- 				line := to_unbounded_string(extended_string.to_string(e.line)) & row_separator_0 & line;
--- 				e := e.next;
--- 			end loop;
--- 			return to_string(line);
--- 		end get_entry;
 
 		function get_field(
 				text_in 	: in string;
@@ -156,7 +91,7 @@ procedure impbsdl is
 			inside_field	: boolean := true;				-- true if char_pt points inside a field
 			char_current	: character;					-- holds current character being processed
 			char_last		: character := ifs;				-- holds character processed previous to char_current
-		begin
+		begin -- get_field
 			if character_count > 0 then
 				char_pt := 1;
 				for char_pt in 1..character_count loop
@@ -277,30 +212,39 @@ procedure impbsdl is
 			text_udb_available						: constant string (1..9) := "available";
 
 			procedure read_boundary_register (text_in : in string; width : in positive) is
+				-- Extracts from given string text_in cell id, type, port+index, function, save value and optional: control cell, disable value, disable result.
+
 				--subtype type_boundary_register_sized is type_boundary_register (1..length_boundary_register);
 				--boundary_register : type_boundary_register_sized;
-				pattern_start : boolean := false;
-				text_scratch : string (1..text_in'length) := text_in'length * latin_1.space;
-				text_scratch_pt : positive := 1; -- CS: subtype of width
-				open_sections_ct : natural := 0;
-				--cell_index : boolean := false;
-				cell_id_as_string, control_cell_id_as_string : universal_string_type.bounded_string; -- CS: should be sufficient to hold a natural (as string) within range of type_cell_id
-				cell_id, control_cell_id : type_cell_id;
-				cell_type_as_string : universal_string_type.bounded_string;
-				boundary_regiser_cell : type_boundary_register_cell;
+
+				pattern_start : boolean := false; -- used to trim header from text_in. the part that follows the first quotation matters.
+				text_scratch : string (1..text_in'length) := text_in'length * latin_1.space; -- here a copy of text_in goes for subsequent in depth processing
+				text_scratch_pt : positive := 1; -- points to character being processed when text_scratch is built
+				open_sections_ct : natural := 0; -- increments on every opening parenthesis, decrements on every closing parenthesis found in text_scratch
+
+				-- While extracting bounded strings are used as temporarily storage. Later they are converted to the actual types.
+				-- Finally, when all elements of the cell are read, they are emptied ("") so that on reading the next cell things are cleaned up.
+				cell_id_as_string, control_cell_id_as_string, cell_type_as_string, port_index_as_string,
+				cell_function_as_string, cell_disable_result_as_string : universal_string_type.bounded_string; 
+				-- CS: should be sufficient to hold those values
+
+				cell_id, control_cell_id 	: type_cell_id; -- id of actual cell and optional control cell
+				boundary_register_cell 		: type_boundary_register_cell; -- contains the cell type like BC_1
+
+				-- This type is used to set the property of a cell to be read next:
 				type type_boundary_register_cell_property is (prop_cell_type, prop_port, prop_function, prop_safe_value, prop_control_cell_id, prop_disable_value,  prop_disable_result);
-				boundary_register_cell_property : type_boundary_register_cell_property := prop_cell_type;				
-				port : universal_string_type.bounded_string;
-				option_port_index, option_control_cell : boolean := false;
-				port_index_as_string : universal_string_type.bounded_string;
-				port_index : natural;
-				cell_function_as_string : universal_string_type.bounded_string;
-				cell_function : type_cell_function;
-				cell_safe_value	: type_bit_char_class_1;
-				cell_disable_value : type_bit_char_class_0;
-				cell_disable_result_as_string : universal_string_type.bounded_string;
-				cell_disable_result : type_disable_result;
-			begin
+				boundary_register_cell_property : type_boundary_register_cell_property := prop_cell_type;
+
+				port : universal_string_type.bounded_string; -- the port name
+				option_port_index, option_control_cell : boolean := false; -- true if port has an index like A4(3) / if cell has a control cell
+				port_index				: natural; -- holds the port index (if present)
+
+				cell_function 			: type_cell_function; -- holds something like output3
+				cell_safe_value			: type_bit_char_class_1; -- holds the safe value of the cell
+				cell_disable_value 		: type_bit_char_class_0; -- holds the optional disable value of the control cell
+				cell_disable_result 	: type_disable_result; -- holds the disable result of the optional control cell
+
+			begin -- read_boundary_register
 				-- remove quotations and ampersands
 				for c in 1..text_in'length loop
 					case text_in(c) is
@@ -320,79 +264,92 @@ procedure impbsdl is
 				end loop;
 				--put_line(standard_output,text_scratch);
 
-				-- 0  (BC_1  Y2(4)  output3  X  16  1  Z)
+				-- text_scratch contains segments like "0  (BC_1  Y2(4)  output3  X  16  1  Z)"
+				-- This is the actual extracting work. Variable open_sections_ct indicates the level to parse at.
 				for c in 1..text_scratch'length loop
 					case open_sections_ct is
-						when 0 =>
+						when 0 => -- At this level we expect only the id of the actual boundary register cell.
 							-- read cell id
+							-- Collect digits of cell id in temporarily string. If digits have been collected and a non-digit is found,
+							-- the cell_id is assumed as complete.
 							if is_digit(text_scratch(c)) then
 								cell_id_as_string := universal_string_type.append(left => cell_id_as_string, right => text_scratch(c));
 							else
-								if universal_string_type.length(cell_id_as_string) > 0 then
+								if universal_string_type.length(cell_id_as_string) > 0 then -- cell_id complete
 									cell_id := type_cell_id'value(universal_string_type.to_string(cell_id_as_string));
 									--put(standard_output, " cell_id " & type_cell_id'image(cell_id));
-									boundary_register_cell_property := prop_cell_type;
+									boundary_register_cell_property := prop_cell_type; -- up next: cell type at level 1 (after the first open parenthesis)
 								end if;
 							end if;
 							
-						when 1 =>
+						when 1 => -- After passing the first opening parenthesis the level increases to 1. The element expected next is the cell type.
 							case boundary_register_cell_property is
 								when prop_cell_type =>
 									-- read cell type
+									-- Collect letters and digits of cell type in temporarily string. If character other that digits, letter and underscore
+									-- found, the cell type is assumed as complete. like BC_7
 									if is_digit(text_scratch(c)) or is_letter(text_scratch(c)) or text_scratch(c) = latin_1.low_line then
 										cell_type_as_string := universal_string_type.append(left => cell_type_as_string, right => text_scratch(c));
 									else
 										if universal_string_type.length(cell_type_as_string) > 0 then
-											boundary_regiser_cell := type_boundary_register_cell'value(universal_string_type.to_string(cell_type_as_string));
-											--put(standard_output, " type " & type_boundary_register_cell'image(boundary_regiser_cell));
-											boundary_register_cell_property := prop_port;
+											boundary_register_cell := type_boundary_register_cell'value(universal_string_type.to_string(cell_type_as_string));
+											--put(standard_output, " type " & type_boundary_register_cell'image(boundary_register_cell));
+											boundary_register_cell_property := prop_port; -- up next: port name
 										end if;
 									end if;
 
 								when prop_port =>
 									-- read port name
+									-- Collect charactes allowed for a port name. If foreign characters found, assume port name as complete.
+									-- If opening parenthesis found, level increases to 2. This leads to reading the port index.
+									-- After reading the port index, parsing continues here as the level then decreases to 1.
 									if is_digit(text_scratch(c)) or is_letter(text_scratch(c)) or text_scratch(c) = latin_1.low_line or text_scratch(c) = latin_1.asterisk then
 										port := universal_string_type.append(left => port, right => text_scratch(c));
 									else
 										if universal_string_type.length(port) > 0 then
 											--put(standard_output, " port " & universal_string_type.to_string(port));
-											boundary_register_cell_property := prop_function;
+											boundary_register_cell_property := prop_function; -- up next: cell function (after reading the optional port index)
 										end if;
-										--port := universal_string_type.to_bounded_string("");
 									end if;
 
 								when prop_function =>
 									-- read direction
+									-- Collect charactes allowed for cell function. If foreign characters found, assume function as complete.
 									if is_digit(text_scratch(c)) or is_letter(text_scratch(c)) or text_scratch(c) = latin_1.low_line then
 										cell_function_as_string := universal_string_type.append(left => cell_function_as_string, right => text_scratch(c));
 									else
 										if universal_string_type.length(cell_function_as_string) > 0 then
 											cell_function := type_cell_function'value(universal_string_type.to_string(cell_function_as_string));
 											--put(standard_output, " function " & type_cell_function'image(cell_function));
-											boundary_register_cell_property := prop_safe_value;
+											boundary_register_cell_property := prop_safe_value; -- up next: safe value
 										end if;
 									end if;
 
 								when prop_safe_value =>
 									-- read safe value
+									-- The safe value is a single character (x,X,0,1). Once a different character found,
+									-- the safe value is complete.
 									case text_scratch(c) is
 										when 'X' | 'x' => 
 											cell_safe_value := 'X';
 											--put(standard_output, " sv " & type_bit_char_class_1'image(cell_safe_value));
-											boundary_register_cell_property := prop_control_cell_id;
+											boundary_register_cell_property := prop_control_cell_id; -- up next: control cell id
 										when '0' => 
 											cell_safe_value := '0';
 											--put(standard_output, " sv " & type_bit_char_class_1'image(cell_safe_value));
-											boundary_register_cell_property := prop_control_cell_id;
+											boundary_register_cell_property := prop_control_cell_id; -- up next: control cell id
 										when '1' => 
 											cell_safe_value := '1';
 											--put(standard_output, " sv " & type_bit_char_class_1'image(cell_safe_value));
-											boundary_register_cell_property := prop_control_cell_id;
+											boundary_register_cell_property := prop_control_cell_id; -- up next: control cell id
 										when others => null;
 									end case;
 
 								when prop_control_cell_id =>
 									-- read control cell id (optional)
+									-- Collect digits of control cell id in temporarily string. If digits have been collected and a non-digit is found,
+									-- the control_cell_id is assumed as complete.
+									-- The option_control_cell flag is set to indicate later that there is a control cell.
 									if is_digit(text_scratch(c)) then
 										control_cell_id_as_string := universal_string_type.append(left => control_cell_id_as_string, right => text_scratch(c));
 									else
@@ -400,33 +357,36 @@ procedure impbsdl is
 											control_cell_id := type_cell_id'value(universal_string_type.to_string(control_cell_id_as_string));
 											option_control_cell := true;
 											--put(standard_output, " ctrl " & type_cell_id'image(control_cell_id));
-											boundary_register_cell_property := prop_disable_value;
+											boundary_register_cell_property := prop_disable_value; -- up next: disable value
 										end if;
 									end if;
 
 								when prop_disable_value =>
 									-- read disable value (optional)
+									-- The disable value is a single character (0,1). Once a different character found,
+									-- the disable value is complete.
 									case text_scratch(c) is
 										when '0' => 
 											cell_disable_value := '0';
 											--put(standard_output, " dv " & type_bit_char_class_0'image(cell_disable_value));
-											boundary_register_cell_property := prop_disable_result;
+											boundary_register_cell_property := prop_disable_result; -- up next: disable result
 										when '1' => 
 											cell_disable_value := '1';
 											--put(standard_output, " dv " & type_bit_char_class_0'image(cell_disable_value));
-											boundary_register_cell_property := prop_disable_result;
+											boundary_register_cell_property := prop_disable_result; -- up next: disable result
 										when others => null;
 									end case;
 
 								when prop_disable_result =>
 									-- read disable result (optional)
+									-- Collect characters allowed for disable result. If foreign characters found, assume disable result as complete.
 									if is_digit(text_scratch(c)) or is_letter(text_scratch(c)) then
 										cell_disable_result_as_string := universal_string_type.append(left => cell_disable_result_as_string, right => text_scratch(c));
 									else
 										if universal_string_type.length(cell_disable_result_as_string) > 0 then
 											cell_disable_result := type_disable_result'value(universal_string_type.to_string(cell_disable_result_as_string));
 											--put(standard_output, " dr " & type_disable_result'image(cell_disable_result));
-											--boundary_register_cell_property := prop_cell_type;
+											-- up next: cell id of next boundary register cell at level 0
 										end if;
 									end if;
 									
@@ -438,6 +398,11 @@ procedure impbsdl is
 
 						when 2 =>
 							-- read port index
+							-- This level is reached after a second opening parenthesis after reading the port name.
+							-- Collect digits of port index in temporarily string. If digits have been collected and a non-digit is found,
+							-- the index is assumed as complete.
+							-- The option_port_index flag is set to indicate later that there is a port with index.
+							-- Once a second closing parenthesis is detected, the level decreases to 1.
 							if is_digit(text_scratch(c)) then
 								port_index_as_string := universal_string_type.append(left => port_index_as_string, right => text_scratch(c));
 							else
@@ -445,65 +410,70 @@ procedure impbsdl is
 									port_index := natural'value(universal_string_type.to_string(port_index_as_string));
 									option_port_index := true;
 									--put(standard_output, " idx " & natural'image(port_index));
-									boundary_register_cell_property := prop_function;
+									boundary_register_cell_property := prop_function; -- up next: cell function at level 1
 								end if;
-								port_index_as_string := universal_string_type.to_bounded_string("");
+-- 								port_index_as_string := universal_string_type.to_bounded_string("");
 							end if;
 							
-						when others => null;
+						when others => null; -- there are no other levels. means no more than two opening parenthesis.
 					end case;
 
+					-- Count up/down opening and closing parenthesis to detect the parsing level:
+					-- 0 -> all parenthesis closed
+					-- 1 -> one open parenthesis
+					-- 2 -> two open parenthesis
+					-- Once all parenthesis closed. All cell properties have been read. Cell is ready for inserting into container.
 					case text_scratch(c) is
-						when latin_1.left_parenthesis =>
+						when latin_1.left_parenthesis => -- open parenthesis found
 							open_sections_ct := open_sections_ct + 1;
-						when latin_1.right_parenthesis =>
+						when latin_1.right_parenthesis => -- close parenthesis found
 							open_sections_ct := open_sections_ct - 1;
-							if open_sections_ct = 0 then
-								put(standard_output, " cell_id " & type_cell_id'image(cell_id));
-								cell_id_as_string := universal_string_type.to_bounded_string("");
 
-								put(standard_output, " type " & type_boundary_register_cell'image(boundary_regiser_cell));
-								cell_type_as_string := universal_string_type.to_bounded_string("");
+							if open_sections_ct = 0 then -- cell data complete
+								put(standard_output, " cell_id " & type_cell_id'image(cell_id));
+								cell_id_as_string := universal_string_type.to_bounded_string(""); -- empty temporarily string
+
+								put(standard_output, " type " & type_boundary_register_cell'image(boundary_register_cell));
+								cell_type_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
 
 								put(standard_output, " port " & universal_string_type.to_string(port));
-								port := universal_string_type.to_bounded_string("");
+								port := universal_string_type.to_bounded_string("");  -- empty temporarily string
 
+								-- if port has index, reset flag that indicates so
 								if option_port_index then
 									put(standard_output, " idx " & natural'image(port_index));
+									port_index_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
 									option_port_index := false;
 								end if;
 
 								put(standard_output, " function " & type_cell_function'image(cell_function));
-								cell_function_as_string := universal_string_type.to_bounded_string("");
+								cell_function_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
 
 								put(standard_output, " sv " & type_bit_char_class_1'image(cell_safe_value));
 
+								-- if cell has control cell, reset flag that indicates so
 								if option_control_cell then
 									put(standard_output, " ctrl " & type_cell_id'image(control_cell_id));
-									control_cell_id_as_string := universal_string_type.to_bounded_string("");
+									control_cell_id_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
 
-									put(standard_output, " dv " & type_bit_char_class_0'image(cell_disable_value));
+									put(standard_output, " dv " & type_bit_char_class_0'image(cell_disable_value));  -- empty temporarily string
 
 									put(standard_output, " dr " & type_disable_result'image(cell_disable_result));
-									cell_disable_result_as_string := universal_string_type.to_bounded_string("");
+									cell_disable_result_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
 
 									option_control_cell := false;
 								end if;
-							
+								new_line(standard_output);
 							end if;
-						when others =>
+
+						when others => -- other characters don't matter for the parse level
 							null;
 					end case;
-
-
-
 				end loop;
 				--put_line(standard_output,text_scratch);
-
-				
 			end read_boundary_register;
 
-		begin
+		begin -- parse_bsdl
 			set_output(file_data_base_preliminary);
 			--put_line(bsdl_string);
 			if to_lower(get_field(bsdl_string,1)) = text_bsdl_entity then
@@ -646,6 +616,7 @@ procedure impbsdl is
 					if to_lower(get_field(bsdl_string,f)) = text_bsdl_attribute then
 						if to_lower(get_field(bsdl_string,f+1)) = text_bsdl_boundary_register then
 							if to_lower(get_field(bsdl_string,f+2)) = text_bsdl_of then
+								-- The whole boundary register is passed as a single long string to procedure read_boundary_register:
 								read_boundary_register(get_field(bsdl_string,f+2,trailer => true), width => length_boundary_register);
 								exit;
 							end if;
@@ -659,7 +630,7 @@ procedure impbsdl is
 			end if;
 		end parse_bsdl;
 
-	begin
+	begin -- read_bsld_models
 		set_output(file_data_base_preliminary);
 		while bic /= null loop
 			put_line(row_separator_0 & section_mark.subsection & row_separator_0 & universal_string_type.to_string(bic.name));
@@ -685,10 +656,6 @@ procedure impbsdl is
 						end if;
 					end loop;
 
--- 			put_line(2 * row_separator_0 & "usercode_register");
--- 			put_line(2 * row_separator_0 & "boundary_register_length");
--- 			put_line(2 * row_separator_0 & "trst_pin available");
-
 				end if; -- if line contains anything
 			end loop;
 
@@ -709,22 +676,23 @@ procedure impbsdl is
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
-
-
 	new_line;
 	put_line("BSDL MODEL IMPORTER VERSION "& version);
 	put_line("===============================");
-	--prog_position	:= 10;
+	prog_position	:= 10;
  	name_file_data_base:= universal_string_type.to_bounded_string(argument(1));
  	put_line("data base      : " & universal_string_type.to_string(name_file_data_base));
 
-	--prog_position	:= 20;
+	prog_position	:= 20;
 	udb_summary := read_uut_data_base(universal_string_type.to_string(name_file_data_base));
 
+	prog_position	:= 30;
 	create_temp_directory;
+	prog_position	:= 40;
 	create_bak_directory;
 
 	-- backup data base section scanpath_configuration (incl. comments)
+	prog_position	:= 50;
 	m1.extract_section( 
 		universal_string_type.to_string(name_file_data_base),
 		name_directory_bak & name_directory_separator & universal_string_type.to_string(name_file_data_base),
@@ -733,6 +701,7 @@ begin
 		section_scanpath_configuration
 		);
 
+	prog_position	:= 60;
 	m1.extract_section( 
 		universal_string_type.to_string(name_file_data_base),
 		name_file_data_base_preliminary,
@@ -741,26 +710,31 @@ begin
 		section_scanpath_configuration
 		);
 
+	prog_position	:= 70;
 	open( 
 		file => file_data_base_preliminary,
 		mode => append_file,
 		name => name_file_data_base_preliminary
 		);
 
+	prog_position	:= 80;
 	new_line (file_data_base_preliminary);
 	put_line (file_data_base_preliminary,section_mark.section & row_separator_0 & section_registers);
 	put_line (file_data_base_preliminary,column_separator_0);
 	put_line (file_data_base_preliminary,"-- created by BSDL importer version " & version);
 	put_line (file_data_base_preliminary,"-- date       : " & m1_internal.date_now); 
 
+	prog_position	:= 90;
 	read_bsld_models;
 
+	prog_position	:= 100;
 	put_line (file_data_base_preliminary,section_mark.endsection); 
 	new_line (file_data_base_preliminary);
 
+	prog_position	:= 110;
 	close(file_data_base_preliminary);
 --	copy_file(name_file_data_base_preliminary, universal_string_type.to_string(name_file_data_base));
 
-
+-- CS: exception handler
 	
 end impbsdl;
