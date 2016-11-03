@@ -279,8 +279,102 @@ procedure impbsdl is
 			procedure read_boundary_register (text_in : in string; width : in positive) is
 				--subtype type_boundary_register_sized is type_boundary_register (1..length_boundary_register);
 				--boundary_register : type_boundary_register_sized;
+				pattern_start : boolean := false;
+				text_scratch : string (1..text_in'length) := text_in'length * latin_1.space;
+				text_scratch_pt : positive := 1; -- CS: subtype of width
+				open_sections_ct : natural := 0;
+				cell_index : boolean := false;
+				cell_id_as_string : universal_string_type.bounded_string; -- CS: should be sufficient to hold a natural (as string) within range of type_cell_id
+				cell_id : type_cell_id;
+				cell_type_as_string : universal_string_type.bounded_string;
+				boundary_regiser_cell : type_boundary_register_cell;
+				type type_boundary_register_cell_property is (prop_cell_type, prop_port, prop_direction, prop_safe_value, prop_control_cell_id, prop_disable_value,  prop_disable_result);
+				boundary_register_cell_property : type_boundary_register_cell_property := prop_cell_type;
+				port : universal_string_type.bounded_string;
 			begin
-				null;
+				-- remove quotations and ampersands
+				for c in 1..text_in'length loop
+					case text_in(c) is
+						when latin_1.quotation =>
+							pattern_start := true;
+							text_scratch(text_scratch_pt) := latin_1.space;
+							text_scratch_pt := text_scratch_pt + 1;
+						when latin_1.ampersand | latin_1.comma =>
+							text_scratch(text_scratch_pt) := latin_1.space;
+							text_scratch_pt := text_scratch_pt + 1;
+						when others =>
+							if pattern_start then
+								text_scratch(text_scratch_pt) := text_in(c);
+								text_scratch_pt := text_scratch_pt + 1;
+							end if;
+					end case;
+				end loop;
+				--put_line(standard_output,text_scratch);
+
+				-- 
+				for c in 1..text_scratch'length loop
+					case text_scratch(c) is
+						when latin_1.left_parenthesis =>
+							open_sections_ct := open_sections_ct + 1;
+						when latin_1.right_parenthesis =>
+							open_sections_ct := open_sections_ct - 1;
+						when others =>
+							null;
+					end case;
+
+					case open_sections_ct is
+						when 0 =>
+							if is_digit(text_scratch(c)) then
+								--cell_index := true;
+								cell_id_as_string := universal_string_type.append(left => cell_id_as_string, right => text_scratch(c));
+								--put(standard_output,text_scratch(c));
+							else
+								--cell_index := false;
+								if universal_string_type.length(cell_id_as_string) > 0 then
+									cell_id := type_cell_id'value(universal_string_type.to_string(cell_id_as_string));
+									put(standard_output, " " & type_cell_id'image(cell_id));
+								end if;
+								cell_id_as_string := universal_string_type.to_bounded_string("");
+							end if;
+							
+						when 1 =>
+							case boundary_register_cell_property is
+								when prop_cell_type =>
+									if is_digit(text_scratch(c)) or is_letter(text_scratch(c)) or text_scratch(c) = latin_1.low_line then
+										cell_type_as_string := universal_string_type.append(left => cell_type_as_string, right => text_scratch(c));
+									else
+										if universal_string_type.length(cell_type_as_string) > 0 then
+											boundary_regiser_cell := type_boundary_register_cell'value(universal_string_type.to_string(cell_type_as_string));
+											put(standard_output, " " & type_boundary_register_cell'image(boundary_regiser_cell));
+											boundary_register_cell_property := prop_port;
+										end if;
+										cell_type_as_string := universal_string_type.to_bounded_string("");
+									end if;
+
+								when prop_port =>
+									if is_digit(text_scratch(c)) or is_letter(text_scratch(c)) or text_scratch(c) = latin_1.low_line or text_scratch(c) = latin_1.asterisk then
+										--put(standard_output, "port:" );
+										port := universal_string_type.append(left => port, right => text_scratch(c));
+									else
+										if universal_string_type.length(port) > 0 then
+											put(standard_output, " " & universal_string_type.to_string(port));
+											boundary_register_cell_property := prop_direction;
+										end if;
+										port := universal_string_type.to_bounded_string("");
+										
+									end if;
+
+								when others => null;
+							end case;
+									
+
+						when 2 => null;
+						when others => null;
+					end case;
+				end loop;
+				put_line(standard_output,text_scratch);
+
+				
 			end read_boundary_register;
 
 		begin
