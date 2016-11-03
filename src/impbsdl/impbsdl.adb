@@ -243,6 +243,7 @@ procedure impbsdl is
 			return text_out;
 		end get_bit_pattern;
 
+
 		procedure parse_bsdl (bsdl_string : in string) is
 			character_position 	: positive := 1;
 			field_position		: positive := 1;
@@ -250,6 +251,8 @@ procedure impbsdl is
 
 			length_instruction_register		: type_register_length;
 			length_boundary_register		: type_register_length;
+			--type type_boundary_register is array (type_register_length range <>) of type_bit_of_boundary_register;
+
 			idcode_register_found			: boolean := false;
 			usercode_register_found			: boolean := false;
 			trst_pin						: boolean := false;
@@ -272,6 +275,13 @@ procedure impbsdl is
 			text_udb_boundary_register_length		: constant string (1..24) := "boundary_register_length";
 			text_udb_trst_pin						: constant string (1..8) := "trst_pin";
 			text_udb_available						: constant string (1..9) := "available";
+
+			procedure read_boundary_register (text_in : in string; width : in positive) is
+				--subtype type_boundary_register_sized is type_boundary_register (1..length_boundary_register);
+				--boundary_register : type_boundary_register_sized;
+			begin
+				null;
+			end read_boundary_register;
 
 		begin
 			set_output(file_data_base_preliminary);
@@ -411,12 +421,12 @@ procedure impbsdl is
 					put_line(text_udb_none);
 				end if;
 
-				-- safebits
+				-- boundary register
 				for f in 1..field_count loop
 					if to_lower(get_field(bsdl_string,f)) = text_bsdl_attribute then
 						if to_lower(get_field(bsdl_string,f+1)) = text_bsdl_boundary_register then
 							if to_lower(get_field(bsdl_string,f+2)) = text_bsdl_of then
-								put_line(get_field(bsdl_string,f+2,trailer => true));
+								read_boundary_register(get_field(bsdl_string,f+2,trailer => true), width => length_boundary_register);
 								exit;
 							end if;
 						end if;
