@@ -289,8 +289,10 @@ procedure impbsdl is
 				cell_type_as_string : universal_string_type.bounded_string;
 				boundary_regiser_cell : type_boundary_register_cell;
 				type type_boundary_register_cell_property is (prop_cell_type, prop_port, prop_direction, prop_safe_value, prop_control_cell_id, prop_disable_value,  prop_disable_result);
-				boundary_register_cell_property : type_boundary_register_cell_property := prop_cell_type;
+				boundary_register_cell_property : type_boundary_register_cell_property := prop_cell_type;				
 				port : universal_string_type.bounded_string;
+				port_index_as_string : universal_string_type.bounded_string;
+				port_index : natural;
 			begin
 				-- remove quotations and ampersands
 				for c in 1..text_in'length loop
@@ -332,7 +334,7 @@ procedure impbsdl is
 								--cell_index := false;
 								if universal_string_type.length(cell_id_as_string) > 0 then
 									cell_id := type_cell_id'value(universal_string_type.to_string(cell_id_as_string));
-									put(standard_output, " " & type_cell_id'image(cell_id));
+									put(standard_output, " cell_id " & type_cell_id'image(cell_id));
 								end if;
 								cell_id_as_string := universal_string_type.to_bounded_string("");
 							end if;
@@ -345,7 +347,7 @@ procedure impbsdl is
 									else
 										if universal_string_type.length(cell_type_as_string) > 0 then
 											boundary_regiser_cell := type_boundary_register_cell'value(universal_string_type.to_string(cell_type_as_string));
-											put(standard_output, " " & type_boundary_register_cell'image(boundary_regiser_cell));
+											put(standard_output, " type " & type_boundary_register_cell'image(boundary_regiser_cell));
 											boundary_register_cell_property := prop_port;
 										end if;
 										cell_type_as_string := universal_string_type.to_bounded_string("");
@@ -357,22 +359,33 @@ procedure impbsdl is
 										port := universal_string_type.append(left => port, right => text_scratch(c));
 									else
 										if universal_string_type.length(port) > 0 then
-											put(standard_output, " " & universal_string_type.to_string(port));
-											boundary_register_cell_property := prop_direction;
+											put(standard_output, " port " & universal_string_type.to_string(port));
+											--boundary_register_cell_property := prop_direction;
 										end if;
 										port := universal_string_type.to_bounded_string("");
-										
 									end if;
 
 								when others => null;
 							end case;
-									
 
-						when 2 => null;
+							-- 0 (bc_1 y2(4) output3 x 16 1 z)
+
+						when 2 =>
+							if is_digit(text_scratch(c)) then
+								port_index_as_string := universal_string_type.append(left => port_index_as_string, right => text_scratch(c));
+							else
+								if universal_string_type.length(port_index_as_string) > 0 then
+									port_index := natural'value(universal_string_type.to_string(port_index_as_string));
+									put(standard_output, " idx " & natural'image(port_index));
+									boundary_register_cell_property := prop_direction;
+								end if;
+								port_index_as_string := universal_string_type.to_bounded_string("");
+							end if;
+							
 						when others => null;
 					end case;
 				end loop;
-				put_line(standard_output,text_scratch);
+				--put_line(standard_output,text_scratch);
 
 				
 			end read_boundary_register;
