@@ -283,16 +283,23 @@ procedure impbsdl is
 				text_scratch : string (1..text_in'length) := text_in'length * latin_1.space;
 				text_scratch_pt : positive := 1; -- CS: subtype of width
 				open_sections_ct : natural := 0;
-				cell_index : boolean := false;
-				cell_id_as_string : universal_string_type.bounded_string; -- CS: should be sufficient to hold a natural (as string) within range of type_cell_id
-				cell_id : type_cell_id;
+				--cell_index : boolean := false;
+				cell_id_as_string, control_cell_id_as_string : universal_string_type.bounded_string; -- CS: should be sufficient to hold a natural (as string) within range of type_cell_id
+				cell_id, control_cell_id : type_cell_id;
 				cell_type_as_string : universal_string_type.bounded_string;
 				boundary_regiser_cell : type_boundary_register_cell;
-				type type_boundary_register_cell_property is (prop_cell_type, prop_port, prop_direction, prop_safe_value, prop_control_cell_id, prop_disable_value,  prop_disable_result);
+				type type_boundary_register_cell_property is (prop_cell_type, prop_port, prop_function, prop_safe_value, prop_control_cell_id, prop_disable_value,  prop_disable_result);
 				boundary_register_cell_property : type_boundary_register_cell_property := prop_cell_type;				
 				port : universal_string_type.bounded_string;
+				option_port_index, option_control_cell : boolean := false;
 				port_index_as_string : universal_string_type.bounded_string;
 				port_index : natural;
+				cell_function_as_string : universal_string_type.bounded_string;
+				cell_function : type_cell_function;
+				cell_safe_value	: type_bit_char_class_1;
+				cell_disable_value : type_bit_char_class_0;
+				cell_disable_result_as_string : universal_string_type.bounded_string;
+				cell_disable_result : type_disable_result;
 			begin
 				-- remove quotations and ampersands
 				for c in 1..text_in'length loop
@@ -313,77 +320,183 @@ procedure impbsdl is
 				end loop;
 				--put_line(standard_output,text_scratch);
 
-				-- 
+				-- 0  (BC_1  Y2(4)  output3  X  16  1  Z)
 				for c in 1..text_scratch'length loop
-					case text_scratch(c) is
-						when latin_1.left_parenthesis =>
-							open_sections_ct := open_sections_ct + 1;
-						when latin_1.right_parenthesis =>
-							open_sections_ct := open_sections_ct - 1;
-						when others =>
-							null;
-					end case;
-
 					case open_sections_ct is
 						when 0 =>
+							-- read cell id
 							if is_digit(text_scratch(c)) then
-								--cell_index := true;
 								cell_id_as_string := universal_string_type.append(left => cell_id_as_string, right => text_scratch(c));
-								--put(standard_output,text_scratch(c));
 							else
-								--cell_index := false;
 								if universal_string_type.length(cell_id_as_string) > 0 then
 									cell_id := type_cell_id'value(universal_string_type.to_string(cell_id_as_string));
-									put(standard_output, " cell_id " & type_cell_id'image(cell_id));
+									--put(standard_output, " cell_id " & type_cell_id'image(cell_id));
+									boundary_register_cell_property := prop_cell_type;
 								end if;
-								cell_id_as_string := universal_string_type.to_bounded_string("");
 							end if;
 							
 						when 1 =>
 							case boundary_register_cell_property is
 								when prop_cell_type =>
+									-- read cell type
 									if is_digit(text_scratch(c)) or is_letter(text_scratch(c)) or text_scratch(c) = latin_1.low_line then
 										cell_type_as_string := universal_string_type.append(left => cell_type_as_string, right => text_scratch(c));
 									else
 										if universal_string_type.length(cell_type_as_string) > 0 then
 											boundary_regiser_cell := type_boundary_register_cell'value(universal_string_type.to_string(cell_type_as_string));
-											put(standard_output, " type " & type_boundary_register_cell'image(boundary_regiser_cell));
+											--put(standard_output, " type " & type_boundary_register_cell'image(boundary_regiser_cell));
 											boundary_register_cell_property := prop_port;
 										end if;
-										cell_type_as_string := universal_string_type.to_bounded_string("");
 									end if;
 
 								when prop_port =>
+									-- read port name
 									if is_digit(text_scratch(c)) or is_letter(text_scratch(c)) or text_scratch(c) = latin_1.low_line or text_scratch(c) = latin_1.asterisk then
-										--put(standard_output, "port:" );
 										port := universal_string_type.append(left => port, right => text_scratch(c));
 									else
 										if universal_string_type.length(port) > 0 then
-											put(standard_output, " port " & universal_string_type.to_string(port));
-											--boundary_register_cell_property := prop_direction;
+											--put(standard_output, " port " & universal_string_type.to_string(port));
+											boundary_register_cell_property := prop_function;
 										end if;
-										port := universal_string_type.to_bounded_string("");
+										--port := universal_string_type.to_bounded_string("");
 									end if;
+
+								when prop_function =>
+									-- read direction
+									if is_digit(text_scratch(c)) or is_letter(text_scratch(c)) or text_scratch(c) = latin_1.low_line then
+										cell_function_as_string := universal_string_type.append(left => cell_function_as_string, right => text_scratch(c));
+									else
+										if universal_string_type.length(cell_function_as_string) > 0 then
+											cell_function := type_cell_function'value(universal_string_type.to_string(cell_function_as_string));
+											--put(standard_output, " function " & type_cell_function'image(cell_function));
+											boundary_register_cell_property := prop_safe_value;
+										end if;
+									end if;
+
+								when prop_safe_value =>
+									-- read safe value
+									case text_scratch(c) is
+										when 'X' | 'x' => 
+											cell_safe_value := 'X';
+											--put(standard_output, " sv " & type_bit_char_class_1'image(cell_safe_value));
+											boundary_register_cell_property := prop_control_cell_id;
+										when '0' => 
+											cell_safe_value := '0';
+											--put(standard_output, " sv " & type_bit_char_class_1'image(cell_safe_value));
+											boundary_register_cell_property := prop_control_cell_id;
+										when '1' => 
+											cell_safe_value := '1';
+											--put(standard_output, " sv " & type_bit_char_class_1'image(cell_safe_value));
+											boundary_register_cell_property := prop_control_cell_id;
+										when others => null;
+									end case;
+
+								when prop_control_cell_id =>
+									-- read control cell id (optional)
+									if is_digit(text_scratch(c)) then
+										control_cell_id_as_string := universal_string_type.append(left => control_cell_id_as_string, right => text_scratch(c));
+									else
+										if universal_string_type.length(control_cell_id_as_string) > 0 then
+											control_cell_id := type_cell_id'value(universal_string_type.to_string(control_cell_id_as_string));
+											option_control_cell := true;
+											--put(standard_output, " ctrl " & type_cell_id'image(control_cell_id));
+											boundary_register_cell_property := prop_disable_value;
+										end if;
+									end if;
+
+								when prop_disable_value =>
+									-- read disable value (optional)
+									case text_scratch(c) is
+										when '0' => 
+											cell_disable_value := '0';
+											--put(standard_output, " dv " & type_bit_char_class_0'image(cell_disable_value));
+											boundary_register_cell_property := prop_disable_result;
+										when '1' => 
+											cell_disable_value := '1';
+											--put(standard_output, " dv " & type_bit_char_class_0'image(cell_disable_value));
+											boundary_register_cell_property := prop_disable_result;
+										when others => null;
+									end case;
+
+								when prop_disable_result =>
+									-- read disable result (optional)
+									if is_digit(text_scratch(c)) or is_letter(text_scratch(c)) then
+										cell_disable_result_as_string := universal_string_type.append(left => cell_disable_result_as_string, right => text_scratch(c));
+									else
+										if universal_string_type.length(cell_disable_result_as_string) > 0 then
+											cell_disable_result := type_disable_result'value(universal_string_type.to_string(cell_disable_result_as_string));
+											--put(standard_output, " dr " & type_disable_result'image(cell_disable_result));
+											--boundary_register_cell_property := prop_cell_type;
+										end if;
+									end if;
+									
 
 								when others => null;
 							end case;
 
-							-- 0 (bc_1 y2(4) output3 x 16 1 z)
+							-- 0  (BC_1  Y2(4)  output3  X  16  1  Z)
 
 						when 2 =>
+							-- read port index
 							if is_digit(text_scratch(c)) then
 								port_index_as_string := universal_string_type.append(left => port_index_as_string, right => text_scratch(c));
 							else
 								if universal_string_type.length(port_index_as_string) > 0 then
 									port_index := natural'value(universal_string_type.to_string(port_index_as_string));
-									put(standard_output, " idx " & natural'image(port_index));
-									boundary_register_cell_property := prop_direction;
+									option_port_index := true;
+									--put(standard_output, " idx " & natural'image(port_index));
+									boundary_register_cell_property := prop_function;
 								end if;
 								port_index_as_string := universal_string_type.to_bounded_string("");
 							end if;
 							
 						when others => null;
 					end case;
+
+					case text_scratch(c) is
+						when latin_1.left_parenthesis =>
+							open_sections_ct := open_sections_ct + 1;
+						when latin_1.right_parenthesis =>
+							open_sections_ct := open_sections_ct - 1;
+							if open_sections_ct = 0 then
+								put(standard_output, " cell_id " & type_cell_id'image(cell_id));
+								cell_id_as_string := universal_string_type.to_bounded_string("");
+
+								put(standard_output, " type " & type_boundary_register_cell'image(boundary_regiser_cell));
+								cell_type_as_string := universal_string_type.to_bounded_string("");
+
+								put(standard_output, " port " & universal_string_type.to_string(port));
+								port := universal_string_type.to_bounded_string("");
+
+								if option_port_index then
+									put(standard_output, " idx " & natural'image(port_index));
+									option_port_index := false;
+								end if;
+
+								put(standard_output, " function " & type_cell_function'image(cell_function));
+								cell_function_as_string := universal_string_type.to_bounded_string("");
+
+								put(standard_output, " sv " & type_bit_char_class_1'image(cell_safe_value));
+
+								if option_control_cell then
+									put(standard_output, " ctrl " & type_cell_id'image(control_cell_id));
+									control_cell_id_as_string := universal_string_type.to_bounded_string("");
+
+									put(standard_output, " dv " & type_bit_char_class_0'image(cell_disable_value));
+
+									put(standard_output, " dr " & type_disable_result'image(cell_disable_result));
+									cell_disable_result_as_string := universal_string_type.to_bounded_string("");
+
+									option_control_cell := false;
+								end if;
+							
+							end if;
+						when others =>
+							null;
+					end case;
+
+
+
 				end loop;
 				--put_line(standard_output,text_scratch);
 
