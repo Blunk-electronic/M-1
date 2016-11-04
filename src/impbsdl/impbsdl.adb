@@ -54,7 +54,8 @@ with ada.strings.fixed; 		use ada.strings.fixed;
 -- with Ada.IO_Exceptions; use Ada.IO_Exceptions;
 
 with ada.containers;			use ada.containers;
-with ada.containers.ordered_maps;	
+--with ada.containers.ordered_maps;
+with ada.containers.doubly_linked_lists;
 
 with gnat.os_lib;   		use gnat.os_lib;
 with ada.command_line;		use ada.command_line;
@@ -85,10 +86,13 @@ procedure impbsdl is
 			disable_value 	: type_bit_char_class_0;
 			disable_result 	: type_disable_result;
 		end record;
-	package cell_map is new ordered_maps( key_type => type_cell_id, element_type => type_cell);
-	use cell_map;
-	the_cell_map : cell_map.map;
-
+-- 	package cell_map is new ordered_maps( key_type => type_cell_id, element_type => type_cell);
+-- 	use cell_map;
+-- 	the_cell_map : cell_map.map;
+	package cell_container is new doubly_linked_lists(element_type => type_cell);
+	use cell_container;
+	boundary_register_cell_container : list;
+	cell_cursor : cursor;
 	bc_scratch : type_cell;
 	
 	
@@ -224,6 +228,7 @@ procedure impbsdl is
 			text_bsdl_usercode_register		: constant string (1..17) := "usercode_register";
 			text_bsdl_boundary_length		: constant string (1..15) := "boundary_length";
 			text_bsdl_boundary_register		: constant string (1..17) := "boundary_register";
+			text_bsdl_instruction_opcode	: constant string (1..18) := "instruction_opcode";
 			text_bsdl_tap_scan_reset		: constant string (1..14) := "tap_scan_reset";
 			text_bsdl_of					: constant string (1..2) := "of";
 
@@ -234,6 +239,7 @@ procedure impbsdl is
 			text_udb_trst_pin						: constant string (1..8) := "trst_pin";
 			text_udb_available						: constant string (1..9) := "available";
 			text_udb_safebits						: constant string (1..8) := "safebits";
+			text_udb_opcodes						: constant string (1..7) := "opcodes";			
 
 			procedure read_boundary_register (text_in : in string; width : in type_register_length) is
 				-- Extracts from given string text_in cell id, type, port+index, function, save value and optional: control cell, disable value, disable result.
@@ -293,7 +299,7 @@ procedure impbsdl is
                     bc.disable_value := disable_value;
 					bc.disable_result := disable_result;
 					
-					insert(container => the_cell_map, key => cell_id, new_item => bc);
+					append(container => boundary_register_cell_container, new_item => bc);
 				end pack_cell_in_container;
 
 				
@@ -483,27 +489,27 @@ procedure impbsdl is
 							open_sections_ct := open_sections_ct - 1;
 
 							if open_sections_ct = 0 then -- cell data complete
-								put(standard_output, " cell_id " & type_cell_id'image(cell_id));
-								put(standard_output, " type " & type_boundary_register_cell'image(boundary_register_cell));
-								put(standard_output, " port " & universal_string_type.to_string(port));
+								--put(standard_output, " cell_id " & type_cell_id'image(cell_id));
+								--put(standard_output, " type " & type_boundary_register_cell'image(boundary_register_cell));
+								--put(standard_output, " port " & universal_string_type.to_string(port));
 
 								-- if port has index, reset flag that indicates so
 								if option_port_index then
-									put(standard_output, " idx " & type_port_index'image(port_index));
+									--put(standard_output, " idx " & type_port_index'image(port_index));
 									option_port_index := false;
 								end if;
 
-								put(standard_output, " function " & type_cell_function'image(cell_function));
-								put(standard_output, " sv " & type_bit_char_class_1'image(cell_safe_value));
+								--put(standard_output, " function " & type_cell_function'image(cell_function));
+								--put(standard_output, " sv " & type_bit_char_class_1'image(cell_safe_value));
 
 								-- if cell has control cell, reset flag that indicates so
 								if option_control_cell then
-									put(standard_output, " ctrl " & type_cell_id'image(control_cell_id));
-									put(standard_output, " dv " & type_bit_char_class_0'image(cell_disable_value));
-									put(standard_output, " dr " & type_disable_result'image(cell_disable_result));
+									--put(standard_output, " ctrl " & type_cell_id'image(control_cell_id));
+									--put(standard_output, " dv " & type_bit_char_class_0'image(cell_disable_value));
+									--put(standard_output, " dr " & type_disable_result'image(cell_disable_result));
 									option_control_cell := false;
 								end if;
-								new_line(standard_output);
+								--new_line(standard_output); -- for debug
 								
 								pack_cell_in_container(
 									cell_id => cell_id,
@@ -534,6 +540,93 @@ procedure impbsdl is
 				--put_line(standard_output,text_scratch);
 			end read_boundary_register;
 
+			procedure read_opcodes(text_in : in string; width : in type_register_length) is
+				-- Extracts from given string text_in instruction, opcode and alternative opcodes.
+				pattern_start : boolean := false; -- used to trim header from text_in. the part that follows the first quotation matters.
+				text_scratch : string (1..text_in'length) := text_in'length * latin_1.space; -- here a copy of text_in goes for subsequent in depth processing
+				text_scratch_pt : positive := 1; -- points to character being processed when text_scratch is built
+				open_sections_ct : natural := 0; -- increments on every opening parenthesis, decrements on every closing parenthesis found in text_scratch
+
+				-- While extracting bounded strings are used as temporarily storage. Later they are converted to the actual types.
+				-- Finally, when all elements of the cell are read, they are emptied ("") so that on reading the next cell things are cleaned up.
+				instruction_as_string, opcode_as_string : universal_string_type.bounded_string; 
+				-- CS: should be sufficient to hold those values.
+
+				--instruction : type_bic_instruction; 
+				type type_opcode is array (type_register_length range 1..width) of type_bit_char_class_1;
+				opcode : type_opcode;
+				
+			begin -- read_opcodes
+				-- remove quotations, commas and ampersands
+				for c in 1..text_in'length loop
+					case text_in(c) is
+						when latin_1.quotation =>
+							pattern_start := true;
+							text_scratch(text_scratch_pt) := latin_1.space;
+							text_scratch_pt := text_scratch_pt + 1;
+						when latin_1.ampersand | latin_1.comma =>
+							text_scratch(text_scratch_pt) := latin_1.space;
+							text_scratch_pt := text_scratch_pt + 1;
+						when others =>
+							if pattern_start then
+								text_scratch(text_scratch_pt) := text_in(c);
+								text_scratch_pt := text_scratch_pt + 1;
+							end if;
+					end case;
+				end loop;
+				put_line(standard_output,text_scratch);
+
+				-- text_scratch contains segments like "BYPASS (11111111  10000100  00000101  10001000  00000001)"
+				-- This is the actual extracting work. Variable open_sections_ct indicates the level to parse at.
+ 				for c in 1..text_scratch'length loop
+ 					case open_sections_ct is
+ 						when 0 => -- At this level we expect only the instruction names.
+ 							-- read instruction name
+ 							-- Collect characters allowed in instruction names in temporarily string. If other character found,
+ 							-- the name is assumed as complete.
+ 							if is_letter(text_scratch(c)) then
+ 								instruction_as_string := universal_string_type.append(left => instruction_as_string, right => text_scratch(c));
+ 							else
+ 								if universal_string_type.length(instruction_as_string) > 0 then -- instruction name complete
+-- 									cell_id := type_cell_id'value(universal_string_type.to_string(cell_id_as_string));
+ 									put(standard_output, " instruction " & universal_string_type.to_string(instruction_as_string));
+-- 									boundary_register_cell_property := prop_cell_type; -- up next: cell type at level 1 (after the first open parenthesis)
+ 								end if;
+ 							end if;
+
+						when 1 => -- After passing the first opening parenthesis the level increases to 1. The element expected next is the cell type.
+							-- read opcodes
+							null;
+
+ 						when others => null; -- there are no other levels. means no more than two opening parenthesis.
+ 					end case;
+ 
+					-- Count up/down opening and closing parenthesis to detect the parsing level:
+					-- 0 -> all parenthesis closed
+					-- 1 -> one open parenthesis
+					-- Once all parenthesis closed. All cell properties have been read. Cell is ready for inserting into container.
+					case text_scratch(c) is
+						when latin_1.left_parenthesis => -- open parenthesis found
+							open_sections_ct := open_sections_ct + 1;
+						when latin_1.right_parenthesis => -- close parenthesis found
+							open_sections_ct := open_sections_ct - 1;
+
+							if open_sections_ct = 0 then -- instruction data complete
+								--put(standard_output, " cell_id " & type_cell_id'image(cell_id));
+								--put(standard_output, " type " & type_boundary_register_cell'image(boundary_register_cell));
+								--put(standard_output, " port " & universal_string_type.to_string(port));
+
+								instruction_as_string := universal_string_type.to_bounded_string("");
+								null;
+							end if;
+
+						when others => -- other characters don't matter for the parse level
+							null;
+					end case;
+				end loop;
+				--put_line(standard_output,text_scratch);
+			end read_opcodes;
+			
 		begin -- parse_bsdl
 			set_output(file_data_base_preliminary);
 			--put_line(bsdl_string);
@@ -687,23 +780,51 @@ procedure impbsdl is
 
 				-- write safe bits
 				put_line(2 * row_separator_0 & section_mark.subsection & row_separator_0 & text_udb_safebits);
-				put_line(10 * row_separator_0 & "-- MSB...LSB");
+				put_line(10 * row_separator_0 & "-- MSB..LSB");
 				put(4 * row_separator_0 & text_udb_safebits & row_separator_0);
+
 				for s in reverse 0..length_boundary_register-1 loop -- start with MSB
-					bc_scratch := element(the_cell_map,s);
-					put(type_bit_char_class_1'image(bc_scratch.safe_value)(2)); -- strip quotes from safe value
+					cell_cursor := first(boundary_register_cell_container);
+					bc_scratch := element(cell_cursor);
+					while bc_scratch.cell_id /= s loop
+						cell_cursor := next(cell_cursor);
+						bc_scratch := element(cell_cursor);
+					end loop;
+					if bc_scratch.cell_id = s then
+						put(type_bit_char_class_1'image(bc_scratch.safe_value)(2)); -- strip quotes from safe value
+					end if;
 				end loop;
 				new_line;
 				put_line(4 * row_separator_0 & "total " & type_register_length'image(length_boundary_register));
 				put_line(2 * row_separator_0 & section_mark.endsubsection);
 
+				-- opcodes
+				new_line;				
+				put_line(2 * row_separator_0 & section_mark.subsection & row_separator_0 & text_udb_opcodes);
+				put_line(2 * row_separator_0 & "-- instruction opcode [alternative opcode]");
+				for f in 1..field_count loop
+					if to_lower(get_field(bsdl_string,f)) = text_bsdl_attribute then
+						if to_lower(get_field(bsdl_string,f+1)) = text_bsdl_instruction_opcode then
+							if to_lower(get_field(bsdl_string,f+2)) = text_bsdl_of then
+								-- The whole opcode section is passed as a single long string to procedure read_opcodes:
+								read_opcodes(get_field(bsdl_string,f+2,trailer => true), width => length_instruction_register);
+								exit;
+							end if;
+						end if;
+					end if;
+				end loop;
+
+
+				
+				put_line(2 * row_separator_0 & section_mark.endsubsection);
 				--put_line(standard_output,"query cell: ");
 
 -- 				put_line(standard_output, type_cell_id'image(bc_scratch.cell_id));
 -- 				put_line(standard_output, universal_string_type.to_string(bc_scratch.port));
 				-- 				put_line(standard_output, type_cell_function'image(bc_scratch.cell_function));
 
-				delete_first(container => the_cell_map, count => 4); --length_boundary_register));
+				
+				clear(boundary_register_cell_container); -- purge container for next BSDL model
 			else
 				put_line(message_error & "no entity found !");
 				raise constraint_error;
