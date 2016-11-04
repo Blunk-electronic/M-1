@@ -52,7 +52,10 @@ with ada.strings.fixed; 		use ada.strings.fixed;
 -- with Ada.Task_Identification;  use Ada.Task_Identification;
 -- with Ada.Exceptions; use Ada.Exceptions;
 -- with Ada.IO_Exceptions; use Ada.IO_Exceptions;
---  
+
+with ada.containers;			use ada.containers;
+with ada.containers.ordered_maps;	
+
 with gnat.os_lib;   		use gnat.os_lib;
 with ada.command_line;		use ada.command_line;
 with ada.directories;		use ada.directories;
@@ -69,6 +72,26 @@ procedure impbsdl is
 	udb_summary		: type_udb_summary;
 	prog_position	: natural := 0;
 
+	-- We need a container that holds items of type type_cell (all boundary register cells).
+	type type_cell is
+		record
+			cell_id 		: type_cell_id;
+			cell_type 		: type_boundary_register_cell;
+			port 			: universal_string_type.bounded_string;
+			port_index 		: type_port_index;
+			cell_function 	: type_cell_function;
+			safe_value 		: type_bit_char_class_1;
+			control_cell 	: type_control_cell_id;
+			disable_value 	: type_bit_char_class_0;
+			disable_result 	: type_disable_result;
+		end record;
+	package cell_map is new ordered_maps( key_type => type_cell_id, element_type => type_cell);
+	use cell_map;
+	the_cell_map : cell_map.map;
+
+	bc_scratch : type_cell;
+	
+	
 	procedure read_bsld_models is
 		bic				: type_ptr_bscan_ic_pre := ptr_bic_pre;
 		file_bsdl 		: ada.text_io.file_type;
@@ -210,9 +233,11 @@ procedure impbsdl is
 			text_udb_boundary_register_length		: constant string (1..24) := "boundary_register_length";
 			text_udb_trst_pin						: constant string (1..8) := "trst_pin";
 			text_udb_available						: constant string (1..9) := "available";
+			text_udb_safebits						: constant string (1..8) := "safebits";
 
-			procedure read_boundary_register (text_in : in string; width : in positive) is
+			procedure read_boundary_register (text_in : in string; width : in type_register_length) is
 				-- Extracts from given string text_in cell id, type, port+index, function, save value and optional: control cell, disable value, disable result.
+				-- Optional elements like port-index, control cell, disable value, disable result have a default in case not present.
 
 				--subtype type_boundary_register_sized is type_boundary_register (1..length_boundary_register);
 				--boundary_register : type_boundary_register_sized;
@@ -228,7 +253,8 @@ procedure impbsdl is
 				cell_function_as_string, cell_disable_result_as_string : universal_string_type.bounded_string; 
 				-- CS: should be sufficient to hold those values
 
-				cell_id, control_cell_id 	: type_cell_id; -- id of actual cell and optional control cell
+				cell_id 					: type_cell_id; -- id of actual cell --CS: make a subtype that does not exceed given width
+				control_cell_id				: type_control_cell_id := -1; --  id of optional control cell. may be -1 if no control cell present --CS: make a subtype that does not exceed given width
 				boundary_register_cell 		: type_boundary_register_cell; -- contains the cell type like BC_1
 
 				-- This type is used to set the property of a cell to be read next:
@@ -237,13 +263,40 @@ procedure impbsdl is
 
 				port : universal_string_type.bounded_string; -- the port name
 				option_port_index, option_control_cell : boolean := false; -- true if port has an index like A4(3) / if cell has a control cell
-				port_index				: natural; -- holds the port index (if present)
+				port_index				: type_port_index := -1; -- holds the port index (if present)
 
 				cell_function 			: type_cell_function; -- holds something like output3
 				cell_safe_value			: type_bit_char_class_1; -- holds the safe value of the cell
-				cell_disable_value 		: type_bit_char_class_0; -- holds the optional disable value of the control cell
-				cell_disable_result 	: type_disable_result; -- holds the disable result of the optional control cell
+				cell_disable_value 		: type_bit_char_class_0 := '0'; -- holds the optional disable value of the control cell
+				cell_disable_result 	: type_disable_result := Z; -- holds the disable result of the optional control cell
 
+				procedure pack_cell_in_container(
+					cell_id : in type_cell_id;
+					cell_type : in type_boundary_register_cell;
+					port : in universal_string_type.bounded_string;
+					port_index : in type_port_index;
+					cell_function : in type_cell_function;
+					safe_value : in type_bit_char_class_1;
+					control_cell : in type_control_cell_id;
+					disable_value : in type_bit_char_class_0;
+					disable_result : in type_disable_result
+					) is
+					bc : type_cell;
+				begin
+					bc.cell_id := cell_id;
+					bc.cell_type := cell_type;
+                    bc.port := port;
+                    bc.port_index := port_index;
+                    bc.cell_function := cell_function;
+                    bc.safe_value := safe_value;
+                    bc.control_cell := control_cell;
+                    bc.disable_value := disable_value;
+					bc.disable_result := disable_result;
+					
+					insert(container => the_cell_map, key => cell_id, new_item => bc);
+				end pack_cell_in_container;
+
+				
 			begin -- read_boundary_register
 				-- remove quotations and ampersands
 				for c in 1..text_in'length loop
@@ -407,7 +460,7 @@ procedure impbsdl is
 								port_index_as_string := universal_string_type.append(left => port_index_as_string, right => text_scratch(c));
 							else
 								if universal_string_type.length(port_index_as_string) > 0 then
-									port_index := natural'value(universal_string_type.to_string(port_index_as_string));
+									port_index := type_port_index'value(universal_string_type.to_string(port_index_as_string));
 									option_port_index := true;
 									--put(standard_output, " idx " & natural'image(port_index));
 									boundary_register_cell_property := prop_function; -- up next: cell function at level 1
@@ -431,39 +484,47 @@ procedure impbsdl is
 
 							if open_sections_ct = 0 then -- cell data complete
 								put(standard_output, " cell_id " & type_cell_id'image(cell_id));
-								cell_id_as_string := universal_string_type.to_bounded_string(""); -- empty temporarily string
-
 								put(standard_output, " type " & type_boundary_register_cell'image(boundary_register_cell));
-								cell_type_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
-
 								put(standard_output, " port " & universal_string_type.to_string(port));
-								port := universal_string_type.to_bounded_string("");  -- empty temporarily string
 
 								-- if port has index, reset flag that indicates so
 								if option_port_index then
-									put(standard_output, " idx " & natural'image(port_index));
-									port_index_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
+									put(standard_output, " idx " & type_port_index'image(port_index));
 									option_port_index := false;
 								end if;
 
 								put(standard_output, " function " & type_cell_function'image(cell_function));
-								cell_function_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
-
 								put(standard_output, " sv " & type_bit_char_class_1'image(cell_safe_value));
 
 								-- if cell has control cell, reset flag that indicates so
 								if option_control_cell then
 									put(standard_output, " ctrl " & type_cell_id'image(control_cell_id));
-									control_cell_id_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
-
-									put(standard_output, " dv " & type_bit_char_class_0'image(cell_disable_value));  -- empty temporarily string
-
+									put(standard_output, " dv " & type_bit_char_class_0'image(cell_disable_value));
 									put(standard_output, " dr " & type_disable_result'image(cell_disable_result));
-									cell_disable_result_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
-
 									option_control_cell := false;
 								end if;
 								new_line(standard_output);
+								
+								pack_cell_in_container(
+									cell_id => cell_id,
+									cell_type => boundary_register_cell,
+									port => port,
+									port_index => port_index,
+									cell_function => cell_function,
+									safe_value => cell_safe_value,
+									control_cell => control_cell_id,
+									disable_value => cell_disable_value,
+									disable_result => cell_disable_result
+									);
+
+								-- empty temporarily strings
+								cell_id_as_string := universal_string_type.to_bounded_string(""); -- empty temporarily string
+								cell_type_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
+								port := universal_string_type.to_bounded_string("");  -- empty temporarily string
+								port_index_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
+								cell_function_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
+								control_cell_id_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
+								cell_disable_result_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
 							end if;
 
 						when others => -- other characters don't matter for the parse level
@@ -611,7 +672,7 @@ procedure impbsdl is
 					put_line(text_udb_none);
 				end if;
 
-				-- boundary register
+				-- read boundary register
 				for f in 1..field_count loop
 					if to_lower(get_field(bsdl_string,f)) = text_bsdl_attribute then
 						if to_lower(get_field(bsdl_string,f+1)) = text_bsdl_boundary_register then
@@ -624,6 +685,25 @@ procedure impbsdl is
 					end if;
 				end loop;
 
+				-- write safe bits
+				put_line(2 * row_separator_0 & section_mark.subsection & row_separator_0 & text_udb_safebits);
+				put_line(10 * row_separator_0 & "-- MSB...LSB");
+				put(4 * row_separator_0 & text_udb_safebits & row_separator_0);
+				for s in reverse 0..length_boundary_register-1 loop -- start with MSB
+					bc_scratch := element(the_cell_map,s);
+					put(type_bit_char_class_1'image(bc_scratch.safe_value)(2)); -- strip quotes from safe value
+				end loop;
+				new_line;
+				put_line(4 * row_separator_0 & "total " & type_register_length'image(length_boundary_register));
+				put_line(2 * row_separator_0 & section_mark.endsubsection);
+
+				--put_line(standard_output,"query cell: ");
+
+-- 				put_line(standard_output, type_cell_id'image(bc_scratch.cell_id));
+-- 				put_line(standard_output, universal_string_type.to_string(bc_scratch.port));
+				-- 				put_line(standard_output, type_cell_function'image(bc_scratch.cell_function));
+
+				delete_first(container => the_cell_map, count => 4); --length_boundary_register));
 			else
 				put_line(message_error & "no entity found !");
 				raise constraint_error;
