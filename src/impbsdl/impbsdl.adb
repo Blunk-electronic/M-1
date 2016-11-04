@@ -553,8 +553,9 @@ procedure impbsdl is
 				-- CS: should be sufficient to hold those values.
 
 				--instruction : type_bic_instruction; 
-				type type_opcode is array (type_register_length range 1..width) of type_bit_char_class_1;
-				opcode : type_opcode;
+				--type type_opcode is array (type_register_length range 1..width) of type_bit_char_class_1;
+				--opcode : type_opcode;
+				--opcode : type_string_of_bit_characters_class_1 (1..width);
 				
 			begin -- read_opcodes
 				-- remove quotations, commas and ampersands
@@ -574,7 +575,7 @@ procedure impbsdl is
 							end if;
 					end case;
 				end loop;
-				put_line(standard_output,text_scratch);
+				--put_line(standard_output,text_scratch);
 
 				-- text_scratch contains segments like "BYPASS (11111111  10000100  00000101  10001000  00000001)"
 				-- This is the actual extracting work. Variable open_sections_ct indicates the level to parse at.
@@ -596,7 +597,17 @@ procedure impbsdl is
 
 						when 1 => -- After passing the first opening parenthesis the level increases to 1. The element expected next is the cell type.
 							-- read opcodes
-							null;
+							-- Collect charactes allowed for opcodes. If foreign character found, assume opcode as complete.
+							if text_scratch(c) = 'x' or text_scratch(c) = 'X' or text_scratch(c) = '0' or text_scratch(c) = '1' then
+								opcode_as_string := universal_string_type.append(left => opcode_as_string, right => text_scratch(c));
+							else
+								if universal_string_type.length(opcode_as_string) > 0 then
+									--opcode := to_binary(text_in => universal_string_type.to_string(opcode_as_string); length => width; class => class_1);
+									--opcode := to_binary(text_in => "0101"; length => width; class => class_1);
+									put(standard_output, " opcode " & universal_string_type.to_string(opcode_as_string));
+								end if;
+							end if;
+
 
  						when others => null; -- there are no other levels. means no more than two opening parenthesis.
  					end case;
@@ -617,6 +628,7 @@ procedure impbsdl is
 								--put(standard_output, " port " & universal_string_type.to_string(port));
 
 								instruction_as_string := universal_string_type.to_bounded_string("");
+								opcode_as_string := universal_string_type.to_bounded_string("");
 								null;
 							end if;
 
