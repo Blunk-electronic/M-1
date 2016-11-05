@@ -551,7 +551,8 @@ procedure impbsdl is
 				-- Finally, when all elements of the cell are read, they are emptied ("") so that on reading the next cell things are cleaned up.
 				instruction_as_string, opcode_as_string : universal_string_type.bounded_string; 
 				-- CS: should be sufficient to hold those values.
-
+				instruction_name_complete : boolean := false;
+				opcode_complete : boolean := false;
 				--instruction : type_bic_instruction; 
 				--type type_opcode is array (type_register_length range 1..width) of type_bit_char_class_1;
 				--opcode : type_opcode;
@@ -584,30 +585,33 @@ procedure impbsdl is
  						when 0 => -- At this level we expect only the instruction names.
  							-- read instruction name
  							-- Collect characters allowed in instruction names in temporarily string. If other character found,
- 							-- the name is assumed as complete.
- 							if is_letter(text_scratch(c)) then
- 								instruction_as_string := universal_string_type.append(left => instruction_as_string, right => text_scratch(c));
- 							else
- 								if universal_string_type.length(instruction_as_string) > 0 then -- instruction name complete
--- 									cell_id := type_cell_id'value(universal_string_type.to_string(cell_id_as_string));
- 									put(standard_output, " instruction " & universal_string_type.to_string(instruction_as_string));
--- 									boundary_register_cell_property := prop_cell_type; -- up next: cell type at level 1 (after the first open parenthesis)
- 								end if;
- 							end if;
+							-- the name is assumed as complete.
+							if not instruction_name_complete then
+								if is_letter(text_scratch(c)) then
+									instruction_as_string := universal_string_type.append(left => instruction_as_string, right => text_scratch(c));
+								else
+									if universal_string_type.length(instruction_as_string) > 0 then -- instruction name complete
+										instruction_name_complete := true;
+										put(standard_output, " instruction " & universal_string_type.to_string(instruction_as_string));
+	-- 									boundary_register_cell_property := prop_cell_type; -- up next: cell type at level 1 (after the first open parenthesis)
+									end if;
+								end if;
+							end if;
 
 						when 1 => -- After passing the first opening parenthesis the level increases to 1. The element expected next is the cell type.
 							-- read opcodes
 							-- Collect charactes allowed for opcodes. If foreign character found, assume opcode as complete.
-							if text_scratch(c) = 'x' or text_scratch(c) = 'X' or text_scratch(c) = '0' or text_scratch(c) = '1' then
-								opcode_as_string := universal_string_type.append(left => opcode_as_string, right => text_scratch(c));
-							else
-								if universal_string_type.length(opcode_as_string) > 0 then
-									--opcode := to_binary(text_in => universal_string_type.to_string(opcode_as_string); length => width; class => class_1);
-									--opcode := to_binary(text_in => "0101"; length => width; class => class_1);
-									put(standard_output, " opcode " & universal_string_type.to_string(opcode_as_string));
+								if text_scratch(c) = 'x' or text_scratch(c) = 'X' or text_scratch(c) = '0' or text_scratch(c) = '1' then
+									opcode_as_string := universal_string_type.append(left => opcode_as_string, right => text_scratch(c));
+									opcode_complete := false;
+								else
+									if universal_string_type.length(opcode_as_string) > 0 then
+										opcode_complete := true;
+										--opcode := to_binary(text_in => universal_string_type.to_string(opcode_as_string); length => width; class => class_1);
+										--opcode := to_binary(text_in => "0101"; length => width; class => class_1);
+										put(standard_output, " opcode " & universal_string_type.to_string(opcode_as_string));
+									end if;
 								end if;
-							end if;
-
 
  						when others => null; -- there are no other levels. means no more than two opening parenthesis.
  					end case;
@@ -627,6 +631,7 @@ procedure impbsdl is
 								--put(standard_output, " type " & type_boundary_register_cell'image(boundary_register_cell));
 								--put(standard_output, " port " & universal_string_type.to_string(port));
 
+								instruction_name_complete := false;	
 								instruction_as_string := universal_string_type.to_bounded_string("");
 								opcode_as_string := universal_string_type.to_bounded_string("");
 								null;
