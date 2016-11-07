@@ -644,6 +644,29 @@ procedure impbsdl is
 				end loop;
 				--put_line(standard_output,text_scratch);
 			end read_opcodes;
+
+
+			procedure put_cell_properties(bc : in type_cell) is
+			begin
+				put(4 * row_separator_0 &
+				type_cell_id'image(bc_scratch.cell_id) & row_separator_0 &
+				type_boundary_register_cell'image(bc_scratch.cell_type) & row_separator_0 &
+				universal_string_type.to_string(bc_scratch.port)
+				); 
+				if bc_scratch.port_index > type_port_index'first then
+					put('(' & trim(type_port_index'image(bc_scratch.port_index),left) & ')');
+				end if;
+				put(row_separator_0 & type_cell_function'image(bc_scratch.cell_function) & row_separator_0 &
+					type_bit_char_class_1'image(bc_scratch.safe_value)(2) & row_separator_0  -- strip quotes from safe value
+				);
+				if bc_scratch.control_cell > type_control_cell_id'first then
+					put(trim(type_cell_id'image(bc_scratch.control_cell),left) & row_separator_0 &
+						type_bit_char_class_0'image(bc_scratch.disable_value)(2) & row_separator_0 & -- strip quotes from disable value
+						type_disable_result'image(bc_scratch.disable_result)
+						);
+				end if;
+				new_line;
+			end put_cell_properties;
 			
 		begin -- parse_bsdl
 			set_output(file_data_base_preliminary);
@@ -854,41 +877,23 @@ procedure impbsdl is
 				
 				for s in 0..length_boundary_register-1 loop -- start with LSB
 					cell_cursor := first(boundary_register_cell_container);
-					bc_scratch := element(cell_cursor);
-					while bc_scratch.cell_id /= s loop
-						cell_cursor := next(cell_cursor);
+
+					while cell_cursor /= last(boundary_register_cell_container) loop
 						bc_scratch := element(cell_cursor);
+						if bc_scratch.cell_id = s then
+							put_cell_properties(bc_scratch);
+						end if;
+						cell_cursor := next(cell_cursor);
 					end loop;
+
+					bc_scratch := element(cell_cursor);
 					if bc_scratch.cell_id = s then
-						put(4 * row_separator_0 &
-						type_cell_id'image(bc_scratch.cell_id) & row_separator_0 &
-						type_boundary_register_cell'image(bc_scratch.cell_type) & row_separator_0 &
-						universal_string_type.to_string(bc_scratch.port)
-						); 
-						if bc_scratch.port_index > type_port_index'first then
-							put('(' & trim(type_port_index'image(bc_scratch.port_index),left) & ')');
-						end if;
-						put(row_separator_0 & type_cell_function'image(bc_scratch.cell_function) & row_separator_0 &
-							type_bit_char_class_1'image(bc_scratch.safe_value)(2) & row_separator_0  -- strip quotes from safe value
-						   );
-						if bc_scratch.control_cell > type_control_cell_id'first then
-							put(trim(type_cell_id'image(bc_scratch.control_cell),left) & row_separator_0 &
-								type_bit_char_class_0'image(bc_scratch.disable_value)(2) & row_separator_0 & -- strip quotes from disable value
-								type_disable_result'image(bc_scratch.disable_result)
-								);
-						end if;
-						new_line;
+						put_cell_properties(bc_scratch);
 					end if;
 				end loop;
-				
-				
 				put_line(2 * row_separator_0 & section_mark.endsubsection);
-				--put_line(standard_output,"query cell: ");
 
--- 				put_line(standard_output, type_cell_id'image(bc_scratch.cell_id));
--- 				put_line(standard_output, universal_string_type.to_string(bc_scratch.port));
-				-- 				put_line(standard_output, type_cell_function'image(bc_scratch.cell_function));
-
+				
 				
 				clear(boundary_register_cell_container); -- purge container for next BSDL model
 			else
