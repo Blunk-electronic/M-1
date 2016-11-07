@@ -269,7 +269,7 @@ procedure impbsdl is
 
 				port : universal_string_type.bounded_string; -- the port name
 				option_port_index, option_control_cell : boolean := false; -- true if port has an index like A4(3) / if cell has a control cell
-				port_index				: type_port_index := -1; -- holds the port index (if present)
+				port_index				: type_port_index := type_port_index'first; -- holds the port index (if present), default is -1 to indicate there is no index
 
 				cell_function 			: type_cell_function; -- holds something like output3
 				cell_safe_value			: type_bit_char_class_1; -- holds the safe value of the cell
@@ -493,21 +493,27 @@ procedure impbsdl is
 								--put(standard_output, " type " & type_boundary_register_cell'image(boundary_register_cell));
 								--put(standard_output, " port " & universal_string_type.to_string(port));
 
-								-- if port has index, reset flag that indicates so
+								-- If port has index, reset flag option_port_index for next cell.
+								-- If port has no index, set control cell id to default (-1) to indicate there is no index.
 								if option_port_index then
 									--put(standard_output, " idx " & type_port_index'image(port_index));
 									option_port_index := false;
+								else
+									port_index := type_port_index'first;
 								end if;
 
 								--put(standard_output, " function " & type_cell_function'image(cell_function));
 								--put(standard_output, " sv " & type_bit_char_class_1'image(cell_safe_value));
 
-								-- if cell has control cell, reset flag that indicates so
+								-- If cell has control cell, reset flag option_control_cell for next cell.
+								-- If cell has no control cell, set control_cell_id to default (-1) to indicate there is no control cell.
 								if option_control_cell then
 									--put(standard_output, " ctrl " & type_cell_id'image(control_cell_id));
 									--put(standard_output, " dv " & type_bit_char_class_0'image(cell_disable_value));
 									--put(standard_output, " dr " & type_disable_result'image(cell_disable_result));
 									option_control_cell := false;
+								else
+									control_cell_id := type_control_cell_id'first;
 								end if;
 								--new_line(standard_output); -- for debug
 								
@@ -531,6 +537,7 @@ procedure impbsdl is
 								cell_function_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
 								control_cell_id_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
 								cell_disable_result_as_string := universal_string_type.to_bounded_string("");  -- empty temporarily string
+
 							end if;
 
 						when others => -- other characters don't matter for the parse level
@@ -824,8 +831,56 @@ procedure impbsdl is
 						end if;
 					end if;
 				end loop;
+				put_line(2 * row_separator_0 & section_mark.endsubsection);
+				
+				-- boundary register 
+				-- 0 bc_1 * internal x / 5 bc_1 pb01_16 input x / 4 bc_1 pb01_16 output3 x 3 0 z
+				new_line;				
+				put_line(2 * row_separator_0 & section_mark.subsection & row_separator_0 & text_bsdl_boundary_register);
+				put_line(2 * row_separator_0 & "-- num cell port function safe [control_cell disable_value disable_result]");
 
-
+				-- 	type type_cell is
+				-- 		record
+				-- 			cell_id 		: type_cell_id;
+				-- 			cell_type 		: type_boundary_register_cell;
+				-- 			port 			: universal_string_type.bounded_string;
+				-- 			port_index 		: type_port_index;
+				-- 			cell_function 	: type_cell_function;
+				-- 			safe_value 		: type_bit_char_class_1;
+				-- 			control_cell 	: type_control_cell_id;
+				-- 			disable_value 	: type_bit_char_class_0;
+				-- 			disable_result 	: type_disable_result;
+				-- 		end record;
+				
+				for s in 0..length_boundary_register-1 loop -- start with LSB
+					cell_cursor := first(boundary_register_cell_container);
+					bc_scratch := element(cell_cursor);
+					while bc_scratch.cell_id /= s loop
+						cell_cursor := next(cell_cursor);
+						bc_scratch := element(cell_cursor);
+					end loop;
+					if bc_scratch.cell_id = s then
+						put(4 * row_separator_0 &
+						type_cell_id'image(bc_scratch.cell_id) & row_separator_0 &
+						type_boundary_register_cell'image(bc_scratch.cell_type) & row_separator_0 &
+						universal_string_type.to_string(bc_scratch.port)
+						); 
+						if bc_scratch.port_index > type_port_index'first then
+							put('(' & trim(type_port_index'image(bc_scratch.port_index),left) & ')');
+						end if;
+						put(row_separator_0 & type_cell_function'image(bc_scratch.cell_function) & row_separator_0 &
+							type_bit_char_class_1'image(bc_scratch.safe_value)(2) & row_separator_0  -- strip quotes from safe value
+						   );
+						if bc_scratch.control_cell > type_control_cell_id'first then
+							put(trim(type_cell_id'image(bc_scratch.control_cell),left) & row_separator_0 &
+								type_bit_char_class_0'image(bc_scratch.disable_value)(2) & row_separator_0 & -- strip quotes from disable value
+								type_disable_result'image(bc_scratch.disable_result)
+								);
+						end if;
+						new_line;
+					end if;
+				end loop;
+				
 				
 				put_line(2 * row_separator_0 & section_mark.endsubsection);
 				--put_line(standard_output,"query cell: ");
