@@ -239,7 +239,7 @@ procedure impbsdl is
 			text_udb_trst_pin						: constant string (1..8) := "trst_pin";
 			text_udb_available						: constant string (1..9) := "available";
 			text_udb_safebits						: constant string (1..8) := "safebits";
-			text_udb_opcodes						: constant string (1..7) := "opcodes";			
+			text_udb_opcodes						: constant string (1..19) := "instruction_opcodes";
 
 			procedure read_boundary_register (text_in : in string; width : in type_register_length) is
 				-- Extracts from given string text_in cell id, type, port+index, function, save value and optional: control cell, disable value, disable result.
@@ -545,19 +545,14 @@ procedure impbsdl is
 				pattern_start : boolean := false; -- used to trim header from text_in. the part that follows the first quotation matters.
 				text_scratch : string (1..text_in'length) := text_in'length * latin_1.space; -- here a copy of text_in goes for subsequent in depth processing
 				text_scratch_pt : positive := 1; -- points to character being processed when text_scratch is built
-				open_sections_ct : natural := 0; -- increments on every opening parenthesis, decrements on every closing parenthesis found in text_scratch
+				open_sections_ct : natural := 0; -- increments on every opening parenthesis, decrements on every closing parenthesis found in text_scratch 
+				-- CS: limit to 1 as the parsing level never increases further here.
 
 				-- While extracting bounded strings are used as temporarily storage. Later they are converted to the actual types.
 				-- Finally, when all elements of the cell are read, they are emptied ("") so that on reading the next cell things are cleaned up.
-				instruction_as_string, opcode_as_string : universal_string_type.bounded_string; 
+				instruction_as_string, opcode_as_string : universal_string_type.bounded_string; -- CS: for opcode_as_string use fixed string of length = width
 				-- CS: should be sufficient to hold those values.
 				instruction_name_complete : boolean := false;
-				opcode_complete : boolean := false;
-				--instruction : type_bic_instruction; 
-				--type type_opcode is array (type_register_length range 1..width) of type_bit_char_class_1;
-				--opcode : type_opcode;
-				--opcode : type_string_of_bit_characters_class_1 (1..width);
-				
 			begin -- read_opcodes
 				-- remove quotations, commas and ampersands
 				for c in 1..text_in'length loop
@@ -580,36 +575,39 @@ procedure impbsdl is
 
 				-- text_scratch contains segments like "BYPASS (11111111  10000100  00000101  10001000  00000001)"
 				-- This is the actual extracting work. Variable open_sections_ct indicates the level to parse at.
+				-- open_sections_ct never raises above 1.
  				for c in 1..text_scratch'length loop
  					case open_sections_ct is
  						when 0 => -- At this level we expect only the instruction names.
  							-- read instruction name
  							-- Collect characters allowed in instruction names in temporarily string. If other character found,
 							-- the name is assumed as complete.
+							-- When the instruction is complete, the flag instruction_name_complete is set so that subsequent characters at this
+							-- level are ignored.
 							if not instruction_name_complete then
 								if is_letter(text_scratch(c)) then
 									instruction_as_string := universal_string_type.append(left => instruction_as_string, right => text_scratch(c));
 								else
 									if universal_string_type.length(instruction_as_string) > 0 then -- instruction name complete
 										instruction_name_complete := true;
-										put(standard_output, " instruction " & universal_string_type.to_string(instruction_as_string));
-	-- 									boundary_register_cell_property := prop_cell_type; -- up next: cell type at level 1 (after the first open parenthesis)
+										put(4 * row_separator_0 & universal_string_type.to_string(instruction_as_string));
+										--put(standard_output, " instruction " & universal_string_type.to_string(instruction_as_string));
 									end if;
 								end if;
 							end if;
 
-						when 1 => -- After passing the first opening parenthesis the level increases to 1. The element expected next is the cell type.
+						when 1 => -- After passing the first opening parenthesis the level increases to 1. The element expected next is the first opcode.
 							-- read opcodes
 							-- Collect charactes allowed for opcodes. If foreign character found, assume opcode as complete.
 								if text_scratch(c) = 'x' or text_scratch(c) = 'X' or text_scratch(c) = '0' or text_scratch(c) = '1' then
 									opcode_as_string := universal_string_type.append(left => opcode_as_string, right => text_scratch(c));
-									opcode_complete := false;
 								else
 									if universal_string_type.length(opcode_as_string) > 0 then
-										opcode_complete := true;
-										--opcode := to_binary(text_in => universal_string_type.to_string(opcode_as_string); length => width; class => class_1);
-										--opcode := to_binary(text_in => "0101"; length => width; class => class_1);
-										put(standard_output, " opcode " & universal_string_type.to_string(opcode_as_string));
+										--put(standard_output, " opcode " & universal_string_type.to_string(opcode_as_string));
+										-- CS: check std conformity of opcode
+										--if universal_string_type.length(opcode_as_string) = width then
+										put(row_separator_0 & universal_string_type.to_string(opcode_as_string));
+										opcode_as_string := universal_string_type.to_bounded_string("");
 									end if;
 								end if;
 
@@ -619,7 +617,8 @@ procedure impbsdl is
 					-- Count up/down opening and closing parenthesis to detect the parsing level:
 					-- 0 -> all parenthesis closed
 					-- 1 -> one open parenthesis
-					-- Once all parenthesis closed. All cell properties have been read. Cell is ready for inserting into container.
+					-- Once all parenthesis closed. All opcodes of the current instruction have been read. Reset flag instruction_name_complete so that
+					-- next instruction name can be read.
 					case text_scratch(c) is
 						when latin_1.left_parenthesis => -- open parenthesis found
 							open_sections_ct := open_sections_ct + 1;
@@ -627,14 +626,9 @@ procedure impbsdl is
 							open_sections_ct := open_sections_ct - 1;
 
 							if open_sections_ct = 0 then -- instruction data complete
-								--put(standard_output, " cell_id " & type_cell_id'image(cell_id));
-								--put(standard_output, " type " & type_boundary_register_cell'image(boundary_register_cell));
-								--put(standard_output, " port " & universal_string_type.to_string(port));
-
 								instruction_name_complete := false;	
-								instruction_as_string := universal_string_type.to_bounded_string("");
-								opcode_as_string := universal_string_type.to_bounded_string("");
-								null;
+								instruction_as_string := universal_string_type.to_bounded_string(""); -- clean up for next instruction name
+								new_line;
 							end if;
 
 						when others => -- other characters don't matter for the parse level
