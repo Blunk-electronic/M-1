@@ -841,13 +841,24 @@ procedure impbsdl is
             --				"VCC:18, TDO:11, TDI:14, TMS:12, TCK:13";
 
 				procedure trim_port_pin_map(text_in : in string) is
+				-- Extracts from a string like
+				-- "constant DW : PIN_MAP_STRING := "OE_NEG1:1, Y1:(2,3,4,5)," & "Y2:(7,8,9,10), A1:(23,22,21,20)," & "A2:(19,17,16,15), OE_NEG2:24, GND:6," & "VCC:18, TDO:11, TDI:14, TMS:12, TCK:13"
+				-- the port name like "OE_NEG1" and its pin names "2 3 4 5".
 					text_scratch : string (1..text_in'length) := text_in; -- here a copy of text_in goes for subsequent in depth processing
-					text_scratch_pt : positive := positive'first; -- points to character being processed
-					--open_sections_ct : natural := 0; -- increments on every opening parenthesis, decrements on every closing parenthesis found in text_scratch 
-					-- CS: limit to 2
-					map_start : positive := index(text_scratch, 1 * latin_1.quotation);
-					port_name : universal_string_type.bounded_string;
+					map_start : positive := index(text_scratch, 1 * latin_1.quotation); -- here the pin map string starts
+					port : universal_string_type.bounded_string;
+					port_index : boolean := false; -- true when cursor is inside a port index group like "(7,8,9,10)"
+
+					procedure format_port (text_in : in string) is -- "OE_NEG1:1" or "Y1:2 3 4 5"
+						text_scratch : string (1..text_in'length) := text_in; -- here a copy of text_in goes for subsequent in depth processing						
+						position_colon : positive := index(text_scratch, 1 * latin_1.colon);
+					begin
+						text_scratch(position_colon) := latin_1.space;
+							put_line(5 * row_separator_0 & text_scratch);
+					end format_port;
+					
 				begin
+					-- First we replace quotes and ampersands by space (within the range of interest)
 					for c in map_start..text_scratch'last loop
 						case text_scratch(c) is
 							when latin_1.quotation => 
@@ -858,24 +869,32 @@ procedure impbsdl is
 						end case;
 					end loop;
 
-					-- OE_NEG1:1, Y1:(2,3,4,5), Y2:(7,8,9,10), A1:(23,22,21,20), A2:(19,17,16,15), OE_NEG2:24, GND:6, VCC:18, TDO:11, TDI:14, TMS:12, TCK:13
+					-- text_scratch now holds something like 
+					-- "OE_NEG1:1, Y1:(2,3,4,5), Y2:(7,8,9,10), A1:(23,22,21,20), A2:(19,17,16,15), OE_NEG2:24, GND:6, VCC:18, TDO:11, TDI:14, TMS:12, TCK:13"
 					--put_line(text_scratch(map_start+1..text_scratch'last-1));
 
+					-- Commas inside a port index group are replaced by space.
+					-- Ohter commas signal the end of the port like "Y2:(7,8,9,10),". The port is then passed to procedure format_port.
 					for c in map_start..text_scratch'last loop
 						case text_scratch(c) is
-							when latin_1.colon => 
-								put(5 * row_separator_0 & universal_string_type.to_string(port_name) & row_separator_0);
-								port_name := universal_string_type.to_bounded_string("");
-							when latin_1.left_parenthesis =>
-								null;
-							when others => 
-								port_name := universal_string_type.append(left => port_name, right => text_in(c));
+							when latin_1.left_parenthesis => port_index := true;
+							when latin_1.right_parenthesis => port_index := false;
+							when latin_1.comma =>
+								if port_index then -- pin separator inside port index group
+									port := universal_string_type.append(left => port, right => latin_1.space);
+								else -- end of port reached
+									format_port(trim(universal_string_type.to_string(port),left));
+									port := universal_string_type.to_bounded_string(""); -- clean up for next port
+								end if;
+							when others => -- collect characters belonging to port
+								port := universal_string_type.append(left => port, right => text_scratch(c));
 						end case;
 					end loop;
-					
+					-- The last port does not end with a comma. So we pass it to format_port finally.
+					format_port(trim(universal_string_type.to_string(port),left));
 				end trim_port_pin_map;
 				
-			begin
+			begin -- read_port_pin_map
 				for c in 1..text_in'length-1 loop
 					if get_field(text_in => text_in, position => c) = text_bsdl_constant and to_lower(get_field(text_in => text_in, position => c+1)) = to_lower(package_name) then
 						--put_line(get_field(text_in => text_in, position => c, trailer => true));
@@ -1120,6 +1139,7 @@ procedure impbsdl is
 						 " -- for package " & universal_string_type.to_string(bic.housing));
 				read_port_pin_map(text_in => bsdl_string, package_name => universal_string_type.to_string(bic.housing));
 				put_line(2 * row_separator_0 & section_mark.endsubsection);
+				--new_line;
 				
 				clear(boundary_register_cell_container); -- purge container for next BSDL model
 			else
