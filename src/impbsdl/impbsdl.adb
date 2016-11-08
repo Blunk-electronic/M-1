@@ -689,8 +689,11 @@ procedure impbsdl is
 				port_name_complete 			: boolean := false;				
 				port_name_as_string 		: universal_string_type.bounded_string;
 
-				procedure fraction_port_string (text_in : in string) is
-					text_scratch : string (1..text_in'length + 1) := text_in & latin_1.semicolon;
+				procedure fraction_port_string (text_in : in string) is 
+				-- Breaks down a string like "OE_NEG1:in bit; Y1:out bit_vector 1 to 4 ; Y2:out bit_vector 1 to 4 ; OE_NEG2:in bit; GND, VCC:linkage bit; TDO:out bit"
+				-- into ports like "OE_NEG1:in bit"
+					text_scratch : string (1..text_in'length + 1) := text_in & latin_1.semicolon; -- with this copy of text_in we continue. it requires a semicolon at 
+					-- the end in order to detect the end of the last port segment.
 					port_string : universal_string_type.bounded_string;
 
 					procedure write_port_name (text_in : in string) is -- "Y1:out bit_vector 1 to 4" or "GND, VCC:linkage bit" or "OE_NEG2:in bit"
@@ -722,6 +725,7 @@ procedure impbsdl is
 						
 					begin -- write_port_name
 						--put_line(standard_output,text_in);
+						-- A colon separates between port name and direction like "OE_NEG2:in bit"
 						for c in text_in'first..text_in'last loop
 							case text_in(c) is
 								when latin_1.colon =>
@@ -737,13 +741,15 @@ procedure impbsdl is
 						write_port_direction (universal_string_type.to_string(port_name));
 					end write_port_name;
 						
-				begin
+				begin -- fraction_port_string
+				-- A semicolon indicates the end of the port. All characters found until semicolon are collected and 
+				-- then passed to write_port_name.
 					for c in text_scratch'first..text_scratch'last loop
 						case text_scratch(c) is
 							when latin_1.semicolon =>
 								--put_line(standard_output, universal_string_type.to_string(port_string));
-								write_port_name(universal_string_type.to_string(port_string));
-								port_string := universal_string_type.to_bounded_string("");
+								write_port_name(universal_string_type.to_string(port_string)); -- "OE_NEG2:in bit"
+								port_string := universal_string_type.to_bounded_string(""); -- clear port_string for next port
 							when others => 
 								port_string := universal_string_type.append(left => port_string, right => text_scratch(c));
 						end case;
@@ -759,7 +765,8 @@ procedure impbsdl is
  							-- Collect characters allowed in port identifier in temporarily string. If other character found,
 							-- and the word matches text_bsdl_port_identifier then the identifier is assumed as complete.
 							-- When the port identifier is complete, the flag port_identifier_complete is set so that subsequent characters at this
-							-- level are ignored. This flag also signals that characters found at level 1 and 2 are to 
+							-- level are ignored. This flag also signals that characters found at level 1 and 2 are to be processed further-on (because they
+							-- belong to the port io map.).
 							if not port_identifier_complete then
 								if is_letter(text_in(c)) then
 									port_identifier_as_string := universal_string_type.append(left => port_identifier_as_string, right => text_in(c));
@@ -775,14 +782,16 @@ procedure impbsdl is
 								end if;
 							end if;
 
-						when 1 | 2 => -- After passing the first opening parenthesis the level increases to 1. The element expected next is the port name.
+						when 1 | 2 => -- Process characters at this level if port identifier has been found at level 0.
 							if port_identifier_complete then
+
+								-- replace parenthesis by space. other characters are to be collected in text_scratch
 								if text_in(c) = latin_1.right_parenthesis or text_in(c) = latin_1.left_parenthesis then
 									text_scratch(text_scratch_pt) := latin_1.space;
 								else
 									text_scratch(text_scratch_pt) := text_in(c);
 								end if;
-								text_scratch_pt := text_scratch_pt + 1;
+								text_scratch_pt := text_scratch_pt + 1; -- advance character pointer in text_scratch (for next character)
 							end if;
 
  						when others => null; -- there are no other levels. means no more than two opening parenthesis.
@@ -791,8 +800,7 @@ procedure impbsdl is
 					-- Count up/down opening and closing parenthesis to detect the parsing level:
 					-- 0 -> all parenthesis closed
 					-- 1 -> one open parenthesis
-					-- Once all parenthesis closed. All opcodes of the current instruction have been read. Reset flag instruction_name_complete so that
-					-- next instruction name can be read.
+					-- Once all parenthesis closed, the port io map has been read. The port io map is then passed to procedure fraction_port_string.
 					case text_in(c) is
 						when latin_1.left_parenthesis => -- open parenthesis found
 							open_sections_ct := open_sections_ct + 1;
@@ -804,8 +812,8 @@ procedure impbsdl is
 									--put_line(standard_output,text_scratch(text_scratch'first..text_scratch_pt));
 									-- "OE_NEG1:in bit; Y1:out bit_vector 1 to 4 ; Y2:out bit_vector 1 to 4 ; OE_NEG2:in bit; GND, VCC:linkage bit; TDO:out bit"
 									fraction_port_string(text_scratch(text_scratch'first..text_scratch_pt));
-									port_identifier_complete := false;
-									text_scratch_pt := positive'first;
+									--port_identifier_complete := false;
+									--text_scratch_pt := positive'first;
 									exit;
 								end if;
 							end if;
