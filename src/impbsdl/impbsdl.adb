@@ -238,6 +238,7 @@ procedure impbsdl is
 			text_bsdl_to					: constant string (1..2)  := "to";
 			text_bsdl_downto				: constant string (1..6)  := "downto";
 			text_bsdl_bit					: constant string (1..3)  := "bit";
+			text_bsdl_constant				: constant string (1..8)  := "constant";
 
 			-- UDB keywords
 			text_udb_none							: constant string (1..4) := "none";
@@ -248,6 +249,7 @@ procedure impbsdl is
 			text_udb_safebits						: constant string (1..8) := "safebits";
 			text_udb_opcodes						: constant string (1..19) := "instruction_opcodes";
 			text_udb_port_io_map					: constant string (1..11) := "port_io_map";
+			text_udb_port_pin_map					: constant string (1..12) := "port_pin_map";
 
 			procedure read_boundary_register (text_in : in string; width : in type_register_length) is
 				-- Extracts from given string text_in cell id, type, port+index, function, save value and optional: control cell, disable value, disable result.
@@ -760,7 +762,7 @@ procedure impbsdl is
 --					put_line(standard_output,text_in);
 				end fraction_port_string;
 				
-			begin
+			begin -- read_port_io_map
 				-- This is the actual extracting work. Variable open_sections_ct indicates the level to parse at.
  				for c in 1..text_in'length loop
  					case open_sections_ct is
@@ -828,7 +830,70 @@ procedure impbsdl is
 				--put_line(standard_output,text_scratch);
 
 			end read_port_io_map;
-			
+
+
+			procedure read_port_pin_map(text_in : in string; package_name : in string) is
+			-- Extracts the port pin map from the given string. The port pin map starts with keyword "constant" followed by the package name.
+			-- The port io map ends with a semicolon.
+			-- example:     constant DW : PIN_MAP_STRING := "OE_NEG1:1, Y1:(2,3,4,5)," &
+            --				"Y2:(7,8,9,10), A1:(23,22,21,20)," &
+            --				"A2:(19,17,16,15), OE_NEG2:24, GND:6," &
+            --				"VCC:18, TDO:11, TDI:14, TMS:12, TCK:13";
+
+				procedure trim_port_pin_map(text_in : in string) is
+					text_scratch : string (1..text_in'length) := text_in; -- here a copy of text_in goes for subsequent in depth processing
+					text_scratch_pt : positive := positive'first; -- points to character being processed
+					--open_sections_ct : natural := 0; -- increments on every opening parenthesis, decrements on every closing parenthesis found in text_scratch 
+					-- CS: limit to 2
+					map_start : positive := index(text_scratch, 1 * latin_1.quotation);
+					port_name : universal_string_type.bounded_string;
+				begin
+					for c in map_start..text_scratch'last loop
+						case text_scratch(c) is
+							when latin_1.quotation => 
+								text_scratch(c) := latin_1.space;
+							when latin_1.ampersand => 								
+								text_scratch(c) := latin_1.space;
+							when others => null;
+						end case;
+					end loop;
+
+					-- OE_NEG1:1, Y1:(2,3,4,5), Y2:(7,8,9,10), A1:(23,22,21,20), A2:(19,17,16,15), OE_NEG2:24, GND:6, VCC:18, TDO:11, TDI:14, TMS:12, TCK:13
+					--put_line(text_scratch(map_start+1..text_scratch'last-1));
+
+					for c in map_start..text_scratch'last loop
+						case text_scratch(c) is
+							when latin_1.colon => 
+								put(5 * row_separator_0 & universal_string_type.to_string(port_name) & row_separator_0);
+								port_name := universal_string_type.to_bounded_string("");
+							when latin_1.left_parenthesis =>
+								null;
+							when others => 
+								port_name := universal_string_type.append(left => port_name, right => text_in(c));
+						end case;
+					end loop;
+					
+				end trim_port_pin_map;
+				
+			begin
+				for c in 1..text_in'length-1 loop
+					if get_field(text_in => text_in, position => c) = text_bsdl_constant and to_lower(get_field(text_in => text_in, position => c+1)) = to_lower(package_name) then
+						--put_line(get_field(text_in => text_in, position => c, trailer => true));
+
+						-- constant DW : PIN_MAP_STRING := "OE_NEG1:1, Y1:(2,3,4,5)," & "Y2:(7,8,9,10), A1:(23,22,21,20)," & "A2:(19,17,16,15), OE_NEG2:24, GND:6," & "VCC:18, TDO:11, TDI:14, TMS:12, TCK:13"
+						trim_port_pin_map(get_field(text_in => text_in, position => c, trailer => true));
+						exit;
+					end if;
+
+-- 				text_in 	: in string;
+-- 				position 	: in positive;
+-- 				ifs 		: in character := latin_1.space;
+-- 				trailer 	: boolean := false;
+-- 				trailer_to 	: in character := latin_1.semicolon
+
+				end loop;
+			end read_port_pin_map;
+				
 		begin -- parse_bsdl
 			set_output(file_data_base_preliminary);
 			--put_line(bsdl_string);
@@ -1049,7 +1114,12 @@ procedure impbsdl is
 				read_port_io_map(bsdl_string);
 				put_line(2 * row_separator_0 & section_mark.endsubsection);
 
-				
+				-- port pin map
+				new_line;
+				put_line(2 * row_separator_0 & section_mark.subsection & row_separator_0 & text_udb_port_pin_map &
+						 " -- for package " & universal_string_type.to_string(bic.housing));
+				read_port_pin_map(text_in => bsdl_string, package_name => universal_string_type.to_string(bic.housing));
+				put_line(2 * row_separator_0 & section_mark.endsubsection);
 				
 				clear(boundary_register_cell_container); -- purge container for next BSDL model
 			else
