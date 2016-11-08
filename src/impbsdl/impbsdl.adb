@@ -103,7 +103,9 @@ procedure impbsdl is
 		bsdl_string		: unbounded_string;
 --		line_counter	: natural := 0;
 
-		function get_field(
+		function get_field
+		-- Extracts a field separated by ifs at position. If trailer is true, the trailing content untiil trailer_to is also returned.
+				(
 				text_in 	: in string;
 				position 	: in positive;
 				ifs 		: in character := latin_1.space;
@@ -230,7 +232,12 @@ procedure impbsdl is
 			text_bsdl_boundary_register		: constant string (1..17) := "boundary_register";
 			text_bsdl_instruction_opcode	: constant string (1..18) := "instruction_opcode";
 			text_bsdl_tap_scan_reset		: constant string (1..14) := "tap_scan_reset";
-			text_bsdl_of					: constant string (1..2) := "of";
+			text_bsdl_of					: constant string (1..2)  := "of";
+			text_bsdl_port_identifier		: constant string (1..4)  := "port";
+			text_bsdl_bit_vector			: constant string (1..10) := "bit_vector";
+			text_bsdl_to					: constant string (1..2)  := "to";
+			text_bsdl_downto				: constant string (1..6)  := "downto";
+			text_bsdl_bit					: constant string (1..3)  := "bit";
 
 			-- UDB keywords
 			text_udb_none							: constant string (1..4) := "none";
@@ -240,6 +247,7 @@ procedure impbsdl is
 			text_udb_available						: constant string (1..9) := "available";
 			text_udb_safebits						: constant string (1..8) := "safebits";
 			text_udb_opcodes						: constant string (1..19) := "instruction_opcodes";
+			text_udb_port_io_map					: constant string (1..11) := "port_io_map";
 
 			procedure read_boundary_register (text_in : in string; width : in type_register_length) is
 				-- Extracts from given string text_in cell id, type, port+index, function, save value and optional: control cell, disable value, disable result.
@@ -667,6 +675,148 @@ procedure impbsdl is
 				end if;
 				new_line;
 			end put_cell_properties;
+
+			procedure read_port_io_map(text_in : in string) is
+			-- Extracts the port io map from the given string. The port io map starts with keyword "port" and the first opening parenthesis follwing "port".
+			-- The port io map ends when all parenthesis are closed (level 0 reached).
+				text_scratch : string (1..text_in'length) := text_in'length * latin_1.space; -- here a copy of text_in goes for subsequent in depth processing				
+				text_scratch_pt : positive := positive'first; -- points to character being processed
+				open_sections_ct : natural := 0; -- increments on every opening parenthesis, decrements on every closing parenthesis found in text_scratch 
+				-- CS: limit to 2
+				
+				port_identifier_complete 	: boolean := false;
+				port_identifier_as_string 	: universal_string_type.bounded_string;
+				port_name_complete 			: boolean := false;				
+				port_name_as_string 		: universal_string_type.bounded_string;
+
+				procedure fraction_port_string (text_in : in string) is
+					text_scratch : string (1..text_in'length + 1) := text_in & latin_1.semicolon;
+					port_string : universal_string_type.bounded_string;
+
+					procedure write_port_name (text_in : in string) is -- "Y1:out bit_vector 1 to 4" or "GND, VCC:linkage bit" or "OE_NEG2:in bit"
+						port_name : universal_string_type.bounded_string;
+
+						procedure write_port_direction (text_in : in string) is -- "out bit_vector 1 to 4"
+						begin
+							put(get_field(text_in => text_in, position => 1) & row_separator_0); -- the first field here is either "out", "in" or "linkage" 
+
+							-- the next field is either "bit" or "bit_vector". other fields are not accepted and considered as invalid
+							if get_field(text_in => text_in, position => 2) = text_bsdl_bit_vector then
+
+								-- field 4 contains "to" or "downto". write vector start and end indexes.
+								if get_field(text_in => text_in, position => 4) = text_bsdl_to then
+									put(get_field(text_in => text_in, position => 3) & row_separator_0 & text_bsdl_to & row_separator_0 & get_field(text_in => text_in, position => 5));
+								elsif get_field(text_in => text_in, position => 4) = text_bsdl_downto then
+									put(get_field(text_in => text_in, position => 5) & row_separator_0 & text_bsdl_downto & row_separator_0 & get_field(text_in => text_in, position => 3));
+								else -- no "to" or "downto" found
+									raise constraint_error;
+								end if;
+							elsif get_field(text_in => text_in, position => 2) = text_bsdl_bit then
+								null;
+							else -- field 2 invalid
+								raise constraint_error;
+							end if;
+							new_line;
+							
+						end write_port_direction;
+						
+					begin -- write_port_name
+						--put_line(standard_output,text_in);
+						for c in text_in'first..text_in'last loop
+							case text_in(c) is
+								when latin_1.colon =>
+									put(5 * row_separator_0 & trim(universal_string_type.to_string(port_name),both) & row_separator_0 & latin_1.colon & row_separator_0);
+									port_name := universal_string_type.to_bounded_string("");
+								when latin_1.comma =>
+									port_name := universal_string_type.append(left => port_name, right => latin_1.space);
+								when others => 
+									port_name := universal_string_type.append(left => port_name, right => text_in(c));
+							end case;
+						end loop;
+
+						write_port_direction (universal_string_type.to_string(port_name));
+					end write_port_name;
+						
+				begin
+					for c in text_scratch'first..text_scratch'last loop
+						case text_scratch(c) is
+							when latin_1.semicolon =>
+								--put_line(standard_output, universal_string_type.to_string(port_string));
+								write_port_name(universal_string_type.to_string(port_string));
+								port_string := universal_string_type.to_bounded_string("");
+							when others => 
+								port_string := universal_string_type.append(left => port_string, right => text_scratch(c));
+						end case;
+					end loop;
+--					put_line(standard_output,text_in);
+				end fraction_port_string;
+				
+			begin
+				-- This is the actual extracting work. Variable open_sections_ct indicates the level to parse at.
+ 				for c in 1..text_in'length loop
+ 					case open_sections_ct is
+ 						when 0 => -- At this level we expect only the port identifier.
+ 							-- Collect characters allowed in port identifier in temporarily string. If other character found,
+							-- and the word matches text_bsdl_port_identifier then the identifier is assumed as complete.
+							-- When the port identifier is complete, the flag port_identifier_complete is set so that subsequent characters at this
+							-- level are ignored. This flag also signals that characters found at level 1 and 2 are to 
+							if not port_identifier_complete then
+								if is_letter(text_in(c)) then
+									port_identifier_as_string := universal_string_type.append(left => port_identifier_as_string, right => text_in(c));
+								else
+									if universal_string_type.length(port_identifier_as_string) > 0 then -- identifier complete
+										if to_lower(universal_string_type.to_string(port_identifier_as_string)) = text_bsdl_port_identifier then -- identifier match
+											port_identifier_complete := true;
+											--put(standard_output,"port ");
+										else
+											port_identifier_as_string := universal_string_type.to_bounded_string("");
+										end if;
+									end if;
+								end if;
+							end if;
+
+						when 1 | 2 => -- After passing the first opening parenthesis the level increases to 1. The element expected next is the port name.
+							if port_identifier_complete then
+								if text_in(c) = latin_1.right_parenthesis or text_in(c) = latin_1.left_parenthesis then
+									text_scratch(text_scratch_pt) := latin_1.space;
+								else
+									text_scratch(text_scratch_pt) := text_in(c);
+								end if;
+								text_scratch_pt := text_scratch_pt + 1;
+							end if;
+
+ 						when others => null; -- there are no other levels. means no more than two opening parenthesis.
+ 					end case;
+ 
+					-- Count up/down opening and closing parenthesis to detect the parsing level:
+					-- 0 -> all parenthesis closed
+					-- 1 -> one open parenthesis
+					-- Once all parenthesis closed. All opcodes of the current instruction have been read. Reset flag instruction_name_complete so that
+					-- next instruction name can be read.
+					case text_in(c) is
+						when latin_1.left_parenthesis => -- open parenthesis found
+							open_sections_ct := open_sections_ct + 1;
+						when latin_1.right_parenthesis => -- close parenthesis found
+							open_sections_ct := open_sections_ct - 1;
+
+							if open_sections_ct = 0 then
+								if port_identifier_complete then
+									--put_line(standard_output,text_scratch(text_scratch'first..text_scratch_pt));
+									-- "OE_NEG1:in bit; Y1:out bit_vector 1 to 4 ; Y2:out bit_vector 1 to 4 ; OE_NEG2:in bit; GND, VCC:linkage bit; TDO:out bit"
+									fraction_port_string(text_scratch(text_scratch'first..text_scratch_pt));
+									port_identifier_complete := false;
+									text_scratch_pt := positive'first;
+									exit;
+								end if;
+							end if;
+
+						when others => -- other characters don't matter for the parse level
+							null;
+					end case;
+				end loop;
+				--put_line(standard_output,text_scratch);
+
+			end read_port_io_map;
 			
 		begin -- parse_bsdl
 			set_output(file_data_base_preliminary);
@@ -857,40 +1007,35 @@ procedure impbsdl is
 				put_line(2 * row_separator_0 & section_mark.endsubsection);
 				
 				-- boundary register 
-				-- 0 bc_1 * internal x / 5 bc_1 pb01_16 input x / 4 bc_1 pb01_16 output3 x 3 0 z
+				-- write something like "0 bc_1 * internal x" / "5 bc_1 pb01_16 input x" / "4 bc_1 pb01_16 output3 x 3 0 z"
+				-- We start with cell id 0 by picking it out of container boundary_register_cell_container.
 				new_line;				
 				put_line(2 * row_separator_0 & section_mark.subsection & row_separator_0 & text_bsdl_boundary_register);
 				put_line(2 * row_separator_0 & "-- num cell port function safe [control_cell disable_value disable_result]");
-
-				-- 	type type_cell is
-				-- 		record
-				-- 			cell_id 		: type_cell_id;
-				-- 			cell_type 		: type_boundary_register_cell;
-				-- 			port 			: universal_string_type.bounded_string;
-				-- 			port_index 		: type_port_index;
-				-- 			cell_function 	: type_cell_function;
-				-- 			safe_value 		: type_bit_char_class_1;
-				-- 			control_cell 	: type_control_cell_id;
-				-- 			disable_value 	: type_bit_char_class_0;
-				-- 			disable_result 	: type_disable_result;
-				-- 		end record;
-				
 				for s in 0..length_boundary_register-1 loop -- start with LSB
-					cell_cursor := first(boundary_register_cell_container);
-
+					cell_cursor := first(boundary_register_cell_container); -- set cursor at begin of container
+					-- Search container from first until last element until cell id match.
 					while cell_cursor /= last(boundary_register_cell_container) loop
 						bc_scratch := element(cell_cursor);
-						if bc_scratch.cell_id = s then
-							put_cell_properties(bc_scratch);
+						if bc_scratch.cell_id = s then -- cell id match
+							put_cell_properties(bc_scratch); -- write cell properies
 						end if;
 						cell_cursor := next(cell_cursor);
 					end loop;
 
+					-- test last element in container
 					bc_scratch := element(cell_cursor);
 					if bc_scratch.cell_id = s then
-						put_cell_properties(bc_scratch);
+						put_cell_properties(bc_scratch); -- write cell properies
 					end if;
 				end loop;
+				put_line(2 * row_separator_0 & section_mark.endsubsection);
+
+				-- port io map
+				new_line;
+				put_line(2 * row_separator_0 & section_mark.subsection & row_separator_0 & text_udb_port_io_map);
+				put_line(2 * row_separator_0 & "-- port(s) : direction [up/down vector]");
+				read_port_io_map(bsdl_string);
 				put_line(2 * row_separator_0 & section_mark.endsubsection);
 
 				
