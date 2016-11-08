@@ -700,8 +700,10 @@ procedure impbsdl is
 						port_name : universal_string_type.bounded_string;
 
 						procedure write_port_direction (text_in : in string) is -- "out bit_vector 1 to 4"
+						-- writes port direction and vector parameters in premilinary database.
 						begin
-							put(get_field(text_in => text_in, position => 1) & row_separator_0); -- the first field here is either "out", "in" or "linkage" 
+							-- the first field here is either "out", "in" or "linkage" 
+							put(get_field(text_in => text_in, position => 1) & row_separator_0); 
 
 							-- the next field is either "bit" or "bit_vector". other fields are not accepted and considered as invalid
 							if get_field(text_in => text_in, position => 2) = text_bsdl_bit_vector then
@@ -720,12 +722,14 @@ procedure impbsdl is
 								raise constraint_error;
 							end if;
 							new_line;
-							
 						end write_port_direction;
 						
 					begin -- write_port_name
 						--put_line(standard_output,text_in);
-						-- A colon separates between port name and direction like "OE_NEG2:in bit"
+						-- A colon separates between port name and direction like "OE_NEG2:in bit" or "GND, VCC:linkage bit"
+						-- Once the colon has been found put the port name. Once the colon has been found, the port name is written into the premilinary data base.
+						-- Subsequent characters (belonging to the port direction) are collected and finally passed to write_port_direction.
+						-- A comma separates port names belonging to a linkage group. The comma is replaced by space.
 						for c in text_in'first..text_in'last loop
 							case text_in(c) is
 								when latin_1.colon =>
@@ -737,7 +741,6 @@ procedure impbsdl is
 									port_name := universal_string_type.append(left => port_name, right => text_in(c));
 							end case;
 						end loop;
-
 						write_port_direction (universal_string_type.to_string(port_name));
 					end write_port_name;
 						
