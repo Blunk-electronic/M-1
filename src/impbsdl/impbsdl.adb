@@ -39,7 +39,7 @@ with ada.strings; 				use ada.strings;
 with ada.strings.maps;			use ada.strings.maps;
 with ada.strings.bounded; 		use ada.strings.bounded;
 with ada.strings.fixed; 		use ada.strings.fixed;
-
+with ada.exceptions; 			use ada.exceptions;
 with ada.containers;			use ada.containers;
 with ada.containers.doubly_linked_lists;
 
@@ -55,7 +55,7 @@ with m1_files_and_directories; 	use m1_files_and_directories;
 
 procedure impbsdl is
 
-	version			: string (1..3) := "0x1";
+	version			: string (1..3) := "035";
 	udb_summary		: type_udb_summary;
 	prog_position	: natural := 0;
 
@@ -1274,7 +1274,7 @@ begin
 	put_line (file_data_base_preliminary,section_mark.section & row_separator_0 & section_registers);
 	put_line (file_data_base_preliminary,column_separator_0);
 	put_line (file_data_base_preliminary,"-- created by BSDL importer version " & version);
-	put_line (file_data_base_preliminary,"-- date       : " & m1_internal.date_now); 
+	put_line (file_data_base_preliminary,"-- date " & m1_internal.date_now); 
 	new_line (file_data_base_preliminary);
 	
 	prog_position	:= 90;
@@ -1288,6 +1288,24 @@ begin
 	close(file_data_base_preliminary);
 	copy_file(name_file_data_base_preliminary, universal_string_type.to_string(name_file_data_base));
 
--- CS: exception handler
+	exception
+		when event: others =>
+			set_exit_status(failure);
+			case prog_position is
+-- 				when 10 =>
+-- 					put_line("ERROR: Data base file missing or insufficient access rights !");
+-- 					put_line("       Provide data base name as argument. Example: mkinfra my_uut.udb");
+-- 				when 20 =>
+-- 					put_line("ERROR: Test name missing !");
+-- 					put_line("       Provide test name as argument ! Example: mkinfra my_uut.udb my_infrastructure_test");
+-- 				when 30 =>
+-- 					put_line("ERROR: Invalid argument for debug level. Debug level must be provided as natural number !");
+
+				when others =>
+					put("unexpected exception: ");
+					put_line(exception_name(event));
+					put(exception_message(event)); new_line;
+					put_line("program error at position " & natural'image(prog_position));
+			end case;
 	
 end impbsdl;
