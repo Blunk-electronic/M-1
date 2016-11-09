@@ -207,36 +207,6 @@ procedure impbsdl is
 			usercode_register_found			: boolean := false;
 			trst_pin						: boolean := false;
 
-			-- BSDL keywords -- NOTE: some of them also used as UDB keywords
-			text_bsdl_entity				: constant string (1..6) := "entity";
-			text_bsdl_attribute				: constant string (1..9) := "attribute";
-			text_bsdl_instruction_length	: constant string (1..18) := "instruction_length";
-			text_bsdl_instruction_capture	: constant string (1..19) := "instruction_capture";
-			text_bsdl_idcode_register		: constant string (1..15) := "idcode_register";
-			text_bsdl_usercode_register		: constant string (1..17) := "usercode_register";
-			text_bsdl_boundary_length		: constant string (1..15) := "boundary_length";
-			text_bsdl_boundary_register		: constant string (1..17) := "boundary_register";
-			text_bsdl_instruction_opcode	: constant string (1..18) := "instruction_opcode";
-			text_bsdl_tap_scan_reset		: constant string (1..14) := "tap_scan_reset";
-			text_bsdl_of					: constant string (1..2)  := "of";
-			text_bsdl_port_identifier		: constant string (1..4)  := "port";
-			text_bsdl_bit_vector			: constant string (1..10) := "bit_vector";
-			text_bsdl_to					: constant string (1..2)  := "to";
-			text_bsdl_downto				: constant string (1..6)  := "downto";
-			text_bsdl_bit					: constant string (1..3)  := "bit";
-			text_bsdl_constant				: constant string (1..8)  := "constant";
-
-			-- UDB keywords
-			text_udb_none							: constant string (1..4) := "none";
-			text_udb_instruction_register_length 	: constant string (1..27) := "instruction_register_length";
-			text_udb_boundary_register_length		: constant string (1..24) := "boundary_register_length";
-			text_udb_trst_pin						: constant string (1..8) := "trst_pin";
-			text_udb_available						: constant string (1..9) := "available";
-			text_udb_safebits						: constant string (1..8) := "safebits";
-			text_udb_opcodes						: constant string (1..19) := "instruction_opcodes";
-			text_udb_port_io_map					: constant string (1..11) := "port_io_map";
-			text_udb_port_pin_map					: constant string (1..12) := "port_pin_map";
-
 			procedure read_boundary_register (text_in : in string; width : in type_register_length) is
 				-- Extracts from given string text_in cell id, type, port+index, function, save value and optional: control cell, disable value, disable result.
 				-- Optional elements like port-index, control cell, disable value, disable result have a default in case not present.
@@ -837,7 +807,7 @@ procedure impbsdl is
 				-- the port name like "OE_NEG1" and its pin names "2 3 4 5".
 					text_scratch : string (1..text_in'length) := text_in; -- here a copy of text_in goes for subsequent in depth processing
 					map_start : positive := index(text_scratch, 1 * latin_1.quotation); -- the pin map string starts at the first quotation in the given string
-					port : universal_string_type.bounded_string;
+					port : extended_string.bounded_string;
 					port_index : boolean := false; -- true when cursor is inside a port index group like "(7,8,9,10)"
 
 					procedure format_port (text_in : in string) is -- "OE_NEG1:1" or "Y1:2 3 4 5"
@@ -862,7 +832,7 @@ procedure impbsdl is
 
 					-- text_scratch now holds something like 
 					-- OE_NEG1:1, Y1:(2,3,4,5), Y2:(7,8,9,10), A1:(23,22,21,20), A2:(19,17,16,15), OE_NEG2:24, GND:6, VCC:18, TDO:11, TDI:14, TMS:12, TCK:13
-					--put_line(text_scratch(map_start+1..text_scratch'last));
+					--put_line(text_scratch(map_start..text_scratch'last));
 
 					-- Commas inside a port index group are replaced by space.
 					-- Other commas signal the end of the port like "Y2:(7,8,9,10),". The port is then passed to procedure format_port.
@@ -872,17 +842,18 @@ procedure impbsdl is
 							when latin_1.right_parenthesis => port_index := false;
 							when latin_1.comma =>
 								if port_index then -- pin separator inside port index group
-									port := universal_string_type.append(left => port, right => latin_1.space);
+									port := extended_string.append(left => port, right => latin_1.space);
+									put_line(standard_output,extended_string.to_string(port));
 								else -- end of port reached
-									format_port(trim(universal_string_type.to_string(port),left));
-									port := universal_string_type.to_bounded_string(""); -- clean up for next port
+									format_port(trim(extended_string.to_string(port),left));
+									port := extended_string.to_bounded_string(""); -- clean up for next port
 								end if;
 							when others => -- collect characters belonging to port
-								port := universal_string_type.append(left => port, right => text_scratch(c));
+								port := extended_string.append(left => port, right => text_scratch(c));
 						end case;
 					end loop;
 					-- The last port does not end with a comma. So we pass it to format_port finally.
- 					format_port(trim(universal_string_type.to_string(port),left));
+ 					format_port(trim(extended_string.to_string(port),left));
 				end trim_port_pin_map;
 				
 			begin -- read_port_pin_map
@@ -1236,7 +1207,10 @@ begin
  	put_line("data base      : " & universal_string_type.to_string(name_file_data_base));
 
 	prog_position	:= 20;
-	udb_summary := read_uut_data_base(universal_string_type.to_string(name_file_data_base));
+	udb_summary := read_uut_data_base(
+						name_of_data_base_file => universal_string_type.to_string(name_file_data_base),
+						dedicated_action => true
+						 );
 
 	prog_position	:= 30;
 	create_temp_directory;
@@ -1290,6 +1264,7 @@ begin
 
 	exception
 		when event: others =>
+			set_output(standard_output);
 			set_exit_status(failure);
 			case prog_position is
 -- 				when 10 =>
