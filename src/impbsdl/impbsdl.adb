@@ -88,7 +88,9 @@ procedure impbsdl is
 		line_of_file	: extended_string.bounded_string;
 		bsdl_string		: unbounded_string;
 --		line_counter	: natural := 0;
-
+		option_remove_prefix : boolean := false;
+		option_prefix_to_remove : universal_string_type.bounded_string;
+		
 		function get_field
 		-- Extracts a field separated by ifs at position. If trailer is true, the trailing content untiil trailer_to is also returned.
 				(
@@ -811,11 +813,17 @@ procedure impbsdl is
 					port_index : boolean := false; -- true when cursor is inside a port index group like "(7,8,9,10)"
 
 					procedure format_port (text_in : in string) is -- "OE_NEG1:1" or "Y1:2 3 4 5"
+					-- Replaces in text_in the colon by space and writes the string in the premilinary data base.
+					-- If option "remove_pin_prefix xyz" given, the prefix xyz gets removed from the pin name.
 						text_scratch : string (1..text_in'length) := text_in; -- here a copy of text_in goes for subsequent in depth processing						
 						position_colon : positive := index(text_scratch, 1 * latin_1.colon);
 					begin
+						-- check option
+						if option_remove_prefix then
+							put_line(standard_output,"remove prefix " & universal_string_type.to_string(option_prefix_to_remove));
+						end if;
 						text_scratch(position_colon) := latin_1.space;
-							put_line(5 * row_separator_0 & text_scratch);
+						put_line(5 * row_separator_0 & text_scratch);
 					end format_port;
 					
 				begin -- trim_port_pin_map
@@ -1158,6 +1166,19 @@ procedure impbsdl is
 		while bic /= null loop
 			put_line(row_separator_0 & section_mark.subsection & row_separator_0 & universal_string_type.to_string(bic.name));
 			put_line(standard_output,"model file " & extended_string.to_string(bic.model_file));
+
+			-- display options (if given)
+			option_remove_prefix := false;
+			if universal_string_type.length(bic.options) > 0 then
+				if to_lower(get_field(universal_string_type.to_string(bic.options),1)) = text_udb_option then
+					if get_field(universal_string_type.to_string(bic.options),2) = to_lower(type_bic_option'image(remove_pin_prefix)) then
+						put_line(standard_output,2 * row_separator_0 & universal_string_type.to_string(bic.options));
+						option_remove_prefix := true;
+						option_prefix_to_remove := universal_string_type.to_bounded_string(get_field(universal_string_type.to_string(bic.options),3));
+					end if;
+				end if;
+			end if;
+			
 			open(file => file_bsdl, mode => in_file, name => extended_string.to_string(bic.model_file));
 			set_input(file_bsdl);
 			--ptr_bsdl_entry := null;
