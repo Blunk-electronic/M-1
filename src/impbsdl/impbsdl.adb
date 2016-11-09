@@ -31,30 +31,16 @@
 --
 
 with ada.text_io;				use ada.text_io;
--- with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
--- with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
 with ada.characters.handling;   use ada.characters.handling;
--- 
--- --with System.OS_Lib;   use System.OS_Lib;
 with ada.strings.unbounded; 	use ada.strings.unbounded;
 with ada.characters;			use ada.characters;
 with ada.characters.latin_1;	use ada.characters.latin_1;
---with ada.characters.handling;	use ada.characters.handling;
---with ada.characters.conversions;use ada.characters.conversions;
 with ada.strings; 				use ada.strings;
 with ada.strings.maps;			use ada.strings.maps;
 with ada.strings.bounded; 		use ada.strings.bounded;
 with ada.strings.fixed; 		use ada.strings.fixed;
--- with Ada.Numerics;			use Ada.Numerics;
--- with Ada.Numerics.Elementary_Functions;	use Ada.Numerics.Elementary_Functions;
--- 
--- with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
--- with Ada.Task_Identification;  use Ada.Task_Identification;
--- with Ada.Exceptions; use Ada.Exceptions;
--- with Ada.IO_Exceptions; use Ada.IO_Exceptions;
 
 with ada.containers;			use ada.containers;
---with ada.containers.ordered_maps;
 with ada.containers.doubly_linked_lists;
 
 with gnat.os_lib;   		use gnat.os_lib;
@@ -834,18 +820,23 @@ procedure impbsdl is
 
 			procedure read_port_pin_map(text_in : in string; package_name : in string) is
 			-- Extracts the port pin map from the given string. The port pin map starts with keyword "constant" followed by the package name.
-			-- The port io map ends with a semicolon.
+			-- The port pin map ends with a semicolon.
 			-- example:     constant DW : PIN_MAP_STRING := "OE_NEG1:1, Y1:(2,3,4,5)," &
             --				"Y2:(7,8,9,10), A1:(23,22,21,20)," &
             --				"A2:(19,17,16,15), OE_NEG2:24, GND:6," &
             --				"VCC:18, TDO:11, TDI:14, TMS:12, TCK:13";
+				open_sections_ct : natural := 0; -- increments on every opening parenthesis, decrements on every closing parenthesis found in text_scratch 
+				-- CS: limit to 2
+				scratch_string 	: universal_string_type.bounded_string;
+				keyword_constant_complete : boolean := false; -- goes true once a keyword "constant" found
+				pattern_start : positive := positive'first; -- the position of the first character after the targeted package
 
 				procedure trim_port_pin_map(text_in : in string) is
 				-- Extracts from a string like
-				-- "constant DW : PIN_MAP_STRING := "OE_NEG1:1, Y1:(2,3,4,5)," & "Y2:(7,8,9,10), A1:(23,22,21,20)," & "A2:(19,17,16,15), OE_NEG2:24, GND:6," & "VCC:18, TDO:11, TDI:14, TMS:12, TCK:13"
+				-- : PIN_MAP_STRING := "OE_NEG1:1, Y1:(2,3,4,5)," & "Y2:(7,8,9,10), A1:(23,22,21,20)," & "A2:(19,17,16,15), OE_NEG2:24, GND:6," & "VCC:18, TDO:11, TDI:14, TMS:12, TCK:13"
 				-- the port name like "OE_NEG1" and its pin names "2 3 4 5".
 					text_scratch : string (1..text_in'length) := text_in; -- here a copy of text_in goes for subsequent in depth processing
-					map_start : positive := index(text_scratch, 1 * latin_1.quotation); -- here the pin map string starts
+					map_start : positive := index(text_scratch, 1 * latin_1.quotation); -- the pin map string starts at the first quotation in the given string
 					port : universal_string_type.bounded_string;
 					port_index : boolean := false; -- true when cursor is inside a port index group like "(7,8,9,10)"
 
@@ -857,7 +848,7 @@ procedure impbsdl is
 							put_line(5 * row_separator_0 & text_scratch);
 					end format_port;
 					
-				begin
+				begin -- trim_port_pin_map
 					-- First we replace quotes and ampersands by space (within the range of interest)
 					for c in map_start..text_scratch'last loop
 						case text_scratch(c) is
@@ -870,11 +861,11 @@ procedure impbsdl is
 					end loop;
 
 					-- text_scratch now holds something like 
-					-- "OE_NEG1:1, Y1:(2,3,4,5), Y2:(7,8,9,10), A1:(23,22,21,20), A2:(19,17,16,15), OE_NEG2:24, GND:6, VCC:18, TDO:11, TDI:14, TMS:12, TCK:13"
-					--put_line(text_scratch(map_start+1..text_scratch'last-1));
+					-- OE_NEG1:1, Y1:(2,3,4,5), Y2:(7,8,9,10), A1:(23,22,21,20), A2:(19,17,16,15), OE_NEG2:24, GND:6, VCC:18, TDO:11, TDI:14, TMS:12, TCK:13
+					--put_line(text_scratch(map_start+1..text_scratch'last));
 
 					-- Commas inside a port index group are replaced by space.
-					-- Ohter commas signal the end of the port like "Y2:(7,8,9,10),". The port is then passed to procedure format_port.
+					-- Other commas signal the end of the port like "Y2:(7,8,9,10),". The port is then passed to procedure format_port.
 					for c in map_start..text_scratch'last loop
 						case text_scratch(c) is
 							when latin_1.left_parenthesis => port_index := true;
@@ -891,25 +882,67 @@ procedure impbsdl is
 						end case;
 					end loop;
 					-- The last port does not end with a comma. So we pass it to format_port finally.
-					format_port(trim(universal_string_type.to_string(port),left));
+ 					format_port(trim(universal_string_type.to_string(port),left));
 				end trim_port_pin_map;
 				
 			begin -- read_port_pin_map
-				for c in 1..text_in'length-1 loop
-					if get_field(text_in => text_in, position => c) = text_bsdl_constant and to_lower(get_field(text_in => text_in, position => c+1)) = to_lower(package_name) then
-						--put_line(get_field(text_in => text_in, position => c, trailer => true));
+				--put_line(text_in);
+				-- This is the actual extracting work. Variable open_sections_ct indicates the level to parse at.
+ 				for c in 1..text_in'length loop
+ 					case open_sections_ct is
+ 						when 0 => -- At this level we expect only the keyword "constant".
+ 							-- Collect letters. If other character found nd the scratch_string matches "constant" then the package name is expected next.
+							-- When "constant" found, the flag keyword_constant_complete is set so that the package name is seached for next.
+							-- The position of the first character after the package name is saved in pattern_start. Once pattern_start has been loaded with 
+							-- that position, the targeted port pin map is passed to trim_port_pin_map.
+							if not keyword_constant_complete then
+								if is_letter(text_in(c)) then
+									scratch_string := universal_string_type.append(left => scratch_string, right => text_in(c));
+ 								else
+ 									if universal_string_type.length(scratch_string) > 0 then -- any word complete
+										if to_lower(universal_string_type.to_string(scratch_string)) = text_bsdl_constant then -- keyword "constant" match
+											--put_line(standard_output,"constant");
+											keyword_constant_complete := true;
+										end if;
+										scratch_string := universal_string_type.to_bounded_string(""); -- clean up scratch for next word
+									end if;
+								end if;
+							else
+								if pattern_start = positive'first then -- no package match yet
+									if is_letter(text_in(c)) or is_digit(text_in(c)) then
+										scratch_string := universal_string_type.append(left => scratch_string, right => text_in(c));
+										--put(standard_output,text_in(c));
+									else
+										if universal_string_type.length(scratch_string) > 0 then -- any word complete
+											if to_lower(universal_string_type.to_string(scratch_string)) = to_lower(package_name) then -- package name match
+												--put_line(standard_output,"package");
+												pattern_start := c; -- save position of first character after package name
+											end if;
+											scratch_string := universal_string_type.to_bounded_string(""); -- clean up scratch for next word
+										end if;
+									end if;
+								else -- package name found. wait for first semicolon in string and pass string to trim_port_pin_map
+									if text_in(c) = latin_1.semicolon then
+				 						-- : PIN_MAP_STRING := "OE_NEG1:1, Y1:(2,3,4,5)," & "Y2:(7,8,9,10), A1:(23,22,21,20)," & "A2:(19,17,16,15), OE_NEG2:24, GND:6," & "VCC:18, TDO:11, TDI:14, TMS:12, TCK:13";
+										--put_line(text_in(pattern_start..c-1));
+										trim_port_pin_map(text_in(pattern_start..c-1)); -- omitting the trailing semicolon
+										exit;
+									end if;
+								end if;
+ 							end if;
 
-						-- constant DW : PIN_MAP_STRING := "OE_NEG1:1, Y1:(2,3,4,5)," & "Y2:(7,8,9,10), A1:(23,22,21,20)," & "A2:(19,17,16,15), OE_NEG2:24, GND:6," & "VCC:18, TDO:11, TDI:14, TMS:12, TCK:13"
-						trim_port_pin_map(get_field(text_in => text_in, position => c, trailer => true));
-						exit;
-					end if;
-
--- 				text_in 	: in string;
--- 				position 	: in positive;
--- 				ifs 		: in character := latin_1.space;
--- 				trailer 	: boolean := false;
--- 				trailer_to 	: in character := latin_1.semicolon
-
+ 						when others => null; -- there are no other levels of interest
+ 					end case;
+ 
+					-- Count up/down opening and closing parenthesis to detect the parsing level:
+					case text_in(c) is
+						when latin_1.left_parenthesis => -- open parenthesis found
+							open_sections_ct := open_sections_ct + 1;
+						when latin_1.right_parenthesis => -- close parenthesis found
+							open_sections_ct := open_sections_ct - 1;
+						when others => -- other characters don't matter for the parse level
+							null;
+					end case;
 				end loop;
 			end read_port_pin_map;
 				
@@ -1137,6 +1170,7 @@ procedure impbsdl is
 				new_line;
 				put_line(2 * row_separator_0 & section_mark.subsection & row_separator_0 & text_udb_port_pin_map &
 						 " -- for package " & universal_string_type.to_string(bic.housing));
+				put_line(2 * row_separator_0 & "-- port pin(s)");
 				read_port_pin_map(text_in => bsdl_string, package_name => universal_string_type.to_string(bic.housing));
 				put_line(2 * row_separator_0 & section_mark.endsubsection);
 				--new_line;
@@ -1241,7 +1275,8 @@ begin
 	put_line (file_data_base_preliminary,column_separator_0);
 	put_line (file_data_base_preliminary,"-- created by BSDL importer version " & version);
 	put_line (file_data_base_preliminary,"-- date       : " & m1_internal.date_now); 
-
+	new_line (file_data_base_preliminary);
+	
 	prog_position	:= 90;
 	read_bsld_models;
 
@@ -1251,7 +1286,7 @@ begin
 
 	prog_position	:= 110;
 	close(file_data_base_preliminary);
---	copy_file(name_file_data_base_preliminary, universal_string_type.to_string(name_file_data_base));
+	copy_file(name_file_data_base_preliminary, universal_string_type.to_string(name_file_data_base));
 
 -- CS: exception handler
 	
