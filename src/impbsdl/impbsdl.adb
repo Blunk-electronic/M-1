@@ -843,7 +843,7 @@ procedure impbsdl is
 							when latin_1.comma =>
 								if port_index then -- pin separator inside port index group
 									port := extended_string.append(left => port, right => latin_1.space);
-									put_line(standard_output,extended_string.to_string(port));
+									--put_line(standard_output,extended_string.to_string(port));
 								else -- end of port reached
 									format_port(trim(extended_string.to_string(port),left));
 									port := extended_string.to_bounded_string(""); -- clean up for next port
@@ -1206,11 +1206,7 @@ begin
  	name_file_data_base:= universal_string_type.to_bounded_string(argument(1));
  	put_line("data base      : " & universal_string_type.to_string(name_file_data_base));
 
-	prog_position	:= 20;
-	udb_summary := read_uut_data_base(
-						name_of_data_base_file => universal_string_type.to_string(name_file_data_base),
-						dedicated_action => true
-						 );
+	--prog_position	:= 20;
 
 	prog_position	:= 30;
 	create_temp_directory;
@@ -1227,6 +1223,7 @@ begin
 		section_scanpath_configuration
 		);
 
+	-- create premilinary data base (contining scanpath_configuration)
 	prog_position	:= 60;
 	m1.extract_section( 
 		universal_string_type.to_string(name_file_data_base),
@@ -1236,6 +1233,11 @@ begin
 		section_scanpath_configuration
 		);
 
+	-- read premilinary data base
+	prog_position	:= 65;
+	udb_summary := read_uut_data_base(name_file_data_base_preliminary);
+
+	-- open premilinary data base again and start writing bsld information
 	prog_position	:= 70;
 	open( 
 		file => file_data_base_preliminary,
@@ -1249,6 +1251,8 @@ begin
 	put_line (file_data_base_preliminary,column_separator_0);
 	put_line (file_data_base_preliminary,"-- created by BSDL importer version " & version);
 	put_line (file_data_base_preliminary,"-- date " & m1_internal.date_now); 
+-- 	put_line (file_data_base_preliminary,"-- number of scanpaths" & type_scanport_id'image(udb_summary.scanpath_ct)); 
+-- 	put_line (file_data_base_preliminary,"-- number of BICs" & natural'image(udb_summary.bic_ct));
 	new_line (file_data_base_preliminary);
 	
 	prog_position	:= 90;
