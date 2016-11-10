@@ -165,6 +165,28 @@ procedure impbsdl is
 			return text_in(text_in'first+1..text_in'last-1);
 		end strip_quotes;
 
+		function trim_space_in_string (text_in : in string) return string is
+			text_scratch : string (1..text_in'length) := text_in;
+			s : extended_string.bounded_string;
+			l : natural := text_scratch'length;
+			sc : natural := natural'first;
+		begin
+			for c in 1..l loop
+				case text_scratch(c) is
+					when latin_1.space =>
+						sc := sc + 1;
+					when others =>
+						if sc > 0 then
+							s := extended_string.append(left => s, right => latin_1.space);
+						end if;
+						s := extended_string.append(left => s, right => text_scratch(c));
+						sc := 0;
+				end case;
+				
+			end loop;
+			return extended_string.to_string(s);
+		end trim_space_in_string;
+		
 		function get_bit_pattern (text_in : in string; width : in positive) return string is
 			--scratch : unbounded_string;
 			text_out : string (1..width);
@@ -813,17 +835,39 @@ procedure impbsdl is
 					port_index : boolean := false; -- true when cursor is inside a port index group like "(7,8,9,10)"
 
 					procedure format_port (text_in : in string) is -- "OE_NEG1:1" or "Y1:2 3 4 5"
-					-- Replaces in text_in the colon by space and writes the string in the premilinary data base.
-					-- If option "remove_pin_prefix xyz" given, the prefix xyz gets removed from the pin name.
-						text_scratch : string (1..text_in'length) := text_in; -- here a copy of text_in goes for subsequent in depth processing						
-						position_colon : positive := index(text_scratch, 1 * latin_1.colon);
+					-- Writes the content of text_in (the port name) until the colon in the premilinary data base.
+					-- If option "remove_pin_prefix xyz" given, the prefix xyz gets removed from the pin name(s).
+						position_colon : positive := index(text_in, 1 * latin_1.colon);
+
+						procedure remove_pin_prefix(text_in : in string; prefix : in string) is -- text_in is something like "P2 P3 P4 P5"
+						-- Removes the given prefix from the pin.
+							text_scratch : string (1..text_in'length) := text_in; -- here a copy of text_in goes for subsequent in depth processing
+							prefix_length : positive := prefix'length;
+							prefix_position : natural := index(text_scratch,prefix); -- get the position of the first prefix
+						begin
+							--put_line(standard_output,text_in);
+							-- As long as there are prefixes in text_scratch, prefix_position is something greater zero. 
+							-- At this position space characters are to overwrite the prefix.
+							while prefix_position > 0 loop
+								--put_line(standard_output,text_scratch);
+								text_scratch(prefix_position..prefix_position + prefix_length -1) := prefix_length * latin_1.space;
+								prefix_position := index(text_scratch,prefix);
+							end loop;
+							put(trim(trim_space_in_string(text_scratch),both));
+						end remove_pin_prefix;
+						
 					begin
+						put(5 * row_separator_0 & text_in(text_in'first..position_colon-1) & row_separator_0);
 						-- check option
 						if option_remove_prefix then
-							put_line(standard_output,"remove prefix " & universal_string_type.to_string(option_prefix_to_remove));
+							--put_line(standard_output,"remove prefix " & universal_string_type.to_string(option_prefix_to_remove));
+							remove_pin_prefix(text_in => text_in(position_colon+1..text_in'last), prefix => universal_string_type.to_string(option_prefix_to_remove));
+						else
+							--text_scratch(position_colon) := latin_1.space;
+							--put(text_in(position_colon+1..text_in'last));
+							put(trim( trim_space_in_string( text_in(position_colon+1..text_in'last)),both ));
 						end if;
-						text_scratch(position_colon) := latin_1.space;
-						put_line(5 * row_separator_0 & text_scratch);
+						new_line;
 					end format_port;
 					
 				begin -- trim_port_pin_map
