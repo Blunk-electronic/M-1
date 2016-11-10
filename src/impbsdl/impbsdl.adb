@@ -47,7 +47,6 @@ with gnat.os_lib;   		use gnat.os_lib;
 with ada.command_line;		use ada.command_line;
 with ada.directories;		use ada.directories;
 
-with m1; --use m1;
 with m1_internal; 				use m1_internal;
 with m1_numbers; 				use m1_numbers;
 with m1_files_and_directories; 	use m1_files_and_directories;
@@ -72,9 +71,7 @@ procedure impbsdl is
 			disable_value 	: type_bit_char_class_0;
 			disable_result 	: type_disable_result;
 		end record;
--- 	package cell_map is new ordered_maps( key_type => type_cell_id, element_type => type_cell);
--- 	use cell_map;
--- 	the_cell_map : cell_map.map;
+
 	package cell_container is new doubly_linked_lists(element_type => type_cell);
 	use cell_container;
 	boundary_register_cell_container : list;
@@ -87,12 +84,10 @@ procedure impbsdl is
 		file_bsdl 		: ada.text_io.file_type;
 		line_of_file	: extended_string.bounded_string;
 		bsdl_string		: unbounded_string;
---		line_counter	: natural := 0;
 		option_remove_prefix : boolean := false;
 		option_prefix_to_remove : universal_string_type.bounded_string;
 		
 		function get_bit_pattern (text_in : in string; width : in positive) return string is
-			--scratch : unbounded_string;
 			text_out : string (1..width);
 			pattern_start : boolean := false;
 			text_out_pt : positive := 1; -- CS: subtype of width
@@ -126,11 +121,8 @@ procedure impbsdl is
 			character_position 	: positive := 1;
 			field_position		: positive := 1;
 			field_count			: positive := get_field_count(bsdl_string);
-
 			length_instruction_register		: type_register_length;
 			length_boundary_register		: type_register_length;
-			--type type_boundary_register is array (type_register_length range <>) of type_bit_of_boundary_register;
-
 			idcode_register_found			: boolean := false;
 			usercode_register_found			: boolean := false;
 			trst_pin						: boolean := false;
@@ -1184,7 +1176,7 @@ begin
 
 	-- backup data base section scanpath_configuration (incl. comments)
 	prog_position	:= 50;
-	m1.extract_section( 
+	extract_section( 
 		universal_string_type.to_string(name_file_data_base),
 		name_directory_bak & name_directory_separator & universal_string_type.to_string(name_file_data_base),
 		section_mark.section,
@@ -1194,7 +1186,7 @@ begin
 
 	-- create premilinary data base (contining scanpath_configuration)
 	prog_position	:= 60;
-	m1.extract_section( 
+	extract_section( 
 		universal_string_type.to_string(name_file_data_base),
 		name_file_data_base_preliminary,
 		section_mark.section,
