@@ -206,6 +206,26 @@ procedure mknets is
 		label_loop_bsr:
 		for c in 1..bic.len_bsr_description loop -- look at every cell of boundary register 
 			if universal_string_type.to_string(bic.boundary_register(c).port) = universal_string_type.to_string(port_name) then
+				-- pb01_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z
+
+				-- append cell id
+				scratch := universal_string_type.append(
+						left => scratch, 
+						right => row_separator_1 & trim( type_cell_id'image(bic.boundary_register(c).id),left )
+						);	
+-- 
+-- 				-- append cell type (like BC_1)
+-- 				scratch := universal_string_type.append(
+-- 						left => scratch, 
+-- 						right => row_separator_0 & type_boundary_register_cell'image(bic.boundary_register(c).cell_type )
+-- 						);	
+-- 
+-- 				-- append cell function (like internal or output2)
+-- 				scratch := universal_string_type.append(
+-- 						left => scratch, 
+-- 						right => row_separator_0 & type_cell_function'image(bic.boundary_register(c).cell_function )
+-- 						);	
+
 
 -- type type_bit_of_boundary_register is
 -- 	record
@@ -226,7 +246,7 @@ procedure mknets is
 
 			end if;
 		end loop label_loop_bsr;
-		-- row_separator_1
+		
 		return universal_string_type.to_string(scratch);
 	end get_cell_info;
 	
