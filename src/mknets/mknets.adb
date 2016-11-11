@@ -206,7 +206,24 @@ procedure mknets is
 		label_loop_bsr:
 		for c in 1..bic.len_bsr_description loop -- look at every cell of boundary register 
 			if universal_string_type.to_string(bic.boundary_register(c).port) = universal_string_type.to_string(port_name) then
+
+-- type type_bit_of_boundary_register is
+-- 	record
+-- 		next			: type_ptr_bit_of_boundary_register;
+-- 		id				: type_cell_id;
+-- 		appears_in_net_list : boolean := false;
+-- 		cell_type		: type_boundary_register_cell; -- := BC_1;
+-- 		port			: universal_string_type.bounded_string; -- := to_bounded_string("test");
+-- 		cell_function	: type_cell_function; -- := INTERNAL;
+-- 		cell_safe_value	: type_bit_char_class_1; -- := 'x';
+-- 		control_cell_id	: type_control_cell_id; -- may also be -1 which means: no control cell assigned to a particular cell
+-- 		-- CS: control_cell_shared : boolean; -- this would speed up the shared control cell check in function shared_control_cell
+-- 		disable_value	: type_bit_char_class_0; -- := '1';
+-- 		disable_result	: type_disable_result;
+-- 	end record;
 				null;
+
+
 			end if;
 		end loop label_loop_bsr;
 		-- row_separator_1
