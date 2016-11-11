@@ -1177,21 +1177,21 @@ begin
 	-- backup data base section scanpath_configuration (incl. comments)
 	prog_position	:= 50;
 	extract_section( 
-		universal_string_type.to_string(name_file_data_base),
-		name_directory_bak & name_directory_separator & universal_string_type.to_string(name_file_data_base),
-		section_mark.section,
-		section_mark.endsection,
-		section_scanpath_configuration
+		input_file => universal_string_type.to_string(name_file_data_base),
+		output_file => name_directory_bak & name_directory_separator & universal_string_type.to_string(name_file_data_base),
+		section_begin_1 => section_mark.section,
+		section_end_1 => section_mark.endsection,
+		section_begin_2 => section_scanpath_configuration
 		);
 
 	-- create premilinary data base (contining scanpath_configuration)
 	prog_position	:= 60;
 	extract_section( 
-		universal_string_type.to_string(name_file_data_base),
-		name_file_data_base_preliminary,
-		section_mark.section,
-		section_mark.endsection,
-		section_scanpath_configuration
+		input_file => universal_string_type.to_string(name_file_data_base),
+		output_file => name_file_data_base_preliminary,
+		section_begin_1 => section_mark.section,
+		section_end_1 => section_mark.endsection,
+		section_begin_2 => section_scanpath_configuration
 		);
 
 	-- read premilinary data base
