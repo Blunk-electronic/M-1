@@ -75,13 +75,11 @@ procedure mknets is
 			--class			: type_net_class;
 			--pin_count		: positive;
 			pin_list		: pin_container.list;
-			pin_cursor		: pin_container.cursor;
+			--pin_cursor		: pin_container.cursor;
 		end record;
 	package net_container is new doubly_linked_lists(element_type => type_skeleton_net);
 	use net_container;
 	netlist : net_container.list;
-	net_cursor : net_container.cursor;
-	
 
 	procedure read_skeleton is
 		line_of_file 			: extended_string.bounded_string;
@@ -89,7 +87,14 @@ procedure mknets is
 		section_netlist_entered	: boolean := false;
 		subsection_net_entered	: boolean := false;
 		pin_scratch				: type_skeleton_pin;
+		pinlist					: pin_container.list;
 		net_scratch				: type_skeleton_net;
+
+		procedure put_faulty_line is
+		begin
+			put_line(message_error & "in skeleton line" & natural'image(line_counter));
+		end put_faulty_line;
+		
 	begin
 		put_line("reading skeleton ...");
 		open(file => file_skeleton, name => name_file_skeleton_default, mode => in_file);
@@ -112,29 +117,62 @@ procedure mknets is
 					if get_field_from_line(line_of_file,1) = section_mark.endsection then
 						section_netlist_entered := false;
 					else
-						-- process net content
+						-- process netlist content
 
-						-- The net header starts with "SubSection". The 3rd field must read "class".
-						if get_field_from_line(line_of_file,1) = section_mark.subsection then
-							-- save net name
-							net_scratch.name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,1));
+						-- wait for net header
+						if not subsection_net_entered then
+							-- The net header starts with "SubSection". The 3rd field must read "class".
+							if get_field_from_line(line_of_file,1) = section_mark.subsection then
+								-- save net name
+								net_scratch.name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
 
-							-- check for keyword "class"
-							if get_field_from_line(line_of_file,3) = text_udb_class then
-								put_line(extended_string.to_string(line_of_file));
+								-- check for keyword "class"
+								if get_field_from_line(line_of_file,3) = text_udb_class then
+									null;
+									--put_line(extended_string.to_string(line_of_file));
+								else
+									put_line(message_error & "missing keyword " & enclose_in_quotes(text_udb_class));
+									put_faulty_line;
+									raise constraint_error;
+								end if;
+
+								-- check for default class 
+								if get_field_from_line(line_of_file,4) = type_net_class'image(NA) then
+									--net_scratch.class := NA;
+									null;
+								else
+									put_line(message_error & "expecting default net class " & type_net_class'image(NA));
+									put_faulty_line;
+									raise constraint_error;
+								end if;
+
+								subsection_net_entered := true;
+							end if;
+						else -- Read pins untile net footer reached. The net footer is "EndSubSection".
+							-- When net footer reached:
+							-- 1. save pinlist in net_scratch.pin_list
+							-- 2. append net_scratch to container netlist
+							if get_field_from_line(line_of_file,1) = section_mark.endsubsection then --net footer reached
+								subsection_net_entered := false;
+								net_scratch.pin_list := pinlist;
+								append(container => netlist, new_item => net_scratch);
+								clear(pinlist); -- clear pinlist for next net
 							else
-								put_line(message_error & "missing keyword " & text_udb_class);
-								raise constraint_error;
+								-- net footer not reached yet -> check field count and read pins
+								if get_field_count(extended_string.to_string(line_of_file)) = skeleton_field_count_pin then
+									-- process pins of net and add to container pin_list
+									pin_scratch.device_name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,1));
+									--pin_scratch.device_class := type_device_class'value(get_field_from_line(line_of_file,2)); -- CS
+									pin_scratch.device_value := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3));
+									pin_scratch.device_package := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,4));
+									pin_scratch.device_pin_name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,5));
+									append(container => pinlist, new_item => pin_scratch);
+								else
+									put_line(message_error & "invalid number of fields found !");
+									put_faulty_line;
+								end if;
 							end if;
 
-							-- check for default class 
-							if get_field_from_line(line_of_file,4) = type_net_class'image(NA) then
-								--net_scratch.class := NA;
-								null;
-							else
-								put_line(message_error & "expecting default net class" & type_net_class'image(NA));
-								raise constraint_error;
-							end if;
 						end if;
 					end if;
 				end if;
@@ -144,7 +182,94 @@ procedure mknets is
 	end read_skeleton;
 	
 
+	function get_cell_info (
+		bic : type_ptr_bscan_ic;
+		pin : string) 
+		return string is -- pb01_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z
+		scratch : universal_string_type.bounded_string;
+		port_name : universal_string_type.bounded_string;		
+	begin
+		label_loop_port:
+		for port in 1..bic.len_port_pin_map loop -- look at every port of the targeted bic
+			for p in 1..list_of_pin_names'last loop -- look at every pin of that port
+				if type_short_string.to_string(bic.port_pin_map(port).pin_names(p)) = pin then
+					port_name := bic.port_pin_map(port).port_name;
+					scratch := universal_string_type.append(
+						left => scratch, 
+						right => port_name
+						);	
+					exit label_loop_port;
+				end if;
+			end loop;
+		end loop label_loop_port;
 
+		label_loop_bsr:
+		for c in 1..bic.len_bsr_description loop -- look at every cell of boundary register 
+			if universal_string_type.to_string(bic.boundary_register(c).port) = universal_string_type.to_string(port_name) then
+				null;
+			end if;
+		end loop label_loop_bsr;
+		-- row_separator_1
+		return universal_string_type.to_string(scratch);
+	end get_cell_info;
+	
+	procedure write_netlist is
+		net_cursor 		: net_container.cursor;		
+		net_scratch		: type_skeleton_net;	
+
+		procedure write_net is
+			pin_cursor		: pin_container.cursor;
+			pin_scratch		: type_skeleton_pin;
+			bic 			: type_ptr_bscan_ic;
+			procedure write_pin is
+			begin
+				put(2 * row_separator_0 & universal_string_type.to_string(pin_scratch.device_name) & row_separator_0 &
+						 "?" & row_separator_0 & -- CS: device class
+						 universal_string_type.to_string(pin_scratch.device_value) & row_separator_0 &
+						 universal_string_type.to_string(pin_scratch.device_package) & row_separator_0 &
+						 universal_string_type.to_string(pin_scratch.device_pin_name) & row_separator_0
+				   );
+				bic := ptr_bic;
+				while bic /= null loop
+					if universal_string_type.to_string(bic.name) = universal_string_type.to_string(pin_scratch.device_name) then
+						put(get_cell_info(bic => bic, pin => universal_string_type.to_string(pin_scratch.device_pin_name)));
+					end if;
+					bic := bic.next;
+				end loop;
+
+				new_line;
+			end write_pin;
+			
+		begin
+			--put_line(standard_output, universal_string_type.to_string( net_scratch.name));
+			put_line(row_separator_0 & section_mark.subsection & row_separator_0 &
+					 universal_string_type.to_string(net_scratch.name) & row_separator_0 &
+					 text_udb_class & row_separator_0 & type_net_class'image(NA)
+					);
+			pin_cursor := first(net_scratch.pin_list);
+			pin_scratch := element(pin_cursor);
+			write_pin;
+			while pin_cursor /= last(net_scratch.pin_list) loop
+				pin_cursor := next(pin_cursor);
+				pin_scratch := element(pin_cursor);
+				write_pin;
+			end loop;
+			put_line(row_separator_0 & section_mark.endsubsection);
+			new_line;
+		end write_net;
+		
+	begin
+		net_cursor := first(netlist);
+		net_scratch := element(net_cursor);
+--		put_line(standard_output, universal_string_type.to_string( net_scratch.name));
+		write_net;
+		while net_cursor /= last(netlist) loop
+			net_cursor := next(net_cursor);
+			net_scratch := element(net_cursor);
+			--put_line(standard_output, universal_string_type.to_string( net_scratch.name));
+			write_net;
+		end loop;
+	end write_netlist;
 
 
 
@@ -210,7 +335,7 @@ begin
 	put_line ("-- created by " & name_module_mknets & " version " & version);
 	put_line ("-- date " & date_now); 
 	new_line;
-	--write_netlist;
+	write_netlist;
 	put_line (section_mark.endsection);
 	new_line (file_data_base_preliminary);
 	prog_position := 200;
