@@ -82,6 +82,7 @@ procedure mknets is
 	netlist : net_container.list;
 
 	procedure read_skeleton is
+	-- Reads the skeleton and adds nets in container netlist.
 		line_of_file 			: extended_string.bounded_string;
 		line_counter			: natural := 0;
 		section_netlist_entered	: boolean := false;
@@ -95,14 +96,17 @@ procedure mknets is
 			put_line(message_error & "in skeleton line" & natural'image(line_counter));
 		end put_faulty_line;
 		
-	begin
-		put_line("reading skeleton ...");
+	begin -- read_skeleton
+		put("reading skeleton ");
 		open(file => file_skeleton, name => name_file_skeleton_default, mode => in_file);
 		set_input(file_skeleton);
 		while not end_of_file
 		loop
 			prog_position := 1000;
 			line_counter := line_counter + 1;
+			if (line_counter rem 400) = 0 then -- put a dot every 400 lines of skeleton
+				put(".");
+			end if;
 			line_of_file := extended_string.to_bounded_string(get_line);
 			line_of_file := remove_comment_from_line(line_of_file);
 
@@ -179,80 +183,123 @@ procedure mknets is
 
 			end if;
 		end loop;
+		new_line;
 	end read_skeleton;
 	
 
 	function get_cell_info (
+	-- Returns the cell info like "pb01_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z" for a given bic and pin.
+	-- Even if there are no cells (e.g. linkage pins) the port will be returned.
+	-- Collects data in string scratch (by appending) and returns scratch as fixed string.
 		bic : type_ptr_bscan_ic;
 		pin : string) 
 		return string is -- pb01_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z
 		scratch : universal_string_type.bounded_string;
-		port_name : universal_string_type.bounded_string;		
+		port_name : universal_string_type.bounded_string;
+		--entry_ct : natural := 0; -- used to count entries in bic.boundary_register in order to
+		-- abort the loop after two entries have been found. CS: might improve performance in very large
+		-- projects.
 	begin
+		-- Find given pin in bic.port_pin_map and append its port name to scratch.
+		-- The port_name afterward serves as key in order to find cells belonging to that port.
 		label_loop_port:
 		for port in 1..bic.len_port_pin_map loop -- look at every port of the targeted bic
 			for p in 1..list_of_pin_names'last loop -- look at every pin of that port
+			-- p points to a pin in array bic.port_pin_map(port).pin_names
+			-- p indirectly is the index in case the port is indexed. 
 				if type_short_string.to_string(bic.port_pin_map(port).pin_names(p)) = pin then
-					port_name := bic.port_pin_map(port).port_name;
+
 					scratch := universal_string_type.append(
 						left => scratch, 
-						right => port_name
+						right => bic.port_pin_map(port).port_name
 						);	
-					exit label_loop_port;
+
+					-- append index if port has more than one pin
+					if bic.port_pin_map(port).pin_count > 1 then
+						scratch := universal_string_type.append(
+							left => scratch, 
+							right => latin_1.left_parenthesis & trim(positive'image(p),left) & latin_1.right_parenthesis
+							);	
+					end if;
+
+					port_name := scratch; -- save port name (incl index) e.g. Y3(5)
+					
+					exit label_loop_port; -- no more searching required
 				end if;
 			end loop;
 		end loop label_loop_port;
 
+		-- Search in bic.boundary_register for port_name. The element(s) therein matching that port_name are
+		-- cells belonging to the port.
+		-- bic.boundary_register may be longer than the actual boundary register length.
+		-- NOTE: There may be one or two elements for the given port in bic.boundary_register: one for 
+		-- the input cell, another for the output cell. output cells may have a control cell.
 		label_loop_bsr:
-		for c in 1..bic.len_bsr_description loop -- look at every cell of boundary register 
-			if universal_string_type.to_string(bic.boundary_register(c).port) = universal_string_type.to_string(port_name) then
-				-- pb01_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z
-
+		for b in 1..bic.len_bsr_description loop -- look at every element of boundary register 
+			if universal_string_type.to_string(bic.boundary_register(b).port) = universal_string_type.to_string(port_name) then
+-- 				-- pb01_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z
+ 
 				-- append cell id
 				scratch := universal_string_type.append(
 						left => scratch, 
-						right => row_separator_1 & trim( type_cell_id'image(bic.boundary_register(c).id),left )
+						right => row_separator_1 & trim( type_cell_id'image(bic.boundary_register(b).id),left )
 						);	
--- 
--- 				-- append cell type (like BC_1)
--- 				scratch := universal_string_type.append(
--- 						left => scratch, 
--- 						right => row_separator_0 & type_boundary_register_cell'image(bic.boundary_register(c).cell_type )
--- 						);	
--- 
--- 				-- append cell function (like internal or output2)
--- 				scratch := universal_string_type.append(
--- 						left => scratch, 
--- 						right => row_separator_0 & type_cell_function'image(bic.boundary_register(c).cell_function )
--- 						);	
+ 
+				-- append cell type (like BC_1)
+				scratch := universal_string_type.append(
+						left => scratch, 
+						right => row_separator_0 & type_boundary_register_cell'image(bic.boundary_register(b).cell_type )
+						);	
+ 
+				-- append cell function (like internal or output2)
+				scratch := universal_string_type.append(
+						left => scratch, 
+						right => row_separator_0 & type_cell_function'image(bic.boundary_register(b).cell_function )
+						);	
 
+				-- append cell safe value (strip apostrophes as they come with the image of type_bit_char_class_1)
+				scratch := universal_string_type.append(
+						left => scratch, 
+						right => row_separator_0 & type_bit_char_class_1'image(bic.boundary_register(b).cell_safe_value)(2)
+						);	
 
--- type type_bit_of_boundary_register is
--- 	record
--- 		next			: type_ptr_bit_of_boundary_register;
--- 		id				: type_cell_id;
--- 		appears_in_net_list : boolean := false;
--- 		cell_type		: type_boundary_register_cell; -- := BC_1;
--- 		port			: universal_string_type.bounded_string; -- := to_bounded_string("test");
--- 		cell_function	: type_cell_function; -- := INTERNAL;
--- 		cell_safe_value	: type_bit_char_class_1; -- := 'x';
--- 		control_cell_id	: type_control_cell_id; -- may also be -1 which means: no control cell assigned to a particular cell
--- 		-- CS: control_cell_shared : boolean; -- this would speed up the shared control cell check in function shared_control_cell
--- 		disable_value	: type_bit_char_class_0; -- := '1';
--- 		disable_result	: type_disable_result;
--- 	end record;
-				null;
+				-- append control cell properties if control cell provided (control cell id greater -1)
+				if bic.boundary_register(b).control_cell_id /= type_control_cell_id'first then
+					-- append control cell id
+					scratch := universal_string_type.append(
+							left => scratch, 
+							right => row_separator_0 & trim( type_cell_id'image(bic.boundary_register(b).control_cell_id),left )
+							);
 
+					-- append control cell disable value (strip apostrophes as they come with the image of type_bit_char_class_0)
+					scratch := universal_string_type.append(
+							left => scratch, 
+							right => row_separator_0 & type_bit_char_class_0'image(bic.boundary_register(b).disable_value)(2)
+							);
 
-			end if;
+					-- append control cell disable result
+					scratch := universal_string_type.append(
+							left => scratch, 
+							right => row_separator_0 & type_disable_result'image(bic.boundary_register(b).disable_result)
+							);
+				end if;
+
+-- 				entry_ct := entry_ct + 1;
+-- 				if entry_ct = 2 then
+-- 					exit label_loop_bsr;
+-- 				end if;
+							
+ 			end if;
 		end loop label_loop_bsr;
 		
 		return universal_string_type.to_string(scratch);
 	end get_cell_info;
 	
 	procedure write_netlist is
+	-- Unpacks the items of container netlist.
 		net_cursor 		: net_container.cursor;		
-		net_scratch		: type_skeleton_net;	
+		net_scratch		: type_skeleton_net;
+		net_counter		: natural := 0;
 
 		procedure write_net is
 			pin_cursor		: pin_container.cursor;
@@ -277,8 +324,9 @@ procedure mknets is
 				new_line;
 			end write_pin;
 			
-		begin
-			--put_line(standard_output, universal_string_type.to_string( net_scratch.name));
+		begin -- write_net
+			-- write net header like "SubSection ex_GPIO_2 class NA"
+			--put_line(standard_output, universal_string_type.to_string( net_scratch.name));			
 			put_line(row_separator_0 & section_mark.subsection & row_separator_0 &
 					 universal_string_type.to_string(net_scratch.name) & row_separator_0 &
 					 text_udb_class & row_separator_0 & type_net_class'image(NA)
@@ -295,7 +343,8 @@ procedure mknets is
 			new_line;
 		end write_net;
 		
-	begin
+	begin -- write_netlist
+		put(standard_output,"writing netlist ");
 		net_cursor := first(netlist);
 		net_scratch := element(net_cursor);
 --		put_line(standard_output, universal_string_type.to_string( net_scratch.name));
@@ -305,7 +354,14 @@ procedure mknets is
 			net_scratch := element(net_cursor);
 			--put_line(standard_output, universal_string_type.to_string( net_scratch.name));
 			write_net;
+
+			net_counter := net_counter + 1;
+			if (net_counter rem 100) = 0 then 
+				put(standard_output,".");
+			end if;
+			
 		end loop;
+		new_line(standard_output);
 	end write_netlist;
 
 
