@@ -38,6 +38,9 @@
 --	 2016-09-28: - cleaned up, made compiler and vector format constant
 --	 2016-10-26: - cleaned up, scanport output voltage is checked for a supported discrete value
 
+--	 2016-11-14: - in procedure write_base_address fixed calculation of scanpath start address
+
+
 --  todo:
 --	- write udb and project in compile listing
 
@@ -72,7 +75,7 @@ procedure compseq is
 	size_of_vector_file		: natural := 0; -- incremented on every byte written in vector_file
 	size_of_vector_header	: natural := 0; -- incremented on every byte written in vector_file_header
 
-	destination_address		: natural;
+	destination_address		: natural; -- CS: limit by dedicated type that respects the available ram size
 
 	line_counter			: natural := 0; -- line counter in sequence file (global counter !)
 
@@ -2081,29 +2084,28 @@ procedure compseq is
 	procedure unknown_yet is
 		b : type_ptr_bscan_ic;
 
-		first_scanpath_address_written : boolean := false; -- this flag is used in procdedure write_base_address
-		-- in order to calculate the base address for the first scanpath different from other scanpaths
+		-- The first group of bytes of the vector file contains header_length bytes: 
+		-- compiler version major/minor  2 bytes, 
+		-- vector format major/minor 2 bytes,
+		-- scanpath count 1 byte,
+		-- summary.scanpath_ct * 32bit base address
+		header_length : natural := 5 + (summary.scanpath_ct * 4); 
 
 	 	procedure write_base_address is
 		-- writes base address of current scanpath in vector_file_header
 			u4byte_scratch	: unsigned_32 := 0;
 			ubyte_scratch	: unsigned_8 := 0;
+			sp_base_address : natural  := 0;	-- CS: limit by dedicated type that respects the available ram size
 	 	begin
 			put_line("writing scanpath base address ...");
 			new_line(compile_listing);
 
-			-- calcualate the base address
-			if not first_scanpath_address_written then
-				-- if this is the first scanpath base address the calculation is as follows:
-				size_of_vector_file := destination_address + 5 + size_of_vector_file + (summary.scanpath_ct * 4); -- correct
-				first_scanpath_address_written := true;
-			else
-				-- for all subsequent scanpaths do this calculation
-				size_of_vector_file := destination_address + size_of_vector_file;
-			end if;
+			-- calcualate the base address.
+			-- it comprises of header_length + bytes already in vector file + dest. address
+			sp_base_address :=  header_length + size_of_vector_file + destination_address; 
 
-			-- write size_of_vector_file byte per byte in vec_header (lowbyte first)
-	 		u4byte_scratch := unsigned_32(size_of_vector_file);
+			-- write sp_base_address byte per byte in vec_header (lowbyte first)
+			u4byte_scratch := unsigned_32(sp_base_address);
 
 			u4byte_scratch := (shift_left(u4byte_scratch,3*8)); -- clear bits 31..8 by shift left 24 bits
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
@@ -2114,7 +2116,7 @@ procedure compseq is
 				write_listing (item => object_code, obj_code => unsigned_8(ubyte_scratch));
 			size_of_vector_header := size_of_vector_header + 1;
 
-			u4byte_scratch := unsigned_32(size_of_vector_file);
+			u4byte_scratch := unsigned_32(sp_base_address);
 			u4byte_scratch := (shift_left(u4byte_scratch,2*8)); -- clear bits 31..16 by shift left 16 bit
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
 			ubyte_scratch := unsigned_8(u4byte_scratch);
@@ -2123,7 +2125,7 @@ procedure compseq is
 				write_listing (item => object_code, obj_code => unsigned_8(ubyte_scratch));
 			size_of_vector_header := size_of_vector_header + 1;
 
-			u4byte_scratch := unsigned_32(size_of_vector_file);
+			u4byte_scratch := unsigned_32(sp_base_address);
 			u4byte_scratch := (shift_left(u4byte_scratch,8)); -- clear bits 31..24 by shift left 8 bit
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift back by 24 bits
 	 		ubyte_scratch := unsigned_8(u4byte_scratch);
@@ -2132,7 +2134,7 @@ procedure compseq is
 				write_listing (item => object_code, obj_code => unsigned_8(ubyte_scratch));
 			size_of_vector_header := size_of_vector_header + 1;
 
-			u4byte_scratch := unsigned_32(size_of_vector_file);
+			u4byte_scratch := unsigned_32(sp_base_address);
 			u4byte_scratch := (shift_right(u4byte_scratch,3*8)); -- shift right by 24 bits
 			ubyte_scratch := unsigned_8(u4byte_scratch); -- take highbyte
 			seq_io_unsigned_byte.write(file_vector_header,ubyte_scratch); -- write bits 31..24 in file
