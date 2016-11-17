@@ -155,10 +155,15 @@ procedure mknets is
 						else -- Read pins untile net footer reached. The net footer is "EndSubSection".
 							-- When net footer reached:
 							-- 1. save pinlist in net_scratch.pin_list
-							-- 2. append net_scratch to container netlist
+							-- 2. check for one-pin nets
+							-- 3. append net_scratch to container netlist
 							if get_field_from_line(line_of_file,1) = section_mark.endsubsection then --net footer reached
 								subsection_net_entered := false;
 								net_scratch.pin_list := pinlist;
+								if length(pinlist) = 1 then
+									new_line;
+									put_line(message_warning & "net " & universal_string_type.to_string(net_scratch.name) & " has only one pin !");
+								end if;
 								append(container => netlist, new_item => net_scratch);
 								clear(pinlist); -- clear pinlist for next net
 							else
