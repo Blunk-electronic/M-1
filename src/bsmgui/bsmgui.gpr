@@ -4,7 +4,7 @@ with "gtkada";
 
  project bsmgui is
 -- 
- 	for exec_dir use "bin";
+	for exec_dir use "bin";
  	for object_dir use "obj";
  	for source_dirs use ("." , "src" , "src/include");
 -- 
