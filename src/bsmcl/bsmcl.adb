@@ -40,7 +40,7 @@ with ada.strings.bounded; 		use ada.strings.bounded;
 with ada.strings.unbounded; 	use ada.strings.unbounded;
 with ada.strings.unbounded.text_io; use ada.strings.unbounded.text_io;
 with ada.exceptions; 			use ada.exceptions;
-
+with interfaces;				use interfaces;
  
 with gnat.os_lib;   			use gnat.os_lib;
 with ada.command_line;			use ada.command_line;
@@ -52,8 +52,9 @@ with m1_numbers;				use m1_numbers;
 with m1_files_and_directories; 	use m1_files_and_directories;
 with m1_firmware;				use m1_firmware;
 
+
 procedure bsmcl is
-	version			: constant string (1..3) := "025";
+	version			: constant string (1..3) := "026";
 	prog_position	: string (1..5) := "-----";
 
 	item_udb_class	: type_item_udbinfo;
@@ -1057,6 +1058,7 @@ begin
 		when clear =>
 		-- RAM CLEAR BEGIN
 			prog_position := "CLR10";
+			
 			if clear_ram
 				(
 				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
