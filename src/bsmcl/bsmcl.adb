@@ -1038,17 +1038,18 @@ begin
 		when dump =>
 		-- RAM DUMP BEGIN
 			prog_position := "DP100";
-			mem_address_page := string_to_natural(argument(2)); -- page address bits [23:8]
-
+			mem_address   := string_to_natural(argument(2));
+			prog_position := "DP110";
+			
 			if dump_ram
 				(
 				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
-				directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin),
-				mem_addr_page				=> mem_address_page
+--				directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin), -- CS: remove
+				mem_addr					=> mem_address
 				) then
 				null;
 			else
-				put_line(message_error & "Test upload to" & row_separator_0 & name_bsc & row_separator_0 & "failed" & exclamation);
+				put_line(message_error & "RAM dump failed" & exclamation);
 				advise_on_bsc_error;
 				raise constraint_error;
 			end if;
@@ -1061,8 +1062,8 @@ begin
 			
 			if clear_ram
 				(
-				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
-				directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
+				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc)
+				--directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin) -- CS: remove
 				) then
 				put_line(name_bsc & " memory cleared. Please upload compiled tests now.");
 			else
