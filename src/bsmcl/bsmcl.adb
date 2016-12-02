@@ -1013,7 +1013,6 @@ begin
 						(
 						test_name					=> universal_string_type.to_string(name_test),
 						interface_to_scan_master	=> universal_string_type.to_string(interface_to_bsc)
---						directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
 						) then
 						advise_next_step_load;
 					else
@@ -1040,7 +1039,6 @@ begin
 			prog_position := "DP100";
 			mem_address   := string_to_natural(argument(2));
 			prog_position := "DP110";
-			
 			if dump_ram
 				(
 				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
@@ -1058,7 +1056,6 @@ begin
 		when clear =>
 		-- RAM CLEAR BEGIN
 			prog_position := "CLR10";
-			
 			if clear_ram
 				(
 				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc)
@@ -1105,9 +1102,7 @@ begin
 						(
 						test_name 					=> universal_string_type.to_string(name_test),
 						interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
-						directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin),
 						step_mode					=> step_mode
-
 						) is
 						-- CS: distinguish between executed step and test !
 
