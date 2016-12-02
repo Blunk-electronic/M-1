@@ -1012,8 +1012,8 @@ begin
 					if load_test 
 						(
 						test_name					=> universal_string_type.to_string(name_test),
-						interface_to_scan_master	=> universal_string_type.to_string(interface_to_bsc),
-						directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
+						interface_to_scan_master	=> universal_string_type.to_string(interface_to_bsc)
+--						directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
 						) then
 						advise_next_step_load;
 					else
