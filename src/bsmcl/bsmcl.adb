@@ -1044,7 +1044,6 @@ begin
 			if dump_ram
 				(
 				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
---				directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin), -- CS: remove
 				mem_addr					=> mem_address
 				) then
 				null;
@@ -1063,7 +1062,6 @@ begin
 			if clear_ram
 				(
 				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc)
-				--directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin) -- CS: remove
 				) then
 				put_line(name_bsc & " memory cleared. Please upload compiled tests now.");
 			else
@@ -1203,8 +1201,7 @@ begin
 			-- status can be inquired anytime anywhere
 			case query_status
 				(
-				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
-				directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
+				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc)
 				) is
 				when false => 
 					put_line(message_error & name_bsc & " status query failed" & exclamation);
@@ -1219,8 +1216,7 @@ begin
 			prog_position := "FW000";
 			case show_firmware
 				(
-				interface_to_scan_master	=> universal_string_type.to_string(interface_to_bsc),
-				directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
+				interface_to_scan_master	=> universal_string_type.to_string(interface_to_bsc)
 				) is
 				when false => 
 					put_line(message_error & name_bsc & " firmware query failed" & exclamation);
