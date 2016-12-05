@@ -1227,8 +1227,7 @@ begin
 			delete_result_file; -- Remove stale result file (in temp directory) from previous runs.
 			case shutdown
 				(
-				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
-				directory_of_binary_files	=> universal_string_type.to_string(name_directory_bin)
+				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc)
 				) is
 				when false =>
 					new_line;
