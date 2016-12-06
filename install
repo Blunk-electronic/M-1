@@ -3,12 +3,11 @@
 # This is the install script for System M-1. 
 # If started with option "-make" the binaries will not be built.
 
-version=008
+version=009
 
 set -e
 
 #CS: check for ada compiler, gcc, make, ...
-#CS: check for kermit
 #CS: check for gtk3-devel
 #CS: check for gtkada. must be installed from:
 # https://github.com/AdaCore/gtkada/archive/gtkada-3.4.1.tar.gz (at the same directory level as lbr_ada)
@@ -89,17 +88,17 @@ procedure_copy_script impeagle6x
 procedure_copy_script imporcad
 procedure_copy_script open_report
 procedure_copy_script run_and_log_sequence
-procedure_copy_script clrram
-procedure_copy_script diag
-procedure_copy_script dump_outram
-procedure_copy_script loadtest
-procedure_copy_script runtest
-procedure_copy_script stoptest
-procedure_copy_script version
-procedure_copy_script stop_sequence
+#procedure_copy_script clrram
+#procedure_copy_script diag
+#procedure_copy_script dump_outram
+#procedure_copy_script loadtest
+#procedure_copy_script runtest
+#procedure_copy_script stoptest
+#procedure_copy_script version
+#procedure_copy_script stop_sequence
 procedure_copy_script mkproject
 procedure_copy_script run_continuous
-procedure_copy_script set_breakpoint
+#procedure_copy_script set_breakpoint
 
 lib_examples_uut_dir=M-1
 if [ ! -e $HOME/$lib_examples_uut_dir ]

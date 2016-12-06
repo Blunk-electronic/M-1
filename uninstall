@@ -2,7 +2,7 @@
 
 # This is the uninstall script for System M-1. 
 
-version=002
+version=003
 
 set -e
 dest_script_dir=$HOME/bin
@@ -70,17 +70,17 @@ procedure_remove_script impeagle6x
 procedure_remove_script imporcad
 procedure_remove_script open_report
 procedure_remove_script run_and_log_sequence
-procedure_remove_script clrram
-procedure_remove_script diag
-procedure_remove_script dump_outram
-procedure_remove_script loadtest
-procedure_remove_script runtest
-procedure_remove_script stoptest
-procedure_remove_script version
-procedure_remove_script stop_sequence
+#procedure_remove_script clrram
+#procedure_remove_script diag
+#procedure_remove_script dump_outram
+#procedure_remove_script loadtest
+#procedure_remove_script runtest
+#procedure_remove_script stoptest
+#procedure_remove_script version
+#procedure_remove_script stop_sequence
 procedure_remove_script mkproject
 procedure_remove_script run_continuous
-procedure_remove_script set_breakpoint
+#procedure_remove_script set_breakpoint
 
 lib_examples_uut_dir=M-1
 if [ -e $HOME/$lib_examples_uut_dir ] 
