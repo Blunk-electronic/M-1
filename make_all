@@ -1,6 +1,6 @@
 #! /bin/bash
 
-version=001
+version=002
 
 procedure_make()
 	{
@@ -16,6 +16,16 @@ procedure_make()
 	[ $? -ne 0 ] && exit 1	
 	make clean # clean up
 	[ $? -ne 0 ] && exit 1		
+	cd - # change back to origin dir
+	}
+
+procedure_gnatmake()
+	{
+	target=$1
+	echo "-" $target
+	cd src/$target # change into source dir
+	./make_clean.sh
+	./make.sh
 	cd - # change back to origin dir
 	}
 
@@ -35,6 +45,7 @@ procedure_make mkoptions
 procedure_make mktoggle
 procedure_make mkclock
 procedure_make mkvmod
+procedure_gnatmake bsmgui
 
 exit
 echo done
