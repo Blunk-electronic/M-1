@@ -243,7 +243,13 @@ begin
 			put_line("language           : " & type_language'image(language));
 			put_line("directory bin      : " & universal_string_type.to_string(name_directory_bin));
 			put_line("directory enscript : " & universal_string_type.to_string(name_directory_enscript));
-			put_line("interface bsc      : " & universal_string_type.to_string(interface_to_bsc));
+			put("interface bsc      : " & universal_string_type.to_string(interface_to_bsc));
+			if scan_master_present then
+				null;
+			else
+				put("   " & message_warning & " NOT FOUND !");
+			end if;
+			new_line;
 
 		when create =>
 			-- MAKE PROJECT BEGIN
