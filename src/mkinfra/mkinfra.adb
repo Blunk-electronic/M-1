@@ -37,6 +37,8 @@ with Ada.Characters.Handling; 	use Ada.Characters.Handling;
 
 with Ada.Strings.Bounded; 		use Ada.Strings.Bounded;
 with Ada.Strings.fixed; 		use Ada.Strings.fixed;
+-- with ada.containers;            use ada.containers;
+-- with ada.containers.indefinite_vectors;
 with Ada.Exceptions; 			use Ada.Exceptions;
  
 with Ada.Command_Line;			use Ada.Command_Line;
@@ -91,35 +93,36 @@ procedure mkinfra is
 		end;
 
 	procedure write_sequences is
-		b : type_ptr_bscan_ic;
+		--b : type_ptr_bscan_ic;
 
 		procedure one_of_all( 
 			position	: positive; 
 			instruction	: type_bic_instruction_for_infra_structure;
 			write_sxr	: boolean := true
 			) is
-			b : type_ptr_bscan_ic;
+			--b : type_ptr_bscan_ic;
 		begin
-				b := ptr_bic; -- reset bic pointer b
-				while b /= null loop
-					if b.id = position then -- if bic id matches p:
+				--b := ptr_bic; -- reset bic pointer b
+                --while b /= null loop
+                for b in 1..type_list_of_bics.length(list_of_bics) loop    
+					if type_list_of_bics.element(list_of_bics,positive(b)).id = position then -- if bic id matches p:
 
 						-- if desired instruction does not exist, skip writing test vector and exit
 						case instruction is
-							when bypass		=> if not instruction_present(b.opc_bypass) 
+							when bypass		=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_bypass) 
 								then 
-									put_line(standard_output,"ERROR: IC '" & universal_string_type.to_string(b.name) 
+									put_line(standard_output,"ERROR: IC '" & universal_string_type.to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) 
 										& "' does not support mandatory BYPASS mode !");
 									raise constraint_error;
 								end if;
-							when idcode		=> if not instruction_present(b.opc_idcode) then exit; end if;
-							when usercode	=> if not instruction_present(b.opc_usercode) then exit; end if;
-							when preload	=> if not instruction_present(b.opc_preload) then exit; end if;
-							when sample		=> if not instruction_present(b.opc_sample) then
-								put_line(standard_output,"WARNING: IC '" & universal_string_type.to_string(b.name) 
+							when idcode		=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_idcode) then exit; end if;
+							when usercode	=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_usercode) then exit; end if;
+							when preload	=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_preload) then exit; end if;
+							when sample		=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_sample) then
+								put_line(standard_output,"WARNING: IC '" & universal_string_type.to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) 
 									& "' does not support SAMPLE mode !");
 								exit; end if;
-							when extest		=> if not instruction_present(b.opc_extest) then exit; end if;
+							when extest		=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_extest) then exit; end if;
 						end case;
 						-- instruction exists
 
@@ -128,23 +131,23 @@ procedure mkinfra is
 						new_line;
 						put(row_separator_0 
 							& sequence_instruction_set.set & row_separator_0
-							& universal_string_type.to_string(b.name) & row_separator_0
+							& universal_string_type.to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
 							& sxr_io_identifier.drive & row_separator_0
 							& sir_target_register.ir
-							& type_register_length'image(b.len_ir - 1) & row_separator_0
+							& type_register_length'image(type_list_of_bics.element(list_of_bics,positive(b)).len_ir - 1) & row_separator_0
 							& sxr_vector_orientation.downto & row_separator_0 & "0" & row_separator_0
 							& sxr_assignment_operator.assign & row_separator_0
 							);
 						-- write instruction depended part
 						case instruction is
-							when idcode => put_binary_class_1(b.opc_idcode); -- example: "11111110 idcode"
-							when usercode => put_binary_class_1(b.opc_usercode);
-							when sample => put_binary_class_1(b.opc_sample);
-							when preload => put_binary_class_1(b.opc_preload);
+							when idcode => put_binary_class_1(type_list_of_bics.element(list_of_bics,positive(b)).opc_idcode); -- example: "11111110 idcode"
+							when usercode => put_binary_class_1(type_list_of_bics.element(list_of_bics,positive(b)).opc_usercode);
+							when sample => put_binary_class_1(type_list_of_bics.element(list_of_bics,positive(b)).opc_sample);
+							when preload => put_binary_class_1(type_list_of_bics.element(list_of_bics,positive(b)).opc_preload);
 							when extest => 
-								put_line(standard_output,"WARNING: IC '" & universal_string_type.to_string(b.name) 
+								put_line(standard_output,"WARNING: IC '" & universal_string_type.to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) 
 									& "' WILL BE OPERATED IN EXTEST MODE !");
-								put_binary_class_1(b.opc_extest);
+								put_binary_class_1(type_list_of_bics.element(list_of_bics,positive(b)).opc_extest);
 							when others => 
 								put_line(standard_output,"ERROR: Instruction '" & type_bic_instruction'image(instruction)
 									& "' not allowed for infra structure test !");
@@ -160,7 +163,7 @@ procedure mkinfra is
 						-- example: "set IC300 drv"
 						put(row_separator_0 
 							& sequence_instruction_set.set & row_separator_0
-							& universal_string_type.to_string(b.name) & row_separator_0
+							& universal_string_type.to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
 							& sxr_io_identifier.drive & row_separator_0
 							);
 						-- write instruction depended part
@@ -191,11 +194,11 @@ procedure mkinfra is
 							when others => -- sample, preload, extest
 								-- example: "boundary 5 downto 0 := XXX11"
 								put(sdr_target_register.boundary
-									& natural'image(b.len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto 
+									& natural'image(type_list_of_bics.element(list_of_bics,positive(b)).len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto 
 									& " 0 "
 									& sxr_assignment_operator.assign & row_separator_0
 									);
-								put_binary_class_1(b.safebits);
+								put_binary_class_1(type_list_of_bics.element(list_of_bics,positive(b)).safebits);
 								new_line;
 
 						end case;
@@ -204,7 +207,7 @@ procedure mkinfra is
 						-- example: "set IC300 exp"
 						put(row_separator_0 
 							& sequence_instruction_set.set & row_separator_0
-							& universal_string_type.to_string(b.name) & row_separator_0
+							& universal_string_type.to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
 							& sxr_io_identifier.expect & row_separator_0
 							);
 						-- write instruction depended part
@@ -218,7 +221,7 @@ procedure mkinfra is
 									& " 0 "
 									& sxr_assignment_operator.assign & row_separator_0
 									);
-								put_binary_class_1(b.idcode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
+								put_binary_class_1(type_list_of_bics.element(list_of_bics,positive(b)).idcode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
 
 							when usercode =>
 								-- example: "usercode 31 downto 0 = xxxx1001010100000010000010010011"
@@ -229,13 +232,13 @@ procedure mkinfra is
 									& " 0 "
 									& sxr_assignment_operator.assign & row_separator_0
 									);
-								put_binary_class_1(b.usercode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
+								put_binary_class_1(type_list_of_bics.element(list_of_bics,positive(b)).usercode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
 								-- NOTE: if usercode not programmed yet, it is all x
 
 							when others => -- sample, preload, extest
 								-- example: "boundary 5 downto 0 := X"
 								put(sdr_target_register.boundary
-									& natural'image(b.len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto 
+									& natural'image(type_list_of_bics.element(list_of_bics,positive(b)).len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto 
 									& " 0 "
 									& sxr_assignment_operator.assign
 									& " X "
@@ -251,7 +254,7 @@ procedure mkinfra is
 						exit; -- bic addressed by p processed. no further search of bic required
 					end if; -- if bic id matches p
 
-					b := b.next;
+					--b := b.next;
 				end loop;
 		end one_of_all;
 
@@ -276,39 +279,40 @@ procedure mkinfra is
 
 		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
 
-			b := ptr_bic; -- reset bic pointer b
-			while b /= null loop
-				if b.id = p then -- if bic id matches p:
+			--b := ptr_bic; -- reset bic pointer b
+            --while b /= null loop
+            for b in 1..type_list_of_bics.length(list_of_bics) loop    
+				if type_list_of_bics.element(list_of_bics,positive(b)).id = p then -- if bic id matches p:
 
 					-- write instruction drive
 					put(row_separator_0 
 						& sequence_instruction_set.set & row_separator_0
-						& universal_string_type.to_string(b.name) & row_separator_0
+						& universal_string_type.to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
 						& sxr_io_identifier.drive & row_separator_0
 						& sir_target_register.ir
-						& type_register_length'image(b.len_ir - 1) & row_separator_0
+						& type_register_length'image(type_list_of_bics.element(list_of_bics,positive(b)).len_ir - 1) & row_separator_0
 						& sxr_vector_orientation.downto & row_separator_0 & "0" & row_separator_0
 						& sxr_assignment_operator.assign & row_separator_0
 						);
-					put_binary_class_1(b.opc_bypass);
+					put_binary_class_1(type_list_of_bics.element(list_of_bics,positive(b)).opc_bypass);
 					put_line(" bypass");
 
 					-- write instruction capture
 					put(row_separator_0 
 						& sequence_instruction_set.set & row_separator_0
-						& universal_string_type.to_string(b.name) & row_separator_0
+						& universal_string_type.to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
 						& sxr_io_identifier.expect & row_separator_0
 						& sir_target_register.ir
-						& type_register_length'image(b.len_ir - 1) & row_separator_0
+						& type_register_length'image(type_list_of_bics.element(list_of_bics,positive(b)).len_ir - 1) & row_separator_0
 						& sxr_vector_orientation.downto & row_separator_0 & "0" & row_separator_0
 						& sxr_assignment_operator.assign & row_separator_0
 						);
-					put_binary_class_1(b.capture_ir);
+					put_binary_class_1(type_list_of_bics.element(list_of_bics,positive(b)).capture_ir);
 					new_line;
 
 				end if; -- if bic id matches p
 
-				b := b.next;
+				--b := b.next;
 			end loop;
 		end loop;
 
@@ -327,14 +331,15 @@ procedure mkinfra is
 
 		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
 
-			b := ptr_bic; -- reset bic pointer b
-			while b /= null loop
-				if b.id = p then -- if bic id matches p:
+			--b := ptr_bic; -- reset bic pointer b
+            --while b /= null loop
+            for b in 1..type_list_of_bics.length(list_of_bics) loop                
+				if type_list_of_bics.element(list_of_bics,positive(b)).id = p then -- if bic id matches p:
 
 					-- write data drive
 					put(row_separator_0 
 						& sequence_instruction_set.set & row_separator_0
-						& universal_string_type.to_string(b.name) & row_separator_0
+						& universal_string_type.to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
 						& sxr_io_identifier.drive & row_separator_0
 						& sdr_target_register.bypass
 						& " 0" -- bit position (since this addresses the bypass register)
@@ -346,18 +351,18 @@ procedure mkinfra is
 					-- write data expect
 					put(row_separator_0 
 						& sequence_instruction_set.set & row_separator_0
-						& universal_string_type.to_string(b.name) & row_separator_0
+						& universal_string_type.to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
 						& sxr_io_identifier.expect & row_separator_0
 						& sdr_target_register.bypass
 						& " 0" -- bit position (since this addresses the bypass register)
 						& sxr_assignment_operator.assign
-						& type_bit_char_class_0'image(b.capture_bypass)(2) -- expect a 0 acc. std. regardless what has been written here (see above)
+						& type_bit_char_class_0'image(type_list_of_bics.element(list_of_bics,positive(b)).capture_bypass)(2) -- expect a 0 acc. std. regardless what has been written here (see above)
 						);
 					new_line;
 
 				end if; -- if bic id matches p
 
-				b := b.next;
+				--b := b.next;
 			end loop;
 		end loop;
 
