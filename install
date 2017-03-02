@@ -3,7 +3,7 @@
 # This is the install script for System M-1. 
 # If started with option "-make" the binaries will not be built.
 
-version=009
+version=010
 
 set -e
 
@@ -67,7 +67,7 @@ procedure_gnatmake()
 [ ! -e $dest_conf_dir ] && 
 	{
 	echo "creating hidden configuration directory" $dest_conf_dir "..."
-	cp -R conf/.M-1 $HOME
+	cp -R conf/M-1 $HOME/.M-1
 	}
 #CS: ask user if configuration directory should be updated.
 
