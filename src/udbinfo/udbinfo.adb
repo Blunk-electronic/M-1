@@ -33,7 +33,7 @@ with m1_files_and_directories; 	use m1_files_and_directories;
 
 procedure udbinfo is
 
-	version			: constant string (1..3) := "001";
+	version			: constant string (1..3) := "002";
 	prog_position	: natural := 0;
 
 	inquired_item	: type_item_udbinfo;

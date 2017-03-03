@@ -6,7 +6,8 @@ version=1.0
 #command is:	impaltium netlist.net
 #written by MBL
 
-# to do:
+# to do: parts with a pin name "-" like C101-- result in a lost pin name
+# CS: rewrite this script in ada !
 
 
 ##### PROCEDURES #############################################################

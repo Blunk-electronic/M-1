@@ -6,7 +6,7 @@
 --                                                                          --
 --                               B o d y                                    --
 --                                                                          --
---         Copyright (C) 2016 Mario Blunk, Blunk electronic                 --
+--         Copyright (C) 2017 Mario Blunk, Blunk electronic                 --
 --                                                                          --
 --    This program is free software: you can redistribute it and/or modify  --
 --    it under the terms of the GNU General Public License as published by  --
@@ -54,7 +54,7 @@ with m1_files_and_directories; 	use m1_files_and_directories;
 
 procedure mknets is
 
-	version			: constant string (1..3) := "044";
+	version			: constant string (1..3) := "045";
 	udb_summary		: type_udb_summary;
 	prog_position	: natural := 0;
 
@@ -196,31 +196,39 @@ procedure mknets is
 	-- Returns the cell info like "pb01_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z" for a given bic and pin.
 	-- Even if there are no cells (e.g. linkage pins) the port will be returned.
 	-- Collects data in string scratch (by appending) and returns scratch as fixed string.
-		bic : type_ptr_bscan_ic;
+		--bic : type_ptr_bscan_ic;
+        bic : positive;
 		pin : string) 
 		return string is -- pb01_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z
 		scratch : universal_string_type.bounded_string;
 		port_name : universal_string_type.bounded_string;
 		--entry_ct : natural := 0; -- used to count entries in bic.boundary_register in order to
 		-- abort the loop after two entries have been found. CS: might improve performance in very large
-		-- projects.
-	begin
+        -- projects.
+        --occurences : natural := 0;
+        b : type_bscan_ic := type_list_of_bics.element(list_of_bics,bic);
+    begin
+        --put(standard_output,".");
 		-- Find given pin in bic.port_pin_map and append its port name to scratch.
 		-- The port_name afterward serves as key in order to find cells belonging to that port.
 		label_loop_port:
-		for port in 1..bic.len_port_pin_map loop -- look at every port of the targeted bic
+        --for port in 1..bic.len_port_pin_map loop -- look at every port of the targeted bic
+        for port in 1..b.len_port_pin_map loop -- look at every port of the targeted bic          
+            --put(standard_output,"p");
 			for p in 1..list_of_pin_names'last loop -- look at every pin of that port
 			-- p points to a pin in array bic.port_pin_map(port).pin_names
 			-- p indirectly is the index in case the port is indexed. 
-				if type_short_string.to_string(bic.port_pin_map(port).pin_names(p)) = pin then
+				if type_short_string.to_string(b.port_pin_map(port).pin_names(p)) = pin then
 
+                    --put(standard_output,"i");
+                    
 					scratch := universal_string_type.append(
 						left => scratch, 
-						right => bic.port_pin_map(port).port_name
+						right => type_list_of_bics.element(list_of_bics,bic).port_pin_map(port).port_name
 						);	
 
 					-- append index if port has more than one pin
-					if bic.port_pin_map(port).pin_count > 1 then
+					if type_list_of_bics.element(list_of_bics,bic).port_pin_map(port).pin_count > 1 then
 						scratch := universal_string_type.append(
 							left => scratch, 
 							right => latin_1.left_parenthesis & trim(positive'image(p),left) & latin_1.right_parenthesis
@@ -240,52 +248,54 @@ procedure mknets is
 		-- NOTE: There may be one or two elements for the given port in bic.boundary_register: one for 
 		-- the input cell, another for the output cell. output cells may have a control cell.
 		label_loop_bsr:
-		for b in 1..bic.len_bsr_description loop -- look at every element of boundary register 
-			if universal_string_type.to_string(bic.boundary_register(b).port) = universal_string_type.to_string(port_name) then
+--		for b in 1..type_list_of_bics.element(list_of_bics,bic).len_bsr_description loop -- look at every element of boundary register
+		for r in 1..b.len_bsr_description loop -- look at every element of boundary register         
+            --			if universal_string_type.to_string(type_list_of_bics.element(list_of_bics,bic).boundary_register(b).port) = universal_string_type.to_string(port_name) then
+			if universal_string_type.to_string(b.boundary_register(r).port) = universal_string_type.to_string(port_name) then            
 -- 				-- pb01_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z
  
 				-- append cell id
 				scratch := universal_string_type.append(
 						left => scratch, 
-						right => row_separator_1 & trim( type_cell_id'image(bic.boundary_register(b).id),left )
+						right => row_separator_1 & trim( type_cell_id'image(b.boundary_register(r).id),left )
 						);	
  
 				-- append cell type (like BC_1)
 				scratch := universal_string_type.append(
 						left => scratch, 
-						right => row_separator_0 & type_boundary_register_cell'image(bic.boundary_register(b).cell_type )
+						right => row_separator_0 & type_boundary_register_cell'image(b.boundary_register(r).cell_type )
 						);	
  
 				-- append cell function (like internal or output2)
 				scratch := universal_string_type.append(
 						left => scratch, 
-						right => row_separator_0 & type_cell_function'image(bic.boundary_register(b).cell_function )
+						right => row_separator_0 & type_cell_function'image(b.boundary_register(r).cell_function )
 						);	
 
 				-- append cell safe value (strip apostrophes as they come with the image of type_bit_char_class_1)
 				scratch := universal_string_type.append(
 						left => scratch, 
-						right => row_separator_0 & type_bit_char_class_1'image(bic.boundary_register(b).cell_safe_value)(2)
+						right => row_separator_0 & type_bit_char_class_1'image(b.boundary_register(r).cell_safe_value)(2)
 						);	
 
 				-- append control cell properties if control cell provided (control cell id greater -1)
-				if bic.boundary_register(b).control_cell_id /= type_control_cell_id'first then
+				if b.boundary_register(r).control_cell_id /= type_control_cell_id'first then
 					-- append control cell id
 					scratch := universal_string_type.append(
 							left => scratch, 
-							right => row_separator_0 & trim( type_cell_id'image(bic.boundary_register(b).control_cell_id),left )
+							right => row_separator_0 & trim( type_cell_id'image(b.boundary_register(r).control_cell_id),left )
 							);
 
 					-- append control cell disable value (strip apostrophes as they come with the image of type_bit_char_class_0)
 					scratch := universal_string_type.append(
 							left => scratch, 
-							right => row_separator_0 & type_bit_char_class_0'image(bic.boundary_register(b).disable_value)(2)
+							right => row_separator_0 & type_bit_char_class_0'image(b.boundary_register(r).disable_value)(2)
 							);
 
 					-- append control cell disable result
 					scratch := universal_string_type.append(
 							left => scratch, 
-							right => row_separator_0 & type_disable_result'image(bic.boundary_register(b).disable_result)
+							right => row_separator_0 & type_disable_result'image(b.boundary_register(r).disable_result)
 							);
 				end if;
 
@@ -309,7 +319,7 @@ procedure mknets is
 		procedure write_net is
 			pin_cursor		: pin_container.cursor;
 			pin_scratch		: type_skeleton_pin;
-			bic 			: type_ptr_bscan_ic;
+            --bic 			: type_ptr_bscan_ic;
 			procedure write_pin is
 			begin
 				put(2 * row_separator_0 & universal_string_type.to_string(pin_scratch.device_name) & row_separator_0 &
@@ -317,13 +327,16 @@ procedure mknets is
 						 universal_string_type.to_string(pin_scratch.device_value) & row_separator_0 &
 						 universal_string_type.to_string(pin_scratch.device_package) & row_separator_0 &
 						 universal_string_type.to_string(pin_scratch.device_pin_name) & row_separator_0
-				   );
-				bic := ptr_bic;
-				while bic /= null loop
-					if universal_string_type.to_string(bic.name) = universal_string_type.to_string(pin_scratch.device_name) then
-						put(get_cell_info(bic => bic, pin => universal_string_type.to_string(pin_scratch.device_pin_name)));
+                   );
+				--bic := ptr_bic;
+                --while bic /= null loop
+                for b in 1..type_list_of_bics.length(list_of_bics) loop
+                    --if universal_string_type.to_string(bic.name) = universal_string_type.to_string(pin_scratch.device_name) then
+                    if universal_string_type.to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) = 
+                        universal_string_type.to_string(pin_scratch.device_name) then
+						put(get_cell_info(bic => positive(b), pin => universal_string_type.to_string(pin_scratch.device_pin_name)));
 					end if;
-					bic := bic.next;
+					--bic := bic.next;
 				end loop;
 
 				new_line;
@@ -331,20 +344,22 @@ procedure mknets is
 			
 		begin -- write_net
 			-- write net header like "SubSection ex_GPIO_2 class NA"
-			--put_line(standard_output, universal_string_type.to_string( net_scratch.name));			
+            --put_line(standard_output, universal_string_type.to_string( net_scratch.name));
+            
 			put_line(row_separator_0 & section_mark.subsection & row_separator_0 &
 					 universal_string_type.to_string(net_scratch.name) & row_separator_0 &
 					 text_udb_class & row_separator_0 & type_net_class'image(NA)
 					);
 			pin_cursor := first(net_scratch.pin_list);
 			pin_scratch := element(pin_cursor);
-			write_pin;
+            write_pin;
 			while pin_cursor /= last(net_scratch.pin_list) loop
 				pin_cursor := next(pin_cursor);
 				pin_scratch := element(pin_cursor);
 				write_pin;
 			end loop;
-			put_line(row_separator_0 & section_mark.endsubsection);
+            put_line(row_separator_0 & section_mark.endsubsection);
+            --put(standard_output,".");
 			new_line;
 		end write_net;
 		
@@ -352,7 +367,7 @@ procedure mknets is
 		put(standard_output,"writing netlist ");
 		net_cursor := first(netlist);
 		net_scratch := element(net_cursor);
---		put_line(standard_output, universal_string_type.to_string( net_scratch.name));
+        --		put_line(standard_output, universal_string_type.to_string( net_scratch.name));
 		write_net;
 		while net_cursor /= last(netlist) loop
 			net_cursor := next(net_cursor);

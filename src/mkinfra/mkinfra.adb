@@ -6,7 +6,7 @@
 --                                                                          --
 --                               B o d y                                    --
 --                                                                          --
---         Copyright (C) 2016 Mario Blunk, Blunk electronic                 --
+--         Copyright (C) 2017 Mario Blunk, Blunk electronic                 --
 --                                                                          --
 --    This program is free software: you can redistribute it and/or modify  --
 --    it under the terms of the GNU General Public License as published by  --
@@ -51,7 +51,7 @@ with m1_files_and_directories; use m1_files_and_directories;
 
 procedure mkinfra is
 
-	version			: String (1..3) := "039";
+	version			: String (1..3) := "040";
 	prog_position	: natural := 0;
 
 	test_profile	: type_test_profile	:= infrastructure;
@@ -86,7 +86,8 @@ procedure mkinfra is
 			put_line(row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(end_sdr));
 			put_line(row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(end_sir));
 
-			put_line (" bic count        :" & positive'image(summary.bic_ct));
+            put_line (" bic count        :" & positive'image(summary.bic_ct));
+            --put_line (" bic count        :" & positive'image(natural(type_list_of_bics.length(list_of_bics))));
 			put_line (" algorithm        : " & type_algorithm'image(standard));
 			--put_line (" options       : " & type_option'image()); -- CS 
 			put_line(section_mark.endsection); 
@@ -105,7 +106,7 @@ procedure mkinfra is
 				--b := ptr_bic; -- reset bic pointer b
                 --while b /= null loop
                 for b in 1..type_list_of_bics.length(list_of_bics) loop    
-					if type_list_of_bics.element(list_of_bics,positive(b)).id = position then -- if bic id matches p:
+					if positive(b) = position then -- if bic id matches position:
 
 						-- if desired instruction does not exist, skip writing test vector and exit
 						case instruction is
@@ -252,7 +253,7 @@ procedure mkinfra is
 						end if;
 
 						exit; -- bic addressed by p processed. no further search of bic required
-					end if; -- if bic id matches p
+					end if; -- if bic id matches position
 
 					--b := b.next;
 				end loop;
@@ -277,12 +278,12 @@ procedure mkinfra is
 -- 		set IC303 exp ir 7 downto 0 = 10000001
 -- 		sir id 1
 
-		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+--		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
 
 			--b := ptr_bic; -- reset bic pointer b
             --while b /= null loop
             for b in 1..type_list_of_bics.length(list_of_bics) loop    
-				if type_list_of_bics.element(list_of_bics,positive(b)).id = p then -- if bic id matches p:
+				--if type_list_of_bics.element(list_of_bics,positive(b)).id = p then -- if bic id matches p:
 
 					-- write instruction drive
 					put(row_separator_0 
@@ -310,11 +311,11 @@ procedure mkinfra is
 					put_binary_class_1(type_list_of_bics.element(list_of_bics,positive(b)).capture_ir);
 					new_line;
 
-				end if; -- if bic id matches p
+				--end if; -- if bic id matches p
 
 				--b := b.next;
 			end loop;
-		end loop;
+--		end loop;
 
 		write_sir;
 
@@ -329,12 +330,12 @@ procedure mkinfra is
 -- 		set IC303 exp bypass 1=0
 -- 		sdr id 2
 
-		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+--		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
 
 			--b := ptr_bic; -- reset bic pointer b
             --while b /= null loop
             for b in 1..type_list_of_bics.length(list_of_bics) loop                
-				if type_list_of_bics.element(list_of_bics,positive(b)).id = p then -- if bic id matches p:
+				--if type_list_of_bics.element(list_of_bics,positive(b)).id = p then -- if bic id matches p:
 
 					-- write data drive
 					put(row_separator_0 
@@ -360,11 +361,11 @@ procedure mkinfra is
 						);
 					new_line;
 
-				end if; -- if bic id matches p
+				--end if; -- if bic id matches p
 
 				--b := b.next;
 			end loop;
-		end loop;
+--		end loop;
 
 		write_sdr;
 
