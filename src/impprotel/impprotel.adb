@@ -37,7 +37,7 @@ with ada.text_io;				use ada.text_io;
 
 with ada.strings.bounded; 		use ada.strings.bounded;
 with ada.strings.unbounded;		use ada.strings.unbounded;
---with Ada.Strings.fixed; 		use Ada.Strings.fixed;
+with ada.strings.fixed; 		use ada.strings.fixed;
 with ada.containers;            use ada.containers;
 with ada.containers.vectors;
 with ada.exceptions; 			use ada.exceptions;
@@ -97,8 +97,14 @@ procedure impprotel is
     -- PINS
     length_of_pin_name : constant positive := length_of_device_name + 10; -- something like R41-1
     package type_pin_name is new generic_bounded_length(length_of_pin_name);
-    use type_pin_name;
-    package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin_name.bounded_string);
+	use type_pin_name;
+	type type_pin is record
+		name_device	: type_device_name.bounded_string;
+		name_pin 	: type_pin_name.bounded_string;		
+		mounted 	: boolean := false;
+	end record;
+	pin_scratch : type_pin;
+	package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin);
 
     -- NETS
     length_of_net_name : constant positive := 100;
@@ -140,7 +146,7 @@ procedure impprotel is
 		file_list_of_assembly_variants : unbounded_string;
 		package type_pin_name is new generic_bounded_length(length_of_pin_name);
 		use type_pin_name;
-		package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin_name.bounded_string);
+		--package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin_name.bounded_string);
 		
 		procedure read_assembly_variants is
 		-- reads assembly variants in a list
@@ -233,7 +239,7 @@ procedure impprotel is
 			end loop;
 		end get_position_of_active_variants;
 
-		procedure apply_assembly_variants is
+		procedure apply_assembly_variants_on_device_list is
 			la : positive := natural(length(list_of_assembly_variants));
 			active_variant_found : boolean := false;
 			v : type_assembly_variant;
@@ -274,9 +280,65 @@ procedure impprotel is
 					update_element(list_of_devices,d,mark_device_as_mounted'access);
 				end if;
 			end loop;
-		end apply_assembly_variants;
+		end apply_assembly_variants_on_device_list;
 
 
+		procedure apply_assembly_variants_on_netlist is
+			ln : positive := natural(type_list_of_nets.length(list_of_nets));
+			variant_position : natural;
+			pin_occurence : positive;
+			
+			net_scratch : type_net;
+			pin_scratch : type_pin;
+
+			function variant_position_of (name_device : in type_device_name.bounded_string) return natural is
+			-- returns the position of the active variant of the given device. if no variants, return zero.
+				variant_position : natural := 0;
+				device_scratch : type_device;
+			begin
+				for d in 1..l loop -- loop in device list
+					device_scratch := type_list_of_devices.element(list_of_devices,d); -- load a device
+					if device_scratch.name = name_device then -- on name match
+						if device_scratch.has_variants then -- if variants defined
+							variant_position := device_scratch.variant_id; -- get variant id of that device
+							exit; -- no more search required
+						end if;
+					end if;
+				end loop;
+				return variant_position;
+			end variant_position_of;
+
+
+			function pin_occurence_in_net ( net : in type_net; device : in type_device_name.bounded_string) return positive is
+				occurence : positive := 1;
+			begin
+				return occurence;
+			end pin_occurence_in_net;
+			
+			procedure mark_pin_as_mounted (pin : in out type_pin) is
+			begin pin.mounted := true; end mark_pin_as_mounted;
+			
+		begin
+			for n in 1..ln loop -- loop in netlist
+				net_scratch := type_list_of_nets.element(list_of_nets,n); -- load a net
+				for p in 1..type_list_of_pins.length(net_scratch.pins) loop -- loop in pin list of that net
+					pin_scratch := type_list_of_pins.element(net_scratch.pins,positive(p)); -- load a pin
+					variant_position := variant_position_of(pin_scratch.name_device); -- get variant position of device
+					if variant_position > 0 then -- device has variants
+
+						-- get occurence of pin in that net. if it equals the variant position the pin is to be "mounted"
+						pin_occurence := pin_occurence_in_net(net_scratch, pin_scratch.name_device); 
+						if pin_occurence = variant_position then -- pin is to be "mounted"
+							type_list_of_pins.update_element(net_scratch.pins,positive(p),mark_pin_as_mounted'access);
+						end if;
+						
+					else -- no variants, pin is to be "mounted"
+						type_list_of_pins.update_element(net_scratch.pins,positive(p),mark_pin_as_mounted'access);
+					end if;
+				end loop;
+			end loop;
+		end apply_assembly_variants_on_netlist;
+		
 		procedure mark_as_having_variants (device : in out type_device) is
 		begin device.has_variants := true; end mark_as_having_variants;
 		
@@ -365,12 +427,21 @@ procedure impprotel is
 
 				read_assembly_variants; -- read them from file_list_of_assembly_variants
 				get_position_of_active_variants; -- set id in assembly variant
-				apply_assembly_variants; -- mark mounted devices
+				apply_assembly_variants_on_device_list; -- mark mounted devices
 			end if;	
 		end if;
     end manage_assembly_variants;
 
-
+	function split_device_pin (text_in : type_line.bounded_string) return type_pin is
+		pin : type_pin;
+		ifs_position : positive := index(text_in,"-");
+	begin
+ 		pin.name_device := type_device_name.to_bounded_string(slice(text_in,1,ifs_position-1));
+		pin.name_pin    := type_pin_name.to_bounded_string(slice(text_in,ifs_position+1,length(text_in)));
+		--put_line(standard_output,"device: " & to_string(pin.name_device) & " pin " & to_string(pin.name_pin));
+		return pin;
+	end split_device_pin;
+	
 	procedure write_skeleton is
 	begin
 		set_output(file_skeleton);
@@ -468,11 +539,15 @@ begin
                     type_list_of_pins.delete(net_scratch.pins,1,type_list_of_pins.length(net_scratch.pins)); -- clear pin list
 				else
 					prog_position	:= 100;
+		            --put_line("line:>" & to_string(line) & "<");
                     case net_item_next is
-                        when name => 
-                            net_scratch.name := to_bounded_string(get_field(text_in => to_string(line), position => 1));                        
-                        when pin =>
-                            type_list_of_pins.append(net_scratch.pins, to_bounded_string(get_field(text_in => to_string(line), position => 1)));
+                        when name => -- read net name from a line like "motor_on"
+							net_scratch.name := to_bounded_string(get_field(text_in => to_string(line), position => 1));                        
+							net_item_next := pin;
+						when pin => -- read pin nme from a line like "C37-2"
+							--put_line("line:>" & to_string(line) & "<"); -- dbg
+							pin_scratch := split_device_pin(line); --to_bounded_string(get_field(text_in => to_string(line), position => 1)));
+                            type_list_of_pins.append(net_scratch.pins, pin_scratch);
                     end case;
                 end if;
             end if;
