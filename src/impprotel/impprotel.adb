@@ -309,9 +309,25 @@ procedure impprotel is
 			end variant_position_of;
 
 
-			function pin_occurence_in_net ( net : in type_net; device : in type_device_name.bounded_string) return positive is
+			function pin_occurence_in_net ( net : in type_net; pin_id : in positive ; device : in type_device_name.bounded_string) return positive is
 				occurence : positive := 1;
+				lp : positive := positive(type_list_of_pins.length(net.pins));
+				device_name_scratch : type_device_name.bounded_string;
 			begin
+				loop_1:
+				for pp in 1..lp loop -- loop in pin list of given net
+					device_name_scratch := type_list_of_pins.element(net.pins,pp).name_device; -- load device name of pin
+					if device_name_scratch = device then -- first occurence of given device
+						for ps in pp+1..lp loop -- search down the list for further occurences
+							if type_list_of_pins.element(net.pins,ps).name_device = device then -- another occurence
+								occurence := occurence + 1; -- count occurences
+								if occurence = pin_id then
+									exit loop_1;
+								end if;
+							end if;
+						end loop;
+					end if;
+				end loop loop_1;
 				return occurence;
 			end pin_occurence_in_net;
 			
@@ -325,9 +341,9 @@ procedure impprotel is
 					pin_scratch := type_list_of_pins.element(net_scratch.pins,positive(p)); -- load a pin
 					variant_position := variant_position_of(pin_scratch.name_device); -- get variant position of device
 					if variant_position > 0 then -- device has variants
-
-						-- get occurence of pin in that net. if it equals the variant position the pin is to be "mounted"
-						pin_occurence := pin_occurence_in_net(net_scratch, pin_scratch.name_device); 
+						-- now we have: a net in net_scratch, a pin id in p, device name
+						-- get occurence of device with pin in that net. if it equals the variant position the pin is to be "mounted"
+						pin_occurence := pin_occurence_in_net(net_scratch, positive(p), pin_scratch.name_device); 
 						if pin_occurence = variant_position then -- pin is to be "mounted"
 							type_list_of_pins.update_element(net_scratch.pins,positive(p),mark_pin_as_mounted'access);
 						end if;
