@@ -6,7 +6,7 @@
 --                                                                          --
 --                               B o d y                                    --
 --                                                                          --
---         Copyright (C) 2016 Mario Blunk, Blunk electronic                 --
+--         Copyright (C) 2017 Mario Blunk, Blunk electronic                 --
 --                                                                          --
 --    This program is free software: you can redistribute it and/or modify  --
 --    it under the terms of the GNU General Public License as published by  --
@@ -37,6 +37,9 @@ with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
 with Ada.Characters.Handling;
 use Ada.Characters.Handling;
 
+with ada.containers;            use ada.containers;
+with ada.containers.vectors;
+
 --with System.OS_Lib;   use System.OS_Lib;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Strings.Bounded; 	use Ada.Strings.Bounded;
@@ -53,44 +56,23 @@ with GNAT.OS_Lib;   	use GNAT.OS_Lib;
 with Ada.Command_Line;	use Ada.Command_Line;
 with Ada.Directories;	use Ada.Directories;
  
-with Ada.Calendar;				use Ada.Calendar;
-with Ada.Calendar.Formatting;	use Ada.Calendar.Formatting;
-with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
 
---with m1; use m1;
-with csv; --  ins v028
+
+with csv;
 with m1_internal; use m1_internal;
 with m1_files_and_directories; use m1_files_and_directories;
 
 procedure mkoptions is
 
-	Version			: String (1..3) := "029";
-	data_base  		: Unbounded_string;
-	opt_file 		: Unbounded_string;
-	net_section		: Unbounded_string;
-	net_entered		: Boolean := false;
-	bs_net     		: Boolean := false;	
-	InputFile 		: Ada.Text_IO.File_Type;
-	OptFile 		: Ada.Text_IO.File_Type;
-	netlist_file	: Ada.Text_IO.File_Type;
-	routing_file	: Ada.Text_IO.File_Type;
-
-	routing_file_name	: unbounded_string; --string (1..15) := "net_routing.csv"; -- ins v028
-	now					: time := clock; -- ins v028
-	date_now			: string (1..19) := image(now, time_zone => UTC_Time_Offset(now)); -- ins v028
+	version			: String (1..3) := "030";
 	
 	prog_position	: natural := 0;
 
 	options_file			: Ada.Text_IO.File_Type;
 	options_conf_connectors	: Ada.Text_IO.File_Type;
 	options_conf_bridges	: Ada.Text_IO.File_Type;
-	OutputFile 				: Ada.Text_IO.File_Type;
-
-	key					: String (1..1) := "n";
-	Line				: Unbounded_string;
 
 	
-	net_ct				: Natural := 0;
 	conpair_ct			: Natural := 0;
 	bridge_ct			: Natural := 0;		
 
@@ -104,23 +86,6 @@ procedure mkoptions is
 	joker_ct		 	: natural := 0;
 	joker_names			: unbounded_string;
 	
-	type net is
-		record
- 			cluster_member	: Boolean := false;
-			cluster_id		: natural := 0;
-			net_id			: Natural := 0; -- indexing starts with 1, zero means: net not processed yet
-			part_ct			: Natural := 0;
-			content			: unbounded_string;
-			name			: unbounded_string;
-			class			: string (1..2) := "NA";
-			bs_driver_ct	: Natural := 0;
-			bs_input_ct		: Natural := 0;
- 			primary_net		: Boolean := false;
-			processed		: boolean := false;
-		end record;
-	type netlist_type is array (Natural range <>) of net;	
-
-
 	type conpair is
 		record
 			id				: natural := 0;
@@ -1260,21 +1225,77 @@ procedure mkoptions is
 -- 			return true;
 -- 		end make_netlist;	
 -- 		
+	procedure write_routing_file_header is
+	begin
+		set_output(file_routing);
+		csv.put_field(text => "-- NET ROUTING TABLE"); csv.put_lf;
+		csv.put_field(text => "-- created by mkoptions version: "); csv.put_field(text => version); csv.put_lf;
+		csv.put_field(text => "-- date:"); csv.put_field(text => date_now);
+		csv.put_lf(count => 2);
+		set_output(standard_output);
+	end write_routing_file_header;
 
+	procedure write_options_file_header is
+	begin
+		set_output(file_options);
+		put ("-- THIS IS AN OPTIONS FILE FOR DATA BASE '" & universal_string_type.to_string(name_file_data_base) & "'"); new_line;
+		put ("-- created by mkoptions version " & version); new_line;	
+		put ("-- date       : " ); put (date_now); new_line; 
+		put ("-- Please modifiy net classes and primary/secondary dependencies according to your needs."); new_line (2);
+		set_output(standard_output);
+	end write_options_file_header;
+
+
+    length_of_device_name : constant positive := 10;
+    package type_device_name is new generic_bounded_length(length_of_device_name);
+    use type_device_name;
+	
+	type type_connector_pair is record
+		name_a			: type_device_name.bounded_string;
+ 		name_b			: type_device_name.bounded_string;
+		pin_ct_a		: natural := 0;
+		pin_ct_b		: natural := 0;
+		-- 			pins_processed	: unbounded_string;
+	end record;
+	package type_list_of_connector_pairs is new vectors ( index_type => positive, element_type => type_connector_pair);
+	list_of_connector_pairs : type_list_of_connector_pairs;
+	
+	procedure read_mkoptions is
+-- 		line_length	: constant natural := 100;
+-- 		package type_line is new generic_bounded_length(line_length); use type_line;
+		line : extended_string.bounded_string;
+		section_connectors_entered : boolean := false;
+		section_bridges_entered : boolean := false;
+		conpair_scratch : type_connector_pair;
+	begin
+		open (file => file_mkoptions, mode => in_file, name => name_file_mkoptions_conf);
+		set_input(file_mkoptions);
+		while not end_of_file loop
+			line := extended_string.to_bounded_string(get_line);
+			line := remove_comment_from_line(line);
+			if get_field_count(extended_string.to_string(line)) > 0 then -- skip empty lines
+--				put_line(extended_string.to_string(line));
+				if not section_connectors_entered then -- we are outside section connectors
+					if get_field(extended_string.to_string(line),1) = section_mark.section and get_field(extended_string.to_string(line),2) = "connectors" then
+						section_connectors_entered := true;
+					end if;
+				else -- we are inside section connectors
+					if get_field(extended_string.to_string(line),1) = section_mark.endsection then -- we are leaving section connectors
+						section_connectors_entered := false; 
+					end if;
+
+					put_line(extended_string.to_string(line));
+					
+				end if;
+			end if;
+		end loop;	
+		close(file_mkoptions);
+	end read_mkoptions;
+		
 
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
-
--- 	new_line;
--- 	put("options assistant "& Version); new_line;
--- 
--- 	data_base:=to_unbounded_string(Argument(1));
--- 	put ("data base           : ");	put(data_base); new_line;
-
--- 	opt_file:=to_unbounded_string(Argument(2));
--- 	put ("target options file : ");	put(opt_file); new_line (2);
-
 	new_line;
 	put_line("NET OPTIONS ASSISTANT "& version);
 	put_line("===============================");
@@ -1290,7 +1311,7 @@ begin
 	end if;
           
 	prog_position	:= 20;
-    read_data_base;
+--    read_data_base;
     
 	-- recreate an empty tmp directory
     --	clean_up_tmp_dir;
@@ -1299,100 +1320,41 @@ begin
 	prog_position	:= 40;
 	create_bak_directory;
 
--- 	extract_section(to_string(data_base),"tmp/netlist.tmp","Section","EndSection","netlist");
--- 	remove_comments_from_file("tmp/netlist.tmp","tmp/netlist_nc.tmp");
-
-
 	-- if opt file already exists, backup old opt file
-	if exists(universal_string_type.to_string(name_file_options)) then
-		put_line("WARNING : Target options file '" & universal_string_type.to_string(name_file_options) & "' already exists.");
-		put_line("          If you choose to overwrite it, a backup will be created in directory 'bak'."); new_line;
-		put     ("          Do you really want to overwrite existing options file '" & universal_string_type.to_string(name_file_options) & "' ? (y/n) "); get(key);
-		if key = "y" then       
-			-- backup old options file
-			copy_file(universal_string_type.to_string(name_file_options),"bak/" & universal_string_type.to_string(name_file_options));		
-		else		
-            -- user abort
-			prog_position := 100; 
-			raise constraint_error;
-		end if;
-	end if;
-	
+-- 	if exists(universal_string_type.to_string(name_file_options)) then
+-- 		put_line("WARNING : Target options file '" & universal_string_type.to_string(name_file_options) & "' already exists.");
+-- 		put_line("          If you choose to overwrite it, a backup will be created in directory 'bak'."); new_line;
+-- 		put     ("          Do you really want to overwrite existing options file '" & universal_string_type.to_string(name_file_options) & "' ? (y/n) "); get(key);
+-- 		if key = "y" then       
+-- 			-- backup old options file
+-- 			copy_file(universal_string_type.to_string(name_file_options),"bak/" & universal_string_type.to_string(name_file_options));		
+-- 		else		
+--             -- user abort
+-- 			prog_position := 100; 
+-- 			raise constraint_error;
+-- 		end if;
+-- 	end if;
 
 	-- create options file
-	create( file => file_options, name => universal_string_type.to_string(name_file_options)); --Close(OutputFile);
--- 	Open( 
--- 		File => options_file,
--- 		Mode => out_File,
--- 		Name => to_string(opt_file)
--- 		);
+	create( file => file_options, mode => out_file, name => universal_string_type.to_string(name_file_options));
 
 	-- create routing file
-    name_file_routing := universal_string_type.to_bounded_string
-                            (base_name(universal_string_type.to_string(name_file_data_base)) & file_extension_routing);
-	create( file_routing, Name => universal_string_type.to_string(name_file_routing)); --Close(OutputFile);
--- 	Open( 
--- 		File => routing_file,
--- 		Mode => out_File,
--- 		Name => to_string(routing_file_name)
--- 		);
-	set_output(file_routing);
-	csv.put_field(text => "-- NET ROUTING TABLE"); csv.put_lf;
-	csv.put_field(text => "-- created by mkoptions version: "); csv.put_field(text => version); csv.put_lf;
-	--csv.put_field(text => "-- date: " ); csv.put_field(text => Image(clock)); csv.put_lf; 
-	--csv.put_field(text => "-- UTC_Offset :" ); csv.put_field(text => image(Integer(UTC_Time_Offset/60),1)); csv.put_field(text => " hour(s)"); csv.put_lf(2);
-	csv.put_field(text => "-- date:"); csv.put_field(text => date_now); -- ins v028
-	--put_line(image(integer(UTC_Time_Offset/60),1)); -- ins v028
-	csv.put_lf(count => 2); -- ins v028
-	-- ins v028 end
+    name_file_routing := universal_string_type.to_bounded_string (compose ( 
+						name => base_name(universal_string_type.to_string(name_file_data_base)),
+						extension => file_extension_routing));
+	create( file => file_routing, mode => out_file, name => universal_string_type.to_string(name_file_routing));
 
-	-- write options file header
-	set_output(file_options);
-	put ("-- THIS IS AN OPTIONS FILE FOR DATA BASE '" & to_string(data_base) & "'"); new_line;
-	put ("-- created by mkoptions version " & version); new_line;	
-    put ("-- date       : " ); put (Image(clock)); new_line; 
-    --put_line(row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & m1.date_now);    
-	put ("-- UTC_Offset : " ); Put (Integer(UTC_Time_Offset/60),1); put(" hour(s)"); new_line; new_line;
-	put ("-- Please modifiy net classes and primary/secondary dependencies according to your needs."); new_line (2);
-	set_output(standard_output);
+	write_routing_file_header;
+	write_options_file_header;
+	
 
 	-- check if mkoptions.conf exists
-	if not exists (name_file_mkoptions_configuration) then
-		new_line;
-		put("ERROR   : No configuration file '" & name_file_mkoptions_configuration & "' found !"); new_line;
+	if not exists (name_file_mkoptions_conf) then
+		put_line(message_error & "No configuration file '" & name_file_mkoptions_conf & "' found !");
 		prog_position := 200; 
 		raise constraint_error;
 	else
-        null;
-    
-		-- read mkoptions.conf
--- 		remove_comments_from_file("mkoptions.conf","tmp/mkoptions_nc.tmp");
--- 		extract_section("tmp/mkoptions_nc.tmp","tmp/connectors.tmp","Section","EndSection","connectors"); -- ins V022
--- 		--extract_netto_from_section("tmp/mkoptions_nc.tmp","tmp/mkoptions.tmp");	-- rm V022
--- 		extract_netto_from_section("tmp/connectors.tmp","tmp/mkoptions_connectors.tmp");	-- ins V022
--- 
--- 		extract_section("tmp/mkoptions_nc.tmp","tmp/bridges.tmp","Section","EndSection","bridges"); -- ins V022
--- 		extract_netto_from_section("tmp/bridges.tmp","tmp/mkoptions_bridges.tmp");	-- ins V022
--- 
--- 		Open( 
--- 			File => options_conf_connectors,
--- 			Mode => In_File,
--- 			Name => "tmp/mkoptions_connectors.tmp"
--- 			);
--- 		
--- 		Open( 
--- 			File => options_conf_bridges,
--- 			Mode => In_File,
--- 			Name => "tmp/mkoptions_bridges.tmp"
--- 			);
--- 
--- 		Open( 
--- 			File => netlist_file,
--- 			Mode => In_File,
--- 			Name => "tmp/netlist_nc.tmp"
--- 			);
--- 
--- 		Set_Output(options_file);
+        read_mkoptions;
 -- 
 -- 
 -- 		conpair_ct := count_connector_pairs;
