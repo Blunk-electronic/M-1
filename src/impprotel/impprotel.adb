@@ -129,7 +129,7 @@ procedure impprotel is
 	-- ASSEMBLY VARIANTS
 	type type_assembly_variant is record
 		name		: type_device_name.bounded_string;
-		id			: positive;
+		position	: positive; -- position in file_list_of_assembly_variants
 		packge		: type_package_name.bounded_string;
 		value		: type_value.bounded_string; -- CS: package and value should be read and verified
 		active		: boolean := false;
@@ -189,7 +189,8 @@ procedure impprotel is
 		end read_assembly_variants;
 
 		procedure get_position_of_active_variants is
-		-- assigns an active assembly variant the posittion 
+			-- Assigns to active assembly variants the position where
+			-- they appear in the file file_list_of_assembly_variants.
 			l : natural := natural(length(list_of_assembly_variants));
 			vp, vs : type_assembly_variant;
 			p : positive := 1; -- position of variant
@@ -198,7 +199,7 @@ procedure impprotel is
 			begin variant.processed := true; end mark_variant_as_processed;
 
 			procedure set_position (variant : in out type_assembly_variant) is
-			begin variant.id := p; end set_position;
+			begin variant.position := p; end set_position;
 
 			procedure write_assembly_variant (variant : in type_assembly_variant) is
 			begin
@@ -268,7 +269,7 @@ procedure impprotel is
 						if  to_string(device_scratch.name)   = to_string(v.name) and 
 							to_string(device_scratch.packge) = to_string(v.packge) and
 							to_string(device_scratch.value)  = to_string(v.value) and
-							device_scratch.variant_id = v.id and
+							device_scratch.variant_id = v.position and
 							v.active then -- active variant found, abort search (there is only one active variant)
 								active_variant_found := true;
 								-- put_line(file_skeleton,to_string(device_scratch.name)); -- dbg
@@ -499,6 +500,7 @@ procedure impprotel is
 					file_handle => file_skeleton, text => "as specified in file " & to_string(file_list_of_assembly_variants), identation => 1);
 
 				read_assembly_variants; -- read them from file_list_of_assembly_variants
+				-- CS: check assembly variants (make sure only one of them is active)
 				get_position_of_active_variants; -- set id in assembly variant
 				apply_assembly_variants_on_device_list; -- mark mounted devices
 				apply_assembly_variants_on_netlist; -- mark "mounted" pins 

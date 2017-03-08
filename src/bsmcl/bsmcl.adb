@@ -6,7 +6,7 @@
 --                                                                          --
 --                               B o d y                                    --
 --                                                                          --
---         Copyright (C) 2016 Mario Blunk, Blunk electronic                 --
+--         Copyright (C) 2017 Mario Blunk, Blunk electronic                 --
 --                                                                          --
 --    This program is free software: you can redistribute it and/or modify  --
 --    it under the terms of the GNU General Public License as published by  --
@@ -54,7 +54,7 @@ with m1_firmware;				use m1_firmware;
 
 
 procedure bsmcl is
-	version			: constant string (1..3) := "026";
+	version			: constant string (1..3) := "027";
 	prog_position	: string (1..5) := "-----";
 
 	item_udb_class	: type_item_udbinfo;
@@ -333,14 +333,14 @@ begin
 							end if;
 						end if;
 
-					when altium =>
+					when protel =>
 						if exists_netlist(name_file_cad_net_list) then
 
-							-- launch ALTIUM importer
+							-- launch PROTEL importer
 							new_line;
 							spawn 
 								(  
-								program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_cad_importer_altium),
+								program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_cad_importer_protel),
 								args                   => 	(
 															1=> new string'(universal_string_type.to_string(name_file_cad_net_list))
 															),
@@ -418,7 +418,7 @@ begin
 			if is_project_directory then
 
 				prog_position := "ACV00";
-				name_file_skeleton := universal_string_type.to_bounded_string(argument(2));
+				name_file_skeleton_verilog := universal_string_type.to_bounded_string(argument(2));
 				name_file_model_verilog := universal_string_type.to_bounded_string(argument(3));
 										
 				-- LAUNCH VERILOG MODEL MAKER
@@ -426,7 +426,7 @@ begin
 					(  
 					program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_mkvmod),
 					args                   => 	(
-												1=> new string'(universal_string_type.to_string(name_file_skeleton)),
+												1=> new string'(universal_string_type.to_string(name_file_skeleton_verilog)),
 												2=> new string'(universal_string_type.to_string(name_file_model_verilog))
 												),
 					output_file_descriptor => standout,
