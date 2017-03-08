@@ -579,7 +579,8 @@ procedure impprotel is
 		put_line(section_mark.endsection);
 		set_output(standard_output);
 	end write_skeleton;
-	
+
+
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
@@ -589,17 +590,30 @@ begin
 
 	prog_position	:= 10;
  	name_file_cad_net_list:= universal_string_type.to_bounded_string(argument(1));
- 	put_line("netlist      : " & universal_string_type.to_string(name_file_cad_net_list));
-
-	prog_position	:= 30;
-	if argument_count = 2 then
-		debug_level := natural'value(argument(2));
-		put_line("debug level    :" & natural'image(debug_level));
-	end if;
+	put_line("netlist       : " & universal_string_type.to_string(name_file_cad_net_list));
+	cad_import_target_module := type_cad_import_target_module'value(argument(2));
+	put_line("target module : " & type_cad_import_target_module'image(cad_import_target_module));
+	
+-- 	prog_position	:= 30;
+-- 	if argument_count = 3 then
+-- 		debug_level := natural'value(argument(3));
+-- 		put_line("debug level    :" & natural'image(debug_level));
+-- 	end if;
 
 	prog_position	:= 40;
 
-	create (file => file_skeleton, mode => out_file, name => name_file_skeleton);
+	case cad_import_target_module is
+		when main => create (file => file_skeleton, mode => out_file, name => name_file_skeleton);
+		when sub => 
+			target_module_prefix := universal_string_type.to_bounded_string(argument(3));
+			put_line("prefix        : " & universal_string_type.to_string(target_module_prefix));
+			create (file => file_skeleton, mode => out_file, name => compose( 
+						name => base_name(name_file_skeleton) & "_" & 
+								universal_string_type.to_string(target_module_prefix),
+						extension => file_extension_text)
+					);
+	end case;
+	
 	set_output(file_skeleton);
 	put_line(section_mark.section & " info");
 	put_line(" -- netlist skeleton");

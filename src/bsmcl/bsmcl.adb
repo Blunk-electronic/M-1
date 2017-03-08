@@ -333,16 +333,22 @@ begin
 							end if;
 						end if;
 
-					when protel =>
+					when protel => -- CS: apply this way of providing target module and prefix to other cad formats, update documentation and help
 						if exists_netlist(name_file_cad_net_list) then
-
+							cad_import_target_module := type_cad_import_target_module'value(argument(4)); -- main or sub
+							if cad_import_target_module = sub then
+								target_module_prefix := universal_string_type.to_bounded_string(argument(5)); -- prefix
+							end if;
+							
 							-- launch PROTEL importer
 							new_line;
 							spawn 
 								(  
 								program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_cad_importer_protel),
 								args                   => 	(
-															1=> new string'(universal_string_type.to_string(name_file_cad_net_list))
+																1=> new string'(universal_string_type.to_string(name_file_cad_net_list)),
+																2=> new string'(type_cad_import_target_module'image(cad_import_target_module)),
+																3=> new string'(universal_string_type.to_string(target_module_prefix)) -- dont care if target module is "main"
 															),
 								output_file_descriptor => standout,
 								return_code            => result
