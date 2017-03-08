@@ -61,7 +61,9 @@ procedure impprotel is
     line_counter : natural := 0;
     line : type_line.bounded_string;
 
-    -- DEVICES
+	-- DEVICES
+	device_count_mounted : natural := 0; -- for statistics
+	
     length_of_device_name : constant positive := 10;
     package type_device_name is new generic_bounded_length(length_of_device_name);
     use type_device_name;
@@ -94,7 +96,8 @@ procedure impprotel is
     type type_device_attribute is (name, packge, value);
     device_attribute_next : type_device_attribute;
 
-    -- PINS
+	-- PINS
+	pin_count_mounted : natural := 0;
     length_of_pin_name : constant positive := length_of_device_name + 10; -- something like R41-1
     package type_pin_name is new generic_bounded_length(length_of_pin_name);
 	use type_pin_name;
@@ -205,7 +208,7 @@ procedure impprotel is
 			
 		begin -- get_position_of_active_variants
 			put_line(file_skeleton, " active variants: ");
-			put_line(file_skeleton, "  pos. | device | package | value");
+			put_line(file_skeleton, "  # | device | package | value");
 			put_line(file_skeleton, "  " & column_separator_0);
 			for ap in 1..l loop
 				vp := element(list_of_assembly_variants,ap); -- first occurence
@@ -246,9 +249,12 @@ procedure impprotel is
 			device_scratch : type_device;
 
 			procedure mark_device_as_mounted (device : in out type_device) is
-			begin device.mounted := true; end mark_device_as_mounted;
+			begin 
+				device.mounted := true;
+				device_count_mounted := device_count_mounted + 1; -- count mounted devices for statistics
+			end mark_device_as_mounted;
 			
-		begin 
+		begin -- apply_assembly_variants_on_device_list
 			for d in 1..l loop -- loop in device list
 				device_scratch := element(list_of_devices,d); -- save element temporarly in device_scratch
 				if device_scratch.has_variants then -- if device has variants, search in variants list for that device
@@ -270,6 +276,8 @@ procedure impprotel is
 								exit;
 						end if;
 					end loop;
+
+					-- safety measure;
 					if not active_variant_found then
 						put_line(standard_output,message_error & "No active variant found for device '" & 
 							type_device_name.to_string(device_scratch.name) & "' !");
@@ -309,50 +317,99 @@ procedure impprotel is
 			end variant_position_of;
 
 
-			function pin_occurence_in_net ( net : in type_net; pin_id : in positive ; device : in type_device_name.bounded_string) return positive is
-				occurence : positive := 1;
-				lp : positive := positive(type_list_of_pins.length(net.pins));
-				device_name_scratch : type_device_name.bounded_string;
+			function pin_occurence_in_net ( net : in type_net; -- the net of interest
+											pin_id : in positive; -- the position of the given pin in the pin list
+											device_name_given : in type_device_name.bounded_string) -- the device of interest
+			-- returns the occurence of a pin with device_name_given within the given net.
+				return positive is
+				occurence 				: natural := 0; -- counts the occurences of the given device
+				position 				: natural := 0; -- points to the pin being processed
+				lp 						: positive := positive(type_list_of_pins.length(net.pins)); -- length of pin list
+				device_name_scratch		: type_device_name.bounded_string;
+				active_variant_found	: boolean := false; -- safety measure: used to verify that the variant has been found
 			begin
+				-- Loop in pin list. Advance position after fetching a pin. Search for a pin with same device
+				-- further down the list. Count occurences of same device. 
+				-- Abort when given pin_id reached and return occurence.
 				loop_1:
 				for pp in 1..lp loop -- loop in pin list of given net
 					device_name_scratch := type_list_of_pins.element(net.pins,pp).name_device; -- load device name of pin
-					if device_name_scratch = device then -- first occurence of given device
-						for ps in pp+1..lp loop -- search down the list for further occurences
-							if type_list_of_pins.element(net.pins,ps).name_device = device then -- another occurence
+					position := position + 1;					
+					if device_name_scratch = device_name_given then -- first occurence of given device
+						occurence := 1;
+
+						-- If the device is the first occurence in the pin list, abort search:
+-- 						if position = pin_id then -- given pin_id reached
+-- 							active_variant_found := true;
+-- 							exit loop_1;
+-- 						end if;
+						
+						-- Search down the list for further occurences of the given device name
+						for ps in pp+1..lp loop 
+							if type_list_of_pins.element(net.pins,ps).name_device = device_name_given then -- another occurence
 								occurence := occurence + 1; -- count occurences
-								if occurence = pin_id then
+								if position = pin_id then -- given pin_id reached
+									active_variant_found := true;
 									exit loop_1;
 								end if;
 							end if;
 						end loop;
 					end if;
 				end loop loop_1;
+
+				-- safety measure:
+				if not active_variant_found then
+					put_line(standard_output,message_error & "No active variant for '" & to_string(device_name_given) & 
+							 "' found in net '" & to_string(net.name) & "' !");
+					raise constraint_error;
+				end if;
 				return occurence;
 			end pin_occurence_in_net;
 			
 			procedure mark_pin_as_mounted (pin : in out type_pin) is
-			begin pin.mounted := true; end mark_pin_as_mounted;
-			
-		begin
+			begin 
+				pin.mounted := true; 
+				pin_count_mounted := pin_count_mounted + 1; -- count pins for statistics
+			end mark_pin_as_mounted;
+
+		begin -- apply_assembly_variants_on_netlist
 			for n in 1..ln loop -- loop in netlist
 				net_scratch := type_list_of_nets.element(list_of_nets,n); -- load a net
+
+				-- In the current net: mark device/pins to be mounted (as specified by assembly variants)
 				for p in 1..type_list_of_pins.length(net_scratch.pins) loop -- loop in pin list of that net
 					pin_scratch := type_list_of_pins.element(net_scratch.pins,positive(p)); -- load a pin
-					variant_position := variant_position_of(pin_scratch.name_device); -- get variant position of device
+					variant_position := variant_position_of(pin_scratch.name_device); -- get active variant position of device
 					if variant_position > 0 then -- device has variants
 						-- now we have: a net in net_scratch, a pin id in p, device name
 						-- get occurence of device with pin in that net. if it equals the variant position the pin is to be "mounted"
+
+						put_line(standard_output,"net " & to_string(net_scratch.name) &
+								 " dev. " & to_string(pin_scratch.name_device) &
+								 " pos. " & positive'image(positive(p)) &
+								" var. " & positive'image(variant_position));
+						
 						pin_occurence := pin_occurence_in_net(net_scratch, positive(p), pin_scratch.name_device); 
 						if pin_occurence = variant_position then -- pin is to be "mounted"
+							put_line(standard_output,"mount");
+-- 							put_line(standard_output,"net " & to_string(net_scratch.name) &
+-- 									 " dev. " & to_string(pin_scratch.name_device) &
+-- 									" pos. " & positive'image(positive(p)));
+
+							
 							type_list_of_pins.update_element(net_scratch.pins,positive(p),mark_pin_as_mounted'access);
 						end if;
 						
 					else -- no variants, pin is to be "mounted"
-						type_list_of_pins.update_element(net_scratch.pins,positive(p),mark_pin_as_mounted'access);
+--						type_list_of_pins.update_element(net_scratch.pins,positive(p),mark_pin_as_mounted'access);
+						null;
 					end if;
 				end loop;
+
+				-- write modified net back in list_of_nets
+				type_list_of_nets.replace_element(list_of_nets,n,net_scratch);
 			end loop;
+
 		end apply_assembly_variants_on_netlist;
 		
 		procedure mark_as_having_variants (device : in out type_device) is
@@ -444,6 +501,7 @@ procedure impprotel is
 				read_assembly_variants; -- read them from file_list_of_assembly_variants
 				get_position_of_active_variants; -- set id in assembly variant
 				apply_assembly_variants_on_device_list; -- mark mounted devices
+				apply_assembly_variants_on_netlist; -- mark "mounted" pins 
 			end if;	
 		end if;
     end manage_assembly_variants;
@@ -457,11 +515,45 @@ procedure impprotel is
 		--put_line(standard_output,"device: " & to_string(pin.name_device) & " pin " & to_string(pin.name_pin));
 		return pin;
 	end split_device_pin;
+
+
+	procedure write_statistics is
+	begin
+		put_line(file_skeleton, " statistics:");
+		put_line(file_skeleton, "  devices :" & natural'image(device_count_mounted));
+		put_line(file_skeleton, "  nets    :" & positive'image(positive(type_list_of_nets.length(list_of_nets))));
+		put_line(file_skeleton, "  pins    :" & natural'image(pin_count_mounted));
+	end write_statistics;
 	
 	procedure write_skeleton is
+		net : type_net;
+		pin : type_pin;
 	begin
 		set_output(file_skeleton);
+		new_line;
 		
+		put_line(section_mark.section & " " & text_skeleton_section_netlist);
+		for n in 1..type_list_of_nets.length(list_of_nets) loop
+			net := type_list_of_nets.element(list_of_nets, positive(n)); -- load a net
+
+			-- write net header like "SubSection CORE_EXT_SRST class NA"
+			put_line(" " & section_mark.subsection & " " & to_string(net.name) & " " &
+				text_udb_class & " " & type_net_class'image(net_class_default));
+
+--			put_line(" pin count " & positive'image(positive(type_list_of_pins.length(net.pins))));
+			
+			for p in 1..type_list_of_pins.length(net.pins) loop
+				pin := type_list_of_pins.element(net.pins, positive(p)); -- load a pin
+				if pin.mounted then
+					put_line("  " & to_string(pin.name_device));
+				end if;
+			end loop;
+
+			put_line(" " & section_mark.endsubsection); new_line;
+		end loop;
+		
+		put_line(section_mark.endsection);
+		set_output(standard_output);
 	end write_skeleton;
 	
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
@@ -574,6 +666,7 @@ begin
 
     manage_assembly_variants;
 
+	write_statistics;
 --	set_output(file_skeleton);
 	put_line(file_skeleton,section_mark.endsection);
 
