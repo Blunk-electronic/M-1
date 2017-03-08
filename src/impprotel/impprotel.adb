@@ -336,7 +336,7 @@ procedure impprotel is
 					device_name_scratch := type_list_of_pins.element(net.pins,pp).name_device; -- load device name of pin
 					position := position + 1;					
 					if device_name_scratch = device_name_given then -- first occurence of given device
-						occurence := 1;
+--						occurence := 1;
 
 						-- If the device is the first occurence in the pin list, abort search:
 -- 						if position = pin_id then -- given pin_id reached
@@ -345,8 +345,9 @@ procedure impprotel is
 -- 						end if;
 						
 						-- Search down the list for further occurences of the given device name
-						for ps in pp+1..lp loop 
-							if type_list_of_pins.element(net.pins,ps).name_device = device_name_given then -- another occurence
+--						for ps in pp+1..lp loop 
+						for ps in pp..lp loop 						
+							if type_list_of_pins.element(net.pins,ps).name_device = device_name_given then -- further occurence
 								occurence := occurence + 1; -- count occurences
 								if position = pin_id then -- given pin_id reached
 									active_variant_found := true;
@@ -384,14 +385,14 @@ procedure impprotel is
 						-- now we have: a net in net_scratch, a pin id in p, device name
 						-- get occurence of device with pin in that net. if it equals the variant position the pin is to be "mounted"
 
-						put_line(standard_output,"net " & to_string(net_scratch.name) &
-								 " dev. " & to_string(pin_scratch.name_device) &
-								 " pos. " & positive'image(positive(p)) &
-								" var. " & positive'image(variant_position));
+-- 						put_line(standard_output,"net " & to_string(net_scratch.name) &
+-- 								 " dev. " & to_string(pin_scratch.name_device) &
+-- 								 " pos. " & positive'image(positive(p)) &
+-- 								" var. " & positive'image(variant_position));
 						
 						pin_occurence := pin_occurence_in_net(net_scratch, positive(p), pin_scratch.name_device); 
 						if pin_occurence = variant_position then -- pin is to be "mounted"
-							put_line(standard_output,"mount");
+--							put_line(standard_output,"mount");
 -- 							put_line(standard_output,"net " & to_string(net_scratch.name) &
 -- 									 " dev. " & to_string(pin_scratch.name_device) &
 -- 									" pos. " & positive'image(positive(p)));
@@ -401,8 +402,7 @@ procedure impprotel is
 						end if;
 						
 					else -- no variants, pin is to be "mounted"
---						type_list_of_pins.update_element(net_scratch.pins,positive(p),mark_pin_as_mounted'access);
-						null;
+						type_list_of_pins.update_element(net_scratch.pins,positive(p),mark_pin_as_mounted'access);
 					end if;
 				end loop;
 
@@ -523,16 +523,37 @@ procedure impprotel is
 		put_line(file_skeleton, "  devices :" & natural'image(device_count_mounted));
 		put_line(file_skeleton, "  nets    :" & positive'image(positive(type_list_of_nets.length(list_of_nets))));
 		put_line(file_skeleton, "  pins    :" & natural'image(pin_count_mounted));
+		
+		put_line(file_skeleton,section_mark.endsection);		
 	end write_statistics;
+
 	
 	procedure write_skeleton is
 		net : type_net;
 		pin : type_pin;
+		ld 	: natural := natural(length(list_of_devices));
+		
+		function get_value_and_package(device : in type_device_name.bounded_string) return string is
+		-- returns value and package of a given device
+			device_scratch : type_device;
+		begin
+			for d in 1..ld loop
+				device_scratch := type_list_of_devices.element(list_of_devices,positive(d));
+				if device_scratch.name = device then
+					if device_scratch.mounted then
+						exit;
+					end if;
+				end if;
+			end loop;
+			
+			return to_string(device_scratch.value) & " " & to_string(device_scratch.packge);
+		end get_value_and_package;
+		
 	begin
 		set_output(file_skeleton);
 		new_line;
+		put_line(section_mark.section & " " & text_skeleton_section_netlist); new_line;
 		
-		put_line(section_mark.section & " " & text_skeleton_section_netlist);
 		for n in 1..type_list_of_nets.length(list_of_nets) loop
 			net := type_list_of_nets.element(list_of_nets, positive(n)); -- load a net
 
@@ -540,12 +561,13 @@ procedure impprotel is
 			put_line(" " & section_mark.subsection & " " & to_string(net.name) & " " &
 				text_udb_class & " " & type_net_class'image(net_class_default));
 
---			put_line(" pin count " & positive'image(positive(type_list_of_pins.length(net.pins))));
-			
+			-- write pins in lines like "R3 ? 270K RESC1005X40N 1"
 			for p in 1..type_list_of_pins.length(net.pins) loop
 				pin := type_list_of_pins.element(net.pins, positive(p)); -- load a pin
-				if pin.mounted then
-					put_line("  " & to_string(pin.name_device));
+				if pin.mounted then -- address only active assembly variants
+					put_line("  " & to_string(pin.name_device) & " " & strip_quotes(type_device_class'image(device_class_default)) &
+							" " & get_value_and_package(pin.name_device) & " " & to_string(pin.name_pin)
+							);
 				end if;
 			end loop;
 
@@ -667,10 +689,7 @@ begin
     manage_assembly_variants;
 
 	write_statistics;
---	set_output(file_skeleton);
-	put_line(file_skeleton,section_mark.endsection);
 
-	-- write section netlist_skeleton
 	write_skeleton;
 
 	close(file_skeleton);
