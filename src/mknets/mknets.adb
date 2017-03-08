@@ -28,7 +28,7 @@
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
---
+--	 todo: send warnings in msg/mknets_warnings.txt
 
 with ada.text_io;				use ada.text_io;
 with ada.characters.handling;   use ada.characters.handling;
@@ -161,7 +161,7 @@ procedure mknets is
 								subsection_net_entered := false;
 								net_scratch.pin_list := pinlist;
 								if length(pinlist) = 1 then
-									new_line;
+									--new_line;
 									put_line(message_warning & "net " & universal_string_type.to_string(net_scratch.name) & " has only one pin !");
 								end if;
 								append(container => netlist, new_item => net_scratch);
