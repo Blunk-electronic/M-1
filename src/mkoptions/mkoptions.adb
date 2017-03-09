@@ -46,7 +46,8 @@ with ada.command_line;		use ada.command_line;
 with ada.directories;		use ada.directories;
 
 with csv;
-with m1_internal; use m1_internal;
+with m1_internal; 			use m1_internal;
+with m1_database;			use m1_database;
 with m1_files_and_directories; use m1_files_and_directories;
 
 procedure mkoptions is
@@ -1274,7 +1275,7 @@ begin
 	end if;
           
 	prog_position	:= 20;
---    read_data_base;
+    read_data_base;
     
 	-- recreate an empty tmp directory
     --	clean_up_tmp_dir;
