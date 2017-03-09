@@ -31,32 +31,19 @@
 --
 
 
-with Ada.Text_IO;			use Ada.Text_IO;
-with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
-with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
-with Ada.Characters.Handling;
-use Ada.Characters.Handling;
+with ada.text_io;			use ada.text_io;
 
-with ada.containers;            use ada.containers;
+with ada.containers;        use ada.containers;
 with ada.containers.vectors;
 
---with System.OS_Lib;   use System.OS_Lib;
-with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-with Ada.Strings.Bounded; 	use Ada.Strings.Bounded;
-with Ada.Strings.Fixed; 	use Ada.Strings.Fixed;
-with Ada.Strings; 			use Ada.Strings;
-with Ada.Numerics;			use Ada.Numerics;
-with Ada.Numerics.Elementary_Functions;	use Ada.Numerics.Elementary_Functions;
-
-with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
-with Ada.Task_Identification;  use Ada.Task_Identification;
-with Ada.Exceptions; use Ada.Exceptions;
+--with ada.strings.unbounded; use ada.strings.unbounded;
+with ada.strings.bounded; 	use ada.strings.bounded;
+with ada.strings.fixed; 	use ada.strings.fixed;
+with ada.strings; 			use ada.strings;
+with ada.exceptions; 		use ada.exceptions;
  
-with GNAT.OS_Lib;   	use GNAT.OS_Lib;
-with Ada.Command_Line;	use Ada.Command_Line;
-with Ada.Directories;	use Ada.Directories;
- 
-
+with ada.command_line;		use ada.command_line;
+with ada.directories;		use ada.directories;
 
 with csv;
 with m1_internal; use m1_internal;
@@ -68,59 +55,31 @@ procedure mkoptions is
 	
 	prog_position	: natural := 0;
 
-	options_file			: Ada.Text_IO.File_Type;
-	options_conf_connectors	: Ada.Text_IO.File_Type;
-	options_conf_bridges	: Ada.Text_IO.File_Type;
-
-	
 	conpair_ct			: Natural := 0;
 	bridge_ct			: Natural := 0;		
 
-	type single_joker is
-		record
-			name		: unbounded_string;
-			len			: natural;
-		end record;
-	type joker_array is array (natural range 1..10) of single_joker;
-	joker_list			: joker_array;
-	joker_ct		 	: natural := 0;
-	joker_names			: unbounded_string;
+-- 	type single_joker is
+-- 		record
+-- 			name		: unbounded_string;
+-- 			len			: natural;
+-- 		end record;
+-- 	type joker_array is array (natural range 1..10) of single_joker;
+-- 	joker_list			: joker_array;
+-- 	joker_ct		 	: natural := 0;
+-- 	joker_names			: unbounded_string;
 	
-	type conpair is
-		record
-			id				: natural := 0;
-			name_a			: unbounded_string;
-			name_b			: unbounded_string;
-			pin_ct_a		: natural := 0;
-			pin_ct_b		: natural := 0;
-			pins_processed	: unbounded_string;
-		end record;
-	type conpair_list_type is array (Natural range <>) of conpair;
 
-	type bridge is
-		record
-			id				: natural := 0;
-			name			: unbounded_string;
-			pin_a			: unbounded_string;
-			pin_b			: unbounded_string;
-			pin_a_processed : boolean := false;
-			pin_b_processed : boolean := false;
-			pin_a_connected : boolean := false; -- ins v027
-			pin_b_connected : boolean := false; -- ins v027
-			--pin_ct			: natural range 0..2 := 0; CS use range ?
-			pin_ct			: natural := 0;
-			part_of_array	: boolean := false; -- ins v027 -- indicates whether bridge is part of a resistor array
-		end record;
-	type bridge_list_type is array (Natural range <>) of bridge;
+	
 
-	type cluster is
-		record
-			ordered			: boolean := false;
-			bs				: boolean := false; -- bs capable flag
-			size			: natural := 0;
-			members			: unbounded_string;
-		end record;
-	type cluster_list_type is array (natural range <>) of cluster;
+
+-- 	type cluster is
+-- 		record
+-- 			ordered			: boolean := false;
+-- 			bs				: boolean := false; -- bs capable flag
+-- 			size			: natural := 0;
+-- 			members			: unbounded_string;
+-- 		end record;
+-- 	type cluster_list_type is array (natural range <>) of cluster;
 
 ---------------------------------------------
 -- 
@@ -337,60 +296,6 @@ procedure mkoptions is
 -- 			return bridge_ct + bridges_detected_by_jokers;
 -- 		end count_bridges;
 -- 
--- 
--- 	function count_nets
--- 		(
--- 		-- version 1.0 / MBL
--- 		dummy	: Boolean := false
--- 		) return Natural is
--- 		
--- 		net_ct	: Natural := 0;
--- 		Line	: unbounded_string;
--- 				
--- 		begin
--- 			Set_Input(netlist_file);
--- 			reset(netlist_file);
--- 			while not End_Of_File -- read from netlist
--- 				loop
--- 					Line:=Get_Line;
--- 						if Get_Field_Count(Line) > 0 then 
--- 									
--- 							-- if net section begin found -> increment net_ct
--- 							if is_field(Line,"SubSection",1) then
--- 								net_ct := net_ct + 1;
--- 							end if;
--- 						end if;		
--- 				end loop;
--- 			return net_ct;
--- 		end count_nets;	
--- 
--- 		
--- 
--- 	function make_conpair_list
--- 		return conpair_list_type is
--- 
--- 		Line		: unbounded_string;
--- 		scratch		: natural := 0;
--- 
--- 		subtype conpair_list_sized is conpair_list_type (1..conpair_ct); conpair_list : conpair_list_sized; -- instantiate conpair list
--- 
--- 		begin
--- 			Set_Input(options_conf_connectors); -- set data source
--- 			reset(options_conf_connectors);
--- 			while not End_Of_File
--- 				loop
--- 					Line:=Get_Line;
--- 						if Get_Field_Count(Line) > 0 then 
--- 									
--- 							scratch := scratch + 1;
--- 							conpair_list(scratch).id := scratch;	-- assign conpair id
--- 							conpair_list(scratch).name_a := to_unbounded_string(get_field(line,1)); -- assign name A
--- 							conpair_list(scratch).name_b := to_unbounded_string(get_field(line,2)); -- assign name B
--- 						end if;
--- 
--- 				end loop;
--- 			return conpair_list;
--- 		end make_conpair_list;	
 -- 
 -- 
 -- 	function make_bridge_list
@@ -1246,19 +1151,42 @@ procedure mkoptions is
 	end write_options_file_header;
 
 
-    length_of_device_name : constant positive := 10;
+    length_of_device_name : constant positive := 100;
     package type_device_name is new generic_bounded_length(length_of_device_name);
-    use type_device_name;
+	use type_device_name;
+
+    length_of_pin_name : constant positive := 10;
+    package type_pin_name is new generic_bounded_length(length_of_pin_name);
+    use type_pin_name;
+
+	type type_bridge is record
+		name			: type_device_name.bounded_string;
+		pin_a			: type_pin_name.bounded_string;
+		pin_b			: type_pin_name.bounded_string;
+		pin_a_processed : boolean := false;
+		pin_b_processed : boolean := false;
+		pin_a_connected : boolean := false;
+		pin_b_connected : boolean := false;
+		--pin_ct			: natural := 0; -- CS: range 0..2 ?
+		part_of_array	: boolean := false; -- indicates whether bridge is part of an array
+	end record;
+	package type_list_of_bridges is new vectors ( index_type => positive, element_type => type_bridge);
+	use type_list_of_bridges;
+	list_of_bridges : type_list_of_bridges.vector;
 	
+
+	type type_connector_mapping is ( one_2_one , cross_pairs );
 	type type_connector_pair is record
 		name_a			: type_device_name.bounded_string;
  		name_b			: type_device_name.bounded_string;
 		pin_ct_a		: natural := 0;
 		pin_ct_b		: natural := 0;
+		mapping			: type_connector_mapping := one_2_one;
 		-- 			pins_processed	: unbounded_string;
 	end record;
 	package type_list_of_connector_pairs is new vectors ( index_type => positive, element_type => type_connector_pair);
-	list_of_connector_pairs : type_list_of_connector_pairs;
+	use type_list_of_connector_pairs;
+	list_of_connector_pairs : type_list_of_connector_pairs.vector;
 	
 	procedure read_mkoptions is
 -- 		line_length	: constant natural := 100;
@@ -1274,19 +1202,54 @@ procedure mkoptions is
 			line := extended_string.to_bounded_string(get_line);
 			line := remove_comment_from_line(line);
 			if get_field_count(extended_string.to_string(line)) > 0 then -- skip empty lines
---				put_line(extended_string.to_string(line));
+				--				put_line(extended_string.to_string(line));
+
+				-- READ CONNECTORS
 				if not section_connectors_entered then -- we are outside section connectors
+					-- search for header of section connectors
 					if get_field(extended_string.to_string(line),1) = section_mark.section and get_field(extended_string.to_string(line),2) = "connectors" then
 						section_connectors_entered := true;
 					end if;
 				else -- we are inside section connectors
+
+					-- search for footer of section connectors
 					if get_field(extended_string.to_string(line),1) = section_mark.endsection then -- we are leaving section connectors
 						section_connectors_entered := false; 
-					end if;
 
-					put_line(extended_string.to_string(line));
-					
+						append(list_of_connector_pairs,conpair_scratch);
+					else
+--						put_line(extended_string.to_string(line));
+-- 						put_line("-1 " & get_field(extended_string.to_string(line),1));
+-- 						put_line("-2 " & get_field(extended_string.to_string(line),2));
+ 						conpair_scratch.name_a	:= to_bounded_string(get_field(extended_string.to_string(line),1));
+ 						conpair_scratch.name_b	:= to_bounded_string(get_field(extended_string.to_string(line),2));
+						if get_field(extended_string.to_string(line),3) /= "" then
+							conpair_scratch.mapping	:= type_connector_mapping'value(get_field(extended_string.to_string(line),3));
+							-- CS: helpful message when invalid mapping
+						end if;
+					end if;
 				end if;
+
+				-- READ BRIDGES
+				if not section_bridges_entered then -- we are outside sectin bridges
+					-- search for header of section bridges
+					if get_field(extended_string.to_string(line),1) = section_mark.section and get_field(extended_string.to_string(line),2) = "bridges" then
+						section_bridges_entered := true;
+					end if;
+				else -- we are inside section bridges
+
+					-- search for footer of section bridges
+					if get_field(extended_string.to_string(line),1) = section_mark.endsection then -- we are leaving section bridges
+						section_bridges_entered := false; 
+
+--						append(list_of_bridges,bridge_scratch);
+					else
+						put_line(extended_string.to_string(line));
+
+						-- CS read bridges
+					end if;
+				end if;
+
 			end if;
 		end loop;	
 		close(file_mkoptions);
@@ -1386,7 +1349,27 @@ begin
 	close(file_routing);
 
 	exception
-		when CONSTRAINT_ERROR =>
-			put_line(standard_output,"prog position : " & natural'image(prog_position));
+
+		when event: others =>
 			set_exit_status(failure);
+			case prog_position is
+-- 				when 10 =>
+-- 					put_line(message_error & "ERROR: Data base file missing or insufficient access rights !");
+-- 					put_line("       Provide data base name as argument. Example: mkinfra my_uut.udb");
+-- 				when 20 =>
+-- 					put_line("ERROR: Test name missing !");
+-- 					put_line("       Provide test name as argument ! Example: mkinfra my_uut.udb my_infrastructure_test");
+-- 				when 30 =>
+-- 					put_line("ERROR: Invalid argument for debug level. Debug level must be provided as natural number !");
+
+				when others =>
+					put("unexpected exception: ");
+					put_line(exception_name(event));
+					put(exception_message(event)); new_line;
+					put_line("program error at position " & natural'image(prog_position));
+					--put_line("line in netlist" & natural'image(line_counter));
+					set_exit_status(failure);
+			end case;
+
+			
 end mkoptions;
