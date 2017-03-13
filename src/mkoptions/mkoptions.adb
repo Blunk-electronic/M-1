@@ -1144,7 +1144,7 @@ procedure mkoptions is
 	procedure write_options_file_header is
 	begin
 		set_output(file_options);
-		put ("-- THIS IS AN OPTIONS FILE FOR DATA BASE '" & universal_string_type.to_string(name_file_data_base) & "'"); new_line;
+		put ("-- THIS IS AN OPTIONS FILE FOR DATA BASE '" & type_name_database.to_string(name_file_database) & "'"); new_line;
 		put ("-- created by mkoptions version " & version); new_line;	
 		put ("-- date       : " ); put (date_now); new_line; 
 		put ("-- Please modifiy net classes and primary/secondary dependencies according to your needs."); new_line (2);
@@ -1264,8 +1264,8 @@ begin
 	put_line("NET OPTIONS ASSISTANT "& version);
 	put_line("===============================");
 	prog_position	:= 10;
- 	name_file_data_base:= universal_string_type.to_bounded_string(argument(1));
- 	put_line("data base      : " & universal_string_type.to_string(name_file_data_base));
+ 	name_file_database := type_name_database.to_bounded_string(argument(1));
+ 	put_line("database       : " & type_name_database.to_string(name_file_database));
 	name_file_options:= universal_string_type.to_bounded_string(argument(2));
 	put_line ("options file   : " & universal_string_type.to_string(name_file_options));
 
@@ -1275,7 +1275,7 @@ begin
 	end if;
           
 	prog_position	:= 20;
-    read_data_base;
+    read_database;
     
 	-- recreate an empty tmp directory
     --	clean_up_tmp_dir;
@@ -1304,7 +1304,7 @@ begin
 
 	-- create routing file
     name_file_routing := universal_string_type.to_bounded_string (compose ( 
-						name => base_name(universal_string_type.to_string(name_file_data_base)),
+						name => base_name(type_name_database.to_string(name_file_database)),
 						extension => file_extension_routing));
 	create( file => file_routing, mode => out_file, name => universal_string_type.to_string(name_file_routing));
 
