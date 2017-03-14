@@ -1,13 +1,10 @@
 #! /bin/sh
 
-version=031
+version=032
 
 #reads EAGLE netlist and partlist
 #command is:	impeagle6x netlist.net partlist.part
 #written by MBL
-
-
-	umask 003 # ins V2.4
 
 	overwrite_main_module=no
 	overwrite_sub_module=no
@@ -113,7 +110,13 @@ version=031
 
 
 	#filter netname, part and pad
+	procedure_count_pins() 
+		{
+		pincount=$[pincount+1]
+		}
+
 	netcount=0
+	pincount=0
 	while IFS=" " read -a v
 	do
 		# if netlist exported from brd:
@@ -144,7 +147,7 @@ version=031
 
 
 		#check for line with net name
-		[ "$netlist_exported_from_sch" = "no" -a ${#v[*]} -eq 3 ] &&
+		[ "$netlist_exported_from_sch" = "no" -a ${#v[*]} -eq 3 ] && procedure_count_pins &&
 			#extract line with net field into temp file
 			(
 				#CS: check if netname contains a forbidden colon ":" and replace by "c_"
@@ -156,7 +159,7 @@ version=031
 				echo ${v[1]} ${v[2]} >> tmp/nets2.tmp;
 			)
 
-		[ "$netlist_exported_from_sch" = "yes" -a ${#v[*]} -eq 5 ] &&
+		[ "$netlist_exported_from_sch" = "yes" -a ${#v[*]} -eq 5 ] && procedure_count_pins &&
 			#extract line with net field into temp file
 			(
 				#CS: check if netname contains a forbidden colon ":" and replace by "c_"
@@ -169,13 +172,13 @@ version=031
 			)
 
 		#check for lines without net name
-		[ "$netlist_exported_from_sch" = "no" -a ${#v[*]} -eq 2 ] && 
+		[ "$netlist_exported_from_sch" = "no" -a ${#v[*]} -eq 2 ] && procedure_count_pins && 
 			#extract lines without net field into temp file
 			(
 				echo ${v[0]} ${v[1]} >> tmp/nets2.tmp
 			)
 
-		[ "$netlist_exported_from_sch" = "yes" -a ${#v[*]} -eq 4 ] &&
+		[ "$netlist_exported_from_sch" = "yes" -a ${#v[*]} -eq 4 ] && procedure_count_pins &&
 			#extract lines without net field into temp file
 			(
 				echo ${v[0]} ${v[1]} >> tmp/nets2.tmp
@@ -185,7 +188,6 @@ version=031
 	done < tmp/nets.tmp
 	#append end marker to last net
 	echo :end >> tmp/nets2.tmp
-
 
 
 
@@ -320,10 +322,11 @@ version=031
 	done < tmp/parts.tmp
 
 
-	echo ' --' $partcount parts imported >> tmp/np.tmp #tmp/nl.tmp
-	echo ' --' please verify part count against CAD tool ! >> tmp/np.tmp # tmp/nl.tmp
-	echo 'EndSection' >> tmp/np.tmp # tmp/nl.tmp
-	echo >> tmp/np.tmp # tmp/nl.tmp
+	echo ' --' $partcount parts imported >> tmp/np.tmp
+	echo ' --' $pincount pins imported >> tmp/np.tmp
+	echo ' --' please verify part count against CAD tool ! >> tmp/np.tmp
+	echo 'EndSection' >> tmp/np.tmp
+	echo >> tmp/np.tmp
 	echo
 
 	#mv tmp/nl.tmp tmp/nl_cells.tmp
@@ -378,36 +381,6 @@ version=031
 				);
 		
 				#if first field is neither :net or :end, then read part from partlist
-# rm v031 begin
-# 				[ "${n[0]}" != ":net" ] && [ "${n[0]}" != ":end" ] &&
-# 				(
-# 					#echo -n "."; #output "." for every part of this net
-# 					#write part name + "|" into np.tmp
-# 					echo -n '  '${n[0]}" " >> tmp/np.tmp #tmp/np.tmp ;
-# 					#write class "?" + "|" into np.tmp
-# 					echo -n "? " >> tmp/np.tmp #tmp/np.tmp ;
-# 					#read partlist
-# 					part_found_in_netlist=no # ins v031
-# 					while IFS=" " read -a p ;
-# 					do
-# 						#find part in partlist
-# 						#when match
-# 						#[ "${p[0]}" = "${n[0]}" ] && #rm V2.22 
-# 						[ "${p[0]}" = "${n[0]}" ] &&  #ins V2.22
-# 							(
-# 								part_found_in_netlist=yes # ins v031
-# 								#echo ${p[0]} ${n[0]}
-# 								#write value + "|" into np.tmp
-# 								echo -n ${p[1]}" " >> tmp/np.tmp #tmp/np.tmp;
-# 								#write package + "|" into np.tmp
-# 								echo -n ${p[2]}" " >> tmp/np.tmp #tmp/np.tmp;
-# 							);
-# 					done < tmp/partlist.tmp;
-# 					#write pin name + "|" from netlist intp np.tmp
-# 					#echo ${n[1]}" " >> tmp/np.tmp;
-# 				);
-# rm v031 end
-			# ins v031 begin
 				[ "${n[0]}" != ":net" ] && [ "${n[0]}" != ":end" ] &&
 					(
 					#read partlist
@@ -422,7 +395,6 @@ version=031
 							);
 					done < tmp/partlist.tmp;
 					);
-			# ins v031 end
 
 			)
 	done < tmp/netlist.tmp
@@ -437,6 +409,7 @@ version=031
 	echo "----------------------------------------------------------------------"
 	echo "imported nets : " $netcount
 	echo "imported parts: " $partcount
+	echo "imported pins : " $pincount
 	echo
 
 
