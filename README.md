@@ -1,5 +1,5 @@
 # M-1
-An OpenSource/hardware Boundary Scan Test System (JTAG / IEEE1149.x) for:
+An OpenSource Boundary Scan Test System (JTAG / IEEE1149.x) for:
 - design checking
 - low level hardware testing and repairing
 - detection of opens, shorts, misloaded parts
