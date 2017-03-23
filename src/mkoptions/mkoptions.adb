@@ -1190,31 +1190,32 @@ procedure mkoptions is
 	list_of_connector_pairs : type_list_of_connector_pairs.vector;
 	
 	procedure read_mkoptions is
--- 		line_length	: constant natural := 100;
--- 		package type_line is new generic_bounded_length(line_length); use type_line;
-		line : extended_string.bounded_string;
+		type_line_length_max	: constant natural := 1000;
+		package type_line_of_file is new generic_bounded_length(type_line_length_max); use type_line_of_file;
+		line					: type_line_of_file.bounded_string;
+
 		section_connectors_entered : boolean := false;
 		section_bridges_entered : boolean := false;
 		conpair_scratch : type_connector_pair;
+		
 	begin
 		open (file => file_mkoptions, mode => in_file, name => name_file_mkoptions_conf);
 		set_input(file_mkoptions);
 		while not end_of_file loop
-			line := extended_string.to_bounded_string(get_line);
-			line := remove_comment_from_line(line);
-			if get_field_count(extended_string.to_string(line)) > 0 then -- skip empty lines
+			line := to_bounded_string(remove_comment_from_line(get_line));
+			if get_field_count(to_string(line)) > 0 then -- skip empty lines
 				--				put_line(extended_string.to_string(line));
 
 				-- READ CONNECTORS
 				if not section_connectors_entered then -- we are outside section connectors
 					-- search for header of section connectors
-					if get_field(extended_string.to_string(line),1) = section_mark.section and get_field(extended_string.to_string(line),2) = "connectors" then
+					if get_field_from_line(to_string(line),1) = section_mark.section and get_field_from_line(to_string(line),2) = "connectors" then
 						section_connectors_entered := true;
 					end if;
 				else -- we are inside section connectors
 
 					-- search for footer of section connectors
-					if get_field(extended_string.to_string(line),1) = section_mark.endsection then -- we are leaving section connectors
+					if get_field_from_line(to_string(line),1) = section_mark.endsection then -- we are leaving section connectors
 						section_connectors_entered := false; 
 
 						append(list_of_connector_pairs,conpair_scratch);
@@ -1222,10 +1223,10 @@ procedure mkoptions is
 --						put_line(extended_string.to_string(line));
 -- 						put_line("-1 " & get_field(extended_string.to_string(line),1));
 -- 						put_line("-2 " & get_field(extended_string.to_string(line),2));
- 						conpair_scratch.name_a	:= to_bounded_string(get_field(extended_string.to_string(line),1));
- 						conpair_scratch.name_b	:= to_bounded_string(get_field(extended_string.to_string(line),2));
-						if get_field(extended_string.to_string(line),3) /= "" then
-							conpair_scratch.mapping	:= type_connector_mapping'value(get_field(extended_string.to_string(line),3));
+ 						conpair_scratch.name_a	:= to_bounded_string(get_field_from_line(to_string(line),1));
+ 						conpair_scratch.name_b	:= to_bounded_string(get_field_from_line(to_string(line),2));
+						if get_field_from_line(to_string(line),3) /= "" then
+							conpair_scratch.mapping	:= type_connector_mapping'value(get_field_from_line(to_string(line),3));
 							-- CS: helpful message when invalid mapping
 						end if;
 					end if;
@@ -1234,18 +1235,18 @@ procedure mkoptions is
 				-- READ BRIDGES
 				if not section_bridges_entered then -- we are outside sectin bridges
 					-- search for header of section bridges
-					if get_field(extended_string.to_string(line),1) = section_mark.section and get_field(extended_string.to_string(line),2) = "bridges" then
+					if get_field_from_line(to_string(line),1) = section_mark.section and get_field_from_line(to_string(line),2) = "bridges" then
 						section_bridges_entered := true;
 					end if;
 				else -- we are inside section bridges
 
 					-- search for footer of section bridges
-					if get_field(extended_string.to_string(line),1) = section_mark.endsection then -- we are leaving section bridges
+					if get_field_from_line(to_string(line),1) = section_mark.endsection then -- we are leaving section bridges
 						section_bridges_entered := false; 
 
 --						append(list_of_bridges,bridge_scratch);
 					else
-						put_line(extended_string.to_string(line));
+						put_line(to_string(line));
 
 						-- CS read bridges
 					end if;
