@@ -1,7 +1,7 @@
 TARGET = mkoptions
 
 VPATH = include
-OBJS = $(TARGET).o m1_database.o csv.o m1_internal.o m1_firmware.o m1_numbers.o m1_files_and_directories.o m1_serial_communications.o m1.o
+OBJS = $(TARGET).o m1_database.o csv.o m1_internal.o m1_firmware.o m1_numbers.o m1_files_and_directories.o m1_serial_communications.o m1_test_gen_and_exec.o m1.o 
 PREFIX = $(HOME)
 BINDIR = $(PREFIX)/bin
 
