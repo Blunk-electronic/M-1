@@ -46,9 +46,10 @@ with ada.command_line;		use ada.command_line;
 with ada.directories;		use ada.directories;
 
 with csv;
-with m1_internal; 			use m1_internal;
-with m1_database;			use m1_database;
-with m1_files_and_directories; use m1_files_and_directories;
+with m1_base; 					use m1_base;
+with m1_string_processing;		use m1_string_processing;
+with m1_database;				use m1_database;
+with m1_files_and_directories;	use m1_files_and_directories;
 
 procedure mkoptions is
 
@@ -1267,8 +1268,8 @@ begin
 	prog_position	:= 10;
  	name_file_database := type_name_database.to_bounded_string(argument(1));
  	put_line("database       : " & type_name_database.to_string(name_file_database));
-	name_file_options:= universal_string_type.to_bounded_string(argument(2));
-	put_line ("options file   : " & universal_string_type.to_string(name_file_options));
+	name_file_options:= type_name_file_options.to_bounded_string(argument(2));
+	put_line ("options file   : " & type_name_file_options.to_string(name_file_options));
 
 	if argument_count = 3 then
 		debug_level := natural'value(argument(3));
@@ -1301,13 +1302,13 @@ begin
 -- 	end if;
 
 	-- create options file
-	create( file => file_options, mode => out_file, name => universal_string_type.to_string(name_file_options));
+	create( file => file_options, mode => out_file, name => type_name_file_options.to_string(name_file_options));
 
 	-- create routing file
-    name_file_routing := universal_string_type.to_bounded_string (compose ( 
+    name_file_routing := type_name_file_routing.to_bounded_string (compose ( 
 						name => base_name(type_name_database.to_string(name_file_database)),
 						extension => file_extension_routing));
-	create( file => file_routing, mode => out_file, name => universal_string_type.to_string(name_file_routing));
+	create( file => file_routing, mode => out_file, name => type_name_file_routing.to_string(name_file_routing));
 
 	write_routing_file_header;
 	write_options_file_header;
