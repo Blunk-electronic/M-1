@@ -54,7 +54,7 @@ procedure udbinfo is
 
 begin
 	new_line;
-	put_line("UUT DATA BASE INFO version "& version);
+	put_line("UUT " & to_upper(text_identifier_database) & "INFO version "& version);
 	put_line("====================================");
 
 	prog_position	:= 10;

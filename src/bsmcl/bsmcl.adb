@@ -24,11 +24,11 @@
 
 --   Please send your questions and comments to:
 --
---   Mario.Blunk@blunk-electronic.de
+--   info@blunk-electronic.de
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
---		procedure check_environment moved to m1_internal.adb
+--		
 --
 --   todo: - switch to turn of advises
 
@@ -47,18 +47,22 @@ with ada.command_line;			use ada.command_line;
 with ada.directories;			use ada.directories;
 with ada.environment_variables;
 
-with m1_internal; 				use m1_internal;
+with m1_base;	 				use m1_base;
+with m1_database;	 			use m1_database;
 with m1_numbers;				use m1_numbers;
 with m1_files_and_directories; 	use m1_files_and_directories;
+with m1_string_processing;		use m1_string_processing;
+with m1_import;					use m1_import;
+with m1_test_gen_and_exec;		use m1_test_gen_and_exec;
 with m1_firmware;				use m1_firmware;
 
 
 procedure bsmcl is
-	version			: constant string (1..3) := "027";
+	version			: constant string (1..3) := "028";
 	prog_position	: string (1..5) := "-----";
 
-	item_udb_class	: type_item_udbinfo;
-	item_udb_name	: universal_string_type.bounded_string;
+ 	item_udb_class	: type_item_udbinfo;
+	item_udb_name	: type_universal_string.bounded_string;
 
 	retry_count		: type_sxr_retries;
 	retry_delay		: type_delay_value;
@@ -76,52 +80,52 @@ procedure bsmcl is
 	bit_position			: type_sxr_break_position := 0; -- in case bit_position to break at is not provided, default used
 
 
-	function exists_netlist (netlist : universal_string_type.bounded_string) return boolean is
+	function exists_netlist (netlist : in type_name_file_netlist.bounded_string) return boolean is
 	-- verifies if given netlist exists
 		file_exists : boolean := false;	
+		use type_name_file_netlist;
 	begin
 		prog_position := "NLE00";	
 		--put_line(text_name_cad_net_list & "        : " & universal_string_type.to_string(netlist));
 		
-		if exists (universal_string_type.to_string(netlist)) then
+		if exists (to_string(netlist)) then
 			file_exists := true;
 		else
-			put_line(message_error & text_name_cad_net_list & row_separator_0 & quote_single &
-				universal_string_type.to_string(netlist) & quote_single & " not found !"); 
+			put_line(message_error & text_identifier_cad_netlist & row_separator_0 & quote_single &
+				to_string(netlist) & quote_single & " not found !"); 
 			raise constraint_error;
 		end if;
 		return file_exists;
 	end exists_netlist;
 
-
-	function exists_partlist (partlist : universal_string_type.bounded_string) return boolean is
+	function exists_partlist (partlist : in type_name_file_partlist.bounded_string) return boolean is
 	-- verifies if given partlist exists
 		file_exists : boolean := false;
+		use type_name_file_partlist;
 	begin
 		prog_position := "PLE00";	
 		--put_line(text_name_cad_part_list & "       : " & universal_string_type.to_string(partlist));
 		
-		if exists(universal_string_type.to_string(partlist)) then
+		if exists(to_string(partlist)) then
 			file_exists := true;
 		else
-			put_line(message_error & text_name_cad_net_list & row_separator_0 & quote_single &
-				universal_string_type.to_string(partlist) & quote_single & " not found !"); 
+			put_line(message_error & text_identifier_cad_partlist & row_separator_0 & quote_single &
+				to_string(partlist) & quote_single & " not found !"); 
 			raise constraint_error;
 		end if;
 		return file_exists;
 	end exists_partlist;
 
-
-
-	function exists_database(database : string) return boolean is
+	function exists_database(database : in type_name_database.bounded_string) return boolean is
 		file_exists : boolean := false;
+		use type_name_database;
 	begin
 		--put ("database       : ");	put(database); new_line;
-		if exists (database) then
+		if exists(to_string(database)) then
 			file_exists := true;
 		else
-			put_line(message_error & "Database " & quote_single & database & quote_single &
-				" does not exist" & exclamation & row_separator_0 & aborting);
+			put_line(message_error & text_identifier_database & quote_single & to_string(database) & quote_single &
+				" does not exist" & exclamation);
 		end if;
 		return file_exists;
 	end exists_database;
