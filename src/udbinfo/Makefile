@@ -7,7 +7,7 @@ BINDIR = $(PREFIX)/bin
 
 # compile
 .adb.o:
-	gcc -c -gnat2012 $< -I include
+	gcc -c -gnat2012 $< -I $(VPATH)
 .SUFFIXES: .adb .o
 
 # link
