@@ -59,20 +59,20 @@ begin
 
 	prog_position	:= 10;
  	name_file_database := type_name_database.to_bounded_string(argument(1));
- 	put_line("data base      : " & to_string(name_file_database));
+ 	put_line("database        : " & to_string(name_file_database));
 
 	prog_position	:= 20;
 	inquired_item := type_item_udbinfo'value(argument(2));
-	put_line("item           : " & type_item_udbinfo'image(inquired_item));
+	put_line("item            : " & type_item_udbinfo'image(inquired_item));
 
 	prog_position	:= 30;
 	inquired_target := to_bounded_string(argument(3));
-	put_line("name           : " & to_string(inquired_target));
+	put_line("name            : " & to_string(inquired_target));
 
 	prog_position	:= 40;
 	if argument_count = 4 then
-		debug_level := natural'value(argument(4));
-		put_line("debug level    :" & natural'image(debug_level));
+		degree_of_database_integrity_check := type_degree_of_database_integrity_check'value(argument(4));
+		put_line("integrity check:" & type_degree_of_database_integrity_check'image(degree_of_database_integrity_check));
 	end if;
 
 	prog_position	:= 50;
