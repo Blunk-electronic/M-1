@@ -6,7 +6,7 @@
 --                                                                          --
 --                               B o d y                                    --
 --                                                                          --
---         Copyright (C) 2016 Mario Blunk, Blunk electronic                 --
+--         Copyright (C) 2017 Mario Blunk, Blunk electronic                 --
 --                                                                          --
 --    This program is free software: you can redistribute it and/or modify  --
 --    it under the terms of the GNU General Public License as published by  --
@@ -24,11 +24,11 @@
 
 --   Please send your questions and comments to:
 --
---   Mario.Blunk@blunk-electronic.de
+--   info@blunk-electronic.de
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
---		2016-09-20: cleaned up
+--		
 
 with ada.text_io;				use ada.text_io;
 with ada.characters.handling; 	use ada.characters.handling;
@@ -39,54 +39,53 @@ with ada.exceptions; 			use ada.exceptions;
 with ada.command_line;			use ada.command_line;
 with ada.directories;			use ada.directories;
 
-with m1;
-with m1_internal; 				use m1_internal;
-with m1_numbers; 				use m1_numbers;
+with m1_base;					use m1_base;
+with m1_database;				use m1_database;
 with m1_files_and_directories; 	use m1_files_and_directories;
+with m1_string_processing;		use m1_string_processing;
 
 procedure chkpsn is
 
-	version			: constant string (1..3) := "043";
+	version			: constant string (1..3) := "044";
 	prog_position	: string (1..6) := "------";
-	line_of_file	: extended_string.bounded_string;
+
+	line_of_file	: type_universal_string.bounded_string;
 	line_counter						: natural := 0;
 	line_number_of_primary_net_header	: natural := 0;
 	debug_level							: natural := 0;
-	udb_summary							: type_udb_summary;
-	data_base_backup_name				: universal_string_type.bounded_string;
-	data_base_file_preliminary			: ada.text_io.file_type;
+
+-- 	database_backup_name				: type_name_database.bounded_string;
+-- 	database_file_preliminary			: ada.text_io.file_type;
 --	Previous_Output	: File_Type renames Current_Output;
 
-	name_of_current_primary_net			: extended_string.bounded_string;
+	name_of_current_primary_net			: type_net_name.bounded_string;
 	class_of_current_primary_net		: type_net_class := NA;
 	primary_net_section_entered			: boolean := false;
 	secondary_net_section_entered 		: boolean := false;	
 
 	secondary_net_count					: natural := 0;
-	list_of_secondary_net_names			: type_list_of_secondary_net_names;
+	list_of_secondary_net_names			: type_list_of_secondary_net_names.vector;
 
 	total_options_net_count				: natural := 0;
 
-	procedure read_data_base is
-	begin
-		udb_summary := read_uut_data_base(
-			name_of_data_base_file => universal_string_type.to_string(name_file_data_base),
-			debug_level => 0
-			); --.net_count_statistics.total > 0 then null; 
-	end read_data_base;
+-- 	procedure read_data_base is
+-- 	begin
+-- 		read_uut_data_base(
+-- 			name_of_data_base_file => universal_string_type.to_string(name_file_data_base),
+-- 			debug_level => 0
+-- 			); --.net_count_statistics.total > 0 then null; 
+-- 	end read_data_base;
 
 
 	procedure add_to_options_net_list(
 		-- this procedure adds a primary net (incl. secondary nets) to the options net list
 		-- multiple occurencs of nets in options file will be checked
-		list								: in out type_ptr_options_net;
-		name_given							: in string;
+		name_given							: in type_net_name.bounded_string;
 		class_given							: in type_net_class;
 		line_number_given					: in positive;
-		secondary_net_ct_given				: in natural;
-		list_of_secondary_net_names_given	: in type_list_of_secondary_net_names
+		list_of_secondary_net_names_given	: in type_list_of_secondary_net_names.vector
 		) is
-
+		-- CS: derive secondary net count from length of list_of_secondary_net_names_given
 		procedure verify_primary_net_appears_only_once (name : string) is
 			n	: type_ptr_options_net := ptr_options_net;
 		begin
@@ -1618,15 +1617,15 @@ procedure chkpsn is
 
 
 	procedure write_new_cell_lists is
-		a : type_ptr_cell_list_static_control_cells_class_EX_NA				:= ptr_cell_list_static_control_cells_class_EX_NA;
-		b : type_ptr_cell_list_static_control_cells_class_DX_NR				:= ptr_cell_list_static_control_cells_class_DX_NR;
-		c : type_ptr_cell_list_static_control_cells_class_PX			 	:= ptr_cell_list_static_control_cells_class_PX;
-		d : type_ptr_cell_list_static_output_cells_class_PX					:= ptr_cell_list_static_output_cells_class_PX;
-		e : type_ptr_cell_list_static_output_cells_class_DX_NR				:= ptr_cell_list_static_output_cells_class_DX_NR;
-		f : type_ptr_cell_list_static_expect								:= ptr_cell_list_static_expect;
-		g : type_ptr_cell_list_atg_expect									:= ptr_cell_list_atg_expect;
-		h : type_ptr_cell_list_atg_drive									:= ptr_cell_list_atg_drive;
-		i : type_ptr_cell_list_input_cells_class_NA							:= ptr_cell_list_input_cells_class_NA;
+		a : type_static_control_cell_class_EX_NA;
+		b : type_static_control_cell_class_DX_NR;
+		c : type_static_control_cells_class_PX;
+		d : type_static_output_cells_class_PX;
+		e : type_static_output_cells_class_DX_NR;
+		f : type_static_expect_cell;
+		g : type_atg_expect_cell;
+		h : type_atg_drive_cell;
+		i : type_input_cell_class_NA;
 	begin
 		put_line("------- CELL LISTS ----------------------------------------------------------");
 		new_line(2);
@@ -1637,16 +1636,17 @@ procedure chkpsn is
 		put_line("-- addresses control cells which statically disable drivers");
 		put_line("-- example 1: class NA primary_net OSC_OUT device IC300 pin 6 control_cell 93 locked_to disable_value 0");
 		put_line("-- example 2: class NA secondary_net OSC_OUT device IC300 pin 6 control_cell 93 locked_to disable_value 0");
-		while a /= null loop
+		--while a /= null loop
+		for c in 1..length(list_of_static_control_cells_class_EX_NA) loop
+			a := element(list_of_static_control_cells_class_EX_NA, positive(c));
 			put_line(" class " & type_net_class'image(a.class) & row_separator_0 & to_lower(type_net_level'image(a.level)) & "_net"
-				& row_separator_0 & universal_string_type.to_string(a.net) & " device"
-				& row_separator_0 & universal_string_type.to_string(a.device) & " pin"
-				& row_separator_0 & universal_string_type.to_string(a.pin) & " control_cell" & natural'image(a.cell)
+				& row_separator_0 & to_string(a.net) & " device"
+				& row_separator_0 & to_string(a.device) & " pin"
+				& row_separator_0 & to_string(a.pin) & " control_cell" & natural'image(a.cell)
 				& " locked_to disable_value " & type_bit_char_class_0'image(a.disable_value)(2) -- strip "'" delimiters
 				);
-			a := a.next;
 		end loop;
-		put_line("EndSection"); new_line;
+		put_line(section_mark.endsection); new_line;
 
 		--put_line("Section locked_control_cells_in_class_DH_DL_NR_nets");
 		put_line(section_mark.section & row_separator_0 & section_static_control_cells_class_DX_NR);
@@ -1815,67 +1815,66 @@ procedure chkpsn is
 	end write_new_cell_lists;
 
 
-	procedure write_new_statistics is
+	procedure write_new_statistics is -- CS: use predefined statistics_indentifiers_xxx here
 	begin
 		put_line("------- STATISTICS ----------------------------------------------------------");
 		new_line;
-		put_line("Section statistics");
+		put_line(section_mark.section & row_separator_0 & "statistics");
 		put_line("---------------------------------------------------");
- 		put_line(" ATG-drivers   (dynamic) :" & natural'image(udb_summary.net_count_statistics.atg_drivers));
- 		put_line(" ATG-receivers (dynamic) :" & natural'image(udb_summary.net_count_statistics.atg_receivers));
+ 		put_line(" ATG-drivers   (dynamic) :" & natural'image(summary.net_count_statistics.atg_drivers));
+ 		put_line(" ATG-receivers (dynamic) :" & natural'image(summary.net_count_statistics.atg_receivers));
 		put_line("---------------------------------------------------");
-		put_line(" Pull-Up nets        (PU):" & natural'image(udb_summary.net_count_statistics.pu));
- 		put_line(" Pull-Down nets      (PD):" & natural'image(udb_summary.net_count_statistics.pd));
- 		put_line(" Drive-High nets     (DH):" & natural'image(udb_summary.net_count_statistics.dh));
- 		put_line(" Drive-Low nets      (DL):" & natural'image(udb_summary.net_count_statistics.dl));
- 		put_line(" Expect-High nets    (EH):" & natural'image(udb_summary.net_count_statistics.eh));
- 		put_line(" Expect-Low nets     (EL):" & natural'image(udb_summary.net_count_statistics.el));
- 		put_line(" unrestricted nets   (NR):" & natural'image(udb_summary.net_count_statistics.nr));
- 		put_line(" not classified nets (NA):" & natural'image(udb_summary.net_count_statistics.na));
+		put_line(" Pull-Up nets        (PU):" & natural'image(summary.net_count_statistics.pu));
+ 		put_line(" Pull-Down nets      (PD):" & natural'image(summary.net_count_statistics.pd));
+ 		put_line(" Drive-High nets     (DH):" & natural'image(summary.net_count_statistics.dh));
+ 		put_line(" Drive-Low nets      (DL):" & natural'image(summary.net_count_statistics.dl));
+ 		put_line(" Expect-High nets    (EH):" & natural'image(summary.net_count_statistics.eh));
+ 		put_line(" Expect-Low nets     (EL):" & natural'image(summary.net_count_statistics.el));
+ 		put_line(" unrestricted nets   (NR):" & natural'image(summary.net_count_statistics.nr));
+ 		put_line(" not classified nets (NA):" & natural'image(summary.net_count_statistics.na));
 		put_line("---------------------------------------------------");
- 		put_line(" total                   :" & natural'image(udb_summary.net_count_statistics.total));
-		put_line("---------------------------------------------------");
- 		put_line(" bs-nets static          :" & natural'image(udb_summary.net_count_statistics.bs_static));
+ 		put_line(" total                   :" & natural'image(summary.net_count_statistics.total));
+		put_line("--------------------------------------------------");
+ 		put_line(" bs-nets static          :" & natural'image(summary.net_count_statistics.bs_static));
  		put_line(" thereof :");
-   		put_line("   bs-nets static L      :" & natural'image(udb_summary.net_count_statistics.bs_static_l));
-   		put_line("   bs-nets static H      :" & natural'image(udb_summary.net_count_statistics.bs_static_h));
- 		put_line(" bs-nets dynamic         :" & natural'image(udb_summary.net_count_statistics.bs_dynamic));
- 		put_line(" bs-nets testable        :" & natural'image(udb_summary.net_count_statistics.bs_testable));
+   		put_line("   bs-nets static L      :" & natural'image(summary.net_count_statistics.bs_static_l));
+   		put_line("   bs-nets static H      :" & natural'image(summary.net_count_statistics.bs_static_h));
+ 		put_line(" bs-nets dynamic         :" & natural'image(summary.net_count_statistics.bs_dynamic));
+ 		put_line(" bs-nets testable        :" & natural'image(summary.net_count_statistics.bs_testable));
 		put_line("---------------------------------------------------");
-		put_line("EndSection");
+		put_line(section_mark.endsection);
 	end write_new_statistics;
 
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
-
-
 	new_line;
 	put_line("primary/secondary/class builder "& version);
 	put_line("=======================================");
 	prog_position := "ARG001";
-	name_file_data_base := universal_string_type.to_bounded_string(Argument(1));
-	put_line ("data base      : " & universal_string_type.to_string(name_file_data_base));
-	data_base_backup_name := name_file_data_base; -- backup name of data base. used for overwriting data base with temporarily data base
+	name_file_database := to_bounded_string(argument(1));
+	put_line (text_identifier_database & "     : " & to_string(name_file_database));
+	name_file_database_backup := name_file_database; -- backup name of database. used for overwriting data base with temporarily data base
 
 	prog_position := "ARG002";
-	name_file_options := universal_string_type.to_bounded_string(Argument(2));
-	put_line ("options file   : " & universal_string_type.to_string(name_file_options));
+	name_file_options := to_bounded_string(argument(2));
+	put_line ("options file   : " & to_string(name_file_options));
 
 	prog_position := "ARG003";
 	if argument_count = 3 then
-		debug_level := natural'value(argument(3));
-		put_line ("debug level    :" & natural'image(debug_level));
+-- 		debug_level := natural'value(argument(3));
+		-- 		put_line ("debug level    :" & natural'image(debug_level));
+		-- CS: degree of integrity check
 	end if;
 
 	-- make backup of given udb
 	
 	-- recreate an empty tmp directory
 	prog_position := "TMP001";
-	m1.clean_up_tmp_dir;
+	create_temp_directory;
 
 	prog_position := "RDB001";
-	read_data_base;
+	read_uut_data_base;
 	
 
 	-- open options file
@@ -1883,7 +1882,7 @@ begin
 	open( 
 		file => file_options,
 		mode => in_file,
-		name => universal_string_type.to_string(name_file_options)
+		name => to_string(name_file_options)
 		);
 
 	-- read options file
@@ -1893,19 +1892,14 @@ begin
 	-- ptr_options_net points to generated options net list
 	prog_position := "OPT005";
 	put_line("reading options file ...");
-	Set_Input(file_options); -- set data source
+	set_input(file_options); -- set data source
 	while not end_of_file
 		loop
 			prog_position := "OP5000";
 			line_counter := line_counter + 1;
-			line_of_file := extended_string.to_bounded_string(get_line);
-			line_of_file := remove_comment_from_line(line_of_file);
+			line_of_file := remove_comment_from_line(to_bounded_string(get_line));
 
-			if get_field_count(extended_string.to_string(line_of_file)) > 0 then -- if line contains anything
-				if debug_level >= 40 then
-					put_line(extended_string.to_string(line_of_file));
-				end if;
-
+			if get_field_count(to_string(line_of_file)) > 0 then -- if line contains anything
 				if primary_net_section_entered then
 					-- we are inside primary net section
 
@@ -1913,76 +1907,76 @@ begin
 						-- we are inside secondary net section
 
 						-- wait for end of secondary net section mark
-						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_subsection_mark'image(EndSubSection) then
+						if get_field_from_line(to_string(line_of_file),1) = section_mark.endsubsection then
 							secondary_net_section_entered := false;
 							if secondary_net_count = 0 then
-								put_line("WARNING: Primary net '" & extended_string.to_string(name_of_current_primary_net) 
+								put_line(message_warning & "Primary net '" & to_string(name_of_current_primary_net) 
 									& "' has an empty secondary net subsection !");
 							end if;
 
 						-- count secondary nets and collect them in array list_of_secondary_net_names
 						--if to_upper(get_field_from_line(line_of_file,1)) = type_options_net_identifier'image(net) then
-						elsif to_upper(get_field_from_line(line_of_file,1)) = type_options_net_identifier'image(net) then
+						elsif to_upper(get_field_from_line(to_string(line_of_file),1)) = type_options_net_identifier'image(net) then
 							secondary_net_count := secondary_net_count + 1;
-							list_of_secondary_net_names(secondary_net_count) := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
+							--list_of_secondary_net_names(secondary_net_count) := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
+							append(list_of_secondary_net_names, to_bounded_string(get_field_from_line(to_string(line_of_file),2));
 						else
 							prog_position := "OP5100";
- 							put_line("ERROR: Keyword '" & type_secondary_net_name_identifier'image(net) & "' or '"
-								& type_end_of_subsection_mark'image(EndSubSection) & "' expected !");
+ 							put_line(message_error & "Keyword '" & type_secondary_net_name_identifier'image(net) & "' or '"
+								& section_mark.endsubsection & "' expected !");
  							raise constraint_error;
 						end if;
 					else
 						-- wait for end of primary net section
-						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_section_mark'image(EndSection) then
+						if get_field_from_line(to_string(line_of_file),1)) = section_mark.endsection then
 							primary_net_section_entered := false;
 
-							-- when end of primary net section reached:
-							if debug_level >= 10 then
-								new_line;
-								put_line("primary net name    : " & extended_string.to_string(name_of_current_primary_net));
-								put_line("primary net class   : " & type_net_class'image(class_of_current_primary_net));
-								if secondary_net_count > 0 then
-									put_line("secondary net count :" & natural'image(secondary_net_count));
-									put("secondary nets      : ");
-									for s in 1..secondary_net_count loop
-										put(universal_string_type.to_string(list_of_secondary_net_names(s)) & row_separator_0);
-									end loop;
-									new_line;
-								end if;
-							end if;
+-- 							-- when end of primary net section reached:
+-- 							if debug_level >= 10 then
+-- 								new_line;
+-- 								put_line("primary net name    : " & extended_string.to_string(name_of_current_primary_net));
+-- 								put_line("primary net class   : " & type_net_class'image(class_of_current_primary_net));
+-- 								if secondary_net_count > 0 then
+-- 									put_line("secondary net count :" & natural'image(secondary_net_count));
+-- 									put("secondary nets      : ");
+-- 									for s in 1..secondary_net_count loop
+-- 										put(universal_string_type.to_string(list_of_secondary_net_names(s)) & row_separator_0);
+-- 									end loop;
+-- 									new_line;
+-- 								end if;
+-- 							end if;
 
 							-- ask if the primary net (incl. secondary nets) may become member of class specified in options file
 							-- if class request can be fulfilled, add net to options net list
 							prog_position := "OP5200";
-							if m1_internal.query_render_net_class (
-								primary_net_name => extended_string.to_string(name_of_current_primary_net),
+							if query_render_net_class (
+								primary_net_name => name_of_current_primary_net,
 								primary_net_class => class_of_current_primary_net,
 								list_of_secondary_net_names	=> list_of_secondary_net_names,
 								secondary_net_count	=> secondary_net_count
 								) then 
 									prog_position := "OP5300";
 									add_to_options_net_list(
-										list 								=> ptr_options_net,
-										name_given							=> extended_string.to_string(name_of_current_primary_net),
+										name_given							=> name_of_current_primary_net,
 										class_given							=> class_of_current_primary_net,
 										line_number_given					=> line_number_of_primary_net_header,
-										secondary_net_ct_given				=> secondary_net_count,
 										list_of_secondary_net_names_given	=> list_of_secondary_net_names
 									);
 									
 							end if;
 							secondary_net_count := 0; -- reset secondary net counter for next primary net
+							-- CS: purge list_of_secondary_net_names ?
 
 						-- if not secondary_net_section_entered yet, wait for "SubSection secondary_nets" header
 						-- if "SubSection secondary_nets" found, set secondary_net_section_entered flag
-						elsif to_upper(get_field_from_line(line_of_file,1)) = type_start_of_subsection_mark'image(SubSection) and
-							to_upper(get_field_from_line(line_of_file,2)) = type_secondary_nets_section_identifier'image(secondary_nets) then
+						elsif get_field_from_line(to_string(line_of_file),1)) = section_mark.subsection and
+							to_upper(get_field_from_line(to_string(line_of_file),2)) = type_secondary_nets_section_identifier'image(secondary_nets) then
 								secondary_net_section_entered := true;
 						else
 							prog_position := "OP5400";
- 							put_line("ERROR: Keywords '" & type_start_of_subsection_mark'image(SubSection) 
+ 							put_line(message_error & "Keywords '" & section_mark.subsection 
 								& " " & type_secondary_nets_section_identifier'image(secondary_nets)
-								& "' or '" & type_end_of_section_mark'image(EndSection)
+								& "' or '" & section_mark.endsection
 								& "' expected !");
  							raise constraint_error;
 						end if;
@@ -1991,22 +1985,22 @@ begin
 
 				-- if primary net section not entered, wait for primary net header like "Section LED0 class NR", 
 				-- then set "primary net section entered" flag
-				elsif to_upper(get_field_from_line(line_of_file,1)) = type_start_of_section_mark'image(Section) then
-					name_of_current_primary_net := extended_string.to_bounded_string(get_field_from_line(line_of_file,2));
-					if to_upper(get_field_from_line(line_of_file,3)) = type_options_class_identifier'image(class) then
+				elsif get_field_from_line(to_string(line_of_file),1)) = section_mark.section then
+					name_of_current_primary_net := to_bounded_string(get_field_from_line(to_string(line_of_file),2));
+					if to_upper(get_field_from_line(to_string(line_of_file),3)) = type_options_class_identifier'image(class) then
 						null; -- fine
 					else
 						prog_position := "OP5500";
-						put_line("ERROR: Identifier '" & type_options_class_identifier'image(class) & "' expected after primary net name !");
+						put_line(message_error & "Identifier '" & type_options_class_identifier'image(class) & "' expected after primary net name !");
 						raise constraint_error;
 					end if;
-					class_of_current_primary_net := type_net_class'value(get_field_from_line(line_of_file,4));
+					class_of_current_primary_net := type_net_class'value(get_field_from_line(to_string(line_of_file),4));
 					primary_net_section_entered := true;
 					line_number_of_primary_net_header := line_counter; -- backup line number of net header
 					-- when adding the net to the net list, this number goes into the list as well
 				else
 					prog_position := "OP5600";
-					put_line("ERROR: Keyword '" & type_start_of_section_mark'image(Section) & "' expected !");
+					put_line(message_error & "Keyword '" & section_mark.section & "' expected !");
 					raise constraint_error;
 				end if;
 
@@ -2037,49 +2031,49 @@ begin
 
 	-- extract from current udb the sections "scanpath_configuration" and "registers" in preliminary data base
 	prog_position := "EX0000";
-	create( data_base_file_preliminary, name => "tmp/preliminary_" & universal_string_type.to_string(name_file_data_base) );
-	--create( data_base_file_preliminary, name => "tmp/test.udb" );
+	create( file_database_preliminary, name => 
+		compose (name_directory_temp, "preliminary_" & to_string(name_file_database) );
 	--set_output( data_base_file_preliminary); -- set data sink
 
 	-- open data base file
 	prog_position := "EX0500";
 	open( 
-		file => file_data_base,
+		file => file_database,
 		mode => in_file,
-		name => universal_string_type.to_string(name_file_data_base)
+		name => to_string(name_file_database)
 		);
 
-	set_input(file_data_base); -- set data source
-	set_output(data_base_file_preliminary); -- set data sink
+	set_input(file_database); -- set data source
+	set_output(file_database_preliminary); -- set data sink
 	prog_position := "EX1000";
 	line_counter := 0;
-	while line_counter <= udb_summary.line_number_end_of_section_registers
+	while line_counter <= summary.line_number_end_of_section_registers
 		loop
 			prog_position := "EX2000";
 			line_counter := line_counter + 1;
-			line_of_file := extended_string.to_bounded_string(get_line);
+			line_of_file := to_bounded_string(get_line);
 			prog_position := "EX2100";
-			put_line(extended_string.to_string(line_of_file));
+			put_line(to_string(line_of_file));
 		end loop;
 	prog_position := "EX2200";
 	set_input(standard_input);
-	close(file_data_base);
+	close(file_database);
 
 
 	prog_position := "NL1000";
-	put_line("Section netlist");
+	put_line(section_mark.section & row_separator_0 & section_netlist);
 	put_line(column_separator_0);
 	put_line("-- modified by primary/secondary/class builder version " & version);
 	put_line("-- date: " & date_now & " (YYYY-MM-DD HH:MM:SS)");
 	--new_line(2);
 	prog_position := "NL2000";
 
-	-- with the two net lists pointed to by net_ptr and options_net_ptr, a new net list is created and appended to the
+	-- with the two netlists pointed to by net_ptr and options_net_ptr, a new net list is created and appended to the
 	-- preliminary data base
 	-- the class requirements and secondary net dependencies from the options file are taken into account
 	make_new_net_list;
 
-	put_line("EndSection");
+	put_line(section_mark.endsection);
 	new_line(2);
 
 	prog_position := "NL3000";
@@ -2089,31 +2083,31 @@ begin
 
 	prog_position := "NL4000";
 	set_output(standard_output);
-	close(data_base_file_preliminary);
+	close(file_database_preliminary);
 
 	-- check preliminary data base and obtain summary
-	put_line("parsing preliminary data base ...");
-	name_file_data_base := universal_string_type.to_bounded_string("tmp/preliminary_" & universal_string_type.to_string(name_file_data_base) );
-	read_data_base; -- opens and closes data base file given by data_base
-	-- summary now available in udb_summary
+	put_line("parsing preliminary " & text_identifier_database & "...");
+	name_file_database := to_bounded_string(name_directory_temp, "preliminary_" & to_string(name_file_database));
+	read_uut_data_base;
+	-- summary now available in summary
 
 	-- reopen preliminary data base in append mode
 	prog_position := "ST1000";
 	open( 
-		file => data_base_file_preliminary,
+		file => file_database_preliminary,
 		mode => append_file,
-		name => universal_string_type.to_string(name_file_data_base)
+		name => to_string(name_file_database)
 		);
-	set_output(data_base_file_preliminary);
+	set_output(file_database_preliminary);
 	write_new_statistics;
-	close(data_base_file_preliminary);
+	close(file_database_preliminary);
 
 	-- overwrite now useless old data base with temporarily data base
 	prog_position := "ST1100";
-	copy_file(universal_string_type.to_string(name_file_data_base), universal_string_type.to_string(data_base_backup_name));
+	copy_file(to_string(name_file_database), to_string(name_file_database_backup));
 	-- clean up tmp directory
 	prog_position := "ST1200";
-	delete_file(universal_string_type.to_string(name_file_data_base));
+	delete_file(to_string(name_file_database));
 
 	exception
 
@@ -2122,15 +2116,15 @@ begin
 			set_output(standard_output);
 
 			if prog_position = "ARG001" then
-				put_line("ERROR: Data base file missing or insufficient access rights !");
-				put_line("       Provide data base name as argument. Example: chkpsn my_uut.udb");
+				put_line(message_error & text_identifier_database & " file missing or insufficient access rights !");
+				put_line("       Provide " text_identifier_database & " name as argument. Example: chkpsn my_uut.udb");
 
 			elsif prog_position = "ARG002" then
-				put_line("ERROR: Options file missing or insufficient access rights !");
+				put_line(message_error & "Options file missing or insufficient access rights !");
 				put_line("       Provide options file as argument. Example: chkpsn my_uut.udb my_options.opt");
 
 			else
-				put("unexpected exception: ");
+-- 				put("unexpected exception: ");
 				put_line(exception_name(event));
 				put(exception_message(event)); new_line;
 				put_line("program error at position " & prog_position);
