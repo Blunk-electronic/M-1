@@ -61,29 +61,38 @@ procedure bsmcl is
 	version			: constant string (1..3) := "028";
 	prog_position	: string (1..5) := "-----";
 
- 	item_udb_class	: type_item_udbinfo;
-	item_udb_name	: type_universal_string.bounded_string;
-
-	retry_count		: type_sxr_retries;
-	retry_delay		: type_delay_value;
-
-	cycle_count		: positive; -- CS: use type_cycle_count as specified in mktoggle.adb
-	low_time		: type_delay_value;
-	high_time		: type_delay_value;
-
 	result   		: integer; -- the return code of external programs
 
 	arg_ct			: natural;
 	arg_pt			: positive := 1;
 
-	vector_id_breakpoint	: type_vector_id_breakpoint;
-	bit_position			: type_sxr_break_position := 0; -- in case bit_position to break at is not provided, default used
+	use type_name_file_netlist;
+	use type_name_file_partlist;	
+	use type_name_file_skeleton_submodule;
+	use type_name_project;	
+	use type_name_database;	
+	use type_name_file_options;
+	use type_name_test;
+	use type_name_directory_home;
+	use type_name_directory_bin;
+	use type_name_directory_enscript;
+	use type_interface_to_bsc;	
 
+	use type_name_file_model_memory;
+	
+	use type_name_file_skeleton_verilog;
+	use type_name_file_model_verilog;
 
+	use type_device_name;
+	use type_package_name;
+	use type_pin_name;	
+	use type_net_name;	
+	
+	use type_universal_string;
+	
 	function exists_netlist (netlist : in type_name_file_netlist.bounded_string) return boolean is
 	-- verifies if given netlist exists
 		file_exists : boolean := false;	
-		use type_name_file_netlist;
 	begin
 		prog_position := "NLE00";	
 		--put_line(text_name_cad_net_list & "        : " & universal_string_type.to_string(netlist));
@@ -101,7 +110,6 @@ procedure bsmcl is
 	function exists_partlist (partlist : in type_name_file_partlist.bounded_string) return boolean is
 	-- verifies if given partlist exists
 		file_exists : boolean := false;
-		use type_name_file_partlist;
 	begin
 		prog_position := "PLE00";	
 		--put_line(text_name_cad_part_list & "       : " & universal_string_type.to_string(partlist));
@@ -118,9 +126,7 @@ procedure bsmcl is
 
 	function exists_database(database : in type_name_database.bounded_string) return boolean is
 		file_exists : boolean := false;
-		use type_name_database;
 	begin
-		--put ("database       : ");	put(database); new_line;
 		if exists(to_string(database)) then
 			file_exists := true;
 		else
@@ -130,11 +136,9 @@ procedure bsmcl is
 		return file_exists;
 	end exists_database;
 
-
 	-- ADVISE MESSAGES BEGIN
-
 	procedure advise_next_step_cad_import is
-		begin
+	begin
 		put_line(done);
 		put_line("Recommended next steps:");
 		put_line("  1. Read header of file" & row_separator_0 & quote_single & name_file_skeleton_default & quote_single & row_separator_0 &
@@ -143,7 +147,7 @@ procedure bsmcl is
 			quote_single & "skeleton_your_submodule." & file_extension_text & quote_single & dot);
 		put_line("  2. Create boundary scan nets with command:" & row_separator_0 & quote_single & name_module_cli & row_separator_0 &
 			name_module_mknets & quote_single);
-		end advise_next_step_cad_import;
+	end advise_next_step_cad_import;
 
 	procedure advise_next_step_generate is
 	begin
@@ -151,10 +155,10 @@ procedure bsmcl is
 		put_line("Recommended next steps:");
 		ada.text_io.put_line("  1. Compile generated test using command " & quote_single & name_module_cli & row_separator_0 &
 			to_lower(type_action'image(compile)) &
-			row_separator_0 & universal_string_type.to_string(name_file_data_base) & row_separator_0 & 
-			universal_string_type.to_string(name_test) & quote_single);
+			row_separator_0 & to_string(name_file_database) & row_separator_0 & 
+			to_string(name_test) & quote_single);
 		put_line("Following steps are optional for fine tuning:");
-		put_line("  2. Edit generated sequence file " & quote_single & universal_string_type.to_string(name_test) & dot & file_extension_sequence &
+		put_line("  2. Edit generated sequence file " & quote_single & to_string(name_test) & dot & file_extension_sequence &
 			quote_single & " with a text editor.");
 		put_line(message_note & "On automatic test generation the sequence file will be overwritten" & exclamation);
 		put_line("  3. Compile modified test sequence file.");
@@ -167,7 +171,7 @@ procedure bsmcl is
 		ada.text_io.put_line("  1. Upload compiled test to" & row_separator_0 & name_bsc & row_separator_0 & "with command " &
 			quote_single & name_module_cli & row_separator_0 &
 			to_lower(type_action'image(load)) & row_separator_0 &
-			universal_string_type.to_string(name_test) & quote_single);
+			to_string(name_test) & quote_single);
 	end advise_next_step_compile;
 
 	procedure advise_next_step_load is
@@ -177,39 +181,26 @@ procedure bsmcl is
 		ada.text_io.put_line("  1. Start test with command" & row_separator_0 &
 			quote_single & name_module_cli & row_separator_0 &
 			to_lower(type_action'image(run)) & row_separator_0 &
-			universal_string_type.to_string(name_test) & quote_single);
+			to_string(name_test) & quote_single);
 	end advise_next_step_load;
-
 	-- ADVISE MESSAGES END
 
 
 
 	procedure write_error_no_project is
 	begin
-		put_line("ERROR: The current working directory is no " & name_system & " project !");
+		put_line(message_error & "The current working directory is no " & name_system & " project !");
 		raise constraint_error;
 	end write_error_no_project;
-
-	procedure put_format_cad is
-	begin
-		put_line(type_format_cad'image(format_cad));
-	end put_format_cad;
-
-	procedure put_message_on_failed_cad_import(format_cad : type_format_cad) is
-	begin
-		put_line(message_error & "Importing " & type_format_cad'image(format_cad) & " CAD data failed " &
-			exclamation & row_separator_0 & aborting);
-		raise constraint_error;
-	end put_message_on_failed_cad_import;
 
 	function launch_mknets return natural is
 		result	: natural;
 	begin
 		spawn 
 			(  
-			program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mknets),
+			program_name           => compose ( to_string(name_directory_bin), name_module_mknets),
 			args                   => 	(
-										1=> new string'(universal_string_type.to_string(name_file_data_base))
+										1=> new string'(to_string(name_file_database))
 										),
 			output_file_descriptor => standout,
 			return_code            => result
@@ -243,11 +234,11 @@ begin
 		when configuration =>
 			-- DISPLAY CONFIGURATION
 			prog_position := "CNF00";
-			put_line("directory home     : " & universal_string_type.to_string(name_directory_home));
+			put_line("directory home     : " & to_string(name_directory_home));
 			put_line("language           : " & type_language'image(language));
-			put_line("directory bin      : " & universal_string_type.to_string(name_directory_bin));
-			put_line("directory enscript : " & universal_string_type.to_string(name_directory_enscript));
-			put("interface bsc      : " & universal_string_type.to_string(interface_to_bsc));
+			put_line("directory bin      : " & to_string(name_directory_bin));
+			put_line("directory enscript : " & to_string(name_directory_enscript));
+			put     ("interface bsc      : " & to_string(interface_to_bsc));
 			if scan_master_present then
 				null;
 			else
@@ -265,15 +256,15 @@ begin
 				raise constraint_error;
 			else
 				prog_position := "PJN00";
-				name_project := universal_string_type.to_bounded_string(argument(2));
+				name_project := to_bounded_string(argument(2));
 				new_line;
 					
 				-- launch project maker
 				spawn 
 					(  
-					program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_mkproject),
+					program_name           => compose( to_string(name_directory_bin), name_module_mkproject),
 					args                   => 	(
-												1=> new string'(universal_string_type.to_string(name_project))
+												1=> new string'(to_string(name_project))
 												),
 					output_file_descriptor => standout,
 					return_code            => result
@@ -284,15 +275,15 @@ begin
 					when 0 => -- then set_directory(to_string(project_name)); -- cd into project directory -- CS: does not work
 						put_line(done); new_line;
 						put_line("Recommended next steps :"); new_line;
-						put_line("  1. Change into project directory " & quote_single & universal_string_type.to_string(name_project) & quote_single & dot);
-						put_line("  2. Edit project database " & quote_single & universal_string_type.to_string(name_project) & file_extension_separator 
+						put_line("  1. Change into project directory " & quote_single & to_string(name_project) & quote_single & dot);
+						put_line("  2. Edit project database " & quote_single & to_string(name_project) & file_extension_separator 
 							& file_extension_database & "' according to your needs with a text editor.");
 						put_line("  3. Import BSDL model files using command: " & quote_single & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(import_bsdl)) & row_separator_0 & universal_string_type.to_string(name_project) &
+							to_lower(type_action'image(import_bsdl)) & row_separator_0 & to_string(name_project) &
 							file_extension_separator & file_extension_database & quote_single & dot);
 					when 1 => 
 						put_line(message_error & " Malfunction while creating new project " & quote_single &
-							universal_string_type.to_string(name_project) & quote_single &
+							to_string(name_project) & quote_single &
 							row_separator_0 & exclamation & row_separator_0 & aborting);
 						raise constraint_error;
 					when others => 
@@ -301,7 +292,6 @@ begin
 
 			end if;
 			-- MAKE PROJECT END
-
 
 		when import_cad =>
 			-- CAD IMPORT BEGIN
@@ -312,19 +302,19 @@ begin
 				put ("CAD format     : "); put_format_cad;
 
 				prog_position := "INE00";
-				name_file_cad_net_list := universal_string_type.to_bounded_string(argument(3));
+				name_file_cad_netlist := to_bounded_string(argument(3));
 
 				case format_cad is
 					when orcad =>
-						if exists_netlist(name_file_cad_net_list) then
+						if exists_netlist(name_file_cad_netlist) then
 						
 							-- launch ORCAD importer
 							new_line;
 							spawn 
 								(  
-								program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_cad_importer_orcad),
+								program_name           => compose( to_string(name_directory_bin), name_module_cad_importer_orcad),
 								args                   => 	(
-															1=> new string'(universal_string_type.to_string(name_file_cad_net_list))
+															1=> new string'(to_string(name_file_cad_netlist))
 															),
 								output_file_descriptor => standout,
 								return_code            => result
@@ -338,21 +328,21 @@ begin
 						end if;
 
 					when protel => -- CS: apply this way of providing target module and prefix to other cad formats, update documentation and help
-						if exists_netlist(name_file_cad_net_list) then
+						if exists_netlist(name_file_cad_netlist) then
 							cad_import_target_module := type_cad_import_target_module'value(argument(4)); -- main or sub
 							if cad_import_target_module = sub then
-								target_module_prefix := universal_string_type.to_bounded_string(argument(5)); -- prefix
+								target_module_prefix := to_bounded_string(argument(5)); -- prefix
 							end if;
 							
 							-- launch PROTEL importer
 							new_line;
 							spawn 
 								(  
-								program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_cad_importer_protel),
+								program_name           => compose( to_string(name_directory_bin), name_module_cad_importer_protel),
 								args                   => 	(
-																1=> new string'(universal_string_type.to_string(name_file_cad_net_list)),
+																1=> new string'(to_string(name_file_cad_netlist)),
 																2=> new string'(type_cad_import_target_module'image(cad_import_target_module)),
-																3=> new string'(universal_string_type.to_string(target_module_prefix)) -- dont care if target module is "main"
+																3=> new string'(to_string(target_module_prefix)) -- dont care if target module is "main"
 															),
 								output_file_descriptor => standout,
 								return_code            => result
@@ -366,18 +356,18 @@ begin
 						end if;
 
 					when zuken =>
-						if exists_netlist(name_file_cad_net_list) then
+						if exists_netlist(name_file_cad_netlist) then
 					
 							-- launch ZUKEN importer
 							new_line;
-							Spawn 
+							spawn 
 								(  
-								program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_cad_importer_zuken),
-								Args                   => 	(
-															1=> new String'(universal_string_type.to_string(name_file_cad_net_list))
+								program_name           => compose( to_string(name_directory_bin), name_module_cad_importer_zuken),
+								args                   => 	(
+															1=> new string'(to_string(name_file_cad_netlist))
 															),
-								Output_File_Descriptor => Standout,
-								Return_Code            => Result
+								output_file_descriptor => standout,
+								return_code            => result
 								);
 
 							if result = 0 then
@@ -387,21 +377,20 @@ begin
 							end if;
 						end if;
 
-
 					when eagle =>
-						if exists_netlist(name_file_cad_net_list) then
+						if exists_netlist(name_file_cad_netlist) then
 							prog_position := "IPA00";
-							name_file_cad_part_list := universal_string_type.to_bounded_string(argument(4));
-							if exists_partlist(name_file_cad_part_list) then
+							name_file_cad_partlist := to_bounded_string(argument(4));
+							if exists_partlist(name_file_cad_partlist) then
 
 								-- launch EAGLE importer
 								new_line;
 								spawn 
 									(  
-									program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_cad_importer_eagle),
+									program_name           => compose( to_string(name_directory_bin), name_module_cad_importer_eagle),
 									args                   => 	(
-																1=> new string'(universal_string_type.to_string(name_file_cad_net_list)),
-																2=> new string'(universal_string_type.to_string(name_file_cad_part_list))
+																1=> new string'(to_string(name_file_cad_netlist)),
+																2=> new string'(to_string(name_file_cad_partlist))
 																),
 									output_file_descriptor => standout,
 									return_code            => result
@@ -414,7 +403,6 @@ begin
 								end if;
 							end if;
 						end if;
-
 				end case;
 
 			else
@@ -422,22 +410,21 @@ begin
 			end if;
 			-- CAD IMPORT END
 
-
 		when mkvmod =>
 			-- MAKE VERILOG MODEL BEGIN
 			if is_project_directory then
 
 				prog_position := "ACV00";
-				name_file_skeleton_verilog := universal_string_type.to_bounded_string(argument(2));
-				name_file_model_verilog := universal_string_type.to_bounded_string(argument(3));
+				name_file_skeleton_verilog 	:= to_bounded_string(argument(2));
+				name_file_model_verilog 	:= to_bounded_string(argument(3));
 										
 				-- LAUNCH VERILOG MODEL MAKER
 				spawn 
 					(  
-					program_name           => compose( universal_string_type.to_string(name_directory_bin), name_module_mkvmod),
+					program_name           => compose( to_string(name_directory_bin), name_module_mkvmod),
 					args                   => 	(
-												1=> new string'(universal_string_type.to_string(name_file_skeleton_verilog)),
-												2=> new string'(universal_string_type.to_string(name_file_model_verilog))
+												1=> new string'(to_string(name_file_skeleton_verilog)),
+												2=> new string'(to_string(name_file_model_verilog))
 												),
 					output_file_descriptor => standout,
 					return_code            => result
@@ -455,18 +442,17 @@ begin
 			end if;
 			-- MAKE VERILOG MODEL END
 
-
 		when join_netlist =>
 			-- JOIN NETLIST BEGIN
 			if is_project_directory then
 
 				prog_position := "JSM00";
-				name_file_skeleton_submodule := universal_string_type.to_bounded_string(argument(2));
+				name_file_skeleton_submodule := to_bounded_string(argument(2));
 
-				if not exists(universal_string_type.to_string(name_file_skeleton_submodule)) then
+				if not exists(to_string(name_file_skeleton_submodule)) then
 					prog_position := "JSN00";
 					put_line(message_error & "Skeleton of submodule " & quote_single &
-						universal_string_type.to_string(name_file_skeleton_submodule) & quote_single & " does not exist " & exclamation);
+						to_string(name_file_skeleton_submodule) & quote_single & " does not exist " & exclamation);
 					raise constraint_error;
 				else
 					null;
@@ -486,9 +472,9 @@ begin
 				-- launch netlist joiner
 				spawn 
 					(  
-					program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_join_netlist),
+					program_name           => compose ( to_string(name_directory_bin), name_module_join_netlist),
 					args                   => 	(
-												1=> new string'(universal_string_type.to_string(name_file_skeleton_submodule))
+												1=> new string'(to_string(name_file_skeleton_submodule))
 												),
 					output_file_descriptor => standout,
 					return_code            => result
@@ -509,26 +495,25 @@ begin
 			end if;
 		-- JOIN NETLIST END 
 
-
 		when import_bsdl =>
 		-- BSDL IMPORT BEGIN
 			if is_project_directory then
 
 				prog_position := "IBL00";
-				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
+				name_file_database := to_bounded_string(argument(2));
 
 				-- check if udb file exists
 				prog_position := "IBL10";
-				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
+				if not exists_database(name_file_database) then
 					raise constraint_error;
 				end if;
 									
 				-- launch BSDL importer
 				spawn 
 					(  
-					program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_importer_bsdl),
+					program_name           => compose ( to_string(name_directory_bin), name_module_importer_bsdl),
 					args                   => 	(
-												1=> new string'(universal_string_type.to_string(name_file_data_base))
+												1=> new string'(to_string(name_file_database))
 												),
 					output_file_descriptor => standout,
 					return_code            => result
@@ -540,7 +525,7 @@ begin
 					put_line("  1. Import CAD data files using command: " & quote_single & name_module_cli & row_separator_0
 						& to_lower(type_action'image(import_cad)) & " format_cad" & quote_single);
 				else
-					put_line(message_error & "Importing BSDL files failed" & exclamation & row_separator_0 & aborting);
+					put_line(message_error & "Importing BSDL files failed" & exclamation & row_separator_0);
 					raise constraint_error;
 				end if;
 
@@ -549,16 +534,15 @@ begin
 			end if;
 		-- BSDL IMPORT END
 
-
 		when mknets =>
 		-- MKNETS BEGIN
 			if is_project_directory then
 				prog_position := "MKN00";
-				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
+				name_file_database := to_bounded_string(argument(2));
 
 				-- check if udb file exists
 				prog_position := "MKN10";
-				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
+				if not exists_database(name_file_database) then
 					raise constraint_error;
 				end if;
 
@@ -568,14 +552,14 @@ begin
 					put_line("Recommended next step:");
 					put_line("  1. Edit configuration file " & quote_single & name_file_mkoptions_configuration & quote_single);
 					put_line("  2. Create options file for database " & quote_single &
-						universal_string_type.to_string(name_file_data_base) & quote_single & " using command " &
+						to_string(name_file_database) & quote_single & " using command " &
 						quote_single & name_module_cli & row_separator_0 & to_lower(type_action'image(mkoptions)) & row_separator_0 &
-						universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+						to_string(name_file_database) & row_separator_0 &
 						compose(name => "[options_file", extension => file_extension_options) & "]" & quote_single);
 						--put("  2. Edit options file according to your needs using a text editor."); new_line;
 						--put("  3. Import BSDL model files using command: 'bsmcl impbsdl " & project_name & ".udb'"); new_line;
 				else
-					put_line(message_error & "Building bscan nets failed" & exclamation & row_separator_0 & aborting);
+					put_line(message_error & "Building bscan nets failed" & exclamation);
 					raise constraint_error;
 				end if;
 			else
@@ -583,30 +567,29 @@ begin
 			end if;
 		-- MKNETS END
 
-
 		when mkoptions =>
 		-- MKOPTIONS BEGIN
 			if is_project_directory then
 				prog_position := "MKO00";
-				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
+				name_file_database := to_bounded_string(argument(2));
 
 				-- check if udb file exists
 				prog_position := "MKO10";
-				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
+				if not exists_database(name_file_database) then
 					raise constraint_error;
 				end if;
 
 				-- If the name of the options file not specified by operator, use default name.
 				if arg_ct = 2 then
-					name_file_options := universal_string_type.to_bounded_string
+					name_file_options := to_bounded_string
 						(
 						compose(
-							name 		=> base_name(universal_string_type.to_string(name_file_data_base)),
+							name 		=> base_name(to_string(name_file_database)),
 							extension 	=> file_extension_options
 							)
 						);
 				else
-					name_file_options := universal_string_type.to_bounded_string(argument(3)); 
+					name_file_options := to_bounded_string(argument(3)); 
 					-- NOTE: the opt file given will be created by mkoptions
 				end if;
 
@@ -615,17 +598,17 @@ begin
 				if launch_mknets = 0 then
 					put_line(done);
 				else
-					put_line(message_error & "Building bscan nets failed" & exclamation & row_separator_0 & aborting);
+					put_line(message_error & "Building bscan nets failed" & exclamation);
 					raise constraint_error;
 				end if;
 
 				-- launch MKOPTIONS
 				spawn 
 					(  
-					program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mkoptions),
+					program_name           => compose ( to_string(name_directory_bin), name_module_mkoptions),
 					args                   => 	(
-												1=> new string'(universal_string_type.to_string(name_file_data_base)),
-												2=> new String'(universal_string_type.to_string(name_file_options))
+												1=> new string'(to_string(name_file_database)),
+												2=> new String'(to_string(name_file_options))
 												),
 					output_file_descriptor => standout,
 					return_code            => result
@@ -634,11 +617,11 @@ begin
 				if result = 0 then
 					put_line(done);
 					put_line("Recommended next step:");
-					put_line(" 1. Edit options file" & row_separator_0 & quote_single & universal_string_type.to_string(name_file_options) &
+					put_line(" 1. Edit options file" & row_separator_0 & quote_single & to_string(name_file_options) &
 						quote_single & " according to your needs with a text editor.");
 					put_line(" 2. Check primary/secondary dependencies and net classes using command " & quote_single & name_module_cli &
-						row_separator_0 & to_lower(type_action'image(chkpsn)) & row_separator_0 & universal_string_type.to_string(name_file_data_base) &
-						row_separator_0 & universal_string_type.to_string(name_file_options) & quote_single);
+						row_separator_0 & to_lower(type_action'image(chkpsn)) & row_separator_0 & to_string(name_file_database) &
+						row_separator_0 & to_string(name_file_options) & quote_single);
 				else
 					put_line(message_error & "Creating options file failed" & exclamation & row_separator_0 & aborting);
 					raise constraint_error;
@@ -655,29 +638,29 @@ begin
 			if is_project_directory then
 
 				prog_position := "CP100";
-				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
+				name_file_database := to_bounded_string(argument(2));
 
 				-- check if udb file exists
 				prog_position := "CPO10";
-				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
+				if not exists_database(name_file_database) then
 					raise constraint_error;
 				end if;
 
 				-- derive name of options file from given database
 				prog_position := "CPO20";
-				name_file_options := universal_string_type.to_bounded_string
+				name_file_options := to_bounded_string
 					(
 					compose
 						(
-						name 		=> base_name(universal_string_type.to_string(name_file_data_base)),
+						name 		=> base_name(to_string(name_file_database)),
 						extension	=> file_extension_options
 						)
 					); 
 
 				-- check if options file exists
-				if not exists(universal_string_type.to_string(name_file_options)) then
+				if not exists(to_string(name_file_options)) then
 					put_line(message_error & "Options file " & quote_single &
-						universal_string_type.to_string(name_file_options) & quote_single & " does not exist " & exclamation);
+						to_string(name_file_options) & quote_single & " does not exist " & exclamation);
 					raise constraint_error;
 				end if;
 
@@ -693,10 +676,10 @@ begin
 				-- launch CHKPSN
 				spawn 
 					(  
-					program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_chkpsn),
+					program_name           => compose ( to_string(name_directory_bin), name_module_chkpsn),
 					args                   => 	(
-												1=> new string'(universal_string_type.to_string(name_file_data_base)),
-												2=> new String'(universal_string_type.to_string(name_file_options))
+												1=> new string'(to_string(name_file_database)),
+												2=> new String'(to_string(name_file_options))
 												),
 					output_file_descriptor => standout,
 					return_code            => result
@@ -709,9 +692,9 @@ begin
 					put_line("     to prepare your test init sequence.");
 					put_line("  2. Generate tests using command " & quote_single & name_module_cli & 
 						row_separator_0 & to_lower(type_action'image(generate)) & row_separator_0 
-						& universal_string_type.to_string(name_file_data_base) & quote_single);
+						& to_string(name_file_database) & quote_single);
 				else
-					put_line(message_error & "Checking net classes and dependencies failed" & exclamation & row_separator_0 & aborting);
+					put_line(message_error & "Checking net classes and dependencies failed" & exclamation);
 					raise constraint_error;
 				end if;
 			else
@@ -723,28 +706,34 @@ begin
 		-- QUERY UUT DATA BASE ITEM BEGIN
 			if is_project_directory then
 				prog_position := "UDQ00";
-				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
+				name_file_database := to_bounded_string(argument(2));
 
 				-- check if udb file exists
 				prog_position := "UDQ10";
-				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
+				if not exists_database(name_file_database) then
 					raise constraint_error;
 				end if;
 
 				prog_position := "UDQ20";
-				item_udb_class := type_item_udbinfo'value(argument(3));
+				object_type_in_database := type_object_type_in_database'value(argument(3));
 
 				prog_position := "UDQ30";
-				item_udb_name := universal_string_type.to_bounded_string(argument(4));
+				object_name_in_database := to_bounded_string(argument(4));
 
+				if arg_ct = 5 then
+					prog_position := "UDQ40";
+					degree_of_database_integrity_check := type_degree_of_database_integrity_check'value(argument(5));
+				end if;
+				
 				spawn 
 					(  
-					program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_data_base_query),
-					args                   => 	(
-												1=> new string'(universal_string_type.to_string(name_file_data_base)),
-												2=> new string'(type_item_udbinfo'image(item_udb_class)),
-												3=> new string'(universal_string_type.to_string(item_udb_name))
-												),
+					program_name	=> compose ( to_string(name_directory_bin), name_module_database_query),
+					args            => 	(
+										1=> new string'(to_string(name_file_database)),
+										2=> new string'(type_object_type_in_database'image(object_type_in_database)),
+										3=> new string'(to_string(object_name_in_database)),
+										4=> new string'(type_degree_of_database_integrity_check'image(degree_of_database_integrity_check))
+										),
 					output_file_descriptor => standout,
 					return_code            => result
 					);
@@ -761,16 +750,15 @@ begin
 			end if;
 		-- QUERY UUT DATA BASE ITEM END
 
-
 		when generate =>
 		-- TEST GENERATION BEGIN
 			if is_project_directory then
 				prog_position := "GEN00";
-				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
+				name_file_database := to_bounded_string(argument(2));
 
 				-- check if udb file exists
 				prog_position := "GEN10";
-				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
+				if not exists_database(name_file_database) then
 					raise constraint_error;
 				end if;
 
@@ -779,17 +767,17 @@ begin
 				put_line("test profile   : " & type_test_profile'image(test_profile)); new_line;
 
 				prog_position := "GEN30";
-				name_test :=  universal_string_type.to_bounded_string(strip_trailing_forward_slash(argument(4)));
+				name_test :=  to_bounded_string(strip_trailing_forward_slash(argument(4)));
 
 				case test_profile is
 					when infrastructure =>
 						-- launch INFRASTRUCTURE TEST GENERATOR
 						spawn 
 							(  
-							program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mkinfra),
+							program_name           => compose ( to_string(name_directory_bin), name_module_mkinfra),
 							args                   => 	(
-														1=> new string'(universal_string_type.to_string(name_file_data_base)),
-														2=> new String'(universal_string_type.to_string(name_test))
+														1=> new string'(to_string(name_file_database)),
+														2=> new String'(to_string(name_test))
 														),
 							output_file_descriptor => standout,
 							return_code            => result
@@ -798,7 +786,7 @@ begin
 						if result = 0 then 
 							advise_next_step_generate;							
 						else
-							put_line(message_error & "Generating test failed" & exclamation & row_separator_0 & aborting);
+							put_line(message_error & "Generating test failed" & exclamation);
 							raise constraint_error;
 						end if;
 
@@ -806,10 +794,10 @@ begin
 						-- launch INTERCONNECT TEST GENERATOR
 						spawn 
 							(  
-							program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mkintercon),
+							program_name           => compose (to_string(name_directory_bin), name_module_mkintercon),
 							args                   => 	(
-														1=> new string'(universal_string_type.to_string(name_file_data_base)),
-														2=> new String'(universal_string_type.to_string(name_test))
+														1=> new string'(to_string(name_file_database)),
+														2=> new String'(to_string(name_test))
 														),
 							output_file_descriptor => standout,
 							return_code            => result
@@ -818,27 +806,27 @@ begin
 						if result = 0 then 
 							advise_next_step_generate;							
 						else
-							put_line(message_error & "Generating test failed" & exclamation & row_separator_0 & aborting);
+							put_line(message_error & "Generating test failed" & exclamation);
 							raise constraint_error;
 						end if;
 				
 					when memconnect =>
 						prog_position := "TDV00";
-						target_device := universal_string_type.to_bounded_string(argument(5));
+						device_name := to_bounded_string(argument(5));
 						
 						prog_position := "DVM00";
-						name_file_model_memory := universal_string_type.to_bounded_string(argument(6));
+						name_file_model_memory := to_bounded_string(argument(6));
 						
 						-- check if model file exists
 						prog_position := "DVM10";
-						if not exists(universal_string_type.to_string(name_file_model_memory)) then
+						if not exists(to_string(name_file_model_memory)) then
 							put_line(message_error & "Model file " & quote_single &
-								universal_string_type.to_string(name_file_model_memory) & quote_single & " does not exist " & exclamation);
+								to_string(name_file_model_memory) & quote_single & " does not exist " & exclamation);
 							raise constraint_error;
 						end if;
 						
 						prog_position := "DPC00";
-						device_package := universal_string_type.to_bounded_string(argument(7));
+						device_package := to_bounded_string(argument(7));
 
 						-- launch memconnect generator
 						prog_position := "LMC00"; -- ins v018
@@ -846,13 +834,13 @@ begin
 						-- launch MEMCONNECT TEST GENERATOR
 						spawn 
 							(  
-							program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mkmemcon),
+							program_name           => compose ( to_string(name_directory_bin), name_module_mkmemcon),
 							args                   => 	(
-														1=> new string'(universal_string_type.to_string(name_file_data_base)),
-														2=> new string'(universal_string_type.to_string(name_test)),
-														3=> new string'(universal_string_type.to_string(target_device)),
-														4=> new string'(universal_string_type.to_string(name_file_model_memory)),
-														5=> new string'(universal_string_type.to_string(device_package))
+														1=> new string'(to_string(name_file_database)),
+														2=> new string'(to_string(name_test)),
+														3=> new string'(to_string(device_name)),
+														4=> new string'(to_string(name_file_model_memory)),
+														5=> new string'(to_string(device_package))
 														),
 							output_file_descriptor => standout,
 							return_code            => result
@@ -861,17 +849,17 @@ begin
 						if result = 0 then 
 							advise_next_step_generate;
 						else
-							put_line(message_error & "Generating test failed" & exclamation & row_separator_0 & aborting);
+							put_line(message_error & "Generating test failed" & exclamation);
 							raise constraint_error;
 						end if;
 
 
 					when clock =>
 						prog_position := "TDV00";					
-						target_device := universal_string_type.to_bounded_string(argument(5));
+						device_name := to_bounded_string(argument(5));
 						
 						prog_position := "TPI00";
-						target_pin := universal_string_type.to_bounded_string(argument(6));
+						device_pin := to_bounded_string(argument(6));
 						
 						prog_position := "RYC00";
 						retry_count := type_sxr_retries'value(argument(7));
@@ -882,13 +870,13 @@ begin
 						-- launch CLOCK SAMPLING GENERATOR
 						spawn 
 							(  
-							program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mkclock),
+							program_name           => compose ( to_string(name_directory_bin), name_module_mkclock),
 							args                   => 	(
-														1=> new string'(universal_string_type.to_string(name_file_data_base)),
-														2=> new string'(universal_string_type.to_string(name_test)),
+														1=> new string'(to_string(name_file_database)),
+														2=> new string'(to_string(name_test)),
 														3=> new string'("non_intrusive"), -- CS: global type_algorithm ? so far every test has its own type
-														4=> new string'(universal_string_type.to_string(target_device)),
-														5=> new string'(universal_string_type.to_string(target_pin)),
+														4=> new string'(to_string(device_name)),
+														5=> new string'(to_string(device_pin)),
 														6=> new string'(type_sxr_retries'image(retry_count)),
 														7=> new string'(type_delay_value'image(retry_delay))
 														),
@@ -899,17 +887,17 @@ begin
 						if result = 0 then
 							advise_next_step_generate;
 						else
-							put_line(message_error & "Generating test failed" & exclamation & row_separator_0 & aborting);
+							put_line(message_error & "Generating test failed" & exclamation);
 							raise constraint_error;
 						end if;
 
 
 					when toggle =>
 						prog_position := "TON00";
-						target_net := universal_string_type.to_bounded_string(argument(5));
+						net_name := to_bounded_string(argument(5));
 						
 						prog_position := "TOC00";
-						cycle_count:= positive'value(argument(6));
+						cycle_count:= type_cycle_count'value(argument(6));
 						
 						prog_position := "TLT00";				
 						low_time:= type_delay_value'value(argument(7));
@@ -920,12 +908,12 @@ begin
 						-- launch PIN TOGGLE GENERATOR
 						spawn 
 							(  
-							program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_mktoggle),
+							program_name           => compose ( to_string(name_directory_bin), name_module_mktoggle),
 							args                   => 	(
-														1=> new string'(universal_string_type.to_string(name_file_data_base)),
-														2=> new string'(universal_string_type.to_string(name_test)),
-														3=> new string'(universal_string_type.to_string(target_net)),
-														4=> new string'(positive'image(cycle_count)),
+														1=> new string'(to_string(name_file_database)),
+														2=> new string'(to_string(name_test)),
+														3=> new string'(to_string(net_name)),
+														4=> new string'(type_cycle_count'image(cycle_count)),
 														5=> new string'(type_delay_value'image(low_time)),
 														6=> new string'(type_delay_value'image(high_time))
 														),
@@ -936,7 +924,7 @@ begin
 						if result = 0 then
 							advise_next_step_generate;
 						else
-							put_line(message_error & "Generating test failed" & exclamation & row_separator_0 & aborting);
+							put_line(message_error & "Generating test failed" & exclamation);
 							raise constraint_error;	
 						end if;
 
@@ -952,17 +940,17 @@ begin
 		-- TEST COMPILATION BEGIN
 			if is_project_directory then
 				prog_position := "CMP00";
-				name_file_data_base := universal_string_type.to_bounded_string(argument(2));
+				name_file_database := to_bounded_string(argument(2));
 				-- CS: derive database name from sequence file info section
 
 				-- check if udb file exists
 				prog_position := "CMP10";
-				if not exists_database(universal_string_type.to_string(name_file_data_base)) then
+				if not exists_database(name_file_database) then
 					raise constraint_error;
 				end if;
 							
 				prog_position := "CMP20";
-				name_test := universal_string_type.to_bounded_string(strip_trailing_forward_slash(argument(3)));
+				name_test := to_bounded_string(strip_trailing_forward_slash(argument(3)));
 
 				prog_position := "CMP30";
 				-- check if test directory containing the seq file exists
@@ -970,8 +958,8 @@ begin
 					(
 					compose
 						(
-						universal_string_type.to_string(name_test), -- test directory
-						universal_string_type.to_string(name_test), -- sequence file
+						to_string(name_test), -- test directory
+						to_string(name_test), -- sequence file
 						file_extension_sequence	-- sequence file extension
 						)
 					) then
@@ -979,11 +967,11 @@ begin
 					-- launch COMPILER
 						spawn 
 							(  
-							program_name           => compose ( universal_string_type.to_string(name_directory_bin), name_module_compiler),
-							args                   => 	(
-														1=> new string'(universal_string_type.to_string(name_file_data_base)),
-														2=> new string'(universal_string_type.to_string(name_test))
-													),
+							program_name	=> compose ( to_string(name_directory_bin), name_module_compiler),
+							args            => 	(
+												1=> new string'(to_string(name_file_database)),
+												2=> new string'(to_string(name_test))
+												),
 						output_file_descriptor => standout,
 						return_code            => result
 						);
@@ -991,12 +979,12 @@ begin
 					if result = 0 then 
 						advise_next_step_compile;
 					else
-						put_line(message_error & "Compiling test failed" & exclamation & row_separator_0 & aborting);
+						put_line(message_error & "Compiling test failed" & exclamation);
 						raise constraint_error;	
 					end if;
 
 				else
-					put_line(message_error & "Test " & quote_single & universal_string_type.to_string(name_test) & quote_single &
+					put_line(message_error & "Test " & quote_single & to_string(name_test) & quote_single &
 						" incomplete or does not exist !");
 					raise constraint_error;
 				end if;
@@ -1006,12 +994,11 @@ begin
 			end if;
 		-- TEST COMPILATION END
 
-
 		when load =>
 		-- TEST LOADING BEGIN
 			if is_project_directory then
 				prog_position := "LD100";
-				name_test := universal_string_type.to_bounded_string(strip_trailing_forward_slash(argument(2)));
+				name_test := to_bounded_string(strip_trailing_forward_slash(argument(2)));
 
 				prog_position := "LD105";
 				-- check if test directory containing the compiled sequence file (vec) exists
@@ -1019,16 +1006,16 @@ begin
 					(
 					compose
 						(
-						universal_string_type.to_string(name_test), -- test directory
-						universal_string_type.to_string(name_test), -- sequence file
+						to_string(name_test), -- test directory
+						to_string(name_test), -- sequence file
 						file_extension_vector	-- sequence file extension
 						)
 					) then
 
 					if load_test 
 						(
-						test_name					=> universal_string_type.to_string(name_test),
-						interface_to_scan_master	=> universal_string_type.to_string(interface_to_bsc)
+						test_name					=> name_test,
+						interface_to_scan_master	=> interface_to_bsc
 						) then
 						advise_next_step_load;
 					else
@@ -1040,7 +1027,7 @@ begin
 					end if;
 
 				else
-					put_line(message_error & "Test " & quote_single & universal_string_type.to_string(name_test) & quote_single &
+					put_line(message_error & "Test " & quote_single & to_string(name_test) & quote_single &
 						" not compiled yet or does not exist !");
 					raise constraint_error;
 				end if;
@@ -1049,7 +1036,6 @@ begin
 			end if;
 		-- TEST LOADING END
 
-
 		when dump =>
 		-- RAM DUMP BEGIN
 			prog_position := "DP100";
@@ -1057,7 +1043,7 @@ begin
 			prog_position := "DP110";
 			if dump_ram
 				(
-				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
+				interface_to_scan_master 	=> interface_to_bsc,
 				mem_addr					=> mem_address
 				) then
 				null;
@@ -1068,13 +1054,12 @@ begin
 			end if;
 		-- RAM DUMP END
 
-
 		when clear =>
 		-- RAM CLEAR BEGIN
 			prog_position := "CLR10";
 			if clear_ram
 				(
-				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc)
+				interface_to_scan_master => interface_to_bsc
 				) then
 				put_line(name_bsc & " memory cleared. Please upload compiled tests now.");
 			else
@@ -1084,12 +1069,11 @@ begin
 			end if;
 		-- RAM CLEAR END
 
-
 		when run =>
 		-- TEST/STEP EXECUTION BEGIN
 			if is_project_directory then
 				prog_position := "RU100";
-				name_test := universal_string_type.to_bounded_string(strip_trailing_forward_slash(argument(2)));
+				name_test := to_bounded_string(strip_trailing_forward_slash(argument(2)));
 
 				-- optionally the step mode is given:
 				if arg_ct = 3 then
@@ -1106,8 +1090,8 @@ begin
 					(
 					compose
 						(
-						universal_string_type.to_string(name_test), -- test directory
-						universal_string_type.to_string(name_test), -- sequence file
+						to_string(name_test), -- test directory
+						to_string(name_test), -- sequence file
 						file_extension_vector	-- sequence file extension
 						)
 					) then
@@ -1116,8 +1100,8 @@ begin
 					prog_position := "RU300";
 					case execute_test
 						(
-						test_name 					=> universal_string_type.to_string(name_test),
-						interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
+						test_name 					=> name_test,
+						interface_to_scan_master 	=> interface_to_bsc,
 						step_mode					=> step_mode
 						) is
 						-- CS: distinguish between executed step and test !
@@ -1126,11 +1110,11 @@ begin
 						-- The gui needs this file in order to updae the status image to PASS or FAIL
 						when pass =>
 							new_line;
-							put_line("Test/Step" & row_separator_0 & universal_string_type.to_string(name_test) & row_separator_0 & passed);
+							put_line("Test/Step" & row_separator_0 & to_string(name_test) & row_separator_0 & passed);
 							make_result_file(passed);
 						when fail =>
 							new_line;
-							put_line("Test/Step" & row_separator_0 & universal_string_type.to_string(name_test) & row_separator_0 & failed);
+							put_line("Test/Step" & row_separator_0 & to_string(name_test) & row_separator_0 & failed);
 							make_result_file(failed);
 							set_exit_status(failure);
 						when not_loaded =>
@@ -1139,15 +1123,15 @@ begin
 							set_exit_status(failure);
 						when others =>
 							put_line(message_error & "Internal malfunction" & exclamation);
-							put_line("Test/Step" & row_separator_0 & universal_string_type.to_string(name_test) & row_separator_0 & failed);
+							put_line("Test/Step" & row_separator_0 & to_string(name_test) & row_separator_0 & failed);
 							advise_on_bsc_error;
 							make_result_file(failed);
 							set_exit_status(failure);
 					end case;
 
 				else 
-					put_line(message_error & "Test" & row_separator_0 & quote_single & universal_string_type.to_string(name_test) & quote_single &
-						row_separator_0 & "does not exist" & exclamation);
+					put_line(message_error & "Test" & row_separator_0 & quote_single & to_string(name_test) &
+						quote_single & row_separator_0 & "does not exist" & exclamation);
 					raise constraint_error;
 				end if;
 			else
@@ -1155,37 +1139,36 @@ begin
 			end if;
 		-- TEST EXECUTION END
 
-
 		when break =>
 		-- SET BREAK POINT BEGIN
 			if is_project_directory then
 				prog_position := "BP100";
-				vector_id_breakpoint := type_vector_id_breakpoint'value(argument(2));
+				break_sxr_position := type_vector_id_breakpoint'value(argument(2));
 
 				-- If vector_id_breakpoint greater zero, a breakpoint is to set. In this case a third argument may be 
 				-- given if a certain bit position is to halt after. Otherwise bit_position assumes zero.
-				if vector_id_breakpoint /= 0 then
+				if break_sxr_position /= 0 then
 					if arg_ct = 3 then
-						bit_position := type_sxr_break_position'value(argument(3));
+						break_bit_position := type_sxr_break_position'value(argument(3));
 					end if;
 				end if;
 
 				prog_position := "BP300";
 				case set_breakpoint
 					(
-					interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc),
-					vector_id_breakpoint		=> vector_id_breakpoint,
-					bit_position				=> bit_position
+					interface_to_scan_master 	=> interface_to_bsc,
+					vector_id_breakpoint		=> break_sxr_position,
+					bit_position				=> break_bit_position
 					) is
 					when true => -- setting breakpoint successful:
-						case vector_id_breakpoint is
+						case break_sxr_position is
 							when 0 => 
 								put_line("breakpoint removed");
 							when others =>
 								put_line("breakpoint set after ");
-								put_line("sxr id         : " & trim(type_vector_id_breakpoint'image(vector_id_breakpoint),left));
-								if bit_position /= 0 then
-									put_line ("bit position   : " & trim(type_sxr_break_position'image(bit_position),left));
+								put_line("sxr id         : " & trim(type_vector_id_breakpoint'image(break_sxr_position),left));
+								if break_bit_position /= 0 then
+									put_line ("bit position   : " & trim(type_sxr_break_position'image(break_bit_position),left));
 								end if;
 						end case;
 
@@ -1211,7 +1194,7 @@ begin
 			-- status can be inquired anytime anywhere
 			case query_status
 				(
-				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc)
+				interface_to_scan_master 	=> interface_to_bsc
 				) is
 				when false => 
 					put_line(message_error & name_bsc & " status query failed" & exclamation);
@@ -1226,7 +1209,7 @@ begin
 			prog_position := "FW000";
 			case show_firmware
 				(
-				interface_to_scan_master	=> universal_string_type.to_string(interface_to_bsc)
+				interface_to_scan_master => interface_to_bsc
 				) is
 				when false => 
 					put_line(message_error & name_bsc & " firmware query failed" & exclamation);
@@ -1242,7 +1225,7 @@ begin
 			delete_result_file; -- Remove stale result file (in temp directory) from previous runs.
 			case shutdown
 				(
-				interface_to_scan_master 	=> universal_string_type.to_string(interface_to_bsc)
+				interface_to_scan_master 	=> interface_to_bsc
 				) is
 				when false =>
 					new_line;
@@ -1385,29 +1368,42 @@ begin
 						put_line(message_error & "Invalid item specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(udbinfo)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 & 
-							to_lower(type_item_udbinfo'image(bic)));
+							to_string(name_file_database) & row_separator_0 & 
+							to_lower(type_object_type_in_database'image(bic)));
 						ada.text_io.put(message_error'last * row_separator_0 & "Items to inquire for are:" & row_separator_0);
 
 						-- show available items to inqure for
-						for i in 0..type_item_udbinfo'pos( type_item_udbinfo'last) loop
-							put(type_item_udbinfo'image(type_item_udbinfo'val(i)));
-							if i < type_item_udbinfo'pos( type_item_udbinfo'last) then put(" , "); end if;
+						for i in 0..type_object_type_in_database'pos(type_object_type_in_database'last) loop
+							put(type_object_type_in_database'image(type_object_type_in_database'val(i)));
+							if i < type_object_type_in_database'pos(type_object_type_in_database'last) then put(" , "); end if;
 						end loop;
 
 				elsif prog_position = "UDQ30" then
 						put_line(message_error & "Item name not specified" & exclamation);
 						ada.text_io.put(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(udbinfo)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 & 
-							to_lower(type_item_udbinfo'image(item_udb_class)) & row_separator_0);
-						case item_udb_class is
+							to_string(name_file_database) & row_separator_0 & 
+							to_lower(type_object_type_in_database'image(object_type_in_database)) & row_separator_0);
+						case object_type_in_database is
 							when BIC => 		put_line("IC303");
 							--when REGISTER =>	put_line("IC303");
 							when NET =>			put_line("OSC_OUT");
 							--when PIN =>			put_line("IC303#3");
 							when SCC =>			put_line("IC303#4");
 						end case;
+
+				elsif prog_position = "UDQ40" then
+						put_line(message_error & "Invalid degree of integrity check provided" & exclamation);
+						ada.text_io.put(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+							to_lower(type_action'image(udbinfo)) & row_separator_0 &
+							to_string(name_file_database) & row_separator_0 & 
+							to_lower(type_object_type_in_database'image(object_type_in_database)) & row_separator_0);
+						case object_type_in_database is
+							when BIC => 		put("IC303");
+							when NET =>			put("OSC_OUT");
+							when SCC =>			put("IC303#4");
+						end case;
+						put_line(row_separator_0 & type_degree_of_database_integrity_check'image(none)); -- CS: offer more degrees
 						
 				elsif prog_position = "IBL00" then
 						put_line(message_error & "No database specified" & exclamation);
@@ -1460,26 +1456,26 @@ begin
 							to_lower(type_format_cad'image(zuken)));
 	
 				elsif prog_position = "INE00" then
-						put_line(message_error & text_name_cad_net_list & " not specified " & exclamation);
+						put_line(message_error & text_identifier_cad_netlist & " not specified " & exclamation);
 						ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli &
 							row_separator_0 & to_lower(type_action'image(import_cad)) & row_separator_0 & 
 							to_lower(type_format_cad'image(format_cad)) & row_separator_0 &
 							compose(containing_directory => name_directory_cad, name => "board", extension => "net"));
 
 				elsif prog_position = "IPA00" then
-						put_line(message_error & text_name_cad_part_list & " not specified " & exclamation);
+						put_line(message_error & text_identifier_cad_partlist & " not specified " & exclamation);
 						ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli &
 							row_separator_0 & to_lower(type_action'image(import_cad)) & row_separator_0 & 
 							to_lower(type_format_cad'image(format_cad)) & row_separator_0 &
 							compose(
-								containing_directory => containing_directory(universal_string_type.to_string(name_file_cad_net_list)),
+								containing_directory => containing_directory(to_string(name_file_cad_netlist)),
 								--containing_directory => name_directory_cad,
-								name => base_name(universal_string_type.to_string(name_file_cad_net_list)),
-								extension => extension(universal_string_type.to_string(name_file_cad_net_list))
+								name => base_name(to_string(name_file_cad_netlist)),
+								extension => extension(to_string(name_file_cad_netlist))
 								) &
 							row_separator_0 & -- we assume the partlist lives in the same directory as the netlist:
 							compose(
-								containing_directory => containing_directory(universal_string_type.to_string(name_file_cad_net_list)),
+								containing_directory => containing_directory(to_string(name_file_cad_netlist)),
 								name => "board", extension => "part"
 								)
 							);
@@ -1495,7 +1491,7 @@ begin
 						new_line(2);
 						put_line(message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_string(name_file_database) & row_separator_0 &
 							to_lower(type_test_profile'image(infrastructure))
 							);
 	
@@ -1503,7 +1499,7 @@ begin
 						put_line(message_error & "Name of test not specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_string(name_file_database) & row_separator_0 &
 							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & "name_of_your_test"
 							);
 
@@ -1511,8 +1507,8 @@ begin
 						put_line(message_error & "Target device not specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
+							to_string(name_file_database) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
 							row_separator_0 & "IC3"
 							);
 
@@ -1520,9 +1516,9 @@ begin
 						put_line(message_error & "Device model not specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
-							row_separator_0 & universal_string_type.to_string(target_device) & row_separator_0 &
+							to_string(name_file_database) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+							row_separator_0 & to_string(device_name) & row_separator_0 &
 							compose(name_directory_models, "MC256", file_extension_text)
 							);
 
@@ -1530,10 +1526,10 @@ begin
 						put_line(message_error & "Device package not specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
-							row_separator_0 & universal_string_type.to_string(target_device) & row_separator_0 &
-							universal_string_type.to_string(name_file_model_memory) &
+							to_string(name_file_database) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+							row_separator_0 & to_string(device_name) & row_separator_0 &
+							to_string(name_file_model_memory) &
 							row_separator_0 & "TSSOP48"
 							);
 
@@ -1541,17 +1537,17 @@ begin
 						put_line(message_error & "Receiver pin not specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
-							row_separator_0 & universal_string_type.to_string(target_device) & row_separator_0 & "71"
+							to_string(name_file_database) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+							row_separator_0 & to_string(device_name) & row_separator_0 & "71"
 							);
 
 				elsif prog_position = "TON00" then
 						put_line(message_error & "Target net not specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
+							to_string(name_file_database) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
 							row_separator_0 & "COUNTER_INPUT"
 							);
 
@@ -1559,9 +1555,9 @@ begin
 						put_line(message_error & "Cycle count not specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
-							row_separator_0 & universal_string_type.to_string(target_net) & row_separator_0 & "10"
+							to_string(name_file_database) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+							row_separator_0 & to_string(net_name) & row_separator_0 & "10"
 							);
 
 
@@ -1569,20 +1565,20 @@ begin
 						put_line(message_error & "Max. retry count not specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
-							row_separator_0 & universal_string_type.to_string(target_device) & row_separator_0 & 
-							universal_string_type.to_string(target_pin) & row_separator_0 & "10"
+							to_string(name_file_database) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+							row_separator_0 & to_string(device_name) & row_separator_0 & 
+							to_string(device_pin) & row_separator_0 & "10"
 							);
 
 				elsif prog_position = "RDY00" then
 						put_line(message_error & "Retry delay not specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
-							row_separator_0 & universal_string_type.to_string(target_device) & row_separator_0 & 
-							universal_string_type.to_string(target_pin) &
+							to_string(name_file_database) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+							row_separator_0 & to_string(device_name) & row_separator_0 & 
+							to_string(device_pin) &
 							type_sxr_retries'image(retry_count) & row_separator_0 & "0.1"
 							);
 
@@ -1590,21 +1586,21 @@ begin
 						put_line(message_error & "Low time (unit is sec) not specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
-							row_separator_0 & universal_string_type.to_string(target_net) &
-							type_sxr_retries'image(cycle_count) & row_separator_0 & "2"
+							to_string(name_file_database) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+							row_separator_0 & to_string(net_name) &
+							type_cycle_count'image(cycle_count) & row_separator_0 & "2" -- CS: wrong ?
 							);
 
 				elsif prog_position = "THT00" then
 						put_line(message_error & "High time (unit is sec) not specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(generate)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & universal_string_type.to_string(name_test) &
-							row_separator_0 & universal_string_type.to_string(target_net) &
-							type_sxr_retries'image(cycle_count) &
-							type_delay_value'image(low_time) & row_separator_0 & "0.2"
+							to_string(name_file_database) & row_separator_0 &
+							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+							row_separator_0 & to_string(net_name) &
+							type_cycle_count'image(cycle_count) &
+							type_delay_value'image(low_time) & row_separator_0 & "0.2" -- CS: wrong ?
 							);
 
 				elsif prog_position = "PJN00" then
@@ -1623,7 +1619,7 @@ begin
 						put_line(message_error & "Test name not specified" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(compile)) & row_separator_0 &
-							universal_string_type.to_string(name_file_data_base) & row_separator_0 &
+							to_string(name_file_database) & row_separator_0 &
 							"your_test");
 
 				elsif prog_position = "LD100" then
@@ -1655,7 +1651,7 @@ begin
 						put_line(message_error & "Step mode not supported or invalid" & exclamation);
 						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
 							to_lower(type_action'image(run)) & row_separator_0 &
-							universal_string_type.to_string(name_test) & row_separator_0 & "[step_mode]");
+							to_string(name_test) & row_separator_0 & "[step_mode]");
 						ada.text_io.put(message_error'last * row_separator_0 & "Supported step modes: ");
 						for p in 0..step_mode_count
 						loop

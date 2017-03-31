@@ -25,6 +25,8 @@
 -- todo: set exit code 2 when item not found
 
 with ada.text_io;				use ada.text_io;
+with ada.characters;			use ada.characters;
+with ada.characters.handling;	use ada.characters.handling;
 with ada.exceptions; 			use ada.exceptions;
 with ada.command_line;			use ada.command_line;
 
@@ -41,8 +43,6 @@ procedure udbinfo is
 	use type_universal_string;
 	use type_name_database;
 
-	inquired_item				: type_item_udbinfo;
-	inquired_target				: type_universal_string.bounded_string;
 	separator					: constant string (1..1) := "#";
 	separator_position			: natural;
 	length_of_inquired_target	: natural;
@@ -62,12 +62,12 @@ begin
  	put_line("database        : " & to_string(name_file_database));
 
 	prog_position	:= 20;
-	inquired_item := type_item_udbinfo'value(argument(2));
-	put_line("item            : " & type_item_udbinfo'image(inquired_item));
+	object_type_in_database := type_object_type_in_database'value(argument(2));
+	put_line("item            : " & type_object_type_in_database'image(object_type_in_database));
 
 	prog_position	:= 30;
-	inquired_target := to_bounded_string(argument(3));
-	put_line("name            : " & to_string(inquired_target));
+	object_name_in_database := to_bounded_string(argument(3));
+	put_line("name            : " & to_string(object_name_in_database));
 
 	prog_position	:= 40;
 	if argument_count = 4 then
@@ -79,14 +79,14 @@ begin
 	read_database;
 
 
-		case inquired_item is
-			when net => print_net_info(to_string(inquired_target));
-			when bic => print_bic_info(to_string(inquired_target));
+		case object_type_in_database is
+			when net => print_net_info(to_string(object_name_in_database));
+			when bic => print_bic_info(to_string(object_name_in_database));
 			when scc => 
-				separator_position := index(inquired_target,separator);
-				length_of_inquired_target := length(inquired_target);
-				inquired_target_sub_1 := to_bounded_string(slice(inquired_target,1,separator_position-1));
-				inquired_target_sub_2 := to_bounded_string(slice(inquired_target,separator_position+1, length_of_inquired_target));
+				separator_position := index(object_name_in_database,separator);
+				length_of_inquired_target := length(object_name_in_database);
+				inquired_target_sub_1 := to_bounded_string(slice(object_name_in_database,1,separator_position-1));
+				inquired_target_sub_2 := to_bounded_string(slice(object_name_in_database,separator_position+1, length_of_inquired_target));
 
 				print_scc_info(
 					bic_name 			=> to_string(inquired_target_sub_1),
@@ -105,8 +105,8 @@ begin
 					put_line("       Provide data base name as argument. Example: udbinfo my_uut.udb");
 				when 20 =>
 					put(message_error & "Inquired item invalid or missing. Valid items are:");
-					for i in 0..type_item_udbinfo'pos(type_item_udbinfo'last) loop
-						put(row_separator_0 & type_item_udbinfo'image(type_item_udbinfo'val(i)));
+					for i in 0..type_object_type_in_database'pos(type_object_type_in_database'last) loop
+						put(row_separator_0 & type_object_type_in_database'image(type_object_type_in_database'val(i)));
 					end loop;
 					new_line;
 					put_line("       Provide item as argument ! Example: udbinfo my_uut.udb net");
