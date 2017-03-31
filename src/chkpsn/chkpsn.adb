@@ -150,8 +150,7 @@ procedure chkpsn is
 			end loop;
 		end verify_secondary_net_appears_only_once;
 
-
-	begin
+	begin -- add_to_options_net_list
 		verify_primary_net_appears_only_once(name_given); -- checks other primary nets and their secondary nets in options file
 
 		if debug_level >= 20 then
@@ -1637,8 +1636,8 @@ procedure chkpsn is
 		put_line("-- example 1: class NA primary_net OSC_OUT device IC300 pin 6 control_cell 93 locked_to disable_value 0");
 		put_line("-- example 2: class NA secondary_net OSC_OUT device IC300 pin 6 control_cell 93 locked_to disable_value 0");
 		--while a /= null loop
-		for c in 1..length(list_of_static_control_cells_class_EX_NA) loop
-			a := element(list_of_static_control_cells_class_EX_NA, positive(c));
+		for cc in 1..length(list_of_static_control_cells_class_EX_NA) loop
+			a := element(list_of_static_control_cells_class_EX_NA, positive(cc));
 			put_line(" class " & type_net_class'image(a.class) & row_separator_0 & to_lower(type_net_level'image(a.level)) & "_net"
 				& row_separator_0 & to_string(a.net) & " device"
 				& row_separator_0 & to_string(a.device) & " pin"
@@ -1655,19 +1654,21 @@ procedure chkpsn is
 		put_line("-- example 1: class NR primary_net LED0 device IC303 pin 10 control_cell 16 locked_to enable_value 0");
 		put_line("-- example 2: class NR primary_net LED1 device IC303 pin 9 control_cell 16 locked_to enable_value 0");
 		put_line("-- example 3: class NR secondary_net LED7_R device IC301 pin 13 control_cell 75 locked_to disable_value 0");
-		while b /= null loop
+		--while b /= null loop
+		for cc in 1..length(list_of_static_control_cells_class_DX_NR) loop
+			b := element(list_of_static_control_cells_class_DX_NR, positive(cc));
 			put(" class " & type_net_class'image(b.class) & row_separator_0 & to_lower(type_net_level'image(b.level)) & "_net"
-				& row_separator_0 & universal_string_type.to_string(b.net) & " device"
-				& row_separator_0 & universal_string_type.to_string(b.device) & " pin"
-				& row_separator_0 & universal_string_type.to_string(b.pin) & " control_cell" & natural'image(b.cell)
+				& row_separator_0 & to_string(b.net) & " device"
+				& row_separator_0 & to_string(b.device) & " pin"
+				& row_separator_0 & to_string(b.pin) & " control_cell" & natural'image(b.cell)
 				& " locked_to ");
 			case b.locked_to_enable_state is
 				when true 	=> put_line("enable_value " & type_bit_char_class_0'image(b.enable_value)(2)); -- strip "'" delimiters
 				when false	=> put_line("disable_value " & type_bit_char_class_0'image(b.disable_value)(2)); -- strip "'" delimiters
 			end case;
-			b := b.next;
+-- 			b := b.next;
 		end loop;
-		put_line("EndSection"); new_line;
+		put_line(section_mak.endsection); new_line;
 
 		--put_line("Section locked_control_cells_in_class_PU_PD_nets");
 		put_line(section_mark.section & row_separator_0 & section_static_control_cells_class_PX);
@@ -1676,20 +1677,18 @@ procedure chkpsn is
 		put_line("-- example 1: class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0");
 		--put_line("-- example 2: class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to enable_value 0");
 		put_line("-- example 2: class PD secondary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0");
-		while c /= null loop
+-- 		while c /= null loop
+		for cc in 1..length(list_of_static_control_cells_class_PX) loop
+			c := element(list_of_static_control_cells_class_PX, positive(cc));
 			put(" class " & type_net_class'image(c.class) & row_separator_0 & to_lower(type_net_level'image(c.level)) & "_net"
-				& row_separator_0 & universal_string_type.to_string(c.net) & " device"
-				& row_separator_0 & universal_string_type.to_string(c.device) & " pin"
-				& row_separator_0 & universal_string_type.to_string(c.pin) & " control_cell" & natural'image(c.cell)
+				& row_separator_0 & to_string(c.net) & " device"
+				& row_separator_0 & to_string(c.device) & " pin"
+				& row_separator_0 & to_string(c.pin) & " control_cell" & natural'image(c.cell)
 				& " locked_to ");
--- 			case c.locked_to_enable_state is
--- 				when true 	=> put_line("enable_value " & type_bit_char_class_0'image(c.enable_value)(2)); -- strip "'" delimiters
--- 				when false	=> put_line("disable_value " & type_bit_char_class_0'image(c.disable_value)(2)); -- strip "'" delimiters
--- 			end case;
 			put_line("disable_value " & type_bit_char_class_0'image(c.disable_value)(2)); -- strip "'" delimiters
-			c := c.next;
+-- 			c := c.next;
 		end loop;
-		put_line("EndSection"); new_line;
+		put_line(section_mark.endsection); new_line;
 
 		--put_line("Section locked_output_cells_in_class_PU_PD_nets");
 		put_line(section_mark.section & row_separator_0 & section_static_output_cells_class_PX);
@@ -1697,15 +1696,17 @@ procedure chkpsn is
 		put_line("-- addresses output cells which drive statically");
 		put_line("-- example 1 : class PU primary_net /SYS_RESET device IC300 pin 39 output_cell 37 locked_to drive_value 0");
 		put_line("-- example 2 : class PD primary_net SHUTDOWN device IC300 pin 4 output_cell 375 locked_to drive_value 1");
-		while d /= null loop
+-- 		while d /= null loop
+		for cc in 1..length(list_of_static_output_cells_class_PX) loop
+			d := element(list_of_static_output_cells_class_PX, positive(cc));
 			put_line(" class " & type_net_class'image(d.class) & " primary_net"
-				& row_separator_0 & universal_string_type.to_string(d.net) & " device"
-				& row_separator_0 & universal_string_type.to_string(d.device) & " pin"
-				& row_separator_0 & universal_string_type.to_string(d.pin) & " output_cell" & natural'image(d.cell)
+				& row_separator_0 & to_string(d.net) & " device"
+				& row_separator_0 & to_string(d.device) & " pin"
+				& row_separator_0 & to_string(d.pin) & " output_cell" & natural'image(d.cell)
 				& " locked_to drive_value " & type_bit_char_class_0'image(d.drive_value)(2));
-			d := d.next;
+-- 			d := d.next;
 		end loop;
-		put_line("EndSection"); new_line;
+		put_line(section_mark.endsection); new_line;
 
 		--put_line("Section locked_output_cells_in_class_DH_DL_nets");
 		put_line(section_mark.section & row_separator_0 & section_static_output_cells_class_DX_NR);
@@ -1714,15 +1715,17 @@ procedure chkpsn is
 		put_line("-- example 1 : class DL primary_net /CPU_MREQ device IC300 pin 28 output_cell 13 locked_to drive_value 0");
 		put_line("-- example 2 : class DH primary_net /CPU_RD device IC300 pin 27 output_cell 10 locked_to drive_value 1");
 		put_line("-- NOTE:   1 : Output cells of disabled driver pins may appear here. Don't care.");
-		while e /= null loop
+-- 		while e /= null loop
+		for cc in 1..length(list_of_static_output_cells_class_DX_NR) loop
+			e := element(list_of_static_output_cells_class_DX_NR, positive(cc));
 			put_line(" class " & type_net_class'image(e.class) & " primary_net"
-				& row_separator_0 & universal_string_type.to_string(e.net) & " device"
-				& row_separator_0 & universal_string_type.to_string(e.device) & " pin"
-				& row_separator_0 & universal_string_type.to_string(e.pin) & " output_cell" & natural'image(e.cell)
+				& row_separator_0 & to_string(e.net) & " device"
+				& row_separator_0 & to_string(e.device) & " pin"
+				& row_separator_0 & to_string(e.pin) & " output_cell" & natural'image(e.cell)
 				& " locked_to drive_value " & type_bit_char_class_0'image(e.drive_value)(2));
-			e := e.next;
+-- 			e := e.next;
 		end loop;
-		put_line("EndSection"); new_line;
+		put_line(section_mark.endsection); new_line;
 
 		--put_line("Section static_expect");
 		put_line(section_mark.section & row_separator_0 & section_static_expect);
@@ -1730,19 +1733,21 @@ procedure chkpsn is
 		put_line("-- addresses input cells which expect statically");
 		put_line("-- example 1 : class DL primary_net /CPU_MREQ device IC300 pin 28 input_cell 14 expect_value 0");
 		put_line("-- example 2 : class DH secondary_net MREQ device IC300 pin 28 input_cell 14 expect_value 1 primary_net_is MR45");
-		while f /= null loop
+-- 		while f /= null loop
+		for cc in 1..length(list_of_static_expect_cells) loop
+			f := element(list_of_static_expect_cells, positive(cc));
 			put(" class " & type_net_class'image(f.class) & row_separator_0 & to_lower(type_net_level'image(f.level)) & "_net"
-				& row_separator_0 & universal_string_type.to_string(f.net) & " device"
-				& row_separator_0 & universal_string_type.to_string(f.device) & " pin"
-				& row_separator_0 & universal_string_type.to_string(f.pin) & " input_cell" & natural'image(f.cell)
+				& row_separator_0 & to_string(f.net) & " device"
+				& row_separator_0 & to_string(f.device) & " pin"
+				& row_separator_0 & to_string(f.pin) & " input_cell" & natural'image(f.cell)
 				& " expect_value " & type_bit_char_class_0'image(f.expect_value)(2)); -- strip "'" delimiters
 			if f.level = secondary then
-				put_line(" primary_net_is " & universal_string_type.to_string(f.primary_net_is));
+				put_line(" primary_net_is " & to_string(f.primary_net_is));
 			else new_line;
 			end if;
-			f := f.next;
+-- 			f := f.next;
 		end loop;
-		put_line("EndSection"); new_line;
+		put_line(section_mark.endsection); new_line;
 
 		--put_line("Section atg_expect");
 		put_line(section_mark.section & row_separator_0 & section_atg_expect);
@@ -1750,20 +1755,22 @@ procedure chkpsn is
 		put_line("-- addresses input cells which expect values defined by ATG");
 		put_line("-- example 1 : class PU secondary_net CT_D3 device IC303 pin 19 input_cell 11 primary_net_is D3");
 		put_line("-- example 2 : class PU primary_net /CPU_WR device IC300 pin 26 input_cell 8");
-		while g /= null loop
+-- 		while g /= null loop
+		for cc in 1..length(list_of_atg_expect_cells) loop
+			g := element(list_of_atg_expect_cells, positive(cc));
 			put(" class " & type_net_class'image(g.class) & row_separator_0 & to_lower(type_net_level'image(g.level)) & "_net"
-				& row_separator_0 & universal_string_type.to_string(g.net) & " device"
-				& row_separator_0 & universal_string_type.to_string(g.device) & " pin"
-				& row_separator_0 & universal_string_type.to_string(g.pin) & " input_cell" & natural'image(g.cell));
+				& row_separator_0 & to_string(g.net) & " device"
+				& row_separator_0 & to_string(g.device) & " pin"
+				& row_separator_0 & to_string(g.pin) & " input_cell" & natural'image(g.cell));
 			case g.level is
 				when secondary =>
-					put_line(" primary_net_is " & universal_string_type.to_string(g.primary_net_is));
+					put_line(" primary_net_is " & to_string(g.primary_net_is));
 				when primary =>
 					new_line;
 			end case;
-			g := g.next;
+-- 			g := g.next;
 		end loop;
-		put_line("EndSection"); new_line;
+		put_line(section_mark.endsection); new_line;
 
 		--put_line("Section atg_drive");
 		put_line(section_mark.section & row_separator_0 & section_atg_drive);
@@ -1772,11 +1779,13 @@ procedure chkpsn is
 		put_line("-- example 1 : class NR primary_net LED7 device IC303 pin 2 output_cell 7");
 		put_line("-- example 2 : class PU primary_net /CPU_WR device IC300 pin 26 control_cell 6 inverted yes");
 		put_line("-- example 3 : class PD primary_net /DRV_EN device IC301 pin 27 control_cell 9 inverted no");
-		while h /= null loop
+-- 		while h /= null loop
+		for cc in 1..length(list_of_atg_drive_cells) loop
+			h := element(list_of_atg_drive_cells, positive(cc));
 			put(" class " & type_net_class'image(h.class) & " primary_net"
-				& row_separator_0 & universal_string_type.to_string(h.net) & " device"
-				& row_separator_0 & universal_string_type.to_string(h.device) & " pin"
-				& row_separator_0 & universal_string_type.to_string(h.pin));
+				& row_separator_0 & to_string(h.net) & " device"
+				& row_separator_0 & to_string(h.device) & " pin"
+				& row_separator_0 & to_string(h.pin));
 			case h.controlled_by_control_cell is
 				when true =>
 					put(" control_cell" & natural'image(h.cell) & " inverted ");
@@ -1786,9 +1795,9 @@ procedure chkpsn is
 				when false =>
 					put_line(" output_cell"  & natural'image(h.cell));
 			end case;
-			h := h.next;
+-- 			h := h.next;
 		end loop;
-		put_line("EndSection"); new_line;
+		put_line(section_mark.endsection); new_line;
 
 		--put_line("Section input_cells_in_class_NA_nets"); -- CS: input_cells_in_class_?_nets discarded
 		put_line(section_mark.section & row_separator_0 & section_input_cells_class_NA);
@@ -1796,20 +1805,22 @@ procedure chkpsn is
 		put_line("-- addresses input cells");
 		put_line("-- example 1 : class NA primary_net OSC_OUT device IC301 pin 6 input_cell 95");
 		put_line("-- example 2 : class NA secondary_net LED0_R device IC301 pin 2 input_cell 107 primary_net_is LED0");
-		while i /= null loop
+-- 		while i /= null loop
+		for cc in 1..length(list_of_input_cells_class_NA) loop
+			i := element(list_of_input_cells_class_NA, positive(cc));
 			put(" class NA " & to_lower(type_net_level'image(i.level)) & "_net"
-				& row_separator_0 & universal_string_type.to_string(i.net) & " device"
-				& row_separator_0 & universal_string_type.to_string(i.device) & " pin"
-				& row_separator_0 & universal_string_type.to_string(i.pin) & " input_cell" & natural'image(i.cell));
+				& row_separator_0 & to_string(i.net) & " device"
+				& row_separator_0 & to_string(i.device) & " pin"
+				& row_separator_0 & to_string(i.pin) & " input_cell" & natural'image(i.cell));
 			case i.level is
 				when secondary =>
-					put_line(" primary_net_is " & universal_string_type.to_string(i.primary_net_is));
+					put_line(" primary_net_is " & to_string(i.primary_net_is));
 				when primary =>
 					new_line;
 			end case;
-			i := i.next;
+-- 			i := i.next;
 		end loop;
-		put_line("EndSection"); new_line;
+		put_line(section_mark.endsection); new_line;
 
 		--put_line(column_separator_0);
 	end write_new_cell_lists;
