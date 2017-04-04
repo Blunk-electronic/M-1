@@ -51,32 +51,33 @@ with m1_numbers;				use m1_numbers;
 with m1_files_and_directories; 	use m1_files_and_directories;
 with m1_string_processing;		use m1_string_processing;
 
-use type_universal_string;
-use type_name_database;
-use type_name_file_options;
-use type_net_name;
-use type_device_name;
-use type_device_class;
-use type_pin_name;
-use type_port_name;
-
-use type_list_of_pins;  
-use type_list_of_nets;
-use type_list_of_secondary_net_names;
-
-use type_list_of_static_control_cells_class_EX_NA;
-use type_list_of_static_control_cells_class_DX_NR;
-use type_list_of_static_control_cells_class_PX;
-use type_list_of_static_output_cells_class_PX;
-use type_list_of_static_output_cells_class_DX_NR;
-use type_list_of_static_expect_cells;
-use type_list_of_atg_expect_cells;
-use type_list_of_atg_drive_cells;
-use type_list_of_input_cells_class_NA;
-
-
 procedure chkpsn is
 
+	use type_universal_string;
+	use type_name_database;
+	use type_name_file_options;
+	use type_net_name;
+	use type_device_name;
+	use type_device_value;
+	use type_package_name;
+	use type_pin_name;
+	use type_port_name;
+
+	use type_list_of_pins;  
+	use type_list_of_nets;
+	use type_list_of_secondary_net_names;
+
+	use type_list_of_static_control_cells_class_EX_NA;
+	use type_list_of_static_control_cells_class_DX_NR;
+	use type_list_of_static_control_cells_class_PX;
+	use type_list_of_static_output_cells_class_PX;
+	use type_list_of_static_output_cells_class_DX_NR;
+	use type_list_of_static_expect_cells;
+	use type_list_of_atg_expect_cells;
+	use type_list_of_atg_drive_cells;
+	use type_list_of_input_cells_class_NA;
+
+	
 	version			: constant string (1..3) := "044";
 	prog_position	: string (1..6) := "------";
 
@@ -125,6 +126,71 @@ procedure chkpsn is
 	use type_list_of_options_nets;
 	list_of_options_nets : type_list_of_options_nets.vector;
 
+	function control_cell_in_enable_state_by_any_cell_list(
+	-- searches cell lists for given control cell and returns false if cell is not in enable state
+	-- aborts if cell in enable state or targeted by atg
+		class		: in type_net_class;
+		net			: in type_net_name.bounded_string;
+		device		: in type_device_name.bounded_string;
+		cell_id		: in type_cell_id) 
+		return boolean is
+
+		l : count_type; -- CS: load length of list here, check for zero, then search in list
+		
+		a : type_static_control_cell_class_DX_NR;
+		b : type_atg_drive_cell;
+
+		procedure print_error_on_shared_control_cell_conflict is
+		begin
+			put_line(standard_output,message_error & "Shared control cell conflict in class " & type_net_class'image(class) 
+				& " net '" & to_string(net) & "' !");
+		end print_error_on_shared_control_cell_conflict;
+
+	begin
+	-- 		while a /= null loop -- loop through cell list indicated by pointer a (locked_control_cells_in_class_DH_DL_NR_nets)
+		for i in 1..length(list_of_static_control_cells_class_DX_NR) loop
+			a := element(list_of_static_control_cells_class_DX_NR, positive(i));
+			if a.device = device then -- on device name match
+				if a.id = cell_id then -- on cell id match
+					if a.locked_to_enable_state = true then -- if locked to enable state
+						print_error_on_shared_control_cell_conflict;
+						put_line(standard_output,"       Device '" & to_string(a.device) 
+							& "' control cell" & type_cell_id'image(a.id)
+							& " already locked to enable state " & type_bit_char_class_0'image(a.enable_value));
+						put_line(standard_output,"       by class " & type_net_class'image(a.class) & row_separator_0 
+							& to_lower(type_net_level'image(a.level)) 
+							& " net '" & to_string(a.net) & "' !");
+						raise constraint_error;
+					end if; -- if locked to enable state
+				end if; -- in cell id match
+			end if; -- on device name match
+-- 			a := a.next;
+		end loop;
+
+		-- 		while b /= null loop -- loop through cell list indicated by pointer c (atg_drive)
+		for i in 1..length(list_of_atg_drive_cells) loop
+			b := element(list_of_atg_drive_cells, positive(i));
+			if b.device = device then -- on device name match
+				if b.id = cell_id then -- on cell id match
+					if b.controlled_by_control_cell then -- if control cell is targeted by atg
+						print_error_on_shared_control_cell_conflict;
+						put_line(standard_output,"       Device '" & to_string(b.device) 
+							& "' control cell" & type_cell_id'image(b.id)
+							& " already reserved for ATG");
+						put_line(standard_output,"       by class " & type_net_class'image(b.class) & row_separator_0 
+							& " primary net '" & to_string(b.net) & "' !");
+						raise constraint_error;
+					end if; -- if targeted by atg
+				end if;
+			end if;
+-- 			b := b.next;
+		end loop;
+
+		-- given control cell is not in enable state
+		return false;
+	end control_cell_in_enable_state_by_any_cell_list;
+
+	
 	procedure add_to_options_net_list(
 		-- this procedure adds a primary net (incl. secondary nets) to the options net list
 		-- multiple occurencs of nets in options file will be checked
@@ -199,7 +265,7 @@ procedure chkpsn is
 -- 		end verify_secondary_net_appears_only_once;
 
 	begin -- add_to_options_net_list
-		secondary_net_count := length(list_of_secondary_net_names_given);
+		secondary_net_count := natural(length(list_of_secondary_net_names_given));
 		
 -- CS:		verify_primary_net_appears_only_once(name_given); -- checks other primary nets and their secondary nets in options file
 
@@ -313,7 +379,7 @@ procedure chkpsn is
 										class					=> d.class,
 										net						=> d.name,
 										device					=> p.device_name,
-										pin						=> p.pin,
+										pin						=> p.device_pin_name,
 										id						=> p.cell_info.control_cell_id,
 										disable_value			=> p.cell_info.disable_value));
 
@@ -333,7 +399,7 @@ procedure chkpsn is
 										class					=> d.class,
 										net						=> d.name,
 										device					=> p.device_name,
-										pin						=> p.pin,
+										pin						=> p.device_pin_name,
 										id						=> p.cell_info.control_cell_id,
 										drive_value				=> '0')); -- meaningless since the pin is disabled
 
@@ -359,7 +425,7 @@ procedure chkpsn is
 										class					=> d.class,
 										net						=> d.name,
 										device					=> p.device_name,
-										pin						=> p.pin,
+										pin						=> p.device_pin_name,
 										id						=> p.cell_info.control_cell_id,
 										disable_value			=> p.cell_info.disable_value));
 									
@@ -375,7 +441,7 @@ procedure chkpsn is
 								device	=> p.device_name,
 								cell_id	=> p.cell_info.control_cell_id) then
 
-								case class is
+								case d.class is
 									when DH | DL | NR =>
 										-- add control cell to list
 
@@ -399,7 +465,7 @@ procedure chkpsn is
 											class					=> d.class,
 											net						=> d.name,
 											device					=> p.device_name,
-											pin						=> p.pin,
+											pin						=> p.device_pin_name,
 											id						=> p.cell_info.control_cell_id,
 											disable_value			=> p.cell_info.disable_value));
 									
@@ -419,7 +485,7 @@ procedure chkpsn is
 											class					=> d.class,
 											net						=> d.name,
 											device					=> p.device_name,
-											pin						=> p.pin,
+											pin						=> p.device_pin_name,
 											id						=> p.cell_info.control_cell_id,
 											drive_value				=> '0')); -- meaningless since the pin is disabled
 										
@@ -446,7 +512,7 @@ procedure chkpsn is
 											class					=> d.class,
 											net						=> d.name,
 											device					=> p.device_name,
-											pin						=> p.pin,
+											pin						=> p.device_pin_name,
 											id						=> p.cell_info.control_cell_id,
 											disable_value			=> p.cell_info.disable_value));
 
@@ -491,10 +557,10 @@ procedure chkpsn is
 		for i in 1..length(list_of_static_control_cells_class_EX_NA) loop
 			a := element(list_of_static_control_cells_class_EX_NA, positive(i));
 			if a.device = device then -- on device name match
-				if a.cell = cell_id then -- on cell id match
+				if a.id = cell_id then -- on cell id match
 					print_error_on_shared_control_cell_conflict;
 					put_line(standard_output,"       Device '" & to_string(a.device) 
-						& "' control cell" & type_cell_id'image(a.cell)
+						& "' control cell" & type_cell_id'image(a.id)
 						& " already locked to disable state " & type_bit_char_class_0'image(a.disable_value));
 					put_line(standard_output,"       by class " & type_net_class'image(a.class) & row_separator_0 
 						& to_lower(type_net_level'image(a.level)) 
@@ -509,11 +575,11 @@ procedure chkpsn is
 		for i in 1..length(list_of_static_control_cells_class_DX_NR) loop
 			b := element(list_of_static_control_cells_class_DX_NR, positive(i));
 			if b.device = device then -- on device name match
-				if b.cell = cell_id then -- on cell id match
+				if b.id = cell_id then -- on cell id match
 					if b.locked_to_enable_state = false then -- if locked to disable state
 						print_error_on_shared_control_cell_conflict;
 						put_line(standard_output,"       Device '" & to_string(b.device) 
-							& "' control cell" & type_cell_id'image(b.cell)
+							& "' control cell" & type_cell_id'image(b.id)
 							& " already locked to disable state " & type_bit_char_class_0'image(b.disable_value));
 						put_line(standard_output,"       by class " & type_net_class'image(b.class) & row_separator_0 
 							& to_lower(type_net_level'image(b.level)) 
@@ -530,11 +596,11 @@ procedure chkpsn is
 		for i in 1..length(list_of_static_control_cells_class_PX) loop
 			c := element(list_of_static_control_cells_class_PX, positive(i));
 			if c.device = device then -- on device name match
-				if c.cell = cell_id then -- on cell id match
+				if c.id = cell_id then -- on cell id match
 					--if c.locked_to_enable_state = false then -- if locked to disable state
 						print_error_on_shared_control_cell_conflict;
 						put_line(standard_output,"       Device '" & to_string(c.device) 
-							& "' control cell" & type_cell_id'image(c.cell)
+							& "' control cell" & type_cell_id'image(c.id)
 							& " already locked to disable state " & type_bit_char_class_0'image(c.disable_value));
 						put_line(standard_output,"       by class " & type_net_class'image(c.class) & row_separator_0 
 							& to_lower(type_net_level'image(c.level)) 
@@ -551,11 +617,11 @@ procedure chkpsn is
 		for i in 1..length(list_of_atg_drive_cells) loop
 			d := element(list_of_atg_drive_cells, positive(i));
 			if d.device = device then -- on device name match
-				if d.cell = cell_id then -- on cell id match
+				if d.id = cell_id then -- on cell id match
 					if d.controlled_by_control_cell then -- if control cell is targeted by atg
 						print_error_on_shared_control_cell_conflict;
 						put_line(standard_output,"       Device '" & to_string(d.device) 
-							& "' control cell" & type_cell_id'image(d.cell)
+							& "' control cell" & type_cell_id'image(d.id)
 							& " already reserved for ATG");
 						put_line(standard_output,"       by class " & type_net_class'image(d.class) & row_separator_0 
 							& " primary net '" & to_string(d.net) & "' !");
@@ -571,73 +637,6 @@ procedure chkpsn is
 	end control_cell_in_disable_state_by_any_cell_list;
 
 
-	function control_cell_in_enable_state_by_any_cell_list(
-	-- searches cell lists for given control cell and returns false if cell is not in enable state
-	-- aborts if cell in enable state or targeted by atg
-		class		: in type_net_class;
-		net			: in type_net_name.bounded_string;
-		device		: in type_device_name.bounded_string;
-		cell_id		: in type_cell_id) 
-		return boolean is
-
-		l : count_type; -- CS: load length of list here, check for zero, then search in list
-		
-		a : type_static_control_cell_class_DX_NR;
-		b : type_atg_drive_cell;
-
-		procedure print_error_on_shared_control_cell_conflict is
-		begin
-			put_line(standard_output,message_error & "Shared control cell conflict in class " & type_net_class'image(class) 
-				& " net '" & to_string(net) & "' !");
-		end print_error_on_shared_control_cell_conflict;
-
-	begin
-	-- 		while a /= null loop -- loop through cell list indicated by pointer a (locked_control_cells_in_class_DH_DL_NR_nets)
-		for i in 1..length(list_of_static_control_cells_class_DX_NR) loop
-			a := element(list_of_static_control_cells_class_DX_NR, positive(i));
-			if a.device = device then -- on device name match
-				if a.cell = cell_id then -- on cell id match
-					if a.locked_to_enable_state = true then -- if locked to enable state
-						print_error_on_shared_control_cell_conflict;
-						put_line(standard_output,"       Device '" & to_string(a.device) 
-							& "' control cell" & type_cell_id'image(a.cell)
-							& " already locked to enable state " & type_bit_char_class_0'image(a.enable_value));
-						put_line(standard_output,"       by class " & type_net_class'image(a.class) & row_separator_0 
-							& to_lower(type_net_level'image(a.level)) 
-							& " net '" & to_string(a.net) & "' !");
-						raise constraint_error;
-					end if; -- if locked to enable state
-				end if; -- in cell id match
-			end if; -- on device name match
--- 			a := a.next;
-		end loop;
-
-		-- 		while b /= null loop -- loop through cell list indicated by pointer c (atg_drive)
-		for i in 1..length(list_of_atg_drive_cells) loop
-			b := element(list_of_atg_drive_cells, positive(i));
-			if b.device = device then -- on device name match
-				if b.cell = cell_id then -- on cell id match
-					if b.controlled_by_control_cell then -- if control cell is targeted by atg
-						print_error_on_shared_control_cell_conflict;
-						put_line(standard_output,"       Device '" & to_string(b.device) 
-							& "' control cell" & type_cell_id'image(b.cell)
-							& " already reserved for ATG");
-						put_line(standard_output,"       by class " & type_net_class'image(b.class) & row_separator_0 
-							& " primary net '" & to_string(b.net) & "' !");
-						raise constraint_error;
-					end if; -- if targeted by atg
-				end if;
-			end if;
--- 			b := b.next;
-		end loop;
-
-		-- given control cell is not in enable state
-		return false;
-	end control_cell_in_enable_state_by_any_cell_list;
-
-	
-
-	
 	-- 		procedure update_cell_lists( d : type_ptr_net ) is
 	procedure update_cell_lists( d : in type_net ) is
 	-- updates cell lists by the net where d points to (in data base net list)
@@ -990,20 +989,20 @@ procedure chkpsn is
 										class			=> d.class,
 										net				=> d.name,
 										device			=> p.device_name,
-										pin				=> p.pin,
+										pin				=> p.device_pin_name,
 										id				=> p.cell_info.input_cell_id,
-										expect_value	=> expect_value_derived_from_class(class)));
+										expect_value	=> expect_value_derived_from_class(d.class)));
 									
 							   when secondary =>
 									append(list_of_static_expect_cells,(
 										level			=> secondary,
-										primary_net_is	=> d.primary_net_is,
+										primary_net_is	=> d.name_of_primary_net,
 										class			=> d.class,
 										net				=> d.name,
 										device			=> p.device_name,
-										pin				=> p.pin,
+										pin				=> p.device_pin_name,
 										id				=> p.cell_info.input_cell_id,
-										expect_value	=> expect_value_derived_from_class(class)));
+										expect_value	=> expect_value_derived_from_class(d.class)));
 							end case;
 							
 						when NR | PU | PD =>
@@ -1028,17 +1027,17 @@ procedure chkpsn is
 										class			=> d.class,
 										net				=> d.name,
 										device			=> p.device_name,
-										pin				=> p.pin,
+										pin				=> p.device_pin_name,
 										id				=> p.cell_info.input_cell_id));
 									
 							   when secondary =>
 									append(list_of_atg_expect_cells,(
 										level			=> secondary,
-										primary_net_is	=> d.primary_net_is,
+										primary_net_is	=> d.name_of_primary_net,
 										class			=> d.class,
 										net				=> d.name,
 										device			=> p.device_name,
-										pin				=> p.pin,
+										pin				=> p.device_pin_name,
 										id				=> p.cell_info.input_cell_id));
 							end case;
 
@@ -1061,17 +1060,17 @@ procedure chkpsn is
 										class			=> d.class,
 										net				=> d.name,
 										device			=> p.device_name,
-										pin				=> p.pin,
+										pin				=> p.device_pin_name,
 										id				=> p.cell_info.input_cell_id));
 									
 							   when secondary =>
 									append(list_of_input_cells_class_NA,(
 										level			=> secondary,
-										primary_net_is	=> d.primary_net_is,
+										primary_net_is	=> d.name_of_primary_net,
 										class			=> d.class,
 										net				=> d.name,
 										device			=> p.device_name,
-										pin				=> p.pin,
+										pin				=> p.device_pin_name,
 										id				=> p.cell_info.input_cell_id));
 							end case;
 
@@ -1114,7 +1113,7 @@ procedure chkpsn is
 										class			=> d.class,
 										net				=> d.name,
 										device			=> p.device_name,
-										pin				=> p.pin,
+										pin				=> p.device_pin_name,
 										id				=> p.cell_info.control_cell_id,
 										disable_value	=> p.cell_info.disable_value));
 								end if;
@@ -1139,7 +1138,7 @@ procedure chkpsn is
 									class			=> d.class,
 									net				=> d.name,
 									device			=> p.device_name,
-									pin				=> p.pin,
+									pin				=> p.device_pin_name,
 									id				=> p.cell_info.control_cell_id,
 									disable_value	=> p.cell_info.disable_value));
 
@@ -1208,7 +1207,7 @@ procedure chkpsn is
 												class					=> d.class,
 												net						=> d.name,
 												device					=> p.device_name,
-												pin						=> p.pin,
+												pin						=> p.device_pin_name,
 												id						=> p.cell_info.control_cell_id,
 												disable_value			=> p.cell_info.disable_value));
 										end if; -- check if control cell can be set to disable state
@@ -1238,7 +1237,7 @@ procedure chkpsn is
 											class					=> d.class,
 											net						=> d.name,
 											device					=> p.device_name,
-											pin						=> p.pin,
+											pin						=> p.device_pin_name,
 											id						=> p.cell_info.control_cell_id,
 											disable_value			=> p.cell_info.disable_value));
 										
@@ -1276,7 +1275,7 @@ procedure chkpsn is
 												class					=> d.class,
 												net						=> d.name,
 												device					=> p.device_name,
-												pin						=> p.pin,
+												pin						=> p.device_pin_name,
 												id						=> p.cell_info.control_cell_id,
 												disable_value			=> p.cell_info.disable_value));
 											
@@ -1306,7 +1305,7 @@ procedure chkpsn is
 											class					=> d.class,
 											net						=> d.name,
 											device					=> p.device_name,
-											pin						=> p.pin,
+											pin						=> p.device_pin_name,
 											id						=> p.cell_info.control_cell_id,
 											disable_value			=> p.cell_info.disable_value));
 									
@@ -1352,7 +1351,7 @@ procedure chkpsn is
 												class					=> d.class,
 												net						=> d.name,
 												device					=> p.device_name,
-												pin						=> p.pin,
+												pin						=> p.device_pin_name,
 												id						=> p.cell_info.control_cell_id,
 												drive_value				=> drive_value_derived_from_class(d.class)));
 										
@@ -1373,7 +1372,7 @@ procedure chkpsn is
 												class						=> d.class,
 												net							=> d.name,
 												device						=> p.device_name,
-												pin							=> p.pin,
+												pin							=> p.device_pin_name,
 												id							=> p.cell_info.control_cell_id,
 												controlled_by_control_cell	=> false));
 
@@ -1589,7 +1588,7 @@ procedure chkpsn is
 								-- pull-nets require a driver with a fully independed control cell
 								if d.class = PU or d.class = PD then
 									put_line(standard_output,message_error & "Shared control cell conflict ! No suitable driver pin found in class " 
-										& type_net_class'image(d.class) & " net '" & d.name & "' !.");
+										& type_net_class'image(d.class) & " net '" & to_string(d.name) & "' !.");
 									put_line(standard_output,"Class PU or PD nets require a driver with a fully independed control cell !");
 									-- CS: refine error output
 									raise constraint_error;
@@ -1993,7 +1992,7 @@ procedure chkpsn is
 			end case;
 -- 			b := b.next;
 		end loop;
-		put_line(section_mak.endsection); new_line;
+		put_line(section_mark.endsection); new_line;
 
 		--put_line("Section locked_control_cells_in_class_PU_PD_nets");
 		put_line(section_mark.section & row_separator_0 & section_static_control_cells_class_PX);
@@ -2418,7 +2417,7 @@ begin
 
 	-- check preliminary data base and obtain summary
 	put_line("parsing preliminary " & text_identifier_database & "...");
-	name_file_database := to_bounded_string(name_directory_temp, "preliminary_" & to_string(name_file_database));
+	name_file_database := to_bounded_string(compose (name_directory_temp, "preliminary_" & to_string(name_file_database)));
 	read_uut_database;
 	-- summary now available in summary
 
