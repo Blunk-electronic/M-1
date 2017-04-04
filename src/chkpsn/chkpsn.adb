@@ -87,31 +87,17 @@ procedure chkpsn is
 	line_number_of_primary_net_header	: natural := 0;
 	debug_level							: natural := 0;
 
--- 	database_backup_name				: type_name_database.bounded_string;
--- 	database_file_preliminary			: ada.text_io.file_type;
---	Previous_Output	: File_Type renames Current_Output;
-
 	name_of_current_primary_net			: type_net_name.bounded_string;
 	class_of_current_primary_net		: type_net_class := NA;
 	primary_net_section_entered			: boolean := false;
 	secondary_net_section_entered 		: boolean := false;	
 
 	secondary_net_count					: natural := 0;
-	list_of_secondary_net_names			: type_list_of_secondary_net_names.vector; -- CS: purge
-
 	total_options_net_count				: natural := 0;
 
 	keyword_net							: constant string (1..3)  := "net";
 	keyword_secondary_nets				: constant string (1..14) := "secondary_nets";
 	
--- 	procedure read_data_base is
--- 	begin
--- 		read_uut_data_base(
--- 			name_of_data_base_file => universal_string_type.to_string(name_file_data_base),
--- 			debug_level => 0
--- 			); --.net_count_statistics.total > 0 then null; 
--- 	end read_data_base;
-
 	type type_options_net (has_secondaries : boolean := true) is record
 		name						: type_net_name.bounded_string;
 		class						: type_net_class;
@@ -136,66 +122,63 @@ procedure chkpsn is
 		cell_id		: in type_cell_id) 
 		return boolean is
 
-		l : count_type; -- CS: load length of list here, check for zero, then search in list
-		
 		procedure print_error_on_shared_control_cell_conflict is
 		begin
 			put_line(standard_output,message_error & "Shared control cell conflict in class " & type_net_class'image(class) 
 				& " net '" & to_string(net) & "' !");
 		end print_error_on_shared_control_cell_conflict;
 
-	begin
-	-- 		while a /= null loop -- loop through cell list indicated by pointer a (locked_control_cells_in_class_DH_DL_NR_nets)
-		for i in 1..length(list_of_static_control_cells_class_DX_NR) loop
-			if element(list_of_static_control_cells_class_DX_NR, positive(i)).device = device then -- on device name match
-				if element(list_of_static_control_cells_class_DX_NR, positive(i)).id = cell_id then -- on cell id match
-					if element(list_of_static_control_cells_class_DX_NR, positive(i)).locked_to_enable_state = true then -- if locked to enable state
-						print_error_on_shared_control_cell_conflict;
-						put_line(standard_output,"       Device '" & to_string(device) 
-							& "' control cell" & type_cell_id'image(cell_id)
-							& " already locked to enable state " 
-							& type_bit_char_class_0'image(
-								element(list_of_static_control_cells_class_DX_NR, positive(i)).enable_value));
-						put_line(standard_output,"       by class " 
-							& type_net_class'image(
-								element(list_of_static_control_cells_class_DX_NR, positive(i)).class) 
-							& row_separator_0 
-							& to_lower(type_net_level'image(
-								element(list_of_static_control_cells_class_DX_NR, positive(i)).level)) 
-							& " net '" & to_string(element(list_of_static_control_cells_class_DX_NR, positive(i)).net) & "' !");
-						raise constraint_error;
-					end if; -- if locked to enable state
-				end if; -- in cell id match
-			end if; -- on device name match
--- 			a := a.next;
-		end loop;
+	begin -- control_cell_in_enable_state_by_any_cell_list
+		if length(list_of_static_control_cells_class_DX_NR) > 0 then
+			for i in 1..length(list_of_static_control_cells_class_DX_NR) loop
+				if element(list_of_static_control_cells_class_DX_NR, positive(i)).device = device then -- on device name match
+					if element(list_of_static_control_cells_class_DX_NR, positive(i)).id = cell_id then -- on cell id match
+						if element(list_of_static_control_cells_class_DX_NR, positive(i)).locked_to_enable_state = true then -- if locked to enable state
+							print_error_on_shared_control_cell_conflict;
+							put_line(standard_output,"       Device '" & to_string(device) 
+								& "' control cell" & type_cell_id'image(cell_id)
+								& " already locked to enable state " 
+								& type_bit_char_class_0'image(
+									element(list_of_static_control_cells_class_DX_NR, positive(i)).enable_value));
+							put_line(standard_output,"       by class " 
+								& type_net_class'image(
+									element(list_of_static_control_cells_class_DX_NR, positive(i)).class) 
+								& row_separator_0 
+								& to_lower(type_net_level'image(
+									element(list_of_static_control_cells_class_DX_NR, positive(i)).level)) 
+								& " net '" & to_string(element(list_of_static_control_cells_class_DX_NR, positive(i)).net) & "' !");
+							raise constraint_error;
+						end if; -- if locked to enable state
+					end if; -- in cell id match
+				end if; -- on device name match
+			end loop;
+		end if;
 
-		-- 		while b /= null loop -- loop through cell list indicated by pointer c (atg_drive)
-		for i in 1..length(list_of_atg_drive_cells) loop
-			if element(list_of_atg_drive_cells, positive(i)).device = device then -- on device name match
-				if element(list_of_atg_drive_cells, positive(i)).id = cell_id then -- on cell id match
-					if element(list_of_atg_drive_cells, positive(i)).controlled_by_control_cell then -- if control cell is targeted by atg
-						print_error_on_shared_control_cell_conflict;
-						put_line(standard_output,"       Device '" & to_string(device) 
-							& "' control cell" & type_cell_id'image(cell_id)
-							& " already reserved for ATG");
-						put_line(standard_output,"       by class " & type_net_class'image(
-								element(list_of_atg_drive_cells, positive(i)).class) 
-							& row_separator_0 
-							& " primary net '" & to_string(
-								element(list_of_atg_drive_cells, positive(i)).net) & "' !");
-						raise constraint_error;
-					end if; -- if targeted by atg
+		if length(list_of_atg_drive_cells) > 0 then
+			for i in 1..length(list_of_atg_drive_cells) loop
+				if element(list_of_atg_drive_cells, positive(i)).device = device then -- on device name match
+					if element(list_of_atg_drive_cells, positive(i)).id = cell_id then -- on cell id match
+						if element(list_of_atg_drive_cells, positive(i)).controlled_by_control_cell then -- if control cell is targeted by atg
+							print_error_on_shared_control_cell_conflict;
+							put_line(standard_output,"       Device '" & to_string(device) 
+								& "' control cell" & type_cell_id'image(cell_id)
+								& " already reserved for ATG");
+							put_line(standard_output,"       by class " & type_net_class'image(
+									element(list_of_atg_drive_cells, positive(i)).class) 
+								& row_separator_0 
+								& " primary net '" & to_string(
+									element(list_of_atg_drive_cells, positive(i)).net) & "' !");
+							raise constraint_error;
+						end if; -- if targeted by atg
+					end if;
 				end if;
-			end if;
--- 			b := b.next;
-		end loop;
+			end loop;
+		end if;
 
 		-- given control cell is not in enable state
 		return false;
 	end control_cell_in_enable_state_by_any_cell_list;
 
-	
 	procedure add_to_options_net_list(
 		-- this procedure adds a primary net (incl. secondary nets) to the options net list
 		-- multiple occurencs of nets in options file will be checked
@@ -280,10 +263,11 @@ procedure chkpsn is
 
 		case secondary_net_count is
 			when 0 => 
-				append(list_of_options_nets, ( has_secondaries => false, 
-									   name => name_given,
-									   class => class_given,
-									   line_number => line_number_given ));
+				append(list_of_options_nets,( 
+					has_secondaries => false, 
+					name => name_given,
+					class => class_given,
+					line_number => line_number_given));
 
 			when others =>
 				-- if secondary nets present, the object to create does have a list of secondary nets which needs checking:
@@ -317,11 +301,12 @@ procedure chkpsn is
 -- 					list_of_secondary_net_names	=> list_of_secondary_net_names_given
 -- 					);
 				
-				append(list_of_options_nets, ( has_secondaries => true, 
-									   name => name_given,
-									   class => class_given,
-									   line_number => line_number_given,
-									   list_of_secondary_net_names => list_of_secondary_net_names_given));
+				append(list_of_options_nets, ( 
+					has_secondaries => true, 
+					name => name_given,
+					class => class_given,
+					line_number => line_number_given,
+					list_of_secondary_net_names => list_of_secondary_net_names_given));
 
 		end case;
 
@@ -541,10 +526,7 @@ procedure chkpsn is
 		device		: in type_device_name.bounded_string;
 		cell_id		: in type_cell_id) 
 		return boolean is
-		--sj	: type_shared_control_cell_journal_ptr := shared_control_cell_journal_ptr;
 
-		l : count_type; -- CS: load length of list here, check for zero, then search in list
-		
 		a : type_static_control_cell_class_EX_NA;
 		c : type_static_control_cell_class_PX;
 
@@ -555,88 +537,88 @@ procedure chkpsn is
 		end print_error_on_shared_control_cell_conflict;
 
 	begin -- control_cell_in_disable_state_by_any_cell_list
-	-- 		while a /= null loop -- loop through cell list indicated by pointer a (locked_control_cells_in_class_EH_EL_NA_nets)
-		for i in 1..length(list_of_static_control_cells_class_EX_NA) loop
-			a := element(list_of_static_control_cells_class_EX_NA, positive(i));
-			if a.device = device then -- on device name match
-				if a.id = cell_id then -- on cell id match
-					print_error_on_shared_control_cell_conflict;
-					put_line(standard_output,"       Device '" & to_string(a.device) 
-						& "' control cell" & type_cell_id'image(a.id)
-						& " already locked to disable state " & type_bit_char_class_0'image(a.disable_value));
-					put_line(standard_output,"       by class " & type_net_class'image(a.class) & row_separator_0 
-						& to_lower(type_net_level'image(a.level)) 
-						& " net '" & to_string(a.net) & "' !");
-					raise constraint_error;
-				end if;
-			end if;
--- 			a := a.next;
-		end loop;
-
-		-- 		while b /= null loop -- loop through cell list indicated by pointer b (locked_control_cells_in_class_DH_DL_NR_nets)
-		for i in 1..length(list_of_static_control_cells_class_DX_NR) loop
-			if element(list_of_static_control_cells_class_DX_NR, positive(i)).device = device then -- on device name match
-				if element(list_of_static_control_cells_class_DX_NR, positive(i)).id = cell_id then -- on cell id match
-					if element(list_of_static_control_cells_class_DX_NR, positive(i)).locked_to_enable_state = false then -- if locked to disable state
+		if length(list_of_static_control_cells_class_EX_NA) > 0 then
+			for i in 1..length(list_of_static_control_cells_class_EX_NA) loop
+				a := element(list_of_static_control_cells_class_EX_NA, positive(i));
+				if a.device = device then -- on device name match
+					if a.id = cell_id then -- on cell id match
 						print_error_on_shared_control_cell_conflict;
-						put_line(standard_output,"       Device '" & to_string(device) 
-							& "' control cell" & type_cell_id'image(cell_id)
-							& " already locked to disable state " & type_bit_char_class_0'image(
-								element(list_of_static_control_cells_class_DX_NR, positive(i)).disable_value));
-						put_line(standard_output,"       by class " & type_net_class'image(
-								element(list_of_static_control_cells_class_DX_NR, positive(i)).class) 
-							& row_separator_0 
-							& to_lower(type_net_level'image(element(list_of_static_control_cells_class_DX_NR, positive(i)).level)) 
-							& " net '" & to_string(element(list_of_static_control_cells_class_DX_NR, positive(i)).net) & "' !");
+						put_line(standard_output,"       Device '" & to_string(a.device) 
+							& "' control cell" & type_cell_id'image(a.id)
+							& " already locked to disable state " & type_bit_char_class_0'image(a.disable_value));
+						put_line(standard_output,"       by class " & type_net_class'image(a.class) & row_separator_0 
+							& to_lower(type_net_level'image(a.level)) 
+							& " net '" & to_string(a.net) & "' !");
 						raise constraint_error;
-					end if; -- if locked to disable state
+					end if;
 				end if;
-			end if;
--- 			b := b.next;
-		end loop;
+			end loop;
+		end if;
 
-		-- CS: not tested yet:
-		-- 		while c /= null loop -- loop through cell list indicated by pointer c (locked_control_cells_in_class_PU_PD_nets)
-		for i in 1..length(list_of_static_control_cells_class_PX) loop
-			c := element(list_of_static_control_cells_class_PX, positive(i));
-			if c.device = device then -- on device name match
-				if c.id = cell_id then -- on cell id match
-					--if c.locked_to_enable_state = false then -- if locked to disable state
-						print_error_on_shared_control_cell_conflict;
-						put_line(standard_output,"       Device '" & to_string(c.device) 
-							& "' control cell" & type_cell_id'image(c.id)
-							& " already locked to disable state " & type_bit_char_class_0'image(c.disable_value));
-						put_line(standard_output,"       by class " & type_net_class'image(c.class) & row_separator_0 
-							& to_lower(type_net_level'image(c.level)) 
-							& " net '" & to_string(c.net) & "' !");
-						raise constraint_error;
-					--end if; -- if locked to disable state
+		if length(list_of_static_control_cells_class_DX_NR) > 0 then
+			for i in 1..length(list_of_static_control_cells_class_DX_NR) loop
+				if element(list_of_static_control_cells_class_DX_NR, positive(i)).device = device then -- on device name match
+					if element(list_of_static_control_cells_class_DX_NR, positive(i)).id = cell_id then -- on cell id match
+						if element(list_of_static_control_cells_class_DX_NR, positive(i)).locked_to_enable_state = false then -- if locked to disable state
+							print_error_on_shared_control_cell_conflict;
+							put_line(standard_output,"       Device '" & to_string(device) 
+								& "' control cell" & type_cell_id'image(cell_id)
+								& " already locked to disable state " & type_bit_char_class_0'image(
+									element(list_of_static_control_cells_class_DX_NR, positive(i)).disable_value));
+							put_line(standard_output,"       by class " & type_net_class'image(
+									element(list_of_static_control_cells_class_DX_NR, positive(i)).class) 
+								& row_separator_0 
+								& to_lower(type_net_level'image(element(list_of_static_control_cells_class_DX_NR, positive(i)).level)) 
+								& " net '" & to_string(element(list_of_static_control_cells_class_DX_NR, positive(i)).net) & "' !");
+							raise constraint_error;
+						end if; -- if locked to disable state
+					end if;
 				end if;
-			end if;
--- 			c := c.next;
-		end loop;
+			end loop;
+		end if;
 
 		-- CS: not tested yet:
-		-- 		while d /= null loop -- loop through cell list indicated by pointer c (atg_drive)
-		for i in 1..length(list_of_atg_drive_cells) loop
-			if element(list_of_atg_drive_cells, positive(i)).device = device then -- on device name match
-				if element(list_of_atg_drive_cells, positive(i)).id = cell_id then -- on cell id match
-					if element(list_of_atg_drive_cells, positive(i)).controlled_by_control_cell then -- if control cell is targeted by atg
-						print_error_on_shared_control_cell_conflict;
-						put_line(standard_output,"       Device '" & to_string(device) 
-							& "' control cell" & type_cell_id'image(cell_id)
-							& " already reserved for ATG");
-						put_line(standard_output,"       by class " & type_net_class'image(
-								element(list_of_atg_drive_cells, positive(i)).class) 
-							& row_separator_0 
-							& " primary net '" & to_string(
-								element(list_of_atg_drive_cells, positive(i)).net) & "' !");
-						raise constraint_error;
-					end if; -- if targeted by atg
+		if length(list_of_static_control_cells_class_PX) > 0 then
+			for i in 1..length(list_of_static_control_cells_class_PX) loop
+				c := element(list_of_static_control_cells_class_PX, positive(i));
+				if c.device = device then -- on device name match
+					if c.id = cell_id then -- on cell id match
+						--if c.locked_to_enable_state = false then -- if locked to disable state
+							print_error_on_shared_control_cell_conflict;
+							put_line(standard_output,"       Device '" & to_string(c.device) 
+								& "' control cell" & type_cell_id'image(c.id)
+								& " already locked to disable state " & type_bit_char_class_0'image(c.disable_value));
+							put_line(standard_output,"       by class " & type_net_class'image(c.class) & row_separator_0 
+								& to_lower(type_net_level'image(c.level)) 
+								& " net '" & to_string(c.net) & "' !");
+							raise constraint_error;
+						--end if; -- if locked to disable state
+					end if;
 				end if;
-			end if;
--- 			d := d.next;
-		end loop;
+			end loop;
+		end if;
+
+		-- CS: not tested yet:
+		if length(list_of_atg_drive_cells) > 0 then
+			for i in 1..length(list_of_atg_drive_cells) loop
+				if element(list_of_atg_drive_cells, positive(i)).device = device then -- on device name match
+					if element(list_of_atg_drive_cells, positive(i)).id = cell_id then -- on cell id match
+						if element(list_of_atg_drive_cells, positive(i)).controlled_by_control_cell then -- if control cell is targeted by atg
+							print_error_on_shared_control_cell_conflict;
+							put_line(standard_output,"       Device '" & to_string(device) 
+								& "' control cell" & type_cell_id'image(cell_id)
+								& " already reserved for ATG");
+							put_line(standard_output,"       by class " & type_net_class'image(
+									element(list_of_atg_drive_cells, positive(i)).class) 
+								& row_separator_0 
+								& " primary net '" & to_string(
+									element(list_of_atg_drive_cells, positive(i)).net) & "' !");
+							raise constraint_error;
+						end if; -- if targeted by atg
+					end if;
+				end if;
+			end loop;
+		end if;
 
 		-- given control cell is not in disable state
 		return false;
@@ -645,12 +627,12 @@ procedure chkpsn is
 
 	-- 		procedure update_cell_lists( d : type_ptr_net ) is
 	procedure update_cell_lists( d : in type_net ) is
-	-- updates cell lists by the net where d points to (in data base net list)
+	-- updates cell lists by the net held in d (from database netlist)
 		drivers_without_disable_spec_ct 			: natural := 0;
 		driver_with_non_shared_control_cell_found 	: boolean := false;
 		driver_with_shared_control_cell_found		: boolean := false;
 
-		p : type_pin;
+		p : type_pin; -- for temporarily storage of a pin
 
 -- 		procedure add_to_locked_control_cells_in_class_EH_EL_NA_nets(
 -- 			-- prepares writing a cell list entry like:
@@ -965,7 +947,7 @@ procedure chkpsn is
 -- 		end add_to_input_cells_in_class_NA_nets;
 
 	begin -- update_cell_lists
-		-- d is a net pointer and points to the net being processed
+		-- d holds the net being processed
 
 -- 			if debug_level >= 30 then
 -- 				put_line(standard_output," updating cell lists with net " & universal_string_type.to_string(d.name));
@@ -1740,7 +1722,7 @@ procedure chkpsn is
 
 	
 	procedure dump_net_content ( -- CS: receive the net as full type type_net
-	-- from a given net name, the whole content (means all devices) is dumped into the preliminary data base
+	-- from a given net name, the whole content (means all devices) is dumped into the preliminary database
 		name 				: in type_net_name.bounded_string; 
 		level 				: in type_net_level; 
 
@@ -1751,8 +1733,8 @@ procedure chkpsn is
 		class 				: in type_net_class; 
 		spacing_from_left 	: in positive
 		) is
-		d : type_net;
-		p : type_pin;
+		d : type_net; -- for temporarily storage of a net
+		p : type_pin; -- for temporarily storage of a pin
 
 	begin -- dump_net_content for net name given in "name"
 		-- net name "name" is passed from superordinated procedure make_new_net_list when calling this procedure
@@ -1823,92 +1805,89 @@ procedure chkpsn is
 
 				exit; -- no need to search other nets in data base
 			end if;
--- 			d := d.next; -- advance net pointer to next net
+
 		end loop;
 	end dump_net_content;
 
 	
-	
-
 	procedure make_new_net_list is
-		-- with the two net lists pointed to by net_ptr and options_net_ptr, a new net list is created and appended to the
-		-- preliminary data base
+		-- with the two netlists list_of_nets and list_of_options_nets, a new netlist is created and appended to the
+		-- preliminary database
 		-- the class requirements and secondary net dependencies from the options file are taken into account
-		o	: type_options_net;
-		n 	: type_net;
+		o	: type_options_net; -- for temporarily storage of an options net
+		n 	: type_net; -- for temporarily storage of a database net
 
 	begin -- make_new_net_list
-	-- reads options net list pointed to by pointer o
-	-- writes a structure as shown below in the preliminary data base:
+		-- writes a structure as shown below in the preliminary data base:
+
+		--> header:	SubSection LED1 class NR
+
+		--> by procedure dump_net_content:
+		-- 		RN302 '?' 2k7 SIL8 4
+		-- 		JP402 '?' MON1 2X20 22
+		-- 		IC303 '?' SN74BCT8240ADWR SOIC24 9 y2(3) | 1 BC_1 OUTPUT3 X 16 1 Z
+		-- 		D402 '?' none LED5MM K
+		--> footer:	EndSubSection
+		--> footer:	SubSection secondary_nets_of LED1
+		-- 
+		--> header: SubSection LED1_R class NR
+		--> by procedure dump_net_content:
+		-- 			RN302 '?' 2k7 SIL8 3
+		-- 			JP402 '?' MON1 2X20 28
+		-- 			IC301 '?' XC9536 PLCC-S44 3 pb00_01 | 104 BC_1 INPUT X | 103 BC_1 OUTPUT3 X 102 0 Z
+		--> footer:	EndSubSection
+		--> footer: EndSubSection secondary_nets_of LED1
 	
---> header:	SubSection LED1 class NR
-
---> by procedure dump_net_content:
--- 		RN302 '?' 2k7 SIL8 4
--- 		JP402 '?' MON1 2X20 22
--- 		IC303 '?' SN74BCT8240ADWR SOIC24 9 y2(3) | 1 BC_1 OUTPUT3 X 16 1 Z
--- 		D402 '?' none LED5MM K
---> footer:	EndSubSection
---> footer:	SubSection secondary_nets_of LED1
--- 
---> header: SubSection LED1_R class NR
---> by procedure dump_net_content:
--- 			RN302 '?' 2k7 SIL8 3
--- 			JP402 '?' MON1 2X20 28
--- 			IC301 '?' XC9536 PLCC-S44 3 pb00_01 | 104 BC_1 INPUT X | 103 BC_1 OUTPUT3 X 102 0 Z
---> footer:	EndSubSection
---> footer: EndSubSection secondary_nets_of LED1
-
-		-- 		while o /= null loop -- o points to options net list
-		for i in 1..length(list_of_options_nets) loop -- CS: check length before
-			o := element(list_of_options_nets, positive(i));
-			new_line;
-			-- write primary net header like "SubSection LED0 class NR" (name and class taken from options net list)
-			put_line(column_separator_0);
-			put_line(row_separator_0 & section_mark.subsection & row_separator_0 & to_string(o.name) & row_separator_0 
-				& text_udb_class & row_separator_0 & type_net_class'image(o.class));
-
-			-- this is a primary net. it will be searched for in the net list and its content dumped into the preliminary data base
-			put_line("  -- name class value package pin"
-				& " [ port | in_cell: id type func safe | out_cell: id type func safe [ ctrl_cell id disable result ]]");
-			dump_net_content( -- CS: send full type_net
-				name => o.name, 
-				level => primary,
-				class => o.class,
-				spacing_from_left => 2
-				);
-
-			-- put end of primary net mark
-			put_line(row_separator_0 & section_mark.endsubsection);
-
-			-- if there are secondary nets specified in options net list, dump them one by one into the preliminary data base
-			if o.has_secondaries then
-				put_line(row_separator_0 & section_mark.subsection & row_separator_0 & netlist_keyword_header_secondary_nets & row_separator_0 & to_string(o.name));
+		if length(list_of_options_nets) > 0 then
+			for i in 1..length(list_of_options_nets) loop
+				o := element(list_of_options_nets, positive(i));
 				new_line;
-				for s in 1..length(o.list_of_secondary_net_names) loop
-					put_line(2*row_separator_0 & section_mark.subsection & row_separator_0 
-						& to_string(element(o.list_of_secondary_net_names, positive(s)))
-						& row_separator_0 & text_udb_class & type_net_class'image(o.class)
-						);
-
-					dump_net_content(
-						name => element(o.list_of_secondary_net_names, positive(s)),
-						level => secondary,
-						primary_net_is => o.name, -- required for writing some cell lists where reference to primary net is required
-						class => o.class, 
-						spacing_from_left => 4
-						);
-					put_line(2*row_separator_0 & section_mark.endsubsection);
-					new_line;
-				end loop;
-				put_line(row_separator_0 & section_mark.endsubsection & row_separator_0 & netlist_keyword_header_secondary_nets &
-						 row_separator_0 & to_string(o.name));
+				-- write primary net header like "SubSection LED0 class NR" (name and class taken from options net list)
 				put_line(column_separator_0);
-				new_line;
-			end if;
+				put_line(row_separator_0 & section_mark.subsection & row_separator_0 & to_string(o.name) & row_separator_0 
+					& text_udb_class & row_separator_0 & type_net_class'image(o.class));
 
--- 			o := o.next;
-		end loop;
+				-- this is a primary net. it will be searched for in the net list and its content dumped into the preliminary data base
+				put_line("  -- name class value package pin"
+					& " [ port | in_cell: id type func safe | out_cell: id type func safe [ ctrl_cell id disable result ]]");
+				dump_net_content( -- CS: send full type_net
+					name => o.name, 
+					level => primary,
+					class => o.class,
+					spacing_from_left => 2
+					);
+
+				-- put end of primary net mark
+				put_line(row_separator_0 & section_mark.endsubsection);
+
+				-- if there are secondary nets specified in options net list, dump them one by one into the preliminary data base
+				if o.has_secondaries then
+					put_line(row_separator_0 & section_mark.subsection & row_separator_0 & netlist_keyword_header_secondary_nets & row_separator_0 & to_string(o.name));
+					new_line;
+					for s in 1..length(o.list_of_secondary_net_names) loop
+						put_line(2*row_separator_0 & section_mark.subsection & row_separator_0 
+							& to_string(element(o.list_of_secondary_net_names, positive(s)))
+							& row_separator_0 & text_udb_class & type_net_class'image(o.class)
+							);
+
+						dump_net_content(
+							name => element(o.list_of_secondary_net_names, positive(s)),
+							level => secondary,
+							primary_net_is => o.name, -- required for writing some cell lists where reference to primary net is required
+							class => o.class, 
+							spacing_from_left => 4
+							);
+						put_line(2*row_separator_0 & section_mark.endsubsection);
+						new_line;
+					end loop;
+					put_line(row_separator_0 & section_mark.endsubsection & row_separator_0 & netlist_keyword_header_secondary_nets &
+							row_separator_0 & to_string(o.name));
+					put_line(column_separator_0);
+					new_line;
+				end if;
+
+			end loop;
+		end if;
 
 		-- dump non-optimized nets 
 		-- they have the "optimized" flag cleared (false) and default to level primary with class NA
@@ -1917,10 +1896,8 @@ procedure chkpsn is
 		put_line("-- NON-OPTIMIZED NETS ---------------------------");
 		put_line(column_separator_0);
 
-		-- 		while n /= null loop -- n points to data base net list
 		for i in 1..length(list_of_nets) loop -- CS: use summary instead ?
 			n := element(list_of_nets, positive(i));
-			--put_line(universal_string_type.to_string(n.name));
 			if not n.optimized then -- if non-optimized
 				--put_line(prog_position);
 				new_line;
@@ -1940,7 +1917,6 @@ procedure chkpsn is
 				-- put end of primary net mark
 				put_line(row_separator_0 & section_mark.endsubsection);
 			end if;
--- 			n := n.next;
 		end loop;
 	end make_new_net_list;
 
@@ -2253,10 +2229,10 @@ begin
 		);
 
 	-- read options file
-	-- check if primary net incl. secondary nets may change class as specified in options file
-	-- if class rendering allowed, add primary net with its secondary nets to options net list
-	-- this is achieved at prog_position OP5300 by procedure add_to_options_net_list
-	-- ptr_options_net points to generated options net list
+	-- Check if primary net incl. secondary nets may change class as specified in options file
+	-- if class rendering allowed, add primary net with its secondary nets to options netlist.
+	-- This is achieved at by procedure add_to_options_net_list
+	-- list_of_options_nets is the generated options netlist
 	prog_position := 60;
 	put_line("reading options file ...");
 	set_input(file_options); -- set data source
@@ -2285,7 +2261,7 @@ begin
 						elsif to_upper(get_field_from_line(to_string(line_of_file),1)) = keyword_net then
 							secondary_net_count := secondary_net_count + 1;
 							--list_of_secondary_net_names(secondary_net_count) := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
-							append(list_of_secondary_net_names, to_bounded_string(get_field_from_line(to_string(line_of_file),2)));
+							append(list_of_secondary_net_names_preliminary, to_bounded_string(get_field_from_line(to_string(line_of_file),2)));
 						else
  							put_line(message_error & "Keyword '" & keyword_net & "' or '"
 								& section_mark.endsubsection & "' expected !");
@@ -2316,19 +2292,21 @@ begin
 							if query_render_net_class (
 								primary_net_name => name_of_current_primary_net,
 								primary_net_class => class_of_current_primary_net,
-								list_of_secondary_net_names	=> list_of_secondary_net_names
+								list_of_secondary_net_names	=> list_of_secondary_net_names_preliminary
 -- 								secondary_net_count	=> secondary_net_count
 								) then 
 									add_to_options_net_list(
 										name_given							=> name_of_current_primary_net,
 										class_given							=> class_of_current_primary_net,
 										line_number_given					=> line_number_of_primary_net_header,
-										list_of_secondary_net_names_given	=> list_of_secondary_net_names
+										list_of_secondary_net_names_given	=> list_of_secondary_net_names_preliminary
 									);
 									
 							end if;
 							secondary_net_count := 0; -- reset secondary net counter for next primary net
-							-- CS: purge list_of_secondary_net_names ?
+
+							-- purge list_of_secondary_net_names for next spin
+							list_of_secondary_net_names_preliminary := empty_list_of_secondary_net_names;
 
 						-- if not secondary_net_section_entered yet, wait for "SubSection secondary_nets" header
 						-- if "SubSection secondary_nets" found, set secondary_net_section_entered flag
@@ -2350,8 +2328,6 @@ begin
 					name_of_current_primary_net := to_bounded_string(get_field_from_line(to_string(line_of_file),2));
 					if to_upper(get_field_from_line(to_string(line_of_file),3)) = netlist_keyword_header_class then
 						null; -- fine
-						-- purge list_of_secondary_net_names for collecting secondary net names of this primary net
-						delete(list_of_secondary_net_names,1,length(list_of_secondary_net_names));
 					else
 						put_line(message_error & "Identifier '" & netlist_keyword_header_class & "' expected after primary net name !");
 						raise constraint_error;
@@ -2373,8 +2349,8 @@ begin
 	set_input(standard_input);
 	prog_position := 80;	
 	close(file_options);
-	-- options net list ready. pointer options_net_ptr points to list !
-	-- data base net list ready, pointer net_ptr points to list !
+	-- options netlist ready in list_of_options_nets. 
+	-- database netlist ready in list_of_nets.
 
 -- CS: It's too confusing outputting statistics at this stage. So this block is commented.
 -- CS: compare net numbers ?
@@ -2390,7 +2366,6 @@ begin
 --		put_line("data base net count : " & natural'image(udb_summary.net_count_statistics.total));
 --	end if;
 
-	-- extract from current udb the sections "scanpath_configuration" and "registers" in preliminary data base
 	prog_position := 90;
 	create( file_database_preliminary, name => 
 			compose (name_directory_temp, "preliminary_" & to_string(name_file_database))
@@ -2425,12 +2400,10 @@ begin
 	put_line(column_separator_0);
 	put_line("-- modified by primary/secondary/class builder version " & version);
 	put_line("-- date: " & date_now & " (YYYY-MM-DD HH:MM:SS)");
-	--new_line(2);
 
-
-	-- with the two netlists pointed to by net_ptr and options_net_ptr, a new net list is created and appended to the
-	-- preliminary data base
-	-- the class requirements and secondary net dependencies from the options file are taken into account
+	-- With the two netlists list_of_nets and list_of_options_nets, a new net list is created and appended to the
+	-- preliminary data base.
+	-- The class requirements and secondary net dependencies from the options file are taken into account.
 	prog_position := 140;	
 	make_new_net_list;
 
@@ -2440,20 +2413,18 @@ begin
 	prog_position := 150;	
 	write_new_cell_lists;
 
-	--put_line(column_separator_1);
-
 	prog_position := 160;		
 	set_output(standard_output);
 	close(file_database_preliminary);
 
-	-- check preliminary data base and obtain summary
+	-- check preliminary database and obtain summary
 	prog_position := 170;	
 	put_line("parsing preliminary " & text_identifier_database & "...");
 	name_file_database := to_bounded_string(compose (name_directory_temp, "preliminary_" & to_string(name_file_database)));
 	read_uut_database;
 	-- summary now available in summary
 
-	-- reopen preliminary data base in append mode
+	-- reopen preliminary database in append mode
 	prog_position := 180;	
 	open( 
 		file => file_database_preliminary,
@@ -2472,28 +2443,25 @@ begin
 	prog_position := 210;	
 	delete_file(to_string(name_file_database));
 
-	exception
+	exception when event: others =>
+		set_exit_status(failure);
+		set_output(standard_output);
 
-		when event: others =>
-			set_exit_status(failure);
-			set_output(standard_output);
+		if prog_position = 10 then
+			put_line(message_error & text_identifier_database & " file missing or insufficient access rights !");
+			put_line("       Provide " & text_identifier_database & " name as argument. Example: chkpsn my_uut.udb");
 
-			if prog_position = 10 then
-				put_line(message_error & text_identifier_database & " file missing or insufficient access rights !");
-				put_line("       Provide " & text_identifier_database & " name as argument. Example: chkpsn my_uut.udb");
+		elsif prog_position = 20 then
+			put_line(message_error & "Options file missing or insufficient access rights !");
+			put_line("       Provide options file as argument. Example: chkpsn my_uut.udb my_options.opt");
 
-			elsif prog_position = 20 then
-				put_line(message_error & "Options file missing or insufficient access rights !");
-				put_line("       Provide options file as argument. Example: chkpsn my_uut.udb my_options.opt");
-
-			else
--- 				put("unexpected exception: ");
-				put_line(exception_name(event));
-				put(exception_message(event)); new_line;
-				put_line("program error at position " & natural'image(prog_position));
-					--put_line("ERROR in options file in line :" & natural'image(line_counter));
-					--clean_up;
-					--raise;
-			end if;
+		else
+			put_line(exception_name(event));
+			put(exception_message(event)); new_line;
+			put_line(message_error & "at position " & natural'image(prog_position));
+				--put_line("ERROR in options file in line :" & natural'image(line_counter));
+				--clean_up;
+				--raise;
+		end if;
 
 end chkpsn;
