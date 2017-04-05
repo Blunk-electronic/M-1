@@ -179,83 +179,87 @@ procedure chkpsn is
 		return false;
 	end control_cell_in_enable_state_by_any_cell_list;
 
-	procedure add_to_options_net_list(
-		-- this procedure adds a primary net (incl. secondary nets) to the options net list
-		-- multiple occurencs of nets in options file will be checked
-		name_given							: in type_net_name.bounded_string;
-		class_given							: in type_net_class;
-		line_number_given					: in positive;
-		list_of_secondary_net_names_given	: in type_list_of_secondary_net_names.vector
-		) is
+	procedure verify_primary_net_appears_only_once (name : in type_net_name.bounded_string) is
+	-- Checks if given primary net has been added to list_of_options_nets already.
+		s : type_list_of_secondary_net_names.vector;
+	begin
+		for i in 1..length(list_of_options_nets) loop
+		
+-- 			if debug_level >= 50 then
+-- 				put_line("searching primary net : " & universal_string_type.to_string(n.name) & " ...");
+-- 			end if;
 
--- 		procedure verify_primary_net_appears_only_once (name : string) is
--- 			n	: type_ptr_options_net := ptr_options_net;
--- 		begin
--- 			prog_position := "OP3000";
--- 			while n /= null loop
--- 				if debug_level >= 50 then
--- 					put_line("searching primary net : " & universal_string_type.to_string(n.name) & " ...");
--- 				end if;
--- 
--- 				-- if primary net already specified as primary net:
--- 				if universal_string_type.to_string(n.name) = name then
--- 					prog_position := "OP3100";
--- 					put_line("ERROR: Net '" & name & "' already specified as primary net !");
--- 					raise constraint_error;
--- 				end if;
--- 
--- 				-- if primary net already specified as secondary net:
--- 				if n.has_secondaries then
--- 					for s in 1..n.secondary_net_count loop
--- 						if universal_string_type.to_string(n.list_of_secondary_net_names(s)) = name then
--- 							prog_position := "OP3200";
--- 							put_line("ERROR: Net '" & name & "' already specified as secondary net of primary net '" 
--- 								& universal_string_type.to_string(n.name) & "' !");
--- 							raise constraint_error;
--- 						end if;
--- 					end loop;
--- 				end if;
--- 				n := n.next;
--- 			end loop;
--- 		end verify_primary_net_appears_only_once;
+			-- if primary net already specified as primary net:
+			if element(list_of_options_nets, positive(i)).name = name then
+				put_line(message_error & "Net '" & to_string(name) & "' already specified as primary net !");
+				raise constraint_error;
+			end if;
 
--- 		procedure verify_secondary_net_appears_only_once (name : string) is
--- 		-- checks if secondary net appears only once in options file
--- 			n	: type_ptr_options_net := ptr_options_net;
--- 		begin
--- 			prog_position := "OP4000";
--- 			while n /= null loop
+			-- if primary net already specified as secondary net:
+			if element(list_of_options_nets, positive(i)).has_secondaries then
+				s := element(list_of_options_nets, positive(i)).list_of_secondary_net_names; -- load secondary net names in s
+				for i in 1..length(s) loop -- search secondary nets
+					if element(s, positive(i)) = name then
+						put_line(message_error & "Net '" & to_string(name) 
+							& "' already specified as secondary net of primary net '" 
+							& to_string(
+								element(list_of_options_nets, positive(i)).name) & "' !");
+						raise constraint_error;
+					end if;
+				end loop;
+			end if;
+		end loop;
+	end verify_primary_net_appears_only_once;
+
+	procedure verify_secondary_net_appears_only_once (name : in type_net_name.bounded_string) is
+	-- checks if secondary net appears only once in options file
+		n	: type_options_net;
+		l	: count_type := length(list_of_options_nets);
+	begin
+		if l > 0 then -- do the check if list_of_options_nets contains something already
+			for i in 1..l loop
+				n := element(list_of_options_nets, positive(i)); -- load a primary net
+				
 -- 				if debug_level >= 30 then
 -- 					put_line("searching secondary net in primary net : " & universal_string_type.to_string(n.name) & " ...");
 -- 				end if;
--- 
--- 
--- 				-- if secondary net already specified as primary net:
--- 				if universal_string_type.to_string(n.name) = name then
--- 					prog_position := "OP4100";
--- 					put_line("ERROR: Net '" & name & "' already specified as primary net !");
--- 					raise constraint_error;
--- 				end if;
--- 
--- 				-- if secondary net already specified as secondary net:
--- 				if n.has_secondaries then
--- 					for s in 1..n.secondary_net_count loop
--- 						if universal_string_type.to_string(n.list_of_secondary_net_names(s)) = name then
--- 							prog_position := "OP4200";
--- 							put_line("ERROR: Net '" & name & "' already specified as secondary net of primary net '" 
--- 								& universal_string_type.to_string(n.name) & "' !");
--- 							raise constraint_error;
--- 						end if;
--- 					end loop;
--- 				end if;
--- 				n := n.next;
--- 			end loop;
--- 		end verify_secondary_net_appears_only_once;
+
+				-- if secondary net already specified as primary net:
+				if n.name = name then
+					put_line(message_error & "Net '" & to_string(name) & "' already specified as primary net !");
+					raise constraint_error;
+				end if;
+
+				-- if secondary net already specified as secondary net:
+				if n.has_secondaries then
+					for i in 1..length(n.list_of_secondary_net_names) loop -- search in secondary nets
+						if element(n.list_of_secondary_net_names, positive(i)) = name then
+							put_line(message_error & "Net '" & to_string(name) & "' already specified as secondary net of primary net '" 
+								& to_string(n.name) & "' !");
+							raise constraint_error;
+						end if;
+					end loop;
+				end if;
+			end loop;
+		end if;
+	end verify_secondary_net_appears_only_once;
+	
+	procedure add_to_options_net_list(
+		-- this procedure adds a primary net (incl. secondary nets) to the options net list
+		-- multiple occurencs of nets in options file will be checked
+		name				: in type_net_name.bounded_string;
+		class				: in type_net_class;
+		line_number			: in positive;
+		secondary_net_names	: in type_list_of_secondary_net_names.vector
+		) is
+
+		secondary_net_count : natural := natural(length(secondary_net_names));
+		
+		sn1, sn2 : type_net_name.bounded_string; -- for temporarily storage of secondary net names
 
 	begin -- add_to_options_net_list
-		secondary_net_count := natural(length(list_of_secondary_net_names_given));
 		
--- CS:		verify_primary_net_appears_only_once(name_given); -- checks other primary nets and their secondary nets in options file
+		verify_primary_net_appears_only_once(name); -- checks other primary nets and their secondary nets in options file
 
 -- 		if debug_level >= 20 then
 -- 			put_line("adding to options net list : " & name_given);
@@ -265,31 +269,33 @@ procedure chkpsn is
 			when 0 => 
 				append(list_of_options_nets,( 
 					has_secondaries => false, 
-					name => name_given,
-					class => class_given,
-					line_number => line_number_given));
+					name => name,
+					class => class,
+					line_number => line_number));
 
 			when others =>
 				-- if secondary nets present, the object to create does have a list of secondary nets which needs checking:
--- 				for s in 1..secondary_net_ct_given loop
+				for s in 1..secondary_net_count loop
+					sn1 := element(secondary_net_names, positive(s));
 -- 					if debug_level >= 30 then
 -- 						put_line("checking secondary net : " & universal_string_type.to_string(list_of_secondary_net_names_given(s)) 
 -- 							& "' for multiple occurences ...");
 -- 					end if;
 
-					-- CS: make sure the list of secondary nets does contain unique net names (means no multiple occurences of secondary nets within
-					-- the same primary net 
--- 					for i in s+1..secondary_net_ct_given loop
--- 						if universal_string_type.to_string(list_of_secondary_net_names_given(s)) = universal_string_type.to_string(list_of_secondary_net_names_given(i)) then
--- 							prog_position := "OP2100";
--- 							put_line("ERROR: Net '" & universal_string_type.to_string(list_of_secondary_net_names_given(s)) & "' must be specified only once as secondary net of this primary net !");
--- 							raise constraint_error;
--- 						end if;
--- 					end loop;
+					-- Make sure the list of secondary nets does contain unique net names 
+					-- (means no multiple occurences of of the same net).
+					for i in s+1..secondary_net_count loop -- search starts with the net after sn1
+						sn2 := element(secondary_net_names, positive(i));
+						if sn2 = sn1 then
+							put_line(message_error & "Net '" & to_string(sn1) 
+							& "' must be specified only once as secondary net of this primary net !");
+							raise constraint_error;
+						end if;
+					end loop;
 
-					-- CS: check if current secondary net occurs in other primary and secondary nets
--- 					verify_secondary_net_appears_only_once(universal_string_type.to_string(list_of_secondary_net_names_given(s)));
--- 				end loop;
+					-- check if secondary net occurs in other primary and secondary nets
+					verify_secondary_net_appears_only_once(sn1);
+				end loop;
 
 -- 				list := new type_options_net'(
 -- 					next => list,
@@ -303,10 +309,10 @@ procedure chkpsn is
 				
 				append(list_of_options_nets, ( 
 					has_secondaries => true, 
-					name => name_given,
-					class => class_given,
-					line_number => line_number_given,
-					list_of_secondary_net_names => list_of_secondary_net_names_given));
+					name => name,
+					class => class,
+					line_number => line_number,
+					list_of_secondary_net_names => secondary_net_names));
 
 		end case;
 
@@ -1935,7 +1941,7 @@ procedure chkpsn is
 		put_line("------- CELL LISTS ----------------------------------------------------------");
 		new_line(2);
 
-		--put_line("Section locked_control_cells_in_class_EH_EL_NA_nets"); -- CS: Section locked_control_cells_in_class_EH_EL_?_nets discarded
+		--put_line("Section locked_control_cells_in_class_EH_EL_NA_nets");
 		put_line(section_mark.section & row_separator_0 & section_static_control_cells_class_EX_NA);
 		-- writes a cell list entry like:
 		put_line("-- addresses control cells which statically disable drivers");
@@ -2129,7 +2135,7 @@ procedure chkpsn is
 		end loop;
 		put_line(section_mark.endsection); new_line;
 
-		--put_line("Section input_cells_in_class_NA_nets"); -- CS: input_cells_in_class_?_nets discarded
+		--put_line("Section input_cells_in_class_NA_nets");
 		put_line(section_mark.section & row_separator_0 & section_input_cells_class_NA);
 		-- writes a cell list entry like:
 		put_line("-- addresses input cells");
@@ -2296,10 +2302,10 @@ begin
 -- 								secondary_net_count	=> secondary_net_count
 								) then 
 									add_to_options_net_list(
-										name_given							=> name_of_current_primary_net,
-										class_given							=> class_of_current_primary_net,
-										line_number_given					=> line_number_of_primary_net_header,
-										list_of_secondary_net_names_given	=> list_of_secondary_net_names_preliminary
+										name				=> name_of_current_primary_net,
+										class				=> class_of_current_primary_net,
+										line_number			=> line_number_of_primary_net_header,
+										secondary_net_names	=> list_of_secondary_net_names_preliminary
 									);
 									
 							end if;
