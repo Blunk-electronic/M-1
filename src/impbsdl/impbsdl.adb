@@ -1117,7 +1117,6 @@ procedure impbsdl is
 -- 		end parse_bsdl;
 -- 
 	begin -- read_bsld_models
-		-- 		while bic /= null loop
 		for i in 1..length(list_of_bics_pre) loop
 			bic := element(list_of_bics_pre, positive(i));
  			put_line(row_separator_0 & section_mark.subsection & row_separator_0 & to_string(bic.name));
@@ -1126,37 +1125,53 @@ procedure impbsdl is
 				file_handle => file_import_bsdl_messages,
 				--identation : in natural := 0;
 				text => "BSDL model file " & to_string(bic.model_file), 
-				--lf   : in boolean := true;		
+				lf => false,
 				--file : in boolean := true;
 				console => true);
 			
-			-- read options (if given)
+			-- read options (if given) begin
  			option_remove_prefix := false;
  			if length(bic.options) > 0 then
+				-- The keyword "option" indicates, that there are options specified:
 				if to_lower(get_field_from_line(to_string(bic.options),1)) = text_udb_option then
 					
+					-- Report that options are specified.
 					write_message (
 						file_handle => file_import_bsdl_messages,
 						identation => 1,
-						text => "options: ", -- & to_string(bic.model_file), 
+						text => text_udb_option & " ",
 						lf => false);
-						--file : in boolean := true;
-						--console => true);
-					
+
+					-- The keyword "remove_pin_prefix" indicates, that the next field is the actual prefix to be removed:
 					if get_field_from_line(to_string(bic.options),2) = to_lower(type_bic_option'image(remove_pin_prefix)) then
+						option_remove_prefix := true; -- requied when reading the port pin map of the BSDL model
 
-						option_remove_prefix := true;
-
+						-- Report which options are specified.
 						write_message (
 							file_handle => file_import_bsdl_messages,
 							text => type_bic_option'image(remove_pin_prefix) & " " & get_field_from_line(to_string(bic.options),3),
 							lf => false);
 
-						put_line(2 * row_separator_0 & to_string(bic.options));						
+						-- write options in preliminary database
+						put_line(2 * row_separator_0 & to_string(bic.options));
+
+						-- save actual option string. required when reading the port pin mmap later
 						option_prefix_to_remove := to_bounded_string(get_field_from_line(to_string(bic.options),3));
 					end if;
+
+					-- CS: test further options here
+
 				end if;
 			end if;
+
+			-- All options reported. Put a final line break in log file and on console.
+			write_message (
+				file_handle => file_import_bsdl_messages,
+				text => "",
+				lf => true,
+				console => true);
+			-- read options end
+
 -- 			
 -- 			open(file => file_bsdl, mode => in_file, name => extended_string.to_string(bic.model_file));
 -- 			set_input(file_bsdl);
