@@ -88,14 +88,19 @@ procedure impbsdl is
 	cell_cursor : cursor;
 --	bc_scratch : type_cell;
 	
--- 	
--- 	procedure read_bsld_models is
--- 		bic				: type_bscan_ic_pre;
--- 		file_bsdl 		: ada.text_io.file_type;
--- 		line_of_file	: extended_string.bounded_string;
+	
+	procedure read_bsld_models is
+		bic				: type_bscan_ic_pre;
+
+		use type_long_string;
+		use type_list_of_bics_pre;
+		use type_model_file_name;
+		use type_bic_options;
+		
+ 		line_of_file	: type_long_string.bounded_string;
 -- 		bsdl_string		: unbounded_string;
--- 		option_remove_prefix : boolean := false;
--- 		option_prefix_to_remove : universal_string_type.bounded_string;
+ 		option_remove_prefix : boolean := false;
+ 		option_prefix_to_remove : type_bic_options.bounded_string;
 -- 		
 -- 		function get_bit_pattern (text_in : in string; width : in positive) return string is
 -- 			text_out : string (1..width);
@@ -1111,23 +1116,47 @@ procedure impbsdl is
 -- 			end if;
 -- 		end parse_bsdl;
 -- 
--- 	begin -- read_bsld_models
--- 		set_output(file_data_base_preliminary);
--- 		while bic /= null loop
--- 			put_line(row_separator_0 & section_mark.subsection & row_separator_0 & universal_string_type.to_string(bic.name));
--- 			put_line(standard_output,"model file " & extended_string.to_string(bic.model_file));
--- 
--- 			-- display options (if given)
--- 			option_remove_prefix := false;
--- 			if universal_string_type.length(bic.options) > 0 then
--- 				if to_lower(get_field(universal_string_type.to_string(bic.options),1)) = text_udb_option then
--- 					if get_field(universal_string_type.to_string(bic.options),2) = to_lower(type_bic_option'image(remove_pin_prefix)) then
--- 						put_line(standard_output,2 * row_separator_0 & universal_string_type.to_string(bic.options));
--- 						option_remove_prefix := true;
--- 						option_prefix_to_remove := universal_string_type.to_bounded_string(get_field(universal_string_type.to_string(bic.options),3));
--- 					end if;
--- 				end if;
--- 			end if;
+	begin -- read_bsld_models
+		-- 		while bic /= null loop
+		for i in 1..length(list_of_bics_pre) loop
+			bic := element(list_of_bics_pre, positive(i));
+ 			put_line(row_separator_0 & section_mark.subsection & row_separator_0 & to_string(bic.name));
+
+			write_message (
+				file_handle => file_import_bsdl_messages,
+				--identation : in natural := 0;
+				text => "BSDL model file " & to_string(bic.model_file), 
+				--lf   : in boolean := true;		
+				--file : in boolean := true;
+				console => true);
+			
+			-- read options (if given)
+ 			option_remove_prefix := false;
+ 			if length(bic.options) > 0 then
+				if to_lower(get_field_from_line(to_string(bic.options),1)) = text_udb_option then
+					
+					write_message (
+						file_handle => file_import_bsdl_messages,
+						identation => 1,
+						text => "options: ", -- & to_string(bic.model_file), 
+						lf => false);
+						--file : in boolean := true;
+						--console => true);
+					
+					if get_field_from_line(to_string(bic.options),2) = to_lower(type_bic_option'image(remove_pin_prefix)) then
+
+						option_remove_prefix := true;
+
+						write_message (
+							file_handle => file_import_bsdl_messages,
+							text => type_bic_option'image(remove_pin_prefix) & " " & get_field_from_line(to_string(bic.options),3),
+							lf => false);
+
+						put_line(2 * row_separator_0 & to_string(bic.options));						
+						option_prefix_to_remove := to_bounded_string(get_field_from_line(to_string(bic.options),3));
+					end if;
+				end if;
+			end if;
 -- 			
 -- 			open(file => file_bsdl, mode => in_file, name => extended_string.to_string(bic.model_file));
 -- 			set_input(file_bsdl);
@@ -1157,13 +1186,10 @@ procedure impbsdl is
 -- 			parse_bsdl(to_string(bsdl_string));
 -- 
 -- 			close(file_bsdl);
--- 			put_line(row_separator_0 & section_mark.endsubsection & row_separator_0 & universal_string_type.to_string(bic.name));
--- 			new_line;
--- 			bic := bic.next;
--- 		end loop;
--- 
--- 	end read_bsld_models;
--- 
+			put_line(row_separator_0 & section_mark.endsubsection & row_separator_0 & to_string(bic.name));
+			new_line;
+		end loop;
+	end read_bsld_models;
 
 	procedure copy_scanpath_configuration is
 		line_counter : natural := 0;
@@ -1185,6 +1211,18 @@ procedure impbsdl is
 		close(file_database);
 	end copy_scanpath_configuration;
 
+	procedure write_section_registers_header is
+	begin
+		new_line;
+		put_line(section_mark.section & row_separator_0 & section_registers);
+		put_line(column_separator_0);
+		put_line("-- created by BSDL importer version " & version);
+		put_line("-- date " & date_now); 
+		--put_line("-- number of scanpaths" & type_scanport_id'image(summary.scanport_ct)); 
+		put_line("-- number of BICs" & positive'image(summary.bic_ct));
+		new_line;
+	end write_section_registers_header;
+
 
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
@@ -1198,6 +1236,13 @@ begin
 
 	prog_position	:= 30;
 	create_temp_directory;
+
+	-- create message/log file
+	prog_position	:= 35;	
+-- 	create(file => file_import_bsdl_messages, mode => out_file, name => name_file_import_bsdl_messages);
+	write_log_header(
+		module_name => name_module_importer_bsdl,
+		module_version => version);
 	
  	prog_position	:= 40;
 	-- 	create_bak_directory;
@@ -1228,25 +1273,23 @@ begin
 	prog_position	:= 90;		
 	copy_scanpath_configuration;
 
--- 	prog_position	:= 80;
--- 	new_line (file_data_base_preliminary);
--- 	put_line (file_data_base_preliminary,section_mark.section & row_separator_0 & section_registers);
--- 	put_line (file_data_base_preliminary,column_separator_0);
--- 	put_line (file_data_base_preliminary,"-- created by BSDL importer version " & version);
--- 	put_line (file_data_base_preliminary,"-- date " & m1_internal.date_now); 
--- -- 	put_line (file_data_base_preliminary,"-- number of scanpaths" & type_scanport_id'image(udb_summary.scanpath_ct)); 
--- -- 	put_line (file_data_base_preliminary,"-- number of BICs" & natural'image(udb_summary.bic_ct));
--- 	new_line (file_data_base_preliminary);
--- 	
--- 	prog_position	:= 90;
--- 	read_bsld_models;
--- 
- 	prog_position	:= 100;
--- 	put_line (file_data_base_preliminary,section_mark.endsection); 
--- 	new_line (file_data_base_preliminary);
--- 
--- 	prog_position	:= 110;
- 	close(file_database_preliminary);
+	prog_position	:= 100;
+	write_section_registers_header;
+	
+	prog_position	:= 110;
+	read_bsld_models;
+
+	prog_position	:= 120;
+
+	-- write section registers footer
+ 	put_line(section_mark.endsection); new_line;
+
+ 	prog_position	:= 130;
+	close(file_database_preliminary);
+
+	prog_position	:= 140;	
+	write_log_footer(module_name => name_module_importer_bsdl);
+
 -- 	copy_file(name_file_data_base_preliminary, universal_string_type.to_string(name_file_data_base));
 
 	exception
