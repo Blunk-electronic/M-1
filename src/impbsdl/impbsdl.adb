@@ -56,7 +56,7 @@ with m1_files_and_directories; 	use m1_files_and_directories;
 
 procedure impbsdl is
 
-	version			: string (1..3) := "036";
+	version			: constant string (1..3) := "036";
 	prog_position	: natural := 0;
 
 	use type_universal_string;
