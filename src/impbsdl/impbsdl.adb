@@ -838,6 +838,11 @@ procedure impbsdl is
 							port := append(left => port, right => latin_1.space);
 							--put_line(standard_output,extended_string.to_string(port));
 						else -- end of port reached
+							write_message (
+								file_handle => file_import_bsdl_messages,
+								identation => 5,
+								text => trim(to_string(port),left));
+
 							format_port(trim(to_string(port),left));
 							port := to_bounded_string(""); -- clean up for next port
 						end if;
@@ -1059,13 +1064,13 @@ procedure impbsdl is
 
 							write_message (
 								file_handle => file_import_bsdl_messages,
-								identation => 3, -- for nice alignment with usercode
+								identation => 3, -- for neat alignment with usercode
 								text => get_bit_pattern(
 									get_field_from_line(
 										bsdl_string,f+2,trailer => true),
 										width => bic_idcode_register_length));
 							
-							put_line(get_bit_pattern(
+							put_line(2 * row_separator_0 & get_bit_pattern( -- for neat alignment with usercode
 								get_field_from_line(
 									bsdl_string,f+2,trailer => true),
 									width => bic_idcode_register_length));
@@ -1079,6 +1084,7 @@ procedure impbsdl is
 					file_handle => file_import_bsdl_messages,
 					identation => 2,
 					text => text_udb_none);
+				put_line(text_udb_none);				
 			end if;
 			-- read idcode register end
 
@@ -1119,6 +1125,7 @@ procedure impbsdl is
 					file_handle => file_import_bsdl_messages,
 					identation => 2,
 					text => text_udb_none);
+				put_line(text_udb_none);				
 			end if;
 			-- read usercode register end
 
@@ -1202,6 +1209,7 @@ procedure impbsdl is
 					file_handle => file_import_bsdl_messages,
 					identation => 1,
 					text => text_udb_none);
+				put_line(text_udb_none);
 			end if;
 			-- read trst pin end
 			
@@ -1555,7 +1563,7 @@ begin
 	prog_position	:= 140;	
 	write_log_footer(module_name => name_module_importer_bsdl);
 
--- 	copy_file(name_file_data_base_preliminary, universal_string_type.to_string(name_file_data_base));
+	copy_file(name_file_database_preliminary, to_string(name_file_database));
 
 	exception
 		when event: others =>
