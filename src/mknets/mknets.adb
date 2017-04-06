@@ -24,7 +24,7 @@
 
 --   Please send your questions and comments to:
 --
---   Mario.Blunk@blunk-electronic.de
+--   info@blunk-electronic.de
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
@@ -47,31 +47,41 @@ with gnat.os_lib;   			use gnat.os_lib;
 with ada.command_line;			use ada.command_line;
 with ada.directories;			use ada.directories;
 
-with m1_internal; 				use m1_internal;
+with m1_base; 					use m1_base;
+with m1_database;				use m1_database;
 with m1_numbers; 				use m1_numbers;
+with m1_string_processing;		use m1_string_processing;
 with m1_files_and_directories; 	use m1_files_and_directories;
 
 
 procedure mknets is
 
-	version			: constant string (1..3) := "045";
-	udb_summary		: type_udb_summary;
+	version			: constant string (1..3) := "046";
+
 	prog_position	: natural := 0;
 
-	type type_skeleton_pin is
-		record
-			device_name			: universal_string_type.bounded_string;
+-- 	use type_universal_string;
+	use type_name_database;
+	use type_name_file_options;
+	use type_net_name;
+	use type_device_name;
+	use type_device_value;
+	use type_package_name;
+	use type_pin_name;
+	use type_port_name;
+
+	type type_skeleton_pin is record
+			device_name			: type_device_name.bounded_string;
 			device_class		: type_device_class := '?'; -- default is an unknown device
-			device_value		: universal_string_type.bounded_string;
-			device_package		: universal_string_type.bounded_string;
-			device_pin_name		: universal_string_type.bounded_string;
+			device_value		: type_device_value.bounded_string;
+			device_package		: type_package_name.bounded_string;
+			device_pin_name		: type_pin_name.bounded_string;
 		end record;
 	package pin_container is new doubly_linked_lists(element_type => type_skeleton_pin);
 	use pin_container;
 	
-	type type_skeleton_net is
-		record
-			name			: universal_string_type.bounded_string;
+	type type_skeleton_net is record
+			name			: type_net_name.bounded_string;
 			--class			: type_net_class;
 			--pin_count		: positive;
 			pin_list		: pin_container.list;
@@ -83,7 +93,7 @@ procedure mknets is
 
 	procedure read_skeleton is
 	-- Reads the skeleton and adds nets in container netlist.
-		line_of_file 			: extended_string.bounded_string;
+		line_of_file 			: type_universal_string.bounded_string;
 		line_counter			: natural := 0;
 		section_netlist_entered	: boolean := false;
 		subsection_net_entered	: boolean := false;
@@ -97,7 +107,7 @@ procedure mknets is
 		end put_faulty_line;
 		
 	begin -- read_skeleton
-		put("reading skeleton ");
+		put("reading skeleton ... ");
 		open(file => file_skeleton, name => name_file_skeleton_default, mode => in_file);
 		set_input(file_skeleton);
 		while not end_of_file
@@ -107,10 +117,9 @@ procedure mknets is
 			if (line_counter rem 400) = 0 then -- put a dot every 400 lines of skeleton
 				put(".");
 			end if;
-			line_of_file := extended_string.to_bounded_string(get_line);
-			line_of_file := remove_comment_from_line(line_of_file);
+			line_of_file := to_bounded_string(remove_comment_from_line(get_line));
 
-			if get_field_count(extended_string.to_string(line_of_file)) > 0 then -- if line contains anything
+			if get_field_count(to_string(line_of_file)) > 0 then -- if line contains anything
 				if not section_netlist_entered then
 					if get_field_from_line(line_of_file,1) = section_mark.section then
 						if get_field_from_line(line_of_file,2) = text_skeleton_section_netlist then
@@ -128,7 +137,7 @@ procedure mknets is
 							-- The net header starts with "SubSection". The 3rd field must read "class".
 							if get_field_from_line(line_of_file,1) = section_mark.subsection then
 								-- save net name
-								net_scratch.name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
+								net_scratch.name := to_bounded_string(get_field_from_line(line_of_file,2));
 
 								-- check for keyword "class"
 								if get_field_from_line(line_of_file,3) = text_udb_class then
@@ -162,19 +171,19 @@ procedure mknets is
 								net_scratch.pin_list := pinlist;
 								if length(pinlist) = 1 then
 									--new_line;
-									put_line(message_warning & "net " & universal_string_type.to_string(net_scratch.name) & " has only one pin !");
+									put_line(message_warning & "net " & to_string(net_scratch.name) & " has only one pin !");
 								end if;
 								append(container => netlist, new_item => net_scratch);
 								clear(pinlist); -- clear pinlist for next net
 							else
 								-- net footer not reached yet -> check field count and read pins
-								if get_field_count(extended_string.to_string(line_of_file)) = skeleton_field_count_pin then
+								if get_field_count(to_string(line_of_file)) = skeleton_field_count_pin then
 									-- process pins of net and add to container pin_list
-									pin_scratch.device_name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,1));
+									pin_scratch.device_name := to_bounded_string(get_field_from_line(line_of_file,1));
 									--pin_scratch.device_class := type_device_class'value(get_field_from_line(line_of_file,2)); -- CS
-									pin_scratch.device_value := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3));
-									pin_scratch.device_package := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,4));
-									pin_scratch.device_pin_name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,5));
+									pin_scratch.device_value := to_bounded_string(get_field_from_line(line_of_file,3));
+									pin_scratch.device_package := to_bounded_string(get_field_from_line(line_of_file,4));
+									pin_scratch.device_pin_name := to_bounded_string(get_field_from_line(line_of_file,5));
 									append(container => pinlist, new_item => pin_scratch);
 								else
 									put_line(message_error & "invalid number of fields found !");
@@ -197,47 +206,61 @@ procedure mknets is
 	-- Even if there are no cells (e.g. linkage pins) the port will be returned.
 	-- Collects data in string scratch (by appending) and returns scratch as fixed string.
 		--bic : type_ptr_bscan_ic;
-        bic : positive;
-		pin : string) 
+        bic : in positive;
+		pin : in type_pin_name.bounded_string) 
 		return string is -- pb01_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z
-		scratch : universal_string_type.bounded_string;
-		port_name : universal_string_type.bounded_string;
+		scratch : type_universal_string.bounded_string;
+		port_name : type_port_name.bounded_string;
 		--entry_ct : natural := 0; -- used to count entries in bic.boundary_register in order to
 		-- abort the loop after two entries have been found. CS: might improve performance in very large
         -- projects.
-        --occurences : natural := 0;
-        b : type_bscan_ic := type_list_of_bics.element(list_of_bics,bic);
+		--occurences : natural := 0;
+		
+		b : type_bscan_ic := type_list_of_bics.element(list_of_bics,bic);
+		pp : type_port_pin; -- for temporarily storage
+		pi : type_pin_name.bounded_string; -- for temporarily storage
     begin
         --put(standard_output,".");
 		-- Find given pin in bic.port_pin_map and append its port name to scratch.
 		-- The port_name afterward serves as key in order to find cells belonging to that port.
-		label_loop_port:
+		loop_port:
         --for port in 1..bic.len_port_pin_map loop -- look at every port of the targeted bic
-        for port in 1..b.len_port_pin_map loop -- look at every port of the targeted bic          
+--         for port in 1..b.len_port_pin_map loop -- look at every port of the targeted bic          
+		for i in 1..length(b.port_pin_map) loop -- look at every port of the targeted bic
+			pp := element(b.port_pin_map, positive(i)); -- load a port_pin from port_pin_map
             --put(standard_output,"p");
-			for p in 1..list_of_pin_names'last loop -- look at every pin of that port
+-- 			for p in 1..list_of_pin_names'last loop -- look at every pin of that port
+			for i in 1..length(pp.pin_names) loop -- look at every pin of that port
 			-- p points to a pin in array bic.port_pin_map(port).pin_names
-			-- p indirectly is the index in case the port is indexed. 
-				if type_short_string.to_string(b.port_pin_map(port).pin_names(p)) = pin then
+			-- p indirectly is the index in case the port is indexed.
+				pi := element(pp.pin_names, positive(i)); -- load a pin from list of pin names
+				
+-- 				if type_short_string.to_string(b.port_pin_map(port).pin_names(p)) = pin then
+				if pi = pin then
 
                     --put(standard_output,"i");
                     
-					scratch := universal_string_type.append(
+					scratch := append(
 						left => scratch, 
-						right => type_list_of_bics.element(list_of_bics,bic).port_pin_map(port).port_name
+-- 						right => type_list_of_bics.element(list_of_bics,bic).port_pin_map(port).port_name
+						right => to_bounded_string(to_string(pp.port_name))
 						);	
 
 					-- append index if port has more than one pin
-					if type_list_of_bics.element(list_of_bics,bic).port_pin_map(port).pin_count > 1 then
-						scratch := universal_string_type.append(
+-- 					if type_list_of_bics.element(list_of_bics,bic).port_pin_map(port).pin_count > 1 then
+					if length(pp.pin_names) > 1 then					
+						scratch := append(
 							left => scratch, 
-							right => latin_1.left_parenthesis & trim(positive'image(p),left) & latin_1.right_parenthesis
+							-- 							right => latin_1.left_parenthesis & trim(positive'image(p),left) & latin_1.right_parenthesis
+							right => latin_1.left_parenthesis 
+								& trim(count_type'image(i),left) 
+								& latin_1.right_parenthesis
 							);	
 					end if;
 
-					port_name := scratch; -- save port name (incl index) e.g. Y3(5)
+					port_name := to_bounded_string(to_string(scratch)); -- save port name (incl index) e.g. Y3(5)
 					
-					exit label_loop_port; -- no more searching required
+					exit loop_port; -- no more searching required
 				end if;
 			end loop;
 		end loop label_loop_port;
@@ -247,7 +270,7 @@ procedure mknets is
 		-- bic.boundary_register may be longer than the actual boundary register length.
 		-- NOTE: There may be one or two elements for the given port in bic.boundary_register: one for 
 		-- the input cell, another for the output cell. output cells may have a control cell.
-		label_loop_bsr:
+		loop_bsr:
 --		for b in 1..type_list_of_bics.element(list_of_bics,bic).len_bsr_description loop -- look at every element of boundary register
 		for r in 1..b.len_bsr_description loop -- look at every element of boundary register         
             --			if universal_string_type.to_string(type_list_of_bics.element(list_of_bics,bic).boundary_register(b).port) = universal_string_type.to_string(port_name) then
