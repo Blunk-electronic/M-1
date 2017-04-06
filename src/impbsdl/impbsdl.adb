@@ -755,7 +755,9 @@ procedure impbsdl is
 		-- the port name like "OE_NEG1" and its pin names "2 3 4 5".
 			text_scratch	: string (1..text_in'length) := text_in; -- here a copy of text_in goes for subsequent in depth processing
 			map_start 		: positive := index(text_scratch, 1 * latin_1.quotation); -- the pin map string starts at the first quotation in the given string
-			port 			: type_port_name.bounded_string;
+
+-- 			use type_long_string;
+			port 			: type_universal_string.bounded_string; -- type_port_name.bounded_string;
 			port_index 		: boolean := false; -- true when cursor is inside a port index group like "(7,8,9,10)"
 
 			procedure format_port (text_in : in string) is -- "OE_NEG1:1" or "Y1:2 3 4 5"
@@ -1168,7 +1170,6 @@ procedure impbsdl is
 			end loop;
 			-- CS: message if not found
 			-- read boundary register length end
-			
 
 			-- read trst pin begin
 			write_message (
@@ -1212,7 +1213,6 @@ procedure impbsdl is
 				put_line(text_udb_none);
 			end if;
 			-- read trst pin end
-			
 
 			-- read boundary register begin
 			write_message (
@@ -1375,11 +1375,13 @@ procedure impbsdl is
 
 			write_message (
 				file_handle => file_import_bsdl_messages,
-				--identation : in natural := 0;
+				identation => 2,
 				text => "BSDL model file " & to_string(bic.model_file), 
 				lf => false,
-				--file : in boolean := true;
-				console => true);
+				console => false);
+
+			put(standard_output, "  BSDL model file " & to_string(bic.model_file)); 
+
 			
 			-- read options (if given) begin
 			option_remove_prefix 	:= false; -- default, overwritten if option given
@@ -1459,6 +1461,18 @@ procedure impbsdl is
 			parse_bsdl(bsdl_string => to_string(bsdl_string), housing => bic.housing);
 
 			close(file_bsdl);
+
+			write_message (
+				file_handle => file_import_bsdl_messages,
+				identation => 1,
+				text => to_string(bic.name) & " done", 
+				console => false);
+
+			write_message (
+				file_handle => file_import_bsdl_messages,
+				text => "-------------", 
+				console => false);
+			
 			put_line(row_separator_0 & section_mark.endsubsection & row_separator_0 & to_string(bic.name));
 			new_line;
 		end loop;
@@ -1492,7 +1506,7 @@ procedure impbsdl is
 		put_line("-- created by BSDL importer version " & version);
 		put_line("-- date " & date_now); 
 		--put_line("-- number of scanpaths" & type_scanport_id'image(summary.scanport_ct)); 
-		put_line("-- number of BICs" & positive'image(summary.bic_ct));
+		put_line("-- number of BICs" & count_type'image(type_list_of_bics_pre.length(list_of_bics_pre)));
 		new_line;
 	end write_section_registers_header;
 
@@ -1512,13 +1526,17 @@ begin
 
 	-- create message/log file
 	prog_position	:= 35;	
--- 	create(file => file_import_bsdl_messages, mode => out_file, name => name_file_import_bsdl_messages);
 	write_log_header(
 		module_name => name_module_importer_bsdl,
 		module_version => version);
+	-- write name of database in logfile
+	put_line(file_import_bsdl_messages, text_identifier_database 
+		 & row_separator_0
+		 & to_string(name_file_database));
 	
  	prog_position	:= 40;
 	-- 	create_bak_directory;
+	action := import_bsdl;
 	-- CS: global variable for section of interest ?
 	-- CS: set integrity check level
 	read_uut_database;
