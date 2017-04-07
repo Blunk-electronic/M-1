@@ -2196,6 +2196,183 @@ procedure chkpsn is
 		put_line(section_mark.endsection);
 	end write_new_statistics;
 
+
+	procedure read_options_file is
+	-- read options file
+	-- Check if primary net incl. secondary nets may change class as specified in options file
+	-- if class rendering allowed, add primary net with its secondary nets to options netlist.
+	-- This is achieved at by procedure add_to_options_net_list
+	-- list_of_options_nets is the generated options netlist
+	begin
+		-- open options file
+		prog_position := 70;
+		open( 
+			file => file_options,
+			mode => in_file,
+			name => to_string(name_file_options)
+			);
+
+		prog_position := 60;
+		put_line("reading options file ...");
+		set_input(file_options); -- set data source
+		while not end_of_file
+			loop
+				line_counter := line_counter + 1;
+				line_of_file := to_bounded_string(remove_comment_from_line(get_line));
+
+				if get_field_count(to_string(line_of_file)) > 0 then -- if line contains anything
+					if primary_net_section_entered then
+						-- we are inside primary net section
+
+						if secondary_net_section_entered then
+							-- we are inside secondary net section
+
+							-- wait for end of secondary net section mark
+							if get_field_from_line(to_string(line_of_file),1) = section_mark.endsubsection then
+								secondary_net_section_entered := false;
+								if secondary_net_count = 0 then
+									put_line(message_warning & "Primary net '" & to_string(name_of_current_primary_net) 
+										& "' has an empty secondary net subsection !");
+								end if;
+
+							-- count secondary nets and collect them in array list_of_secondary_net_names
+							--if to_upper(get_field_from_line(line_of_file,1)) = type_options_net_identifier'image(net) then
+							elsif to_upper(get_field_from_line(to_string(line_of_file),1)) = keyword_net then
+								secondary_net_count := secondary_net_count + 1;
+								--list_of_secondary_net_names(secondary_net_count) := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
+								append(list_of_secondary_net_names_preliminary, to_bounded_string(get_field_from_line(to_string(line_of_file),2)));
+							else
+								put_line(message_error & "Keyword '" & keyword_net & "' or '"
+									& section_mark.endsubsection & "' expected !");
+								raise constraint_error;
+							end if;
+						else
+							-- wait for end of primary net section
+							if get_field_from_line(to_string(line_of_file),1) = section_mark.endsection then
+								primary_net_section_entered := false;
+
+	-- 							-- when end of primary net section reached:
+	-- 							if debug_level >= 10 then
+	-- 								new_line;
+	-- 								put_line("primary net name    : " & extended_string.to_string(name_of_current_primary_net));
+	-- 								put_line("primary net class   : " & type_net_class'image(class_of_current_primary_net));
+	-- 								if secondary_net_count > 0 then
+	-- 									put_line("secondary net count :" & natural'image(secondary_net_count));
+	-- 									put("secondary nets      : ");
+	-- 									for s in 1..secondary_net_count loop
+	-- 										put(universal_string_type.to_string(list_of_secondary_net_names(s)) & row_separator_0);
+	-- 									end loop;
+	-- 									new_line;
+	-- 								end if;
+	-- 							end if;
+
+								-- ask if the primary net (incl. secondary nets) may become member of class specified in options file
+								-- if class request can be fulfilled, add net to options net list
+								if query_render_net_class (
+									primary_net_name => name_of_current_primary_net,
+									primary_net_class => class_of_current_primary_net,
+									list_of_secondary_net_names	=> list_of_secondary_net_names_preliminary
+	-- 								secondary_net_count	=> secondary_net_count
+									) then 
+										add_to_options_net_list(
+											name				=> name_of_current_primary_net,
+											class				=> class_of_current_primary_net,
+											line_number			=> line_number_of_primary_net_header,
+											secondary_net_names	=> list_of_secondary_net_names_preliminary
+										);
+										
+								end if;
+								secondary_net_count := 0; -- reset secondary net counter for next primary net
+
+								-- purge list_of_secondary_net_names for next spin
+								list_of_secondary_net_names_preliminary := empty_list_of_secondary_net_names;
+
+							-- if not secondary_net_section_entered yet, wait for "SubSection secondary_nets" header
+							-- if "SubSection secondary_nets" found, set secondary_net_section_entered flag
+							elsif get_field_from_line(to_string(line_of_file),1) = section_mark.subsection and
+								to_upper(get_field_from_line(to_string(line_of_file),2)) = keyword_secondary_nets then
+									secondary_net_section_entered := true;
+							else
+								put_line(message_error & "Keywords '" & section_mark.subsection 
+									& " " & keyword_secondary_nets
+									& "' or '" & section_mark.endsection
+									& "' expected !");
+								raise constraint_error;
+							end if;
+						end if;
+
+					-- if primary net section not entered, wait for primary net header like "Section LED0 class NR", 
+					-- then set "primary net section entered" flag
+					elsif get_field_from_line(to_string(line_of_file),1) = section_mark.section then
+						name_of_current_primary_net := to_bounded_string(get_field_from_line(to_string(line_of_file),2));
+						if to_upper(get_field_from_line(to_string(line_of_file),3)) = netlist_keyword_header_class then
+							null; -- fine
+						else
+							put_line(message_error & "Identifier '" & netlist_keyword_header_class & "' expected after primary net name !");
+							raise constraint_error;
+						end if;
+						class_of_current_primary_net := type_net_class'value(get_field_from_line(to_string(line_of_file),4));
+						primary_net_section_entered := true;
+						line_number_of_primary_net_header := line_counter; -- backup line number of net header
+						-- when adding the net to the net list, this number goes into the list as well
+					else
+						put_line(message_error & "Keyword '" & section_mark.section & "' expected !");
+						raise constraint_error;
+					end if;
+
+				end if;
+
+			end loop;
+
+		prog_position := 70;		
+		set_input(standard_input);
+		prog_position := 80;	
+		close(file_options);
+	end read_options_file;
+
+	procedure copy_scanpath_configuration_and_registers is
+		line_counter : natural := 0;
+	begin	
+		write_message (
+			file_handle => file_mknets_messages,
+			text => "rebuilding " & text_identifier_database & " ...", 
+			console => true);
+
+		write_message (
+			file_handle => file_mknets_messages,
+			identation => 1,
+			text => "copying scanpath configuration and registers ...", 
+			console => false);
+		
+		open(file => file_database, mode => in_file, name => to_string(name_file_database));
+
+		-- Copy line per line from current database to preliminary database until 
+		-- last line of section "registers" reached.
+
+		-- Data source is current database. Data sink is preliminary database.
+		while not end_of_file(file_database) loop
+			line_counter := line_counter + 1;
+			put_line(get_line(file_database));
+			if line_counter = summary.line_number_end_of_section_registers then
+				exit;
+			end if;
+		end loop;
+
+		close(file_database);
+	end copy_scanpath_configuration_and_registers;
+
+	procedure write_section_netlist_header is
+	begin
+		new_line;
+		put_line(section_mark.section & row_separator_0 & section_netlist);
+		put_line(column_separator_0);
+		put_line("-- modified by " & name_module_chkpsn & " version " & version);
+		put_line("-- date " & date_now); 
+-- 		put_line("-- number of nets" & count_type'image(length(netlist)));
+		new_line;
+	end write_section_netlist_header;
+	
+	
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
@@ -2216,7 +2393,8 @@ begin
 	prog_position := 30;
 	create_temp_directory;
 
-	prog_position	:= 35;
+	-- create message/log file	
+	prog_position	:= 40;
  	write_log_header(version);
 
 	-- write name of database in logfile
@@ -2224,139 +2402,13 @@ begin
 		 & row_separator_0
 		 & to_string(name_file_database));
 
-	prog_position := 40;
+	prog_position := 50;
 	-- CS: set integrity check level	
 	read_uut_database;
 
-	-- open options file
-	prog_position := 50;
-	open( 
-		file => file_options,
-		mode => in_file,
-		name => to_string(name_file_options)
-		);
-
 	-- read options file
-	-- Check if primary net incl. secondary nets may change class as specified in options file
-	-- if class rendering allowed, add primary net with its secondary nets to options netlist.
-	-- This is achieved at by procedure add_to_options_net_list
-	-- list_of_options_nets is the generated options netlist
 	prog_position := 60;
-	put_line("reading options file ...");
-	set_input(file_options); -- set data source
-	while not end_of_file
-		loop
-			line_counter := line_counter + 1;
-			line_of_file := to_bounded_string(remove_comment_from_line(get_line));
-
-			if get_field_count(to_string(line_of_file)) > 0 then -- if line contains anything
-				if primary_net_section_entered then
-					-- we are inside primary net section
-
-					if secondary_net_section_entered then
-						-- we are inside secondary net section
-
-						-- wait for end of secondary net section mark
-						if get_field_from_line(to_string(line_of_file),1) = section_mark.endsubsection then
-							secondary_net_section_entered := false;
-							if secondary_net_count = 0 then
-								put_line(message_warning & "Primary net '" & to_string(name_of_current_primary_net) 
-									& "' has an empty secondary net subsection !");
-							end if;
-
-						-- count secondary nets and collect them in array list_of_secondary_net_names
-						--if to_upper(get_field_from_line(line_of_file,1)) = type_options_net_identifier'image(net) then
-						elsif to_upper(get_field_from_line(to_string(line_of_file),1)) = keyword_net then
-							secondary_net_count := secondary_net_count + 1;
-							--list_of_secondary_net_names(secondary_net_count) := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
-							append(list_of_secondary_net_names_preliminary, to_bounded_string(get_field_from_line(to_string(line_of_file),2)));
-						else
- 							put_line(message_error & "Keyword '" & keyword_net & "' or '"
-								& section_mark.endsubsection & "' expected !");
- 							raise constraint_error;
-						end if;
-					else
-						-- wait for end of primary net section
-						if get_field_from_line(to_string(line_of_file),1) = section_mark.endsection then
-							primary_net_section_entered := false;
-
--- 							-- when end of primary net section reached:
--- 							if debug_level >= 10 then
--- 								new_line;
--- 								put_line("primary net name    : " & extended_string.to_string(name_of_current_primary_net));
--- 								put_line("primary net class   : " & type_net_class'image(class_of_current_primary_net));
--- 								if secondary_net_count > 0 then
--- 									put_line("secondary net count :" & natural'image(secondary_net_count));
--- 									put("secondary nets      : ");
--- 									for s in 1..secondary_net_count loop
--- 										put(universal_string_type.to_string(list_of_secondary_net_names(s)) & row_separator_0);
--- 									end loop;
--- 									new_line;
--- 								end if;
--- 							end if;
-
-							-- ask if the primary net (incl. secondary nets) may become member of class specified in options file
-							-- if class request can be fulfilled, add net to options net list
-							if query_render_net_class (
-								primary_net_name => name_of_current_primary_net,
-								primary_net_class => class_of_current_primary_net,
-								list_of_secondary_net_names	=> list_of_secondary_net_names_preliminary
--- 								secondary_net_count	=> secondary_net_count
-								) then 
-									add_to_options_net_list(
-										name				=> name_of_current_primary_net,
-										class				=> class_of_current_primary_net,
-										line_number			=> line_number_of_primary_net_header,
-										secondary_net_names	=> list_of_secondary_net_names_preliminary
-									);
-									
-							end if;
-							secondary_net_count := 0; -- reset secondary net counter for next primary net
-
-							-- purge list_of_secondary_net_names for next spin
-							list_of_secondary_net_names_preliminary := empty_list_of_secondary_net_names;
-
-						-- if not secondary_net_section_entered yet, wait for "SubSection secondary_nets" header
-						-- if "SubSection secondary_nets" found, set secondary_net_section_entered flag
-						elsif get_field_from_line(to_string(line_of_file),1) = section_mark.subsection and
-							to_upper(get_field_from_line(to_string(line_of_file),2)) = keyword_secondary_nets then
-								secondary_net_section_entered := true;
-						else
- 							put_line(message_error & "Keywords '" & section_mark.subsection 
-								& " " & keyword_secondary_nets
-								& "' or '" & section_mark.endsection
-								& "' expected !");
- 							raise constraint_error;
-						end if;
-					end if;
-
-				-- if primary net section not entered, wait for primary net header like "Section LED0 class NR", 
-				-- then set "primary net section entered" flag
-				elsif get_field_from_line(to_string(line_of_file),1) = section_mark.section then
-					name_of_current_primary_net := to_bounded_string(get_field_from_line(to_string(line_of_file),2));
-					if to_upper(get_field_from_line(to_string(line_of_file),3)) = netlist_keyword_header_class then
-						null; -- fine
-					else
-						put_line(message_error & "Identifier '" & netlist_keyword_header_class & "' expected after primary net name !");
-						raise constraint_error;
-					end if;
-					class_of_current_primary_net := type_net_class'value(get_field_from_line(to_string(line_of_file),4));
-					primary_net_section_entered := true;
-					line_number_of_primary_net_header := line_counter; -- backup line number of net header
-					-- when adding the net to the net list, this number goes into the list as well
-				else
-					put_line(message_error & "Keyword '" & section_mark.section & "' expected !");
-					raise constraint_error;
-				end if;
-
-			end if;
-
-		end loop;
-
-	prog_position := 70;		
-	set_input(standard_input);
-	prog_position := 80;	
-	close(file_options);
+	read_options_file;
 	-- options netlist ready in list_of_options_nets. 
 	-- database netlist ready in list_of_nets.
 
@@ -2374,11 +2426,13 @@ begin
 --		put_line("data base net count : " & natural'image(udb_summary.net_count_statistics.total));
 --	end if;
 
-	prog_position := 90;
-	create( file_database_preliminary, name => 
-			compose (name_directory_temp, "preliminary_" & to_string(name_file_database))
-		  );
-	--set_output( data_base_file_preliminary); -- set data sink
+	prog_position := 70;
+	-- create premilinary data base (contining scanpath_configuration and registers)
+	create( 
+		file => file_database_preliminary,
+		mode => out_file,
+		name => name_file_database_preliminary
+		);
 
 	-- open data base file
 	prog_position := 100;
@@ -2392,22 +2446,11 @@ begin
 	set_input(file_database); -- set data source
 	set_output(file_database_preliminary); -- set data sink
 
-	prog_position := 120;		
-	line_counter := 0;
-	while line_counter <= summary.line_number_end_of_section_registers
-		loop
-			line_counter := line_counter + 1;
-			line_of_file := to_bounded_string(get_line);
-			put_line(to_string(line_of_file));
-		end loop;
-	set_input(standard_input);
-	close(file_database);
+	prog_position := 120;
+	copy_scanpath_configuration_and_registers;
 
 	prog_position := 130;	
-	put_line(section_mark.section & row_separator_0 & section_netlist);
-	put_line(column_separator_0);
-	put_line("-- modified by " & name_module_chkpsn & " version " & version);
-	put_line("-- date: " & date_now);
+	write_section_netlist_header;
 
 	-- With the two netlists list_of_nets and list_of_options_nets, a new net list is created and appended to the
 	-- preliminary data base.
@@ -2415,6 +2458,7 @@ begin
 	prog_position := 140;	
 	make_new_net_list;
 
+	-- write section netlist footer	
 	put_line(section_mark.endsection);
 	new_line(2);
 
@@ -2430,9 +2474,9 @@ begin
 	put_line("parsing preliminary " & text_identifier_database & "...");
 	
 	-- CS: use predefined keyowrds
-	name_file_database := to_bounded_string(compose (name_directory_temp, "preliminary_" & to_string(name_file_database)));
+	name_file_database := to_bounded_string(name_file_database_preliminary);
 	read_uut_database;
-	-- summary now available in summary
+	-- summary now available
 
 	-- reopen preliminary database in append mode
 	prog_position := 180;	
@@ -2448,10 +2492,11 @@ begin
 
 	-- overwrite now useless old data base with temporarily data base
 	prog_position := 200;
-	copy_file(to_string(name_file_database), to_string(name_file_database_backup));
+	copy_file(name_file_database_preliminary, to_string(name_file_database));
+	
 	-- clean up tmp directory
-	prog_position := 210;	
-	delete_file(to_string(name_file_database));
+-- 	prog_position := 210;	
+-- 	delete_file(to_string(name_file_database));
 
 	prog_position	:= 220;	
 	write_log_footer;

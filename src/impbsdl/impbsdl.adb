@@ -1586,6 +1586,7 @@ begin
 
 	exception
 		when event: others =>
+			close(file_database_preliminary);
 			set_output(standard_output);
 			set_exit_status(failure);
 			case prog_position is
@@ -1603,5 +1604,6 @@ begin
 					put(exception_message(event)); new_line;
 					put_line("program error at position " & natural'image(prog_position));
 			end case;
-	
+
+			write_log_footer;
 end impbsdl;
