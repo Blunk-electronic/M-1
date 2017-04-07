@@ -29,6 +29,8 @@
 --
 --   history of changes:
 --
+--   todo:
+-- 		- direct all error messages to logfile
 
 with ada.text_io;				use ada.text_io;
 with ada.characters.handling;   use ada.characters.handling;
@@ -1503,7 +1505,7 @@ procedure impbsdl is
 		new_line;
 		put_line(section_mark.section & row_separator_0 & section_registers);
 		put_line(column_separator_0);
-		put_line("-- created by BSDL importer version " & version);
+		put_line("-- created by " & name_module_importer_bsdl & " version " & version);
 		put_line("-- date " & date_now); 
 		--put_line("-- number of scanpaths" & type_scanport_id'image(summary.scanport_ct)); 
 		put_line("-- number of BICs" & count_type'image(type_list_of_bics_pre.length(list_of_bics_pre)));
@@ -1514,11 +1516,13 @@ procedure impbsdl is
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
+	action := import_bsdl; -- this causes the database parser to stop after section "scanpath_configuration"
+	
 	new_line;
-	put_line("BSDL MODEL IMPORTER VERSION "& version);
+	put_line(to_upper(name_module_importer_bsdl) & " version " & version);
 	put_line("===============================");
 	prog_position	:= 10;
- 	name_file_database:= to_bounded_string(argument(1));
+ 	name_file_database := to_bounded_string(argument(1));
  	put_line(text_identifier_database & "       : " & to_string(name_file_database));
 
 	prog_position	:= 30;
@@ -1526,18 +1530,15 @@ begin
 
 	-- create message/log file
 	prog_position	:= 35;	
-	write_log_header(
-		module_name => name_module_importer_bsdl,
-		module_version => version);
+	write_log_header(version);
+	
 	-- write name of database in logfile
 	put_line(file_import_bsdl_messages, text_identifier_database 
 		 & row_separator_0
 		 & to_string(name_file_database));
 	
  	prog_position	:= 40;
-	-- 	create_bak_directory;
-	action := import_bsdl;
-	-- CS: global variable for section of interest ?
+
 	-- CS: set integrity check level
 	read_uut_database;
 	
@@ -1579,7 +1580,7 @@ begin
 	close(file_database_preliminary);
 
 	prog_position	:= 140;	
-	write_log_footer(module_name => name_module_importer_bsdl);
+	write_log_footer;
 
 	copy_file(name_file_database_preliminary, to_string(name_file_database));
 
