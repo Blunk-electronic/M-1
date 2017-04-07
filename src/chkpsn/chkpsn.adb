@@ -88,7 +88,7 @@ procedure chkpsn is
 	debug_level							: natural := 0;
 
 	name_of_current_primary_net			: type_net_name.bounded_string;
-	class_of_current_primary_net		: type_net_class := NA;
+	class_of_current_primary_net		: type_net_class := net_class_default;
 	primary_net_section_entered			: boolean := false;
 	secondary_net_section_entered 		: boolean := false;	
 
@@ -2199,8 +2199,10 @@ procedure chkpsn is
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
+	action := chkpsn;
+	
 	new_line;
-	put_line("primary/secondary/class builder "& version);
+	put_line(to_upper(name_module_chkpsn) & " version " & version);
 	put_line("=======================================");
 	prog_position := 10;
 	name_file_database := to_bounded_string(argument(1));
@@ -2211,19 +2213,19 @@ begin
 	name_file_options := to_bounded_string(argument(2));
 	put_line ("options file   : " & to_string(name_file_options));
 
--- 	if argument_count = 3 then
--- 		debug_level := natural'value(argument(3));
-		-- 		put_line ("debug level    :" & natural'image(debug_level));
-		-- CS: degree of integrity check
--- 	end if;
-
-	-- make backup of given udb
-	
-	-- recreate an empty tmp directory
 	prog_position := 30;
 	create_temp_directory;
 
+	prog_position	:= 35;
+ 	write_log_header(version);
+
+	-- write name of database in logfile
+	put_line(file_chkpsn_messages, text_identifier_database 
+		 & row_separator_0
+		 & to_string(name_file_database));
+
 	prog_position := 40;
+	-- CS: set integrity check level	
 	read_uut_database;
 
 	-- open options file
@@ -2404,8 +2406,8 @@ begin
 	prog_position := 130;	
 	put_line(section_mark.section & row_separator_0 & section_netlist);
 	put_line(column_separator_0);
-	put_line("-- modified by primary/secondary/class builder version " & version);
-	put_line("-- date: " & date_now & " (YYYY-MM-DD HH:MM:SS)");
+	put_line("-- modified by " & name_module_chkpsn & " version " & version);
+	put_line("-- date: " & date_now);
 
 	-- With the two netlists list_of_nets and list_of_options_nets, a new net list is created and appended to the
 	-- preliminary data base.
@@ -2426,6 +2428,8 @@ begin
 	-- check preliminary database and obtain summary
 	prog_position := 170;	
 	put_line("parsing preliminary " & text_identifier_database & "...");
+	
+	-- CS: use predefined keyowrds
 	name_file_database := to_bounded_string(compose (name_directory_temp, "preliminary_" & to_string(name_file_database)));
 	read_uut_database;
 	-- summary now available in summary
@@ -2449,7 +2453,11 @@ begin
 	prog_position := 210;	
 	delete_file(to_string(name_file_database));
 
+	prog_position	:= 220;	
+	write_log_footer;
+	
 	exception when event: others =>
+		close(file_database_preliminary);
 		set_exit_status(failure);
 		set_output(standard_output);
 
@@ -2469,5 +2477,7 @@ begin
 				--clean_up;
 				--raise;
 		end if;
+
+		write_log_footer;
 
 end chkpsn;
