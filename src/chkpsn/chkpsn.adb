@@ -83,9 +83,9 @@ procedure chkpsn is
 	prog_position	: natural := 0;
 	
 	line_of_file	: type_universal_string.bounded_string;
-	line_counter						: natural := 0;
+-- 	line_counter						: natural := 0;
 	line_number_of_primary_net_header	: natural := 0;
-	debug_level							: natural := 0;
+-- 	debug_level							: natural := 0;
 
 	name_of_current_primary_net			: type_net_name.bounded_string;
 	class_of_current_primary_net		: type_net_class := net_class_default;
@@ -95,7 +95,7 @@ procedure chkpsn is
 	secondary_net_count					: natural := 0;
 	total_options_net_count				: natural := 0;
 
-	keyword_net							: constant string (1..3)  := "net";
+	keyword_net							: constant string (1..3)  := "Net";
 	keyword_secondary_nets				: constant string (1..14) := "secondary_nets";
 	
 	type type_options_net (has_secondaries : boolean := true) is record
@@ -1816,14 +1816,14 @@ procedure chkpsn is
 	end dump_net_content;
 
 	
-	procedure make_new_net_list is
+	procedure make_new_netlist is
 		-- with the two netlists list_of_nets and list_of_options_nets, a new netlist is created and appended to the
 		-- preliminary database
 		-- the class requirements and secondary net dependencies from the options file are taken into account
 		o	: type_options_net; -- for temporarily storage of an options net
 		n 	: type_net; -- for temporarily storage of a database net
 
-	begin -- make_new_net_list
+	begin -- make_new_netlist
 		-- writes a structure as shown below in the preliminary data base:
 
 		--> header:	SubSection LED1 class NR
@@ -1844,6 +1844,12 @@ procedure chkpsn is
 		--> footer:	EndSubSection
 		--> footer: EndSubSection secondary_nets_of LED1
 	
+		write_message (
+			file_handle => file_chkpsn_messages,
+			identation => 1,
+			text => "making new netlist ...", 
+			console => true);
+
 		if length(list_of_options_nets) > 0 then
 			for i in 1..length(list_of_options_nets) loop
 				o := element(list_of_options_nets, positive(i));
@@ -1852,6 +1858,12 @@ procedure chkpsn is
 				put_line(column_separator_0);
 				put_line(row_separator_0 & section_mark.subsection & row_separator_0 & to_string(o.name) & row_separator_0 
 					& text_udb_class & row_separator_0 & type_net_class'image(o.class));
+
+				write_message (
+					file_handle => file_chkpsn_messages,
+					identation => 2,
+					text => "primary net " & to_string(o.name), 
+					console => false);
 
 				-- this is a primary net. it will be searched for in the net list and its content dumped into the preliminary data base
 				put_line("  -- name class value package pin"
@@ -1876,6 +1888,12 @@ procedure chkpsn is
 							& row_separator_0 & text_udb_class & type_net_class'image(o.class)
 							);
 
+						write_message (
+							file_handle => file_chkpsn_messages,
+							identation => 3,
+							text => "secondary net " & to_string(element(o.list_of_secondary_net_names, positive(s))), 
+							console => false);
+
 						dump_net_content(
 							name => element(o.list_of_secondary_net_names, positive(s)),
 							level => secondary,
@@ -1886,6 +1904,7 @@ procedure chkpsn is
 						put_line(2*row_separator_0 & section_mark.endsubsection);
 						new_line;
 					end loop;
+
 					put_line(row_separator_0 & section_mark.endsubsection & row_separator_0 & netlist_keyword_header_secondary_nets &
 							row_separator_0 & to_string(o.name));
 					put_line(column_separator_0);
@@ -1898,6 +1917,13 @@ procedure chkpsn is
 		-- dump non-optimized nets 
 		-- they have the "optimized" flag cleared (false) and default to level primary with class NA
 		-- pointer n points to data base net list
+
+		write_message (
+			file_handle => file_chkpsn_messages,
+			identation => 1,
+			text => "non-optimized nets:",
+			console => false);
+
 		put_line(column_separator_0);
 		put_line("-- NON-OPTIMIZED NETS ---------------------------");
 		put_line(column_separator_0);
@@ -1913,6 +1939,13 @@ procedure chkpsn is
 					& text_udb_class & row_separator_0 & type_net_class'image(NA));
 
 				-- this is a primary net. it will be searched for in the net list and its content dumped into the preliminary data base
+
+				write_message (
+					file_handle => file_chkpsn_messages,
+					identation => 2,
+					text => "primary net " & to_string(n.name), 
+					console => false);
+
 				dump_net_content(
 					name => n.name, 
 					level => primary,
@@ -1924,7 +1957,7 @@ procedure chkpsn is
 				put_line(row_separator_0 & section_mark.endsubsection);
 			end if;
 		end loop;
-	end make_new_net_list;
+	end make_new_netlist;
 
 
 	procedure write_new_cell_lists is
@@ -1938,6 +1971,12 @@ procedure chkpsn is
 -- 		h : type_atg_drive_cell;
 -- 		i : type_input_cell_class_NA;
 	begin
+		write_message (
+			file_handle => file_chkpsn_messages,
+			identation => 1,
+			text => "writing new cell lists ...",
+			console => true);
+
 		put_line("------- CELL LISTS ----------------------------------------------------------");
 		new_line(2);
 
@@ -2213,7 +2252,13 @@ procedure chkpsn is
 			);
 
 		prog_position := 60;
-		put_line("reading options file ...");
+
+		write_message (
+			file_handle => file_chkpsn_messages,
+-- 			identation => 2,
+			text => "reading options file ...",
+			console => true);
+
 		set_input(file_options); -- set data source
 		while not end_of_file
 			loop
@@ -2221,6 +2266,13 @@ procedure chkpsn is
 				line_of_file := to_bounded_string(remove_comment_from_line(get_line));
 
 				if get_field_count(to_string(line_of_file)) > 0 then -- if line contains anything
+
+-- 					write_message (
+-- 						file_handle => file_chkpsn_messages,
+-- 						identation => 1,
+-- 						text => to_string(line_of_file),
+-- 						console => true);
+
 					if primary_net_section_entered then
 						-- we are inside primary net section
 
@@ -2237,7 +2289,7 @@ procedure chkpsn is
 
 							-- count secondary nets and collect them in array list_of_secondary_net_names
 							--if to_upper(get_field_from_line(line_of_file,1)) = type_options_net_identifier'image(net) then
-							elsif to_upper(get_field_from_line(to_string(line_of_file),1)) = keyword_net then
+							elsif get_field_from_line(to_string(line_of_file),1) = keyword_net then
 								secondary_net_count := secondary_net_count + 1;
 								--list_of_secondary_net_names(secondary_net_count) := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
 								append(list_of_secondary_net_names_preliminary, to_bounded_string(get_field_from_line(to_string(line_of_file),2)));
@@ -2290,7 +2342,7 @@ procedure chkpsn is
 							-- if not secondary_net_section_entered yet, wait for "SubSection secondary_nets" header
 							-- if "SubSection secondary_nets" found, set secondary_net_section_entered flag
 							elsif get_field_from_line(to_string(line_of_file),1) = section_mark.subsection and
-								to_upper(get_field_from_line(to_string(line_of_file),2)) = keyword_secondary_nets then
+								get_field_from_line(to_string(line_of_file),2) = keyword_secondary_nets then
 									secondary_net_section_entered := true;
 							else
 								put_line(message_error & "Keywords '" & section_mark.subsection 
@@ -2305,10 +2357,19 @@ procedure chkpsn is
 					-- then set "primary net section entered" flag
 					elsif get_field_from_line(to_string(line_of_file),1) = section_mark.section then
 						name_of_current_primary_net := to_bounded_string(get_field_from_line(to_string(line_of_file),2));
-						if to_upper(get_field_from_line(to_string(line_of_file),3)) = netlist_keyword_header_class then
+						if get_field_from_line(to_string(line_of_file),3) = netlist_keyword_header_class then
 							null; -- fine
+
+							write_message (
+								file_handle => file_chkpsn_messages,
+								identation => 1,
+								text => "primary net " & to_string(name_of_current_primary_net), 
+								console => false);
+
 						else
-							put_line(message_error & "Identifier '" & netlist_keyword_header_class & "' expected after primary net name !");
+							put_line(message_error & "Keyword '" & netlist_keyword_header_class 
+								& "' expected after primary net name '"
+								& to_string(name_of_current_primary_net) & "' !");
 							raise constraint_error;
 						end if;
 						class_of_current_primary_net := type_net_class'value(get_field_from_line(to_string(line_of_file),4));
@@ -2334,12 +2395,12 @@ procedure chkpsn is
 		line_counter : natural := 0;
 	begin	
 		write_message (
-			file_handle => file_mknets_messages,
+			file_handle => file_chkpsn_messages,
 			text => "rebuilding " & text_identifier_database & " ...", 
 			console => true);
 
 		write_message (
-			file_handle => file_mknets_messages,
+			file_handle => file_chkpsn_messages,
 			identation => 1,
 			text => "copying scanpath configuration and registers ...", 
 			console => false);
@@ -2363,6 +2424,12 @@ procedure chkpsn is
 
 	procedure write_section_netlist_header is
 	begin
+		write_message (
+			file_handle => file_chkpsn_messages,
+			identation => 1,
+			text => "writing netlist header ...", 
+			console => false);
+
 		new_line;
 		put_line(section_mark.section & row_separator_0 & section_netlist);
 		put_line(column_separator_0);
@@ -2388,7 +2455,7 @@ begin
 
 	prog_position := 20;
 	name_file_options := to_bounded_string(argument(2));
-	put_line ("options file   : " & to_string(name_file_options));
+	put_line ("options file : " & to_string(name_file_options));
 
 	prog_position := 30;
 	create_temp_directory;
@@ -2401,6 +2468,11 @@ begin
 	put_line(file_chkpsn_messages, text_identifier_database 
 		 & row_separator_0
 		 & to_string(name_file_database));
+
+	-- write name of options file in logfile
+	put_line(file_chkpsn_messages, "options file"
+		 & row_separator_0
+		 & to_string(name_file_options));
 
 	prog_position := 50;
 	-- CS: set integrity check level	
@@ -2434,16 +2506,16 @@ begin
 		name => name_file_database_preliminary
 		);
 
-	-- open data base file
-	prog_position := 100;
-	open( 
-		file => file_database,
-		mode => in_file,
-		name => to_string(name_file_database)
-		);
+-- 	-- open data base file
+-- 	prog_position := 100;
+-- 	open( 
+-- 		file => file_database,
+-- 		mode => in_file,
+-- 		name => to_string(name_file_database)
+-- 		);
 
-	prog_position := 110;	
-	set_input(file_database); -- set data source
+-- 	prog_position := 110;	
+-- 	set_input(file_database); -- set data source
 	set_output(file_database_preliminary); -- set data sink
 
 	prog_position := 120;
@@ -2456,7 +2528,7 @@ begin
 	-- preliminary data base.
 	-- The class requirements and secondary net dependencies from the options file are taken into account.
 	prog_position := 140;	
-	make_new_net_list;
+	make_new_netlist;
 
 	-- write section netlist footer	
 	put_line(section_mark.endsection);
@@ -2467,18 +2539,34 @@ begin
 
 	prog_position := 160;		
 	set_output(standard_output);
+
+	write_message (
+		file_handle => file_chkpsn_messages,
+-- 		identation => 1,
+		text => "closing preliminary " & text_identifier_database & " ...",
+		console => false);
 	close(file_database_preliminary);
 
 	-- check preliminary database and obtain summary
 	prog_position := 170;	
-	put_line("parsing preliminary " & text_identifier_database & "...");
-	
-	-- CS: use predefined keyowrds
+	write_message (
+		file_handle => file_chkpsn_messages,
+-- 		identation => 1,
+		text => "parsing preliminary " & text_identifier_database & " ...",
+		console => false);
+
+	-- CS: use predefined keywords
 	name_file_database := to_bounded_string(name_file_database_preliminary);
 	read_uut_database;
 	-- summary now available
 
 	-- reopen preliminary database in append mode
+	write_message (
+		file_handle => file_chkpsn_messages,
+-- 		identation => 1,
+		text => "reopening preliminary " & text_identifier_database & row_separator_0 & to_string(name_file_database) & " ...",
+		console => false);
+
 	prog_position := 180;	
 	open( 
 		file => file_database_preliminary,
@@ -2506,6 +2594,8 @@ begin
 		set_exit_status(failure);
 		set_output(standard_output);
 
+		put_line(message_error & "at position " & natural'image(prog_position));
+
 		if prog_position = 10 then
 			put_line(message_error & text_identifier_database & " file missing or insufficient access rights !");
 			put_line("       Provide " & text_identifier_database & " name as argument. Example: chkpsn my_uut.udb");
@@ -2517,7 +2607,7 @@ begin
 		else
 			put_line(exception_name(event));
 			put(exception_message(event)); new_line;
-			put_line(message_error & "at position " & natural'image(prog_position));
+
 				--put_line("ERROR in options file in line :" & natural'image(line_counter));
 				--clean_up;
 				--raise;

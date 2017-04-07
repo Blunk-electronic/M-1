@@ -590,6 +590,8 @@ begin
 
 	exception
 		when event: others =>
+			put_line("program error at position " & natural'image(prog_position));
+
 			close(file_database_preliminary);
 			
 			set_output(standard_output);
@@ -607,7 +609,7 @@ begin
 				when others =>
 					put_line(exception_name(event));
 					put(exception_message(event)); new_line;
-					put_line("program error at position " & natural'image(prog_position));
+
 			end case;
 
 			write_log_footer;
