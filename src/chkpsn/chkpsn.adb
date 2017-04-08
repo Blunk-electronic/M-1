@@ -1742,6 +1742,11 @@ procedure chkpsn is
 		d : type_net; -- for temporarily storage of a net
 		p : type_pin; -- for temporarily storage of a pin
 
+		procedure set_optimized_flag (net : in out type_net) is
+		begin
+			net.optimized := true;
+		end set_optimized_flag;
+
 	begin -- dump_net_content for net name given in "name"
 		-- net name "name" is passed from superordinated procedure make_new_net_list when calling this procedure
 		-- marks the net as "optimized"
@@ -1756,7 +1761,8 @@ procedure chkpsn is
 
 				-- mark this net as optimized by chkpsn
 				-- later, it helps to distinguish non-optimzed nets which must be dumped into the preliminary data base too
-				d.optimized := true;
+				--d.optimized := true;
+				update_element(list_of_nets, positive(i), set_optimized_flag'access);
 
 				-- loop through part list of the net
 				-- and dump the net content like "IC301 ? XC9536 PLCC-S44 2  pb00_00 | 107 bc_1 input x | 106 bc_1 output3 x 105 0 z"
@@ -2242,6 +2248,7 @@ procedure chkpsn is
 	-- if class rendering allowed, add primary net with its secondary nets to options netlist.
 	-- This is achieved at by procedure add_to_options_net_list
 	-- list_of_options_nets is the generated options netlist
+		line_counter : natural := 0;
 	begin
 		-- open options file
 		prog_position := 70;
@@ -2451,7 +2458,7 @@ begin
 	prog_position := 10;
 	name_file_database := to_bounded_string(argument(1));
 	put_line (text_identifier_database & "     : " & to_string(name_file_database));
-	name_file_database_backup := name_file_database; -- backup name of database. used for overwriting data base with temporarily data base
+-- 	name_file_database_backup := name_file_database; -- backup name of database. used for overwriting data base with temporarily data base
 
 	prog_position := 20;
 	name_file_options := to_bounded_string(argument(2));
@@ -2460,7 +2467,7 @@ begin
 	prog_position := 30;
 	create_temp_directory;
 
-	-- create message/log file	
+	-- create message/log file
 	prog_position	:= 40;
  	write_log_header(version);
 
@@ -2555,7 +2562,6 @@ begin
 		text => "parsing preliminary " & text_identifier_database & " ...",
 		console => false);
 
-	-- CS: use predefined keywords
 	name_file_database := to_bounded_string(name_file_database_preliminary);
 	read_uut_database;
 	-- summary now available

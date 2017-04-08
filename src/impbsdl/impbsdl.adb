@@ -1411,7 +1411,7 @@ procedure impbsdl is
 							lf => false);
 
 						-- write options in preliminary database
-						put_line(2 * row_separator_0 & to_string(bic.options));
+						-- put_line(2 * row_separator_0 & to_string(bic.options)); -- CS: remove
 
 						-- save actual option string. required when reading the port pin mmap later
 						option_prefix_to_remove := to_bounded_string(get_field_from_line(to_string(bic.options),3));

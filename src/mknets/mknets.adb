@@ -133,7 +133,7 @@ procedure mknets is
 
 			-- progress bar
 			if (line_counter rem 400) = 0 then -- put a dot every 400 lines of skeleton
-				put(".");
+				put(standard_output,".");
 			end if;
 			
 			line_of_file := to_bounded_string(remove_comment_from_line(get_line));
