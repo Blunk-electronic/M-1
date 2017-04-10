@@ -326,10 +326,6 @@ procedure chkpsn is
 	procedure disable_remaining_drivers ( d : in type_net) is
 		p : type_pin;
 	begin
--- 			if debug_level >= 30 then
--- 				put_line(standard_output,"disabling remaining drivers in net " & row_separator_0 & universal_string_type.to_string(d.name));
--- 			end if;
-
 		write_message (
 			file_handle => file_chkpsn_messages,
 			identation => 4,
@@ -345,14 +341,6 @@ procedure chkpsn is
 				if p.cell_info.control_cell_id /= -1 and p.cell_info.output_cell_id /= -1 then 
 					if not p.cell_info.selected_as_driver then -- care for drivers not marked as active
 
--- 							if debug_level >= 35 then
--- 								put_line(standard_output," driver pin : " 
--- --											& row_separator_0 & universal_string_type.to_string(d.name)
--- 									& row_separator_0 & universal_string_type.to_string(d.pin(p).device_name)
--- 									& row_separator_0 & universal_string_type.to_string(d.pin(p).device_pin_name)
--- 									);
--- 							end if;
-
 						-- if non-shared control cell, just turn it off:
 						--  write disable value in cell list
 						--  write drive value 0 of useless output cell in cell list
@@ -360,6 +348,14 @@ procedure chkpsn is
 							case d.class is
 								when DH | DL | NR =>
 									-- add control cell to list
+									write_message (
+										file_handle => file_chkpsn_messages,
+										identation => 5,
+										text => "static non-shared control cell: device " & to_string(p.device_name) 
+											& " pin " & to_string(p.device_pin_name) & row_separator_0 
+											& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+										console => false);
+									
 -- 										add_to_locked_control_cells_in_class_DH_DL_NR_nets(
 -- 											-- prepares writing a cell list entry like:
 -- 											-- class NR secondary_net LED7_R device IC301 pin 13 control_cell 75 locked_to disable_value 0
@@ -396,16 +392,31 @@ procedure chkpsn is
 -- 												-- the drive value is meaningless since the pin is disabled
 -- 											);
 
+									write_message (
+										file_handle => file_chkpsn_messages,
+										identation => 5,
+										text => "static output cell: device " & to_string(p.device_name) 
+											& " pin " & to_string(p.device_pin_name) & row_separator_0 
+											& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+										console => false);
+									
 									append(list_of_static_output_cells_class_DX_NR,(
 										class					=> d.class,
 										net						=> d.name,
 										device					=> p.device_name,
 										pin						=> p.device_pin_name,
-										id						=> p.cell_info.control_cell_id,
+										id						=> p.cell_info.output_cell_id,
 										drive_value				=> '0')); -- meaningless since the pin is disabled
 
 								when PU | PD =>
 									-- add control cell to list
+									write_message (
+										file_handle => file_chkpsn_messages,
+										identation => 5,
+										text => "static non-shared control cell: device " & to_string(p.device_name) 
+											& " pin " & to_string(p.device_pin_name) & row_separator_0 
+											& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+										console => false);
 
 -- 									add_to_locked_control_cells_in_class_PU_PD_nets(
 										-- prepares writing a cell list entry like:
@@ -433,7 +444,7 @@ procedure chkpsn is
 								when others => null;
 							end case;
 						else
-						-- if shared control cell
+						-- we have a shared control cell:
 
 							-- check if control cell can be set to disable state
 							if not control_cell_in_enable_state_by_any_cell_list( 
@@ -445,7 +456,14 @@ procedure chkpsn is
 								case d.class is
 									when DH | DL | NR =>
 										-- add control cell to list
-
+										write_message (
+											file_handle => file_chkpsn_messages,
+											identation => 5,
+											text => "static shared control cell: device " & to_string(p.device_name) 
+												& " pin " & to_string(p.device_pin_name) & row_separator_0 
+												& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+											console => false);
+										
 -- 											add_to_locked_control_cells_in_class_DH_DL_NR_nets(
 -- 												-- prepares writing a cell list entry like:
 -- 												-- class NR secondary_net LED7_R device IC301 pin 13 control_cell 75 locked_to disable_value 0
@@ -471,6 +489,14 @@ procedure chkpsn is
 											disable_value			=> p.cell_info.disable_value));
 									
 										-- add (unused) output cell to list
+										write_message (
+											file_handle => file_chkpsn_messages,
+											identation => 5,
+											text => "static output cell: device " & to_string(p.device_name) 
+												& " pin " & to_string(p.device_pin_name) & row_separator_0 
+												& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+											console => false);
+										
 -- 											add_to_locked_output_cells_in_class_DH_DL_nets(
 -- 												list				=> ptr_cell_list_static_output_cells_class_DX_NR,
 -- 												class_given			=> class,
@@ -487,12 +513,19 @@ procedure chkpsn is
 											net						=> d.name,
 											device					=> p.device_name,
 											pin						=> p.device_pin_name,
-											id						=> p.cell_info.control_cell_id,
+											id						=> p.cell_info.output_cell_id,
 											drive_value				=> '0')); -- meaningless since the pin is disabled
-										
+
 
 									when PU | PD =>
 										-- add control cell to list
+										write_message (
+											file_handle => file_chkpsn_messages,
+											identation => 5,
+											text => "static shared control cell: device " & to_string(p.device_name) 
+												& " pin " & to_string(p.device_pin_name) & row_separator_0 
+												& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+											console => false);
 
 -- 											add_to_locked_control_cells_in_class_PU_PD_nets(
 -- 												-- prepares writing a cell list entry like:
@@ -638,12 +671,13 @@ procedure chkpsn is
 
 
 	-- 		procedure update_cell_lists( d : type_ptr_net ) is
-	procedure update_cell_lists( d : in type_net ) is
-	-- updates cell lists by the net held in d (from database netlist)
+	procedure update_cell_lists( net : in type_net ) is
+	-- updates cell lists by the net given (from database netlist)
 		drivers_without_disable_spec_ct 			: natural := 0;
 		driver_with_non_shared_control_cell_found 	: boolean := false;
 		driver_with_shared_control_cell_found		: boolean := false;
 
+		d : type_net := net;
 		p : type_pin; -- for temporarily storage of a pin
 
 -- 		procedure add_to_locked_control_cells_in_class_EH_EL_NA_nets(
@@ -958,12 +992,18 @@ procedure chkpsn is
 -- 			end case;
 -- 		end add_to_input_cells_in_class_NA_nets;
 
+-- CS:		procedure write_message_is_shared is
+-- 		begin
+-- 
+		-- 		end write_message_is_shared;
+
+		procedure set_selected_as_driver (pin : in out type_pin) is
+		begin
+			pin.cell_info.selected_as_driver := true;
+		end set_selected_as_driver;
+
 	begin -- update_cell_lists
 		-- d holds the net being processed
-
--- 			if debug_level >= 30 then
--- 				put_line(standard_output," updating cell lists with net " & universal_string_type.to_string(d.name));
-		-- 			end if;
 
 		write_message (
 			file_handle => file_chkpsn_messages,
@@ -997,7 +1037,6 @@ procedure chkpsn is
 								console => false);
 
 							case d.level is
-								
 								when primary =>
 									append(list_of_static_expect_cells,(
 										level			=> primary,
@@ -1043,7 +1082,6 @@ procedure chkpsn is
 								console => false);
 
 							case d.level is
-								
 								when primary =>
 									append(list_of_atg_expect_cells,(
 										level			=> primary,
@@ -1085,7 +1123,6 @@ procedure chkpsn is
 								console => false);
 														
 							case d.level is
-								
 								when primary =>
 									append(list_of_input_cells_class_NA,(
 										level			=> primary,
@@ -1112,15 +1149,29 @@ procedure chkpsn is
 				-- THIS IS ABOUT CONTROL CELLS IN PRIMARY AND SECONDARY NETS OF CLASS EH, EL, NA:
 				-- in nets of class EH, EL or NA, all control cells must be in disable state, regardless of net level
 				if p.cell_info.control_cell_id /= -1 then -- if pin has disable spec. (means: a control cell)
-
 					case d.class is
 						when EL | EH | NA =>
+
+							write_message (
+								file_handle => file_chkpsn_messages,
+								identation => 4,
+								text => "control cell: device " & to_string(p.device_name) 
+									& " pin " & to_string(p.device_pin_name) & row_separator_0 
+									& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+								lf => false,
+								console => false);
 
 							if p.cell_info.control_cell_shared then
 								-- if driver has a shared control cell
 								-- the driver pin can be disabled if its control cell is not already enabled 
 								-- or targeted by atg
 
+								write_message (
+									file_handle => file_chkpsn_messages,
+									text => " is shared",
+									lf => false,									
+									console => false);
+								
 								-- check if control cell can be set to disable state
 								if not control_cell_in_enable_state_by_any_cell_list( 
 									net		=> d.name,
@@ -1128,6 +1179,11 @@ procedure chkpsn is
 									device	=> p.device_name,
 									cell_id	=> p.cell_info.control_cell_id) then
 
+									write_message (
+										file_handle => file_chkpsn_messages,
+										text => " but can be set to disable state.",
+										console => false);
+									
 										-- all control cells of those nets must be in disable state (don't care about net level)
 -- 										add_to_locked_control_cells_in_class_EH_EL_NA_nets(
 -- 											list				=> ptr_cell_list_static_control_cells_class_EX_NA,
@@ -1165,6 +1221,12 @@ procedure chkpsn is
 -- 									disable_value_given	=> d.pin(p).cell_info.disable_value
 -- 									);
 
+								write_message (
+									file_handle => file_chkpsn_messages,
+									text => " is not shared",
+									lf => false,									
+									console => false);
+								
 								append(list_of_static_control_cells_class_EX_NA, (
 									level			=> d.level,																					 
 									class			=> d.class,
@@ -1176,6 +1238,12 @@ procedure chkpsn is
 
 							end if; -- if driver has a shared control cell
 
+							write_message (
+								file_handle => file_chkpsn_messages,
+								text => "",
+								lf => true,
+								console => false);
+							
 						when others => 
 							null;
 -- 							prog_position := "UC2230";
@@ -1204,6 +1272,15 @@ procedure chkpsn is
 									--	);
 								when DH | DL | NR =>
 
+									write_message (
+										file_handle => file_chkpsn_messages,
+										identation => 4,
+										text => "control cell: device " & to_string(p.device_name) 
+											& " pin " & to_string(p.device_pin_name) & row_separator_0 
+											& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+										lf => false,
+										console => false);
+
 -- 									prog_position := "UC2320";
 									if p.cell_info.control_cell_shared then
 										-- if driver has a shared control cell
@@ -1211,6 +1288,12 @@ procedure chkpsn is
 										-- or targeted by atg
 -- 										prog_position := "UC2330";
 
+										write_message (
+											file_handle => file_chkpsn_messages,
+											text => " is shared",
+											lf => false,									
+											console => false);
+										
 										-- check if control cell can be set to disable state
 										if not control_cell_in_enable_state_by_any_cell_list( 
 											net		=> d.name,
@@ -1218,6 +1301,11 @@ procedure chkpsn is
 											device	=> p.device_name,
 											cell_id	=> p.cell_info.control_cell_id) then
 
+											write_message (
+												file_handle => file_chkpsn_messages,
+												text => " but can be set to disable state.",
+												console => false);
+											
 -- 											prog_position := "UC2340";
 -- 											add_to_locked_control_cells_in_class_DH_DL_NR_nets(
 -- 												list				=> ptr_cell_list_static_control_cells_class_DX_NR,
@@ -1249,6 +1337,12 @@ procedure chkpsn is
 										-- so there is no need to check cell lists 
 										-- all control cells of those nets must be in disable state
 
+										write_message (
+											file_handle => file_chkpsn_messages,
+											text => " is not shared",
+											lf => false,									
+											console => false);
+										
 -- 										add_to_locked_control_cells_in_class_DH_DL_NR_nets(
 -- 											list				=> ptr_cell_list_static_control_cells_class_DX_NR,
 -- 											class_given			=> class,
@@ -1275,12 +1369,34 @@ procedure chkpsn is
 										
 									end if; -- if driver has a shared control cell
 
+									write_message (
+										file_handle => file_chkpsn_messages,
+										text => "",
+										lf => true,
+										console => false);
+
 								when PU | PD =>
+
+									write_message (
+										file_handle => file_chkpsn_messages,
+										identation => 4,
+										text => "control cell: device " & to_string(p.device_name) 
+											& " pin " & to_string(p.device_pin_name) & row_separator_0 
+											& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+										lf => false,
+										console => false);
+									
 									if p.cell_info.control_cell_shared then
 										-- if driver has a shared control cell
 										-- the driver pin can be disabled if its control cell is not already enabled 
 										-- or targeted by atg
 
+										write_message (
+											file_handle => file_chkpsn_messages,
+											text => " is shared",
+											lf => false,									
+											console => false);
+										
 										-- check if control cell can be set to disable state
 										if not control_cell_in_enable_state_by_any_cell_list( 
 											net		=> d.name,
@@ -1288,6 +1404,11 @@ procedure chkpsn is
 											device	=> p.device_name,
 											cell_id	=> p.cell_info.control_cell_id) then
 
+											write_message (
+												file_handle => file_chkpsn_messages,
+												text => " but can be set to disable state.",
+												console => false);
+											
 -- 											add_to_locked_control_cells_in_class_PU_PD_nets(
 -- 												list				=> ptr_cell_list_static_control_cells_class_PX,
 -- 												class_given			=> class,
@@ -1318,6 +1439,12 @@ procedure chkpsn is
 										-- so there is no need to check cell lists 
 										-- all control cells of those nets must be in disable state
 
+										write_message (
+											file_handle => file_chkpsn_messages,
+											text => " is not shared",
+											lf => false,									
+											console => false);
+										
 -- 										add_to_locked_control_cells_in_class_PU_PD_nets(
 -- 											list				=> ptr_cell_list_static_control_cells_class_PX,
 -- 											class_given			=> class,
@@ -1343,6 +1470,12 @@ procedure chkpsn is
 									
 									end if; -- if driver has a shared control cell
 
+									write_message (
+										file_handle => file_chkpsn_messages,
+										text => "",
+										lf => true,
+										console => false);
+
 							end case;
 						end if;
 					when primary => -- because it is about secondary nets here
@@ -1355,11 +1488,24 @@ procedure chkpsn is
 
 		-- FIND SUITABLE DRIVER PIN BEGIN:
 		-- It will be searched for only one driver !
+		write_message (
+			file_handle => file_chkpsn_messages,
+			identation => 4,
+			text => "searching suitable driver pin ...",
+			console => false);
+
 		case d.level is
 			when primary => -- search driver in primary nets only
 				case d.class is -- search in these net classes only
 					when DH | DL | NR | PU | PD =>
 						-- FIND ALL OUTPUT PINS WITHOUT DISABLE SPEC
+
+						write_message (
+							file_handle => file_chkpsn_messages,
+							identation => 5,
+							text => "drivers without disable specification (output2):",
+							console => false);
+						
 						-- if there is such a pin, it is to be preferred over other drivers
 						drivers_without_disable_spec_ct := 0; -- reset counter for drivers without disable spec
 						for i in 1..length(d.pins) loop -- loop through pin list of given net
@@ -1367,8 +1513,18 @@ procedure chkpsn is
 							if p.is_bscan_capable then -- care for scan capable pins only
 								-- if pin has no disable spec. (means: no control cell)
 								if p.cell_info.output_cell_id /= -1 and p.cell_info.control_cell_id = -1 then
+									
 									case d.class is
 										when DH | DL =>
+
+											write_message (
+												file_handle => file_chkpsn_messages,
+												identation => 6,
+												text => "static output cell: device " & to_string(p.device_name) 
+													& " pin " & to_string(p.device_pin_name) & row_separator_0 
+													& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+												console => false);
+											
 -- 											add_to_locked_output_cells_in_class_DH_DL_nets(
 -- 												list				=> ptr_cell_list_static_output_cells_class_DX_NR,
 -- 												class_given			=> class,
@@ -1384,11 +1540,19 @@ procedure chkpsn is
 												net						=> d.name,
 												device					=> p.device_name,
 												pin						=> p.device_pin_name,
-												id						=> p.cell_info.control_cell_id,
+												id						=> p.cell_info.output_cell_id,
 												drive_value				=> drive_value_derived_from_class(d.class)));
 										
 										when NR =>
 
+											write_message (
+												file_handle => file_chkpsn_messages,
+												identation => 5,
+												text => "static output cell: device " & to_string(p.device_name) 
+													& " pin " & to_string(p.device_pin_name) & row_separator_0 
+													& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+												console => false);
+											
 -- 											add_to_atg_drive(
 -- 												list				=> ptr_cell_list_atg_drive,
 -- 												class_given			=> class,
@@ -1413,7 +1577,8 @@ procedure chkpsn is
 											raise constraint_error; -- CS: this should never happen, special message required
 									end case; -- class
 
-									p.cell_info.selected_as_driver := true; -- mark driver as active
+									-- mark driver as active
+									update_element(d.pins, positive(i), set_selected_as_driver'access);
 									-- CS: CAUTION ! MAKE SURE ATG SYNCRONIZES THOSE DRIVERS !
 									drivers_without_disable_spec_ct := drivers_without_disable_spec_ct + 1;
 
@@ -1435,9 +1600,11 @@ procedure chkpsn is
 						-- NO OUTPUT PIN WITHOUT DISABLE SPEC FOUND
 						-- FIND ONE DRIVER WITH NON-SHARED CONTROL CELL
 
--- 							if debug_level >= 30 then
--- 								put_line(standard_output," searching driver with non-shared control cell in net " & universal_string_type.to_string(d.name));
--- 							end if;
+							write_message (
+								file_handle => file_chkpsn_messages,
+								identation => 5,
+								text => "... none found. Searching driver with disable specification (output3) and non-shared control cell ...",
+								console => false);
 
 							for i in 1..length(d.pins) loop -- loop through pin list of given net -- CS: use a variable that holds the pin count of the net
 								p := element(d.pins, positive(i));
@@ -1450,6 +1617,15 @@ procedure chkpsn is
 
 											case d.class is
 												when DH | DL =>
+
+													write_message (
+														file_handle => file_chkpsn_messages,
+														identation => 6,
+														text => "static control cell: device " & to_string(p.device_name) 
+															& " pin " & to_string(p.device_pin_name) & row_separator_0 
+															& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+														console => false);
+
 													-- add control cell to list (no need to check cell lists, as this control cell is non-shared)
 -- 													add_to_locked_control_cells_in_class_DH_DL_NR_nets(
 -- 														list				=> ptr_cell_list_static_control_cells_class_DX_NR,
@@ -1475,6 +1651,15 @@ procedure chkpsn is
 
 													
 													-- add output cell to list
+
+													write_message (
+														file_handle => file_chkpsn_messages,
+														identation => 6,
+														text => "static output cell: device " & to_string(p.device_name) 
+															& " pin " & to_string(p.device_pin_name) & row_separator_0 
+															& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+														console => false);
+													
 -- 													add_to_locked_output_cells_in_class_DH_DL_nets(
 -- 														list				=> ptr_cell_list_static_output_cells_class_DX_NR,
 -- 														class_given			=> class,
@@ -1490,11 +1675,20 @@ procedure chkpsn is
 														net						=> d.name,
 														device					=> p.device_name,
 														pin						=> p.device_pin_name,
-														id						=> p.cell_info.control_cell_id,
+														id						=> p.cell_info.output_cell_id,
 														drive_value				=> drive_value_derived_from_class(d.class)));
 
 												when NR =>
 													-- add control cell to list
+
+													write_message (
+														file_handle => file_chkpsn_messages,
+														identation => 6,
+														text => "static control cell: device " & to_string(p.device_name) 
+															& " pin " & to_string(p.device_pin_name) & row_separator_0 
+															& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+														console => false);
+													
 -- 													add_to_locked_control_cells_in_class_DH_DL_NR_nets(
 -- 														list				=> ptr_cell_list_static_control_cells_class_DX_NR,
 -- 														class_given			=> class,
@@ -1519,6 +1713,14 @@ procedure chkpsn is
 
 													
 -- 													-- add output cell to list
+													write_message (
+														file_handle => file_chkpsn_messages,
+														identation => 6,
+														text => "atg drive cell: device " & to_string(p.device_name) 
+															& " pin " & to_string(p.device_pin_name) & row_separator_0 
+															& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+														console => false);
+													
 -- 													add_to_atg_drive(
 -- 														list				=> ptr_cell_list_atg_drive,
 -- 														class_given			=> class,
@@ -1535,14 +1737,21 @@ procedure chkpsn is
 														net							=> d.name,
 														device						=> p.device_name,
 														pin							=> p.device_pin_name,
-														id							=> p.cell_info.control_cell_id,
+														id							=> p.cell_info.output_cell_id,
 														controlled_by_control_cell	=> false));
-													
 
 												when PU | PD =>
 													-- add output cell to list
 													-- NOTE: in pull-up/down nets, the output cell of the driver is static
-	
+
+													write_message (
+														file_handle => file_chkpsn_messages,
+														identation => 6,
+														text => "static output cell: device " & to_string(p.device_name) 
+															& " pin " & to_string(p.device_pin_name) & row_separator_0 
+															& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+														console => false);
+													
 -- 													add_to_locked_output_cells_in_class_PU_PD_nets(
 -- 														list				=> ptr_cell_list_static_output_cells_class_PX,
 -- 														class_given			=> class,
@@ -1564,6 +1773,13 @@ procedure chkpsn is
 
 													-- add control cell to list
 													-- NOTE: in pull-up/down nets, the control cell of the driver is dynamic (means ATG controlled)
+													write_message (
+														file_handle => file_chkpsn_messages,
+														identation => 6,
+														text => "atg drive cell: device " & to_string(p.device_name) 
+															& " pin " & to_string(p.device_pin_name) & row_separator_0 
+															& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+														console => false);													
 
 -- 													add_to_atg_drive(
 -- 														list				=> ptr_cell_list_atg_drive,
@@ -1598,7 +1814,9 @@ procedure chkpsn is
 													-- this code should never be reached
 											end case;
 
-											p.cell_info.selected_as_driver := true; -- mark driver as active
+											-- mark driver as active
+											update_element(d.pins, positive(i), set_selected_as_driver'access);
+											
 											driver_with_non_shared_control_cell_found := true;
 											exit; -- no more driver search required
 
@@ -1616,6 +1834,12 @@ procedure chkpsn is
 							-- NO OUTPUT PIN WITHOUT NON-SHARED CONTROL CELL FOUND
 							-- FIND DRIVER WITH SHARED CONTROL CELL
 
+								write_message (
+									file_handle => file_chkpsn_messages,
+									identation => 5,
+									text => "... none found. Searching driver with disable specification (output3) and shared control cell ...",
+									console => false);
+								
 								-- FOR PU/PD NETS, WITHOUT SPECIAL THREATMENT, ABORT HERE
 								-- pull-nets require a driver with a fully independed control cell
 								if d.class = PU or d.class = PD then
@@ -1625,11 +1849,6 @@ procedure chkpsn is
 									-- CS: refine error output
 									raise constraint_error;
 								end if;
-
--- 								if debug_level >= 30 then
--- 									put_line(standard_output," searching driver with shared control cell in net " & universal_string_type.to_string(d.name));
--- 								end if;
-
 
 								-- for p in 1..d.part_ct loop -- loop through pin list of given net
 								for i in 1..length(d.pins) loop
@@ -1656,6 +1875,14 @@ procedure chkpsn is
 															-- the driver pin can be used as driver, its control cell is not in use by atg and not in disable state
 
 															-- add control cell to list
+															write_message (
+																file_handle => file_chkpsn_messages,
+																identation => 6,
+																text => "static control cell: device " & to_string(p.device_name) 
+																	& " pin " & to_string(p.device_pin_name) & row_separator_0 
+																	& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+																console => false);
+															
 -- 															add_to_locked_control_cells_in_class_DH_DL_NR_nets(
 -- 																list				=> ptr_cell_list_static_control_cells_class_DX_NR,
 -- 																class_given			=> class,
@@ -1681,6 +1908,14 @@ procedure chkpsn is
 															case d.class is
 																when DH | DL =>
 																	-- add output cell to list
+																	write_message (
+																		file_handle => file_chkpsn_messages,
+																		identation => 6,
+																		text => "static output cell: device " & to_string(p.device_name) 
+																			& " pin " & to_string(p.device_pin_name) & row_separator_0 
+																			& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+																		console => false);
+																	
 -- 																	add_to_locked_output_cells_in_class_DH_DL_nets(
 -- 																		list				=> ptr_cell_list_static_output_cells_class_DX_NR,
 -- 																		class_given			=> class,
@@ -1702,6 +1937,14 @@ procedure chkpsn is
 																when NR =>
 																	-- add output cell to list
 
+																	write_message (
+																		file_handle => file_chkpsn_messages,
+																		identation => 6,
+																		text => "atg drive cell: device " & to_string(p.device_name) 
+																			& " pin " & to_string(p.device_pin_name) & row_separator_0 
+																			& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+																		console => false);
+																	
 -- 																	add_to_atg_drive(
 -- 																		list				=> ptr_cell_list_atg_drive,
 -- 																		class_given			=> class,
@@ -1717,7 +1960,7 @@ procedure chkpsn is
 																		net							=> d.name,
 																		device						=> p.device_name,
 																		pin							=> p.device_pin_name,
-																		id							=> p.cell_info.control_cell_id,
+																		id							=> p.cell_info.output_cell_id,
 																		controlled_by_control_cell	=> false));
 																
 																when others => -- should never happen
@@ -1871,7 +2114,7 @@ procedure chkpsn is
 				if n.bs_capable then
 					case level is
 						when primary =>
-							update_cell_lists( d => (
+							update_cell_lists( net => (
 								class => options_net.class,
 								level => primary,
 								name => n.name,
@@ -1885,7 +2128,7 @@ procedure chkpsn is
 								));
 
 						when secondary =>
-							update_cell_lists( d => (
+							update_cell_lists( net => (
 								class => options_net.class,
 								level => secondary,
 								name => n.name,
@@ -2341,6 +2584,12 @@ procedure chkpsn is
 
 	procedure write_new_statistics is -- CS: use predefined statistics_indentifiers_xxx here
 	begin
+		write_message (
+			file_handle => file_chkpsn_messages,
+	-- 		identation => 1,
+			text => "writing statistics ...",
+			console => false);
+		
 		put_line("------- STATISTICS ----------------------------------------------------------");
 		new_line;
 		put_line(section_mark.section & row_separator_0 & "statistics");
@@ -2715,7 +2964,7 @@ begin
 
 	-- overwrite now useless old data base with temporarily data base
 	prog_position := 200;
-	copy_file(name_file_database_preliminary, to_string(name_file_database));
+ 	copy_file(name_file_database_preliminary, to_string(name_file_database));
 	
 	-- clean up tmp directory
 -- 	prog_position := 210;	
