@@ -330,6 +330,12 @@ procedure chkpsn is
 -- 				put_line(standard_output,"disabling remaining drivers in net " & row_separator_0 & universal_string_type.to_string(d.name));
 -- 			end if;
 
+		write_message (
+			file_handle => file_chkpsn_messages,
+			identation => 4,
+			text => "disabling remaining drivers ...",
+			console => false);
+
 		-- FIND CONTROL CELLS TO BE DISABLED:
 		-- 			for p in 1..d.part_ct loop -- loop through pin list of given net
 		for i in 1..length(d.pins) loop
@@ -957,7 +963,13 @@ procedure chkpsn is
 
 -- 			if debug_level >= 30 then
 -- 				put_line(standard_output," updating cell lists with net " & universal_string_type.to_string(d.name));
--- 			end if;
+		-- 			end if;
+
+		write_message (
+			file_handle => file_chkpsn_messages,
+			identation => 3,
+			text => "updating cell lists by class " & type_net_class'image(d.class) & " net " & to_string(d.name), 
+			console => false);
 
 		-- FIND INPUT CELLS AND CONTROL CELLS TO BE DISABLED:
 		-- 		for p in 1..d.part_ct loop -- loop through pin list of given net
@@ -975,6 +987,15 @@ procedure chkpsn is
 				if p.cell_info.input_cell_id /= -1 then -- if pin does have an input cell
 					case d.class is
 						when EH | EL | DH | DL =>
+
+							write_message (
+								file_handle => file_chkpsn_messages,
+								identation => 4,
+								text => "static input cell: device " & to_string(p.device_name) 
+									& " pin " & to_string(p.device_pin_name) & row_separator_0 
+									& " cell " & type_cell_id'image(p.cell_info.input_cell_id),
+								console => false);
+
 							case d.level is
 								
 								when primary =>
@@ -1012,7 +1033,15 @@ procedure chkpsn is
 -- 								pin_given		=> d.pin(p).device_pin_name,
 -- 								cell_given		=> d.pin(p).cell_info.input_cell_id
 -- 								);
-						
+
+							write_message (
+								file_handle => file_chkpsn_messages,
+								identation => 4,
+								text => "atg input cell: device " & to_string(p.device_name) 
+									& " pin " & to_string(p.device_pin_name) & row_separator_0 
+									& " cell " & type_cell_id'image(p.cell_info.input_cell_id),
+								console => false);
+
 							case d.level is
 								
 								when primary =>
@@ -1046,6 +1075,15 @@ procedure chkpsn is
 -- 								pin_given		=> d.pin(p).device_pin_name,
 -- 								cell_given		=> d.pin(p).cell_info.input_cell_id
 -- 								);
+
+							write_message (
+								file_handle => file_chkpsn_messages,
+								identation => 4,
+								text => "input cell: device " & to_string(p.device_name) 
+									& " pin " & to_string(p.device_pin_name) & row_separator_0 
+									& " cell " & type_cell_id'image(p.cell_info.input_cell_id),
+								console => false);
+														
 							case d.level is
 								
 								when primary =>
@@ -1727,20 +1765,21 @@ procedure chkpsn is
 	end update_cell_lists;
 
 	
-	procedure dump_net_content ( -- CS: receive the net as full type type_net
+	procedure dump_net_content (
 	-- from a given net name, the whole content (means all devices) is dumped into the preliminary database
-		name 				: in type_net_name.bounded_string; 
+-- 		name 				: in type_net_name.bounded_string; 
+		options_net			: in type_options_net;
 		level 				: in type_net_level; 
 
 		-- for secondary nets, the superordinated primary net is taken here. otherwise the default is ""
 		-- this argument is required for writing cell lists, where reference to primary nets is required
-		primary_net_is		: in type_net_name.bounded_string := type_net_name.to_bounded_string("");
+ 		primary_net_is		: in type_net_name.bounded_string := type_net_name.to_bounded_string("");
 
-		class 				: in type_net_class; 
+-- 		class 				: in type_net_class; 
 		spacing_from_left 	: in positive
 		) is
-		d : type_net; -- for temporarily storage of a net
-		p : type_pin; -- for temporarily storage of a pin
+		n : type_net; -- for temporarily storage of a net taken from current database
+		p : type_pin; -- for temporarily storage of a pin of net d
 
 		procedure set_optimized_flag (net : in out type_net) is
 		begin
@@ -1753,22 +1792,36 @@ procedure chkpsn is
 		-- fetches net content from data base net list pointed to by pointer d
 		-- updates cell lists using cell info from net pointed to by d
 		-- 		while d /= null loop -- loop through net list taken from uut data base
+		
 		for i in 1..length(list_of_nets) loop
-			d := element(list_of_nets, positive(i));
+			n := element(list_of_nets, positive(i));
 
-			-- on match of net name: means, the net given from make_new_net_list has been found in data base net list pointed to by d
-			if d.name = name then
+			-- on match of net name: means, the net given from make_new_net_list has been found in database net list pointed to by d
+			if n.name = options_net.name then
 
+				-- set net class of d as requested by given options_net
+-- 				d.class := options_net.class;
+				-- set net level of d as requested by level
+
+
+				write_message (
+					file_handle => file_chkpsn_messages,
+		  			identation => 2,
+					text => "writing " & type_net_level'image(level) 
+						& " class " & type_net_class'image(options_net.class) -- class requested by options_net !
+						& " net " & to_string(n.name), 
+-- 						& " in preliminary " & text_identifier_database, 
+					console => false);
+				
 				-- mark this net as optimized by chkpsn
-				-- later, it helps to distinguish non-optimzed nets which must be dumped into the preliminary data base too
-				--d.optimized := true;
+				-- later this net will be skipped when writing non-optimized nets into the preliminary data base
 				update_element(list_of_nets, positive(i), set_optimized_flag'access);
 
 				-- loop through part list of the net
 				-- and dump the net content like "IC301 ? XC9536 PLCC-S44 2  pb00_00 | 107 bc_1 input x | 106 bc_1 output3 x 105 0 z"
 				-- into the preliminary data base
-				for i in 1..length(d.pins) loop
-					p := element(d.pins, positive(i));
+				for i in 1..length(n.pins) loop
+					p := element(n.pins, positive(i));
 					-- dump the standard segment like "IC301 ? XC9536 PLCC-S44 2"
 					put(spacing_from_left*row_separator_0 & to_string(p.device_name)
 						& row_separator_0 & type_device_class'image(p.device_class)
@@ -1812,9 +1865,41 @@ procedure chkpsn is
 				end loop; -- loop through part list of the net
 				-- net content dumping completed
 
-				-- now that d points to the net in data base net list, the new cell list can be updated regarding this net
-				update_cell_lists( d ); -- so we pass pointer d
+				-- now that d contains the net of the database netlist, the new cell list can be updated regarding this net
+				-- 				update_cell_lists( d )); -- so we pass pointer d
 
+				if n.bs_capable then
+					case level is
+						when primary =>
+							update_cell_lists( d => (
+								class => options_net.class,
+								level => primary,
+								name => n.name,
+								pins => n.pins,
+								bs_bidir_pin_count => n.bs_bidir_pin_count,
+								bs_input_pin_count => n.bs_input_pin_count,
+								bs_output_pin_count => n.bs_output_pin_count,
+								bs_capable => n.bs_capable,
+								secondary_net_names => n.secondary_net_names,
+								optimized => n.optimized -- does not matter here
+								));
+
+						when secondary =>
+							update_cell_lists( d => (
+								class => options_net.class,
+								level => secondary,
+								name => n.name,
+								pins => n.pins,
+								bs_bidir_pin_count => n.bs_bidir_pin_count,
+								bs_input_pin_count => n.bs_input_pin_count,
+								bs_output_pin_count => n.bs_output_pin_count,
+								bs_capable => n.bs_capable,
+								name_of_primary_net => primary_net_is,
+								optimized => n.optimized -- does not matter here
+								));
+					end case;
+				end if;
+				
 				exit; -- no need to search other nets in data base
 			end if;
 
@@ -1871,16 +1956,35 @@ procedure chkpsn is
 					text => "primary net " & to_string(o.name), 
 					console => false);
 
-				-- this is a primary net. it will be searched for in the net list and its content dumped into the preliminary data base
+				-- this is a primary net. it will be searched for in the netlist and its content dumped into the preliminary database
 				put_line("  -- name class value package pin"
-					& " [ port | in_cell: id type func safe | out_cell: id type func safe [ ctrl_cell id disable result ]]");
-				dump_net_content( -- CS: send full type_net
-					name => o.name, 
+						 & " [ port | in_cell: id type func safe | out_cell: id type func safe [ ctrl_cell id disable result ]]");
+				
+-- 				dump_net_content( -- CS: send full type_net
+-- 					name => o.name, 
+-- 					level => primary,
+-- 					class => o.class,
+-- 					spacing_from_left => 2
+-- 					);
+
+-- 	type type_options_net (has_secondaries : boolean := true) is record
+-- 		name						: type_net_name.bounded_string;
+-- 		class						: type_net_class;
+-- 		line_number					: positive;
+-- 		case has_secondaries is
+-- 			when true =>
+-- 				list_of_secondary_net_names	: type_list_of_secondary_net_names.vector;
+-- 			when false =>
+-- 				null;
+-- 		end case;
+-- 	end record;
+
+				dump_net_content(
+					options_net => o,
 					level => primary,
-					class => o.class,
 					spacing_from_left => 2
 					);
-
+				
 				-- put end of primary net mark
 				put_line(row_separator_0 & section_mark.endsubsection);
 
@@ -1891,7 +1995,7 @@ procedure chkpsn is
 					for s in 1..length(o.list_of_secondary_net_names) loop
 						put_line(2*row_separator_0 & section_mark.subsection & row_separator_0 
 							& to_string(element(o.list_of_secondary_net_names, positive(s)))
-							& row_separator_0 & text_udb_class & type_net_class'image(o.class)
+							& row_separator_0 & text_udb_class & row_separator_0 & type_net_class'image(o.class)
 							);
 
 						write_message (
@@ -1900,13 +2004,26 @@ procedure chkpsn is
 							text => "secondary net " & to_string(element(o.list_of_secondary_net_names, positive(s))), 
 							console => false);
 
+-- 						dump_net_content(
+-- 							name => element(o.list_of_secondary_net_names, positive(s)),
+-- 							level => secondary,
+-- 							primary_net_is => o.name, -- required for writing some cell lists where reference to primary net is required
+-- 							class => o.class, 
+-- 							spacing_from_left => 4
+						-- 							);
+
 						dump_net_content(
-							name => element(o.list_of_secondary_net_names, positive(s)),
+							options_net => (
+								has_secondaries => false, -- because it is a secondary net
+								name => element(o.list_of_secondary_net_names, positive(s)),
+								class => o.class, -- because it inherits the class of the superordinated primary net
+								line_number => 1 -- CS: does not matter here
+								),
 							level => secondary,
 							primary_net_is => o.name, -- required for writing some cell lists where reference to primary net is required
-							class => o.class, 
 							spacing_from_left => 4
 							);
+
 						put_line(2*row_separator_0 & section_mark.endsubsection);
 						new_line;
 					end loop;
@@ -1952,13 +2069,24 @@ procedure chkpsn is
 					text => "primary net " & to_string(n.name), 
 					console => false);
 
+-- 				dump_net_content(
+-- 					name => n.name, 
+-- 					level => primary,
+-- 					class => NA,
+-- 					spacing_from_left => 2
+-- 					);
+
 				dump_net_content(
-					name => n.name, 
+					options_net => (
+						has_secondaries => false, -- because it is a lonely primary net
+						name => n.name,
+						class => net_class_default,
+						line_number => 1  -- does not matter here
+						),
 					level => primary,
-					class => NA,
 					spacing_from_left => 2
 					);
-
+				
 				-- put end of primary net mark
 				put_line(row_separator_0 & section_mark.endsubsection);
 			end if;
@@ -2365,12 +2493,13 @@ procedure chkpsn is
 					elsif get_field_from_line(to_string(line_of_file),1) = section_mark.section then
 						name_of_current_primary_net := to_bounded_string(get_field_from_line(to_string(line_of_file),2));
 						if get_field_from_line(to_string(line_of_file),3) = netlist_keyword_header_class then
-							null; -- fine
+							class_of_current_primary_net := type_net_class'value(get_field_from_line(to_string(line_of_file),4));
 
 							write_message (
 								file_handle => file_chkpsn_messages,
 								identation => 1,
-								text => "primary net " & to_string(name_of_current_primary_net), 
+								text => "primary net " & to_string(name_of_current_primary_net) & row_separator_0 &
+									"class" & row_separator_0 & type_net_class'image(class_of_current_primary_net),
 								console => false);
 
 						else
@@ -2379,7 +2508,7 @@ procedure chkpsn is
 								& to_string(name_of_current_primary_net) & "' !");
 							raise constraint_error;
 						end if;
-						class_of_current_primary_net := type_net_class'value(get_field_from_line(to_string(line_of_file),4));
+
 						primary_net_section_entered := true;
 						line_number_of_primary_net_header := line_counter; -- backup line number of net header
 						-- when adding the net to the net list, this number goes into the list as well
@@ -2596,7 +2725,10 @@ begin
 	write_log_footer;
 	
 	exception when event: others =>
-		close(file_database_preliminary);
+		if is_open(file_database_preliminary) then
+			close(file_database_preliminary);
+		end if;
+		
 		set_exit_status(failure);
 		set_output(standard_output);
 
