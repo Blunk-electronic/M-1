@@ -82,21 +82,11 @@ procedure chkpsn is
 
 	prog_position	: natural := 0;
 	
-	line_of_file						: type_universal_string.bounded_string;
-	line_number_of_primary_net_header	: natural := 0;
-	
-	name_file_database_backup			: type_name_database.bounded_string;
+	name_file_database_backup			: type_name_database.bounded_string; 
+	-- used when overwriting the old database with the preliminary database
 
-	name_of_current_primary_net			: type_net_name.bounded_string;
-	class_of_current_primary_net		: type_net_class := net_class_default;
-	primary_net_section_entered			: boolean := false;
-	secondary_net_section_entered 		: boolean := false;	
-
-	secondary_net_count					: natural := 0; -- CS: remove
-	total_options_net_count				: natural := 0;
-
-	keyword_net							: constant string (1..3)  := "Net";
-	keyword_secondary_nets				: constant string (1..14) := "secondary_nets";
+	total_options_net_count				: natural := 0; 
+	-- CS: currently assigned but not read. useful for addtional statistics
 	
 	type type_options_net (has_secondaries : boolean := true) is record
 		name						: type_net_name.bounded_string;
@@ -2288,6 +2278,7 @@ procedure chkpsn is
 			text => "non-optimized nets:",
 			console => false);
 
+		new_line;
 		put_line(column_separator_0);
 		put_line("-- NON-OPTIMIZED NETS ---------------------------");
 		put_line(column_separator_0);
@@ -2628,8 +2619,16 @@ procedure chkpsn is
 	-- if class rendering allowed, add primary net with its secondary nets to options netlist.
 	-- This is achieved at by procedure add_to_options_net_list
 	-- list_of_options_nets is the generated options netlist
-		line_counter : natural := 0;
-		-- CS: secondary_net_ct : natural := 0;
+		line_of_file						: type_universal_string.bounded_string;
+		line_counter 						: natural := 0;
+		line_number_of_primary_net_header	: natural := 0;
+		secondary_net_count					: natural := 0;	
+
+		primary_net_section_entered			: boolean := false;		
+		secondary_net_section_entered 		: boolean := false;			
+		name_of_current_primary_net			: type_net_name.bounded_string;
+		class_of_current_primary_net		: type_net_class := net_class_default;
+
 	begin
 		-- open options file
 		prog_position := 70;
@@ -2677,12 +2676,12 @@ procedure chkpsn is
 
 							-- count secondary nets and collect them in array list_of_secondary_net_names
 							--if to_upper(get_field_from_line(line_of_file,1)) = type_options_net_identifier'image(net) then
-							elsif get_field_from_line(to_string(line_of_file),1) = keyword_net then
+							elsif get_field_from_line(to_string(line_of_file),1) = options_keyword_net then
 								secondary_net_count := secondary_net_count + 1;
 								--list_of_secondary_net_names(secondary_net_count) := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
 								append(list_of_secondary_net_names_preliminary, to_bounded_string(get_field_from_line(to_string(line_of_file),2)));
 							else
-								put_line(message_error & "Keyword '" & keyword_net & "' or '"
+								put_line(message_error & "Keyword '" & options_keyword_net & "' or '"
 									& section_mark.endsubsection & "' expected !");
 								raise constraint_error;
 							end if;
@@ -2737,11 +2736,11 @@ procedure chkpsn is
 							-- if not secondary_net_section_entered yet, wait for "SubSection secondary_nets" header
 							-- if "SubSection secondary_nets" found, set secondary_net_section_entered flag
 							elsif get_field_from_line(to_string(line_of_file),1) = section_mark.subsection and
-								get_field_from_line(to_string(line_of_file),2) = keyword_secondary_nets then
+								get_field_from_line(to_string(line_of_file),2) = options_keyword_secondary_nets then
 									secondary_net_section_entered := true;
 							else
 								put_line(message_error & "Keywords '" & section_mark.subsection 
-									& " " & keyword_secondary_nets
+									& " " & options_keyword_secondary_nets
 									& "' or '" & section_mark.endsection
 									& "' expected !");
 								raise constraint_error;
