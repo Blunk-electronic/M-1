@@ -114,8 +114,10 @@ procedure mknets is
 			file_handle => file_mknets_messages,
 			identation => 1,
 			text => "reading skeleton ...", 
+			lf => false,
 			console => true);
-
+		new_line(file_mknets_messages);
+		
 		if not exists(name_file_skeleton_default) then
 			write_message (
 				file_handle => file_mknets_messages,
@@ -199,8 +201,6 @@ procedure mknets is
 
 								-- check for one-pin net
 								if length(pinlist) = 1 then
--- 									put_line(message_warning & "net " & to_string(net_scratch.name) & " has only one pin !");
-
 									write_message (
 										file_handle => file_mknets_messages,
 										text => message_warning & "net " & to_string(net_scratch.name) & " has only one pin !", 
@@ -239,6 +239,12 @@ procedure mknets is
 
 			end if;
 		end loop;
+
+		write_message (
+			file_handle => file_mknets_messages,
+			text => "", 
+			console => true);
+		
 	end read_skeleton;
 	
 
@@ -457,11 +463,13 @@ procedure mknets is
 			file_handle => file_mknets_messages,
 			identation => 1,
 			text => "writing netlist ...", 
+			lf => false,
 			console => true);
+		new_line(file_mknets_messages);
 		
 		net_cursor 	:= first(netlist);
 		net_scratch := element(net_cursor);
-        --		put_line(standard_output, universal_string_type.to_string( net_scratch.name));
+
 		write_net;
 		while net_cursor /= last(netlist) loop
 			net_cursor 	:= next(net_cursor);
@@ -476,6 +484,12 @@ procedure mknets is
 			end if;
 			
 		end loop;
+
+		write_message (
+			file_handle => file_mknets_messages,
+			text => "", 
+			console => true);
+		
 	end write_netlist;
 
 
@@ -588,29 +602,42 @@ begin
 	
  	copy_file(name_file_database_preliminary, to_string(name_file_database));
 
-	exception
-		when event: others =>
-			put_line("program error at position " & natural'image(prog_position));
+	exception when event: others =>
+		set_exit_status(failure);
+		set_output(standard_output);
 
+		write_message (
+			file_handle => file_mknets_messages,
+			text => message_error & " at program position " & natural'image(prog_position),
+			console => true);
+
+		if is_open(file_database_preliminary) then
 			close(file_database_preliminary);
-			
-			set_output(standard_output);
-			set_exit_status(failure);
-			case prog_position is
--- 				when 10 =>
--- 					put_line("ERROR: Data base file missing or insufficient access rights !");
--- 					put_line("       Provide data base name as argument. Example: mkinfra my_uut.udb");
--- 				when 20 =>
--- 					put_line("ERROR: Test name missing !");
--- 					put_line("       Provide test name as argument ! Example: mkinfra my_uut.udb my_infrastructure_test");
--- 				when 30 =>
--- 					put_line("ERROR: Invalid argument for debug level. Debug level must be provided as natural number !");
+		end if;
+		
+		case prog_position is
+			when 10 =>
+				write_message (
+					file_handle => file_mknets_messages,
+					text => message_error & text_identifier_database & " file missing or insufficient access rights !",
+					console => true);
 
-				when others =>
-					put_line(exception_name(event));
-					put(exception_message(event)); new_line;
+				write_message (
+					file_handle => file_mknets_messages,
+					text => "       Provide " & text_identifier_database & " name as argument. Example: mknets my_uut.udb",
+					console => true);
 
-			end case;
+			when others =>
+				write_message (
+					file_handle => file_mknets_messages,
+					text => "exception name: " & exception_name(event),
+					console => true);
 
-			write_log_footer;
+				write_message (
+					file_handle => file_mknets_messages,
+					text => "exception message: " & exception_message(event),
+					console => true);
+		end case;
+
+		write_log_footer;
 end mknets;

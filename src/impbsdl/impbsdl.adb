@@ -1584,26 +1584,42 @@ begin
 
 	copy_file(name_file_database_preliminary, to_string(name_file_database));
 
-	exception
-		when event: others =>
-			close(file_database_preliminary);
-			set_output(standard_output);
-			set_exit_status(failure);
-			case prog_position is
--- 				when 10 =>
--- 					put_line("ERROR: Data base file missing or insufficient access rights !");
--- 					put_line("       Provide data base name as argument. Example: mkinfra my_uut.udb");
--- 				when 20 =>
--- 					put_line("ERROR: Test name missing !");
--- 					put_line("       Provide test name as argument ! Example: mkinfra my_uut.udb my_infrastructure_test");
--- 				when 30 =>
--- 					put_line("ERROR: Invalid argument for debug level. Debug level must be provided as natural number !");
+	exception when event: others =>
+		set_exit_status(failure);
+		set_output(standard_output);
 
-				when others =>
-					put_line(exception_name(event));
-					put(exception_message(event)); new_line;
-					put_line("program error at position " & natural'image(prog_position));
-			end case;
+		write_message (
+			file_handle => file_import_bsdl_messages,
+			text => message_error & " at program position " & natural'image(prog_position),
+			console => true);
+	
+		if is_open(file_database_preliminary) then
+			close(file_database_preliminary);
+		end if;
+
+		case prog_position is
+			when 10 =>
+				write_message (
+					file_handle => file_import_bsdl_messages,
+					text => message_error & text_identifier_database & " file missing or insufficient access rights !",
+					console => true);
+
+				write_message (
+					file_handle => file_import_bsdl_messages,
+					text => "       Provide " & text_identifier_database & " name as argument. Example: impbsdl my_uut.udb",
+					console => true);
+
+			when others =>
+				write_message (
+					file_handle => file_import_bsdl_messages,
+					text => "exception name: " & exception_name(event),
+					console => true);
+
+				write_message (
+					file_handle => file_import_bsdl_messages,
+					text => "exception message: " & exception_message(event),
+					console => true);
+		end case;
 
 			write_log_footer;
 end impbsdl;

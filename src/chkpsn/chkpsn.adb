@@ -82,17 +82,17 @@ procedure chkpsn is
 
 	prog_position	: natural := 0;
 	
-	line_of_file	: type_universal_string.bounded_string;
--- 	line_counter						: natural := 0;
+	line_of_file						: type_universal_string.bounded_string;
 	line_number_of_primary_net_header	: natural := 0;
--- 	debug_level							: natural := 0;
+	
+	name_file_database_backup			: type_name_database.bounded_string;
 
 	name_of_current_primary_net			: type_net_name.bounded_string;
 	class_of_current_primary_net		: type_net_class := net_class_default;
 	primary_net_section_entered			: boolean := false;
 	secondary_net_section_entered 		: boolean := false;	
 
-	secondary_net_count					: natural := 0;
+	secondary_net_count					: natural := 0; -- CS: remove
 	total_options_net_count				: natural := 0;
 
 	keyword_net							: constant string (1..3)  := "Net";
@@ -564,8 +564,8 @@ procedure chkpsn is
 
 
 	function control_cell_in_disable_state_by_any_cell_list(
-	-- searches cell lists for given control cell and returns false if cell is not in disable state
-	-- aborts if cell in disable state or targeted by atg
+	-- Searches cell lists for given control cell and returns false if cell is not in disable state.
+	-- Aborts if cell in disable state or targeted by atg.
 		class		: in type_net_class;
 		net			: in type_net_name.bounded_string;
 		device		: in type_device_name.bounded_string;
@@ -670,7 +670,6 @@ procedure chkpsn is
 	end control_cell_in_disable_state_by_any_cell_list;
 
 
-	-- 		procedure update_cell_lists( d : type_ptr_net ) is
 	procedure update_cell_lists( net : in type_net ) is
 	-- updates cell lists by the net given (from database netlist)
 		drivers_without_disable_spec_ct 			: natural := 0;
@@ -2009,17 +2008,18 @@ procedure chkpsn is
 
 	
 	procedure dump_net_content (
-	-- from a given net name, the whole content (means all devices) is dumped into the preliminary database
--- 		name 				: in type_net_name.bounded_string; 
+	-- From a given net name, the whole content (means all devices) is dumped into the 
+	-- preliminary database.
+	-- Updates cell lists.
+
 		options_net			: in type_options_net;
 		level 				: in type_net_level; 
 
-		-- for secondary nets, the superordinated primary net is taken here. otherwise the default is ""
-		-- this argument is required for writing cell lists, where reference to primary nets is required
+		-- For secondary nets, the superordinated primary net is taken here. otherwise the default is "".
+		-- This argument is required for writing cell lists, where reference to primary nets is required.
  		primary_net_is		: in type_net_name.bounded_string := type_net_name.to_bounded_string("");
 
--- 		class 				: in type_net_class; 
-		spacing_from_left 	: in positive
+		spacing_from_left 	: in positive -- CS: should read "identation"
 		) is
 		n : type_net; -- for temporarily storage of a net taken from current database
 		p : type_pin; -- for temporarily storage of a pin of net d
@@ -2031,10 +2031,8 @@ procedure chkpsn is
 
 	begin -- dump_net_content for net name given in "name"
 		-- net name "name" is passed from superordinated procedure make_new_net_list when calling this procedure
-		-- marks the net as "optimized"
-		-- fetches net content from data base net list pointed to by pointer d
-		-- updates cell lists using cell info from net pointed to by d
-		-- 		while d /= null loop -- loop through net list taken from uut data base
+		-- Marks the net as "optimized".
+		-- Fetches net content from database netlist in n.
 		
 		for i in 1..length(list_of_nets) loop
 			n := element(list_of_nets, positive(i));
@@ -2108,9 +2106,8 @@ procedure chkpsn is
 				end loop; -- loop through part list of the net
 				-- net content dumping completed
 
-				-- now that d contains the net of the database netlist, the new cell list can be updated regarding this net
-				-- 				update_cell_lists( d )); -- so we pass pointer d
-
+				-- Now that d contains the new modified net,
+				-- the new cell list can be updated regarding this net:
 				if n.bs_capable then
 					case level is
 						when primary =>
@@ -2151,8 +2148,9 @@ procedure chkpsn is
 
 	
 	procedure make_new_netlist is
-		-- with the two netlists list_of_nets and list_of_options_nets, a new netlist is created and appended to the
-		-- preliminary database
+		-- With the two netlists list_of_nets and list_of_options_nets, a new netlist is created
+		-- and appended to the preliminary database.
+		-- Updates the cell lists (but does not write them in the preliminary database yet).
 		-- the class requirements and secondary net dependencies from the options file are taken into account
 		o	: type_options_net; -- for temporarily storage of an options net
 		n 	: type_net; -- for temporarily storage of a database net
@@ -2338,6 +2336,7 @@ procedure chkpsn is
 
 
 	procedure write_new_cell_lists is
+	-- Writes cell lists in preliminary database.
 		a : type_static_control_cell_class_EX_NA;
 --		b : type_static_control_cell_class_DX_NR;
 		c : type_static_control_cell_class_PX;
@@ -2583,6 +2582,8 @@ procedure chkpsn is
 
 
 	procedure write_new_statistics is -- CS: use predefined statistics_indentifiers_xxx here
+	-- Dumps net count statistics in preliminary database.
+	-- Calculates number of ATG drivers and receivers and dumps them also.
 	begin
 		write_message (
 			file_handle => file_chkpsn_messages,
@@ -2594,7 +2595,9 @@ procedure chkpsn is
 		new_line;
 		put_line(section_mark.section & row_separator_0 & "statistics");
 		put_line("---------------------------------------------------");
- 		put_line(" ATG-drivers   (dynamic) :" & natural'image(summary.net_count_statistics.atg_drivers));
+		summary.net_count_statistics.atg_drivers := natural(length(list_of_atg_drive_cells));
+		put_line(" ATG-drivers   (dynamic) :" & natural'image(summary.net_count_statistics.atg_drivers));
+		summary.net_count_statistics.atg_receivers := natural(length(list_of_atg_expect_cells));
  		put_line(" ATG-receivers (dynamic) :" & natural'image(summary.net_count_statistics.atg_receivers));
 		put_line("---------------------------------------------------");
 		put_line(" Pull-Up nets        (PU):" & natural'image(summary.net_count_statistics.pu));
@@ -2626,6 +2629,7 @@ procedure chkpsn is
 	-- This is achieved at by procedure add_to_options_net_list
 	-- list_of_options_nets is the generated options netlist
 		line_counter : natural := 0;
+		-- CS: secondary_net_ct : natural := 0;
 	begin
 		-- open options file
 		prog_position := 70;
@@ -2700,11 +2704,18 @@ procedure chkpsn is
 	-- 									end loop;
 	-- 									new_line;
 	-- 								end if;
-	-- 							end if;
+								-- 							end if;
+
+								write_message (
+									file_handle => file_chkpsn_messages,
+									identation => 2,
+									-- 									text => "changing net class to " & type_net_class'image(class_of_current_primary_net) & " ...",
+									text => "changing net class ...",
+									console => false);
 
 								-- ask if the primary net (incl. secondary nets) may become member of class specified in options file
 								-- if class request can be fulfilled, add net to options net list
-								if query_render_net_class (
+								if query_render_net_class ( -- CS: skip query if class is not to be changed ?
 									primary_net_name => name_of_current_primary_net,
 									primary_net_class => class_of_current_primary_net,
 									list_of_secondary_net_names	=> list_of_secondary_net_names_preliminary
@@ -2748,7 +2759,7 @@ procedure chkpsn is
 								file_handle => file_chkpsn_messages,
 								identation => 1,
 								text => "primary net " & to_string(name_of_current_primary_net) & row_separator_0 &
-									"class" & row_separator_0 & type_net_class'image(class_of_current_primary_net),
+									"class requested " & type_net_class'image(class_of_current_primary_net),
 								console => false);
 
 						else
@@ -2781,7 +2792,7 @@ procedure chkpsn is
 	begin	
 		write_message (
 			file_handle => file_chkpsn_messages,
-			text => "rebuilding " & text_identifier_database & " ...", 
+			text => "rebuilding preliminary " & text_identifier_database & " ...", 
 			console => true);
 
 		write_message (
@@ -2836,7 +2847,9 @@ begin
 	prog_position := 10;
 	name_file_database := to_bounded_string(argument(1));
 	put_line (text_identifier_database & "     : " & to_string(name_file_database));
--- 	name_file_database_backup := name_file_database; -- backup name of database. used for overwriting data base with temporarily data base
+	
+	name_file_database_backup := name_file_database; -- backup name of database. 
+	-- used for overwriting database with preliminary database
 
 	prog_position := 20;
 	name_file_options := to_bounded_string(argument(2));
@@ -2883,24 +2896,19 @@ begin
 --		put_line("data base net count : " & natural'image(udb_summary.net_count_statistics.total));
 --	end if;
 
+	-- create premilinary data base (contining scanpath_configuration and registers)	
 	prog_position := 70;
-	-- create premilinary data base (contining scanpath_configuration and registers)
+	write_message (
+		file_handle => file_chkpsn_messages,
+-- 		identation => 1,
+		text => "creating preliminary " & text_identifier_database & row_separator_0 & name_file_database_preliminary & " ...",
+		console => false);
+
 	create( 
 		file => file_database_preliminary,
 		mode => out_file,
 		name => name_file_database_preliminary
 		);
-
--- 	-- open data base file
--- 	prog_position := 100;
--- 	open( 
--- 		file => file_database,
--- 		mode => in_file,
--- 		name => to_string(name_file_database)
--- 		);
-
--- 	prog_position := 110;	
--- 	set_input(file_database); -- set data source
 	set_output(file_database_preliminary); -- set data sink
 
 	prog_position := 120;
@@ -2940,6 +2948,7 @@ begin
 		text => "parsing preliminary " & text_identifier_database & " ...",
 		console => false);
 
+	-- assume preliminary database as default for reading and parsing
 	name_file_database := to_bounded_string(name_file_database_preliminary);
 	read_uut_database;
 	-- summary now available
@@ -2964,7 +2973,7 @@ begin
 
 	-- overwrite now useless old data base with temporarily data base
 	prog_position := 200;
- 	copy_file(name_file_database_preliminary, to_string(name_file_database));
+ 	copy_file(name_file_database_preliminary, to_string(name_file_database_backup));
 	
 	-- clean up tmp directory
 -- 	prog_position := 210;	
@@ -2974,31 +2983,52 @@ begin
 	write_log_footer;
 	
 	exception when event: others =>
-		if is_open(file_database_preliminary) then
-			close(file_database_preliminary);
-		end if;
-		
 		set_exit_status(failure);
 		set_output(standard_output);
 
-		put_line(message_error & "at position " & natural'image(prog_position));
-
-		if prog_position = 10 then
-			put_line(message_error & text_identifier_database & " file missing or insufficient access rights !");
-			put_line("       Provide " & text_identifier_database & " name as argument. Example: chkpsn my_uut.udb");
-
-		elsif prog_position = 20 then
-			put_line(message_error & "Options file missing or insufficient access rights !");
-			put_line("       Provide options file as argument. Example: chkpsn my_uut.udb my_options.opt");
-
-		else
-			put_line(exception_name(event));
-			put(exception_message(event)); new_line;
-
-				--put_line("ERROR in options file in line :" & natural'image(line_counter));
-				--clean_up;
-				--raise;
+		write_message (
+			file_handle => file_chkpsn_messages,
+			text => message_error & " at program position " & natural'image(prog_position),
+			console => true);
+	
+		if is_open(file_database_preliminary) then
+			close(file_database_preliminary);
 		end if;
+
+		case prog_position is
+			when 10 =>
+				write_message (
+					file_handle => file_chkpsn_messages,
+					text => message_error & text_identifier_database & " file missing or insufficient access rights !",
+					console => true);
+
+				write_message (
+					file_handle => file_chkpsn_messages,
+					text => "       Provide " & text_identifier_database & " name as argument. Example: chkpsn my_uut.udb",
+					console => true);
+
+			when 20 =>
+				write_message (
+					file_handle => file_chkpsn_messages,
+					text => "Options file missing or insufficient access rights !",
+					console => true);
+
+				write_message (
+					file_handle => file_chkpsn_messages,
+					text => "       Provide options file as argument. Example: chkpsn my_uut.udb my_options.opt",
+					console => true);
+
+			when others =>
+				write_message (
+					file_handle => file_chkpsn_messages,
+					text => "exception name: " & exception_name(event),
+					console => true);
+
+				write_message (
+					file_handle => file_chkpsn_messages,
+					text => "exception message: " & exception_message(event),
+					console => true);
+		end case;
 
 		write_log_footer;
 
