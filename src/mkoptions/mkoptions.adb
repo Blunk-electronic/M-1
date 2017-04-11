@@ -1167,6 +1167,7 @@ procedure mkoptions is
 
 	type type_bridge is record
 		name			: type_device_name.bounded_string;
+		wildcards		: boolean := false; -- true if name contains asterisks (*) or quesition marks (?)
 		pin_a			: type_pin_name.bounded_string;
 		pin_b			: type_pin_name.bounded_string;
 		pin_a_processed : boolean := false;
@@ -1174,35 +1175,43 @@ procedure mkoptions is
 		pin_a_connected : boolean := false;
 		pin_b_connected : boolean := false;
 		--pin_ct			: natural := 0; -- CS: range 0..2 ?
-		part_of_array	: boolean := false; -- indicates whether bridge is part of an array
+		is_array		: boolean := false; -- indicates whether bridge is part of an array
 	end record;
 	package type_list_of_bridges is new vectors ( index_type => positive, element_type => type_bridge);
 	use type_list_of_bridges;
 	list_of_bridges : type_list_of_bridges.vector;
 	
 
-	type type_connector_mapping is ( one_2_one , cross_pairs );
+	type type_connector_mapping is ( one_to_one , cross_pairwise );
+	connector_mapping_default : constant type_connector_mapping := one_to_one;
 	type type_connector_pair is record
 		name_a			: type_device_name.bounded_string;
  		name_b			: type_device_name.bounded_string;
 		pin_ct_a		: natural := 0;
 		pin_ct_b		: natural := 0;
-		mapping			: type_connector_mapping := one_2_one;
+		mapping			: type_connector_mapping := one_to_one;
 		-- 			pins_processed	: unbounded_string;
 	end record;
 	package type_list_of_connector_pairs is new vectors ( index_type => positive, element_type => type_connector_pair);
 	use type_list_of_connector_pairs;
 	list_of_connector_pairs : type_list_of_connector_pairs.vector;
+
+	function has_wildcards (device : in type_device_name.bounded_string) return boolean is
+	begin
+
+		return false;
+	end has_wildcards;
 	
 	procedure read_mkoptions is
 		type_line_length_max	: constant natural := 1000;
 		package type_line_of_file is new generic_bounded_length(type_line_length_max); use type_line_of_file;
 		line					: type_line_of_file.bounded_string;
-
+		field_count				: natural;
 		section_connectors_entered : boolean := false;
 		section_bridges_entered : boolean := false;
-		conpair_scratch : type_connector_pair;
-		
+
+		conpair_preliminary : type_connector_pair;
+		bridge_preliminary	: type_bridge;
 	begin
 		write_message (
 			file_handle => file_mkoptions_messages,
@@ -1212,20 +1221,22 @@ procedure mkoptions is
 		open (file => file_mkoptions, mode => in_file, name => name_file_mkoptions_conf);
 		set_input(file_mkoptions);
 		while not end_of_file loop
-			line := to_bounded_string(remove_comment_from_line(get_line));
-			if get_field_count(to_string(line)) > 0 then -- skip empty lines
+			line 		:= to_bounded_string(remove_comment_from_line(get_line));
+			field_count	:= get_field_count(to_string(line));
+			if field_count > 0 then -- skip empty lines
 				--				put_line(extended_string.to_string(line));
 
 				-- READ CONNECTORS
 				if not section_connectors_entered then -- we are outside section connectors
 					-- search for header of section connectors
-					if get_field_from_line(to_string(line),1) = section_mark.section and get_field_from_line(to_string(line),2) = "connectors" then
+					if get_field_from_line(to_string(line),1) = section_mark.section and
+					   get_field_from_line(to_string(line),2) = options_keyword_connectors then
 						section_connectors_entered := true;
 
 						write_message (
 							file_handle => file_mkoptions_messages,
 							identation => 1,
-							text => "connector pairs:",
+							text => "connector pairs ...",
 							console => true);
 
 					end if;
@@ -1235,29 +1246,51 @@ procedure mkoptions is
 					if get_field_from_line(to_string(line),1) = section_mark.endsection then -- we are leaving section connectors
 						section_connectors_entered := false; 
 
-						append(list_of_connector_pairs,conpair_scratch);
+						append(list_of_connector_pairs,conpair_preliminary);
 					else
- 						conpair_scratch.name_a	:= to_bounded_string(get_field_from_line(to_string(line),1));
- 						conpair_scratch.name_b	:= to_bounded_string(get_field_from_line(to_string(line),2));
-						if get_field_from_line(to_string(line),3) /= "" then
-							conpair_scratch.mapping	:= type_connector_mapping'value(get_field_from_line(to_string(line),3));
+						-- read names of connectors
+ 						conpair_preliminary.name_a	:= to_bounded_string(get_field_from_line(to_string(line),1));
+ 						conpair_preliminary.name_b	:= to_bounded_string(get_field_from_line(to_string(line),2));
+
+						-- report names in logfile
+						write_message (
+							file_handle => file_mkoptions_messages,
+							identation => 2, 
+							text => "A " & to_string(conpair_preliminary.name_a) 
+								 & " B " & to_string(conpair_preliminary.name_b),
+							lf => false,
+							console => false);
+
+						-- If mapping provided in a 3rd field, read it and report in logfile. 
+						-- If not provided, assume default mapping.
+						if field_count > 2 then
+							conpair_preliminary.mapping	:= type_connector_mapping'value(get_field_from_line(to_string(line),3));
 							-- CS: helpful message when invalid mapping
+						else
+							conpair_preliminary.mapping := connector_mapping_default;
 						end if;
 
 						write_message (
 							file_handle => file_mkoptions_messages,
-							identation => 2, 
-							text => to_string(conpair_scratch.name_a) & row_separator_0 & to_string(conpair_scratch.name_b),
-							console => true);
-						
+							identation => 1, 
+							text => "mapping " & type_connector_mapping'image(conpair_preliminary.mapping),
+							console => false);
 					end if;
 				end if;
 
 				-- READ BRIDGES
 				if not section_bridges_entered then -- we are outside sectin bridges
 					-- search for header of section bridges
-					if get_field_from_line(to_string(line),1) = section_mark.section and get_field_from_line(to_string(line),2) = "bridges" then
+					if get_field_from_line(to_string(line),1) = section_mark.section and
+					   get_field_from_line(to_string(line),2) = options_keyword_bridges then
 						section_bridges_entered := true;
+
+						write_message (
+							file_handle => file_mkoptions_messages,
+							identation => 1,
+							text => "bridges ...",
+							console => true);
+
 					end if;
 				else -- we are inside section bridges
 
@@ -1267,9 +1300,40 @@ procedure mkoptions is
 
 --						append(list_of_bridges,bridge_scratch);
 					else
-						put_line(to_string(line));
+						-- read bridges like:
+						--  R4
+						--  R11*
+						--  RN303 array 1-2 3-4 5-6 7-8
 
-						-- CS read bridges
+						-- read name of bridge and check if name contains wildcards
+						bridge_preliminary.name := to_bounded_string(get_field_from_line(to_string(line),1));
+						bridge_preliminary.wildcards := has_wildcards(bridge_preliminary.name);
+
+						-- report bridge in logfile
+						write_message (
+							file_handle => file_mkoptions_messages,
+							identation => 2,
+							text => to_string(bridge_preliminary.name),
+							lf => false,
+							console => false);
+
+						-- field #2 may indicated that this is an array
+						if field_count > 1 then
+							if get_field_from_line(to_string(line),2) = options_keyword_array then
+								bridge_preliminary.is_array := true;
+
+								write_message (
+									file_handle => file_mkoptions_messages,
+									identation => 1,
+									text => "is array",
+									lf => false,
+									console => false);
+							end if;
+						end if;
+
+						-- put a final linebreak at end of line in logfile
+						new_line (file_mkoptions_messages);
+
 					end if;
 				end if;
 
@@ -1288,12 +1352,14 @@ begin
 	put_line(to_upper(name_module_mkoptions) & " version " & version);
 	put_line("===============================");
 	prog_position	:= 10;
- 	name_file_database := type_name_database.to_bounded_string(argument(1));
- 	put_line(text_identifier_database & "       : " & type_name_database.to_string(name_file_database));
-	name_file_options:= type_name_file_options.to_bounded_string(argument(2));
-	put_line ("options file   : " & type_name_file_options.to_string(name_file_options));
-          
+ 	name_file_database := to_bounded_string(argument(1));
+ 	put_line(text_identifier_database & "       : " & to_string(name_file_database));
+
 	prog_position	:= 20;
+	name_file_options:= to_bounded_string(argument(2));
+	put_line ("options file   : " & to_string(name_file_options));
+          
+	prog_position	:= 25;
     read_database;
     
 	-- recreate an empty tmp directory
