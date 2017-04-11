@@ -31,19 +31,19 @@
 --
 
 
-with ada.text_io;			use ada.text_io;
-
-with ada.containers;        use ada.containers;
+with ada.text_io;				use ada.text_io;
+with ada.characters.handling; 	use ada.characters.handling;
+with ada.containers;        	use ada.containers;
 with ada.containers.vectors;
 
 --with ada.strings.unbounded; use ada.strings.unbounded;
-with ada.strings.bounded; 	use ada.strings.bounded;
-with ada.strings.fixed; 	use ada.strings.fixed;
-with ada.strings; 			use ada.strings;
-with ada.exceptions; 		use ada.exceptions;
+with ada.strings.bounded; 		use ada.strings.bounded;
+with ada.strings.fixed; 		use ada.strings.fixed;
+with ada.strings; 				use ada.strings;
+with ada.exceptions; 			use ada.exceptions;
  
-with ada.command_line;		use ada.command_line;
-with ada.directories;		use ada.directories;
+with ada.command_line;			use ada.command_line;
+with ada.directories;			use ada.directories;
 
 with csv;
 with m1_base; 					use m1_base;
@@ -53,6 +53,10 @@ with m1_files_and_directories;	use m1_files_and_directories;
 
 procedure mkoptions is
 
+	use type_name_database;
+	use type_name_file_options;
+	use type_name_file_routing;
+	
 	version			: String (1..3) := "030";
 	
 	prog_position	: natural := 0;
@@ -1200,6 +1204,11 @@ procedure mkoptions is
 		conpair_scratch : type_connector_pair;
 		
 	begin
+		write_message (
+			file_handle => file_mkoptions_messages,
+			text => "reading file " & name_file_mkoptions_conf & "...",
+			console => true);
+		
 		open (file => file_mkoptions, mode => in_file, name => name_file_mkoptions_conf);
 		set_input(file_mkoptions);
 		while not end_of_file loop
@@ -1212,6 +1221,13 @@ procedure mkoptions is
 					-- search for header of section connectors
 					if get_field_from_line(to_string(line),1) = section_mark.section and get_field_from_line(to_string(line),2) = "connectors" then
 						section_connectors_entered := true;
+
+						write_message (
+							file_handle => file_mkoptions_messages,
+							identation => 1,
+							text => "connector pairs:",
+							console => true);
+
 					end if;
 				else -- we are inside section connectors
 
@@ -1221,15 +1237,19 @@ procedure mkoptions is
 
 						append(list_of_connector_pairs,conpair_scratch);
 					else
---						put_line(extended_string.to_string(line));
--- 						put_line("-1 " & get_field(extended_string.to_string(line),1));
--- 						put_line("-2 " & get_field(extended_string.to_string(line),2));
  						conpair_scratch.name_a	:= to_bounded_string(get_field_from_line(to_string(line),1));
  						conpair_scratch.name_b	:= to_bounded_string(get_field_from_line(to_string(line),2));
 						if get_field_from_line(to_string(line),3) /= "" then
 							conpair_scratch.mapping	:= type_connector_mapping'value(get_field_from_line(to_string(line),3));
 							-- CS: helpful message when invalid mapping
 						end if;
+
+						write_message (
+							file_handle => file_mkoptions_messages,
+							identation => 2, 
+							text => to_string(conpair_scratch.name_a) & row_separator_0 & to_string(conpair_scratch.name_b),
+							console => true);
+						
 					end if;
 				end if;
 
@@ -1262,30 +1282,41 @@ procedure mkoptions is
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
+	action := mkoptions;
+	
 	new_line;
-	put_line("NET OPTIONS ASSISTANT "& version);
+	put_line(to_upper(name_module_mkoptions) & " version " & version);
 	put_line("===============================");
 	prog_position	:= 10;
  	name_file_database := type_name_database.to_bounded_string(argument(1));
- 	put_line("database       : " & type_name_database.to_string(name_file_database));
+ 	put_line(text_identifier_database & "       : " & type_name_database.to_string(name_file_database));
 	name_file_options:= type_name_file_options.to_bounded_string(argument(2));
 	put_line ("options file   : " & type_name_file_options.to_string(name_file_options));
-
-	if argument_count = 3 then
-		debug_level := natural'value(argument(3));
-		put_line("debug level    :" & natural'image(debug_level));
-	end if;
           
 	prog_position	:= 20;
     read_database;
     
 	-- recreate an empty tmp directory
-    --	clean_up_tmp_dir;
 	prog_position	:= 30;
 	create_temp_directory;
-	prog_position	:= 40;
-	create_bak_directory;
+-- 	prog_position	:= 40;
+-- 	create_bak_directory;
 
+	-- create message/log file
+	prog_position	:= 40;
+ 	write_log_header(version);
+
+	-- write name of database in logfile
+	put_line(file_mkoptions_messages, text_identifier_database 
+		 & row_separator_0
+		 & to_string(name_file_database));
+
+	-- write name of options file in logfile
+	put_line(file_mkoptions_messages, "options file"
+		 & row_separator_0
+		 & to_string(name_file_options));
+	
+	
 	-- if opt file already exists, backup old opt file
 -- 	if exists(universal_string_type.to_string(name_file_options)) then
 -- 		put_line("WARNING : Target options file '" & universal_string_type.to_string(name_file_options) & "' already exists.");
@@ -1302,22 +1333,42 @@ begin
 -- 	end if;
 
 	-- create options file
+	prog_position	:= 50;
+	write_message (
+		file_handle => file_mkoptions_messages,
+-- 		identation => 1,
+		text => "creating options file " & to_string(name_file_options) & "...",
+		console => false);
 	create( file => file_options, mode => out_file, name => type_name_file_options.to_string(name_file_options));
 
 	-- create routing file
-    name_file_routing := type_name_file_routing.to_bounded_string (compose ( 
+	prog_position	:= 60;
+    name_file_routing := to_bounded_string (compose ( 
 						name => base_name(type_name_database.to_string(name_file_database)),
 						extension => file_extension_routing));
-	create( file => file_routing, mode => out_file, name => type_name_file_routing.to_string(name_file_routing));
+	write_message (
+		file_handle => file_mkoptions_messages,
+-- 		identation => 1,
+		text => "creating routing table " & to_string(name_file_routing) & "...",
+		console => false);
+	create( file => file_routing, mode => out_file, name => to_string(name_file_routing));
 
+	prog_position	:= 70;
 	write_routing_file_header;
+
+	prog_position	:= 80;
 	write_options_file_header;
 	
 
 	-- check if mkoptions.conf exists
+	prog_position	:= 90;	
 	if not exists (name_file_mkoptions_conf) then
-		put_line(message_error & "No configuration file '" & name_file_mkoptions_conf & "' found !");
-		prog_position := 200; 
+
+		write_message (
+			file_handle => file_mkoptions_messages,
+	-- 		identation => 1,
+			text => message_error & "No configuration file '" & name_file_mkoptions_conf & "' found !",
+			console => true);
 		raise constraint_error;
 	else
         read_mkoptions;
@@ -1351,28 +1402,57 @@ begin
 	csv.put_field(file_routing,"-- END OF TABLE");
 	close(file_routing);
 
-	exception
+	write_log_footer;
 
-		when event: others =>
-			set_exit_status(failure);
-			case prog_position is
--- 				when 10 =>
--- 					put_line(message_error & "ERROR: Data base file missing or insufficient access rights !");
--- 					put_line("       Provide data base name as argument. Example: mkinfra my_uut.udb");
--- 				when 20 =>
--- 					put_line("ERROR: Test name missing !");
--- 					put_line("       Provide test name as argument ! Example: mkinfra my_uut.udb my_infrastructure_test");
--- 				when 30 =>
--- 					put_line("ERROR: Invalid argument for debug level. Debug level must be provided as natural number !");
+	exception when event: others =>
+		set_exit_status(failure);
+		set_output(standard_output);
 
-				when others =>
-					put("unexpected exception: ");
-					put_line(exception_name(event));
-					put(exception_message(event)); new_line;
-					put_line("program error at position " & natural'image(prog_position));
-					--put_line("line in netlist" & natural'image(line_counter));
-					set_exit_status(failure);
-			end case;
+		write_message (
+			file_handle => file_mkoptions_messages,
+			text => message_error & " at program position " & natural'image(prog_position),
+			console => true);
+	
+		if is_open(file_options) then
+			close(file_options);
+		end if;
+
+		case prog_position is
+			when 10 =>
+				write_message (
+					file_handle => file_mkoptions_messages,
+					text => message_error & text_identifier_database & " file missing or insufficient access rights !",
+					console => true);
+
+				write_message (
+					file_handle => file_mkoptions_messages,
+					text => "       Provide " & text_identifier_database & " name as argument. Example: mkoptions my_uut.udb",
+					console => true);
+
+			when 20 =>
+				write_message (
+					file_handle => file_mkoptions_messages,
+					text => "Options file missing or insufficient access rights !",
+					console => true);
+
+				write_message (
+					file_handle => file_mkoptions_messages,
+					text => "       Provide options file as argument. Example: chkpsn my_uut.udb my_options.opt",
+					console => true);
+
+			when others =>
+				write_message (
+					file_handle => file_mkoptions_messages,
+					text => "exception name: " & exception_name(event),
+					console => true);
+
+				write_message (
+					file_handle => file_mkoptions_messages,
+					text => "exception message: " & exception_message(event),
+					console => true);
+		end case;
+
+		write_log_footer;
 
 			
 end mkoptions;
