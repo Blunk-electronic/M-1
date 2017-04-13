@@ -682,12 +682,18 @@ procedure mkoptions is
 		end if;
 		return processed;
 	end pin_processed;
+
+
+	-- Prespecification only:
+	procedure find_net_by_device_and_pin( -- FN
+	-- Locates the net connected to device and pin.
+		net_of_origin	: in type_net_name.bounded_string; -- CS: probably not required, see below
+		device			: in type_device_name.bounded_string;
+		pin				: in type_pin_name.bounded_string );
+
 	
 	procedure find_device_by_net( -- FP
 		net_name : in type_net_name.bounded_string) is
--- 		line 	: unbounded_string;
--- 		part	: unbounded_string;
--- 		pin 	: unbounded_string;
 		part_found			: boolean := false;
 		length_of_pinlist	: count_type;
 		pin					: m1_database.type_pin;		
@@ -718,7 +724,7 @@ procedure mkoptions is
 							part_found := true; -- FP10
  							-- if pin_processed(con_pair_list(c).pins_processed,pin) = false then -- if pin not processed yet -- FP4
 							if not pin_processed(pin) then
-								null;
+
 								--con_pair_list(c).pins_processed := con_pair_list(c).pins_processed & " " & pin; -- mark pin as processed
 								mark_connector_pin_as_processed(
 									device => pin.device_name,
@@ -739,11 +745,15 @@ procedure mkoptions is
 -- 										exit; -- test
 -- 									end if; -- if part A found
 
+								-- Result provides the device and pin name of the
+								-- connector on the other side of the pair.
+								-- Now we transit to the other side of the connector pair:
 								find_net_by_device_and_pin(
-									net_of_origin => net.name,
-									device => pin.device_name,
-									pin => pin.device_pin_name);
-								
+									net_of_origin => net.name, -- CS: probably not required
+									device => result_of_connector_query.device_name,
+									pin => result_of_connector_query.device_pin_name);
+
+
 								
 -- 
 -- 									if con_pair_list(c).name_b = part then -- if part B found
@@ -867,20 +877,6 @@ procedure mkoptions is
 		length_of_pinlist	: count_type;
 		pin					: m1_database.type_pin; -- for temporarily usage		
 		
--- 		-- prespecification only
--- 		function find_net_by_part_and_pin -- FN
--- 		(
--- 		net_id_origin	: natural;
--- 		part_given		: unbounded_string;
--- 		pin_given		: unbounded_string
--- 		) return boolean;
--- 
--- 
--- 
--- 
--- 
--- 
--- 
 -- 		procedure find_non_cluster_bs_nets is
 -- 		begin
 -- 				for n in 1..net_ct
@@ -1201,17 +1197,21 @@ procedure mkoptions is
 							side => opposide_of(result_of_connector_query.side)
 							);
 
+						-- Result_of_connector_query provides the device and pin name of the
+						-- connector on the other side of the pair.
+
 -- 								write_message (
 -- 									file_handle => file_mkoptions_messages,
 -- 									identation => 3,
 -- 									text => --"side " & type_side_of_connector_pair'image(result_of_connector_query.side)
 -- 										& " & to_string(net.name),
 -- 									console => false);
-								
+							
+						-- Now we transit to the other side of the connector pair:
 						find_net_by_device_and_pin(
-							net_of_origin => net.name,
-							device => pin.device_name,
-							pin => pin.device_pin_name);
+							net_of_origin => net.name, -- CS: probably not required
+							device => result_of_connector_query.device_name,
+							pin => result_of_connector_query.device_pin_name);
 					end if;
 				end loop;
 
