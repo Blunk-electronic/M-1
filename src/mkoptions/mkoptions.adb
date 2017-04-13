@@ -60,6 +60,7 @@ procedure mkoptions is
 
 	use type_device_name;
 	use type_pin_name;	
+	use type_list_of_pins;
 	
 	version				: constant string (1..3) := "030";
 	
@@ -149,13 +150,16 @@ procedure mkoptions is
 
 	type type_connector_mapping is ( one_to_one , cross_pairwise );
 	connector_mapping_default : constant type_connector_mapping := one_to_one;
+	package type_list_of_pin_names is new vectors ( index_type => positive, element_type => type_pin_name.bounded_string);
+	use type_list_of_pin_names;
 	type type_connector_pair is record
 		name_a			: type_device_name.bounded_string;
  		name_b			: type_device_name.bounded_string;
 		pin_ct_a		: natural := 0;
 		pin_ct_b		: natural := 0;
 		mapping			: type_connector_mapping := one_to_one;
-		-- 			pins_processed	: unbounded_string;
+		processed_pins_a: type_list_of_pin_names.vector;
+		processed_pins_b: type_list_of_pin_names.vector;
 	end record;
 	package type_list_of_connector_pairs is new vectors ( index_type => positive, element_type => type_connector_pair);
 	use type_list_of_connector_pairs;
@@ -514,22 +518,79 @@ procedure mkoptions is
 		null;
 	end write_statistics;
 
+	type type_side_of_connector_pair is ( A, B );
+	type type_result_of_connector_query (is_connector_pin : boolean := false) is record
+		case is_connector_pin is
+			when true =>
+				side 			: type_side_of_connector_pair;
+				device_name 	: type_device_name.bounded_string;
+				device_pin_name	: type_pin_name.bounded_string;				
+			when false => null;
+		end case;
+	end record;
+	result_of_connector_query : type_result_of_connector_query;
 	
-	function is_pin_of_connector (pin : in m1_database.type_pin) return boolean is
+	function is_pin_of_connector (pin : in m1_database.type_pin) return type_result_of_connector_query is
 	-- Returns true if pin is part of a connector pair.
 		cp : type_connector_pair;
 	begin
 		if length_list_of_connector_pairs > 0 then -- do this test if there are connector pairs at all
 			for i in 1..length_list_of_connector_pairs loop
 				cp := element(list_of_connector_pairs, positive(i));
-				if pin.device_name = cp.name_a or pin.device_name = cp.name_b then
-					return true;
+				if pin.device_name = cp.name_a then
+					return (
+						is_connector_pin 	=> true,
+						side				=> A,
+						device_name			=> cp.name_b,
+						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
+						);
+				end if;
+				
+				if pin.device_name = cp.name_b then
+					return (
+						is_connector_pin 	=> true,
+						side				=> B,
+						device_name			=> cp.name_a,
+						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
+						);
 				end if;
 			end loop;
 		end if;
-		return false;
+		return ( is_connector_pin => false);
 	end is_pin_of_connector;
 
+	procedure mark_connector_pin_as_processed ( pin : in type_result_of_connector_query) is
+		cp : type_connector_pair;
+
+		procedure update_processed_pins_a ( connector_pair : in out type_connector_pair) is
+		begin
+			connector_pair.processed_pins_a := cp.processed_pins_a;
+		end update_processed_pins_a;
+
+		procedure update_processed_pins_b ( connector_pair : in out type_connector_pair) is
+		begin
+			connector_pair.processed_pins_b := cp.processed_pins_b;
+		end update_processed_pins_b;
+		
+	begin
+		for i in 1..length_list_of_connector_pairs loop
+			cp := element(list_of_connector_pairs, positive(i)); -- load a connector pair
+			case pin.side is
+				when A =>
+					if cp.name_a = pin.device_name then -- connector A found 
+						append(cp.processed_pins_a, pin.device_pin_name);
+						update_element(list_of_connector_pairs, positive(i), update_processed_pins_a'access);
+					end if;
+				when B =>
+					if cp.name_a = pin.device_name then -- connector B found 
+						append(cp.processed_pins_b, pin.device_pin_name);
+						update_element(list_of_connector_pairs, positive(i), update_processed_pins_b'access);
+					end if;
+			end case;
+			
+		end loop;
+	end mark_connector_pin_as_processed;
+	
 	function is_pin_of_bridge (pin : in m1_database.type_pin) return boolean is
 	-- Returns true if pin is part of a bridge.
 		name_of_bridge 			: type_device_name.bounded_string;
@@ -568,11 +629,11 @@ procedure mkoptions is
 		length_of_netlist	: count_type := length(list_of_nets);
 		net					: type_net; -- for temporarily usage
 		
-		use type_list_of_pins;		
 		length_of_pinlist	: count_type;
 		pin					: m1_database.type_pin; -- for temporarily usage		
 
--- 
+		cluster_counter		: natural := 0;
+		
 -- 		-- prespecification only
 -- 		function find_net_by_part_and_pin -- FN
 -- 		(
@@ -986,13 +1047,26 @@ procedure mkoptions is
 				console => false);
 		
 		end set_cluster_flag;
-		
+
+		procedure set_cluster_id (net : in out type_net) is
+		begin
+			put(standard_output,natural'image(cluster_counter) & ascii.cr); -- CS: progress bar instead ?
+
+			write_message (
+				file_handle => file_mkoptions_messages,
+				identation => 2,
+				text => "net " & to_string(net.name),
+				console => false);
+
+			net.cluster_id := cluster_counter;			
+		end set_cluster_id;
+			
 	begin -- make_netlist
 
 		write_message (
 			file_handle => file_mkoptions_messages,
 			identation => 1,
-			text => "marking cluster nets...",
+			text => "marking cluster nets ...",
 			console => true);
 
 		-- Search in list_of_nets for a pin with same name as a connector or a bridge.
@@ -1005,7 +1079,7 @@ procedure mkoptions is
 				pin := element(net.pins, positive(p)); -- load a pin
 
 				-- test if pin belongs to a connector
-				if is_pin_of_connector(pin) then
+				if is_pin_of_connector(pin).is_connector_pin then
 					update_element(list_of_nets, positive(i), set_cluster_flag'access);
 				end if;
 
@@ -1021,51 +1095,68 @@ procedure mkoptions is
 
 			end loop;
 		end loop;
--- 
--- 			--new_line; put_line("-- NETLIST -----------------------------------------------------------"); new_line; -- rm v027
--- 
--- 			-- search cluster nets (action AC1)
--- 			put_line(standard_output,"searching cluster nets ...");
--- 
--- 
--- 			cluster_ct := 0;
--- 			for net_pt in 1..net_ct
--- 			loop
--- 				--new_line(standard_output);
--- 				--put_line(standard_output,"--> root net : " & netlist(net_pt).name);					
--- 				put(standard_output,natural'image(cluster_ct) & ascii.cr);
--- 				if netlist(net_pt).cluster_member and netlist(net_pt).cluster_id = 0 then
--- 					cluster_ct := cluster_ct + 1;
--- 					netlist(net_pt).cluster_id := cluster_ct;
--- 					
--- 					--put_line("AC1 net name " & netlist(net_pt).name);
--- 					--new_line(standard_output);
--- 					--put_line(standard_output,"AC : " & netlist(net_pt).name);					
--- 
--- 					for p in 1..netlist(net_pt).part_ct
--- 					loop
--- 						line := to_unbounded_string(get_field(netlist(net_pt).content,p,character'val(10)));
--- 						part := to_unbounded_string(get_field(line,2));
--- 						pin  := to_unbounded_string(get_field(line,6));
--- 
--- 						-- check if part is a connector pair
--- 						for c in 1..conpair_ct
--- 						loop
--- 							if con_pair_list(c).name_a = part then -- part A found
--- 								con_pair_list(c).pins_processed := con_pair_list(c).pins_processed & " " & pin;
--- 								--put_line(part & " " & con_pair_list(c).name_b & " pin " & pin); 
--- 								--put_line(standard_output,"     con  " & part & " pin " & pin); 
--- 								if find_net_by_part_and_pin
--- 									(
--- 									net_id_origin => netlist(net_pt).net_id,
--- 									part_given => con_pair_list(c).name_b, -- part A has been found, so part B must be passed
--- 									pin_given => pin
--- 									)
--- 								then null;
--- 								exit; -- test
--- 								end if;
--- 	
--- 							end if; -- CS: early exit ?
+
+		-- search cluster nets (action AC1)
+		write_message (
+			file_handle => file_mkoptions_messages,
+			identation => 1,
+			text => "examining cluster nets ...",
+			console => true);
+
+		for i in 1..length_of_netlist loop
+			net := element(list_of_nets, positive(i)); -- load a net
+
+			-- if net is a cluster and if it has not been assigned a cluster id yet
+			if net.cluster and net.cluster_id = 0 then
+				cluster_counter := cluster_counter + 1;
+
+				-- assign cluster id 
+				--netlist(net_pt).cluster_id := cluster_ct;				
+				update_element(list_of_nets, positive(i), set_cluster_id'access);
+
+				length_of_pinlist := length(net.pins);
+				for p in 1..length_of_pinlist loop
+					pin := element(net.pins, positive(p)); -- load a pin
+
+					-- Test if pin belongs to a connector. 
+					-- If it is pin of a connector mark it as processed.
+					result_of_connector_query := is_pin_of_connector(pin);
+					if result_of_connector_query.is_connector_pin then
+						mark_connector_pin_as_processed(result_of_connector_query);
+						case result_of_connector_query.side is
+							when A => -- part A found
+								null;
+
+-- 								write_message (
+-- 									file_handle => file_mkoptions_messages,
+-- 									identation => 3,
+-- 									text => --"side " & type_side_of_connector_pair'image(result_of_connector_query.side)
+-- 										& " & to_string(net.name),
+-- 									console => false);
+-- 								
+								
+	-- 								--put_line(part & " " & con_pair_list(c).name_b & " pin " & pin); 
+	-- 								--put_line(standard_output,"     con  " & part & " pin " & pin); 
+	-- 								if find_net_by_part_and_pin
+	-- 									(
+	-- 									net_id_origin => netlist(net_pt).net_id,
+	-- 									part_given => con_pair_list(c).name_b, -- part A has been found, so part B must be passed
+	-- 									pin_given => pin
+	-- 									)
+	-- 								then null;
+	-- 								exit; -- test
+	-- 								end if;
+	-- 	
+	-- 					end if; -- CS: early exit ?
+
+							when B => -- part B found
+								null;
+						end case;
+					end if;
+				end loop;
+
+				
+
 -- 							if con_pair_list(c).name_b = part then -- part B found
 -- 								con_pair_list(c).pins_processed := con_pair_list(c).pins_processed & " " & pin;
 -- 								--put_line(part & " " & con_pair_list(c).name_a & " pin " & pin);
@@ -1129,8 +1220,8 @@ procedure mkoptions is
 -- 					end loop;
 -- 					--new_line;
 -- 
--- 				end if;
--- 			end loop;
+			end if;
+		end loop;
 -- 
 -- 			new_line(standard_output);
 -- 
