@@ -131,8 +131,8 @@ procedure mkoptions is
 	type type_bridge_preliminary is tagged record
 		name			: type_device_name.bounded_string;
 		wildcards		: boolean := false; -- true if name contains asterisks (*) or quesition marks (?)
-		pin_a			: type_pin;
-		pin_b			: type_pin;
+-- 		pin_a			: type_pin;
+-- 		pin_b			: type_pin;
 	end record;
 
 	type type_bridge_within_array is record -- like "1-8 2-7"
@@ -147,7 +147,9 @@ procedure mkoptions is
 	type type_bridge ( is_array : boolean) is new type_bridge_preliminary with record
 		case is_array is
 			when true => list_of_bridges : type_list_of_bridges_within_array.vector;
-			when false => null;
+			when false => 
+				pin_a	: type_pin;
+				pin_b	: type_pin;
 		end case;
 	end record;
 	package type_list_of_bridges is new indefinite_vectors 
@@ -242,6 +244,115 @@ procedure mkoptions is
 		return list_of_bridges;
 	end read_bridges_of_array;
 
+
+	function set_bridge_pins (bridge_in : in type_bridge_preliminary) return type_bridge is
+	-- Assigns the pin names a and b to the given bridge device.
+	-- The bridge returned is a type_bridge as a single two-pin bridge.
+		net					: type_net;
+		pin					: m1_database.type_pin;
+		length_of_pinlist	: count_type; -- CS: we assume there are no zero-pin nets
+		occurences			: natural := 0;
+
+		bridge_out			: type_bridge := (bridge_in with
+								is_array => false,
+								pin_a => ( name => to_bounded_string(""), -- to be overwritten later
+										   processed => false, -- CS: anoying default
+										   connected => false -- to be overwritten later
+										 ), 
+								pin_b => ( name => to_bounded_string(""), -- to be overwritten later
+										   processed => false, -- CS: anoying default 
+										   connected => false -- to be overwritten later
+										 ));
+	begin -- set_bridge_pins
+		-- We search the database netlist until the given bridge_in found.
+		-- We count the matches and assign the pin names a and b.
+
+		write_message (
+			file_handle => file_mkoptions_messages,
+			identation => 3,
+			text => "setting pin names ...",
+			lf => true,
+			console => false);
+		
+		loop_netlist:
+		for i in 1..length(list_of_nets) loop -- loop in netlist
+			net := element(list_of_nets, positive(i)); -- load a net
+			length_of_pinlist := length(net.pins); -- load number of pins in the net
+			for i in 1..length_of_pinlist loop -- loop in pinlist
+				pin := element(net.pins, positive(i)); -- load a pin
+				if pin.device_name = bridge_in.name then -- on device name match
+
+					-- Count occurences. The first occurence is pin a. The second pin b.
+					-- Further occurences cause an error depending on degree_of_database_integrity_check.
+					occurences := occurences + 1;
+
+					case occurences is
+						when 1 =>
+							bridge_out.pin_a.name := pin.device_pin_name;
+							bridge_out.pin_a.connected := true;
+							
+							write_message (
+								file_handle => file_mkoptions_messages,
+								identation => 2,
+								text => "pin " & type_side'image(A) & row_separator_0
+									& to_string(pin.device_pin_name) & row_separator_0,
+								lf => false,
+								console => false);
+							
+						when 2 =>
+							bridge_out.pin_b.name := pin.device_pin_name;
+
+							-- make sure pin a and b do have different names
+							if bridge_out.pin_a.name = bridge_out.pin_b.name then
+								new_line(file_mkoptions_messages);
+								write_message (
+									file_handle => file_mkoptions_messages,
+									text => message_error & "pin " & to_string(pin.device_pin_name)
+										& " occurs more than once !",
+									console => true);
+								raise constraint_error;
+							end if;
+								
+							bridge_out.pin_b.connected := true;
+							
+							write_message (
+								file_handle => file_mkoptions_messages,
+								text => "pin " & type_side'image(B) & row_separator_0
+									& to_string(pin.device_pin_name) & row_separator_0,
+								console => false);
+							
+							-- With a light integrity check it is ok to exit after pin b.
+							if degree_of_database_integrity_check < medium then
+								exit loop_netlist;
+							end if;
+							
+						when others =>
+							new_line(file_mkoptions_messages);
+							write_message (
+								file_handle => file_mkoptions_messages,
+								text => message_error & "bridge device " & to_string(bridge_in.name)
+									& " has more than 2 pins !",
+								console => true);
+							raise constraint_error;
+					end case;
+				end if;
+			end loop;
+		end loop loop_netlist;
+
+		-- write a warning if bridge has only one pin connected
+		if occurences = 1 then
+			new_line(file_mkoptions_messages);
+			write_message (
+				file_handle => file_mkoptions_messages,
+				text => message_warning & "bridge device " & to_string(bridge_in.name)
+					& " has only one connected pin !",
+				console => false);
+		end if;
+		
+		return bridge_out;
+	end set_bridge_pins;
+	
+	-- CS: move this function to m1_datbase
 	function device_occurences_in_netlist( device : in type_device_name.bounded_string) return natural is
 	-- Returns the number of occurences of the given device within the database netlist.
 		net					: type_net;
@@ -254,7 +365,7 @@ procedure mkoptions is
 			length_of_pinlist := length(net.pins); -- load number of pins in the net
 			for i in 1..length_of_pinlist loop -- loop in pinlist
 				pin := element(net.pins, positive(i)); -- load a pin
-				if pin.device_name = device then -- on device name match count matches
+				if pin.device_name = device then -- on device name match, count matches
 					occurences := occurences + 1;
 				end if;
 			end loop;
@@ -263,6 +374,9 @@ procedure mkoptions is
 	end device_occurences_in_netlist;
 	
 	procedure read_mkoptions_configuration is
+	-- Reads mkoptions.conf, checks if connectors and bridge devices exist.
+	-- Collects connector pairs in list_of_connector_pairs.
+	-- Collects bridges in list_of_bridges.
 		type_line_length_max		: constant natural := 1000;
 		package type_line_of_file is new generic_bounded_length(type_line_length_max); use type_line_of_file;
 		line						: type_line_of_file.bounded_string;
@@ -274,6 +388,11 @@ procedure mkoptions is
 		conpair_preliminary 		: type_connector_pair;
 		bridge_preliminary			: type_bridge_preliminary;
 		bridge_is_array				: boolean := false;
+
+		bridge_valid				: boolean := true; -- Set to false if mkoptions.conf contains a bridge device
+														-- that does exist in database netlist.
+														-- If bridge device is not valid, it will not be added
+														-- to list_of_bridges.
 	begin -- read_mkoptions_configuration
 		write_message (
 			file_handle => file_mkoptions_messages,
@@ -320,9 +439,9 @@ procedure mkoptions is
 							write_message (
 								file_handle => file_mkoptions_messages,
 								identation => 2, 
-								text => strip_quotes(type_side'image(A)) & row_separator_0 
+								text => type_side'image(A) & row_separator_0 
 									& to_string(conpair_preliminary.name_a) 
-									& row_separator_0 & strip_quotes(type_side'image(B)) 
+									& row_separator_0 & type_side'image(B) 
 									& row_separator_0 & to_string(conpair_preliminary.name_b),
 								lf => false,
 								console => false);
@@ -335,6 +454,7 @@ procedure mkoptions is
 									text => message_error & "connector device " & to_string(conpair_preliminary.name_a)
 										& " does not exist in " & text_identifier_database & " !",
 										console => true);
+									raise constraint_error;
 							end if;
 							if device_occurences_in_netlist(conpair_preliminary.name_b) = 0 then
 								new_line(file_mkoptions_messages);
@@ -343,6 +463,7 @@ procedure mkoptions is
 									text => message_error & "connector device " & to_string(conpair_preliminary.name_b)
 										& " does not exist in " & text_identifier_database & " !",
 										console => true);
+									raise constraint_error;
 							end if;
 
 							
@@ -396,17 +517,19 @@ procedure mkoptions is
 					if get_field_from_line(to_string(line),1) = section_mark.endsection then -- we are leaving section bridges
 						section_bridges_entered := false; 
 
-						case bridge_is_array is
-							when false =>
-								append(list_of_bridges, (bridge_preliminary with is_array => false));
-							when true =>
-								-- CS: test if bridge occurs in netlist.
-								-- CS: write warning if pin does not exist in netlist
-								-- CS: error if pin occurs more than once
-								append(list_of_bridges, (bridge_preliminary with 
-															is_array => true, 
-															list_of_bridges => list_of_bridges_within_array_preliminary));
-						end case;
+						if bridge_valid then -- non-existing bridge devices are not appended
+							case bridge_is_array is
+								when false =>
+									-- Before appending, the pins of the 2-pin bridge must be set.
+									append(list_of_bridges, set_bridge_pins(bridge_preliminary));
+								when true =>
+									-- CS: write warning if a pin does not exist in netlist
+									-- CS: error if a pin occurs more than once
+									append(list_of_bridges, (bridge_preliminary with 
+																is_array => true, 
+																list_of_bridges => list_of_bridges_within_array_preliminary));
+							end case;
+						end if;
 						
 					else
 						-- read bridges like:
@@ -435,91 +558,82 @@ procedure mkoptions is
 								console => false);
 
 							-- CS: warning if bridge name has no matches in netlist
+							
 						else
-							-- No wildcards used. Make sure the bridge device occurs netlist:
-							if device_occurences_in_netlist(bridge_preliminary.name) = 0 then
-								new_line(file_mkoptions_messages);
-								write_message (
-									file_handle => file_mkoptions_messages,
-									text => message_warning & "bridge device " & to_string(bridge_preliminary.name)
-										& " does not exist in " & text_identifier_database & " !",
-										console => false);
+							-- No wildcards used in bridge device name.
+
+							-- Make sure the bridge device occurs netlist at all,
+							-- If device does not exist, the flag bridge_valid is set false, which results in
+							-- the bridge not beeing appended to list_of_bridges.
+							-- With an integrity check greater "light" this step wil be performed.
+							if degree_of_database_integrity_check >= light then
+								if device_occurences_in_netlist(bridge_preliminary.name) = 0 then
+									bridge_valid := false;
+									new_line(file_mkoptions_messages);
+									write_message (
+										file_handle => file_mkoptions_messages,
+										text => message_warning & "bridge device " & to_string(bridge_preliminary.name)
+											& " does not exist in " & text_identifier_database & " !",
+											console => false);
+								else
+									bridge_valid := true;
+								end if;
 							end if;
--- 								when 1 =>
--- 									new_line(file_mkoptions_messages);
--- 									write_message (
--- 										file_handle => file_mkoptions_messages,
--- 										text => message_warning & "bridge device " & to_string(bridge_preliminary.name)
--- 											& " has only one connected pin !",
--- 										console => false);
--- 								when 0 =>
--- 									new_line(file_mkoptions_messages);
--- 									write_message (
--- 										file_handle => file_mkoptions_messages,
--- 										text => message_warning & "bridge device " & to_string(bridge_preliminary.name)
--- 											& " does not exist in " & text_identifier_database & " !",
--- 										console => false);
--- 
--- 							end case;
 						end if;
-						
-						-- Field #2 may indicate that this is an array.
-						if field_count > 1 then
-							if get_field_from_line(to_string(line),2) = options_keyword_array then
-								bridge_is_array := true;
 
-								write_message (
-									file_handle => file_mkoptions_messages,
-									identation => 1,
-									text => "is array",
-									console => false);
+						-- Field #2 may indicate that this is an array. In this case
+						-- list_of_bridges_within_array_preliminary will be filled with the 
+						-- bridges within the array.
+						if bridge_valid then
+							if field_count > 1 then
+								if get_field_from_line(to_string(line),2) = options_keyword_array then
+									bridge_is_array := true;
 
-								-- build a preliminary list of bridges from fields after "array"
-								if field_count > 2 then
-									list_of_bridges_within_array_preliminary := read_bridges_of_array(
-										line 			=> to_string(line),
-										field_count 	=> field_count,
-										line_counter	=> line_counter);
+									write_message (
+										file_handle => file_mkoptions_messages,
+										identation => 1,
+										text => "is array",
+										console => false);
+
+									-- build a preliminary list of bridges from fields after "array"
+									if field_count > 2 then
+										list_of_bridges_within_array_preliminary := read_bridges_of_array(
+											line 			=> to_string(line),
+											field_count 	=> field_count,
+											line_counter	=> line_counter);
+									else
+										-- put a final linebreak at end of line in logfile
+	-- 									new_line (file_mkoptions_messages);
+										
+										write_message (
+											file_handle => file_mkoptions_messages,
+											text => message_error & "in line" & positive'image(line_counter) & ": " 
+												& "Bridges within array expected ! Example: RN4 array 1-8 2-7 3-6 4-5",
+											console => true);
+										raise constraint_error;
+									end if;
+									
 								else
 									-- put a final linebreak at end of line in logfile
--- 									new_line (file_mkoptions_messages);
+									new_line (file_mkoptions_messages);
 									
 									write_message (
 										file_handle => file_mkoptions_messages,
 										text => message_error & "in line" & positive'image(line_counter) & ": " 
-											& "Bridges within array expected ! Example: RN4 array 1-8 2-7 3-6 4-5",
+											& "Keyword '" & options_keyword_array & "' expected after device name ! "
+											& "Example: RN4 array 1-8 2-7 3-6 4-5",
 										console => true);
 									raise constraint_error;
 								end if;
-								
-							else
-								-- put a final linebreak at end of line in logfile
-								new_line (file_mkoptions_messages);
-								
-								write_message (
-									file_handle => file_mkoptions_messages,
-									text => message_error & "in line" & positive'image(line_counter) & ": " 
-										& "Keyword '" & options_keyword_array & "' expected after device name ! "
-										& "Example: RN4 array 1-8 2-7 3-6 4-5",
-									console => true);
-								raise constraint_error;
+							else 
+								-- It is not an array of bridges but a single two-pin device
+								bridge_is_array := false;
 							end if;
-						else 
-							-- It is not an array of bridges but a single two-pin device
-							bridge_is_array := false;
 
-							-- CS: get pin names 
-							
--- 							-- Purge preliminary list of bridges within array for next spin.							
--- 							if length(list_of_bridges_within_array_preliminary) > 0 then
--- 								delete(list_of_bridges_within_array_preliminary,1,length(list_of_bridges_within_array_preliminary));
--- 							end if;
-
-						end if;
-
-						-- put a final linebreak at end of line in logfile
-						new_line (file_mkoptions_messages);
-
+							-- put a final linebreak at end of line in logfile
+							new_line (file_mkoptions_messages);
+						end if; -- if bridge_valid
+						
 					end if;
 				end if;
 
@@ -1453,7 +1567,7 @@ begin
 	put_line ("options file   : " & to_string(name_file_options));
           
 	prog_position	:= 25;
-    read_database;
+	read_uut_database;
     
 	-- recreate an empty tmp directory
 	prog_position	:= 30;
