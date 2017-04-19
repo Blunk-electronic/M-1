@@ -187,7 +187,7 @@ procedure mkoptions is
 		wildcards_found			: boolean := false;
 	begin
 		if asterisks_count > 0 then -- if there are asterisks
-			if pos_asterisk > 0 then -- make sure the first character is not an asterisk
+			if pos_asterisk > 1 then -- make sure the first character is not an asterisk
 				wildcards_found := true;
 			else
 				new_line(file_mkoptions_messages);
@@ -195,11 +195,12 @@ procedure mkoptions is
 					file_handle => file_mkoptions_messages,
 					text => message_error & "wildcard not allowed as first character !",
 					console => true);
+				raise constraint_error;
 			end if;
 		end if;
 
 		if question_marks_count > 0 then -- if there are questions marks
-			if pos_question_mark > 0 then -- make sure the first character is not a question mark
+			if pos_question_mark > 1 then -- make sure the first character is not a question mark
 				wildcards_found := true;
 			else
 				new_line(file_mkoptions_messages);
@@ -207,6 +208,7 @@ procedure mkoptions is
 					file_handle => file_mkoptions_messages,
 					text => message_error & "wildcard not allowed as first character !",
 					console => true);
+				raise constraint_error;				
 			end if;
 		end if;
 		
@@ -214,6 +216,9 @@ procedure mkoptions is
 	end has_wildcards;
 
 	function read_bridges_of_array (
+	-- Reads array pins like 1-8 or 2-7 and returns them in a list.
+	-- Does not check if pins exist in netlist.
+	-- Does not check if pins are connected.
 		line 		: in string; -- contains something like "RN303 array 1-2 3-4 5-6 7-8"
 		field_count : in positive;
 		line_counter: in positive) 
@@ -224,7 +229,8 @@ procedure mkoptions is
 		field : type_pins_of_bridge.bounded_string; -- something like "1-8"
 
 		bridge 		: type_bridge_within_array;
- 		pos_sep 	: positive; -- position of separator "-" 
+		pos_sep 	: positive; -- position of separator "-" 
+		
 	begin -- read_bridges_of_array
 		for i in 3..field_count loop -- we start reading in field 3 
 			field := to_bounded_string(get_field_from_line(line,i));
@@ -242,9 +248,7 @@ procedure mkoptions is
 -- 					console => false);
 
 				-- CS: check multiple occurences of pin names and bridges in mkoptions.conf
-				-- CS: check bridge exists in netlist.
-				-- CS: check pins exists only once in netlist.
-				
+
 				append(list_of_bridges, bridge);
 				
 			else
@@ -371,16 +375,60 @@ procedure mkoptions is
 	end set_bridge_pins;
 
 	-- CS: move this function to m1_string_processing
-	function wildcard_matches (text_with_wildcards : in string; text_exact : in string) return boolean is
--- 		use ada.strings.fixed;
+	function wildcard_match (text_with_wildcards : in string; text_exact : in string) return boolean is
+	-- text_with_wildcards is something like R41*
+	-- text_exact is something like R4153
 		count_asterisk		: natural := ada.strings.fixed.count(text_with_wildcards, 1 * latin_1.asterisk);
 		count_question_mark	: natural := ada.strings.fixed.count(text_with_wildcards, 1 * latin_1.question);
-		pos_asterisk		: natural := 0;
-		pos_question_mark	: natural := 0;		
-	begin
+		pos_asterisk		: natural := ada.strings.fixed.index(text_with_wildcards, 1 * latin_1.asterisk); -- first asterisk
+		pos_question_mark	: natural := ada.strings.fixed.index(text_with_wildcards, 1 * latin_1.question); -- first question mark
 		
-		return false;
-	end wildcard_matches;
+		length_text_with_wildcards	: natural := text_with_wildcards'length;
+		length_text_exact			: natural := text_exact'length;		
+		
+		match				: boolean := false;
+	begin
+		-- CS: zero-string length causes a no-match
+		if length_text_exact = 0 or length_text_with_wildcards = 0 then
+			return false;
+		end if;
+		
+		-- CS: currently a question mark results in a no-match
+		if count_question_mark > 0 then
+			return false;
+		end if;
+		
+		case count_asterisk is
+			-- If no asterisks, texts must be equal in order to return a match:
+			when 0 =>
+				if length_text_exact = length_text_with_wildcards then
+					if text_exact = text_with_wildcards then
+						match := true;
+					end if;
+				end if;
+
+			-- If one asterisk, compare left hand side of text_with_wildcards and text_exact:
+			when 1 =>
+				-- If text_exact is shorter than text_with_wildcards then we have no match.
+				-- Example 1: text_exact is R41 and text_with_wildcards is R415*
+				-- Example 2: text_exact is R41 and text_with_wildcards is R41*
+				if length_text_exact < length_text_with_wildcards then
+					match := false;
+				elsif
+				-- If text_exact and text_with_wildcards match from first character to pos_asterisk-1 we have a match.
+				-- Example 1: text_exact is R415 and text_with_wildcards is R4*
+					text_with_wildcards(text_with_wildcards'first .. text_with_wildcards'first - 1 + pos_asterisk - 1) = 
+					text_exact         (text_exact'first          .. text_exact'first          - 1 + pos_asterisk - 1) then
+					match := true;
+				end if;
+
+			-- CS: currently more than one asterisk results in a no-match
+			when others =>
+				match := false;
+		end case;
+		
+		return match;
+	end wildcard_match;
 	
 	-- CS: move this function to m1_datbase
 	function device_occurences_in_netlist( 
@@ -400,8 +448,8 @@ procedure mkoptions is
 			for i in 1..length_of_pinlist loop -- loop in pinlist
 				pin := element(net.pins, positive(i)); -- load a pin
 				if wildcards then
-					if wildcard_matches(
-						text_with_wildcards => to_string(device),
+					if wildcard_match(
+						text_with_wildcards => to_string(device), -- the device being inquired for
 						text_exact => to_string(pin.device_name)) then -- on device name match, count matches
 							occurences := occurences + 1;
 					end if;
@@ -416,6 +464,8 @@ procedure mkoptions is
 	end device_occurences_in_netlist;
 
 	procedure verify_array_pins ( 
+	-- Checks if the pins of the given array device exist in netlist.
+	-- Checks if the pins of the given array device are conencted.
 		name	: in type_device_name.bounded_string;
 		pins	: in type_list_of_bridges_within_array.vector) is
 
@@ -612,7 +662,10 @@ procedure mkoptions is
 							lf => false,
 							console => false);
 
-						bridge_preliminary.wildcards := has_wildcards(bridge_preliminary.name);						
+						bridge_preliminary.wildcards := has_wildcards(bridge_preliminary.name);
+
+						-- If bridge name contains wildcards, count matches. Write a warning if
+						-- no device in netlist matches bridge name and regard bridge as invalid.
 						if bridge_preliminary.wildcards then
 
 							if device_occurences_in_netlist(device => bridge_preliminary.name, wildcards => true) = 0 then
@@ -627,14 +680,12 @@ procedure mkoptions is
 								bridge_valid := true;
 							end if;
 							
-							write_message (
-								file_handle => file_mkoptions_messages,
-								identation => 1,
-								text => "has wildcards",
-								lf => false,
-								console => false);
-
-							-- CS: warning if bridge name has no matches in netlist
+-- 							write_message (
+-- 								file_handle => file_mkoptions_messages,
+-- 								identation => 1,
+-- 								text => "has wildcards",
+-- 								lf => false,
+-- 								console => false);
 							
 						else
 							-- No wildcards used in bridge device name.
@@ -660,10 +711,11 @@ procedure mkoptions is
 
 						
 						if bridge_valid then -- non-existing bridge devices are ignored furhter-on
-							
+
 							-- Field #2 may indicate that this is an array. In this case
 							-- list_of_bridges_within_array_preliminary will be filled with the 
 							-- bridges within the array.
+							-- We read from field 2 on. Stuff like "array 1-2 3-4 5-6 7-8"
 							if field_count > 1 then
 								if get_field_from_line(to_string(line),2) = options_keyword_array then
 									bridge_is_array := true;
@@ -680,6 +732,7 @@ procedure mkoptions is
 											line 			=> to_string(line),
 											field_count 	=> field_count,
 											line_counter	=> line_counter);
+										-- read_bridges_of_array does not check for existing or not connected pins !
 									else
 										-- put a final linebreak at end of line in logfile
 	-- 									new_line (file_mkoptions_messages);
@@ -707,20 +760,23 @@ procedure mkoptions is
 								bridge_is_array := false;
 							end if;
 
-							-- put a final linebreak at end of line in logfile
--- 							new_line (file_mkoptions_messages);
-
-							case bridge_is_array is
-								when false =>
-									-- Before appending, the pins of the 2-pin bridge must be set.
-									append(list_of_bridges, set_bridge_pins(bridge_preliminary));
-								when true =>
-									-- Before appending, the array pins must be checked.
-									verify_array_pins(bridge_preliminary.name, list_of_bridges_within_array_preliminary);
-									append(list_of_bridges, (bridge_preliminary with 
-																is_array => true, 
-																list_of_bridges => list_of_bridges_within_array_preliminary));
-							end case;
+							if bridge_preliminary.wildcards then 
+								new_line (file_mkoptions_messages);
+								-- CS: get exact bridge names
+							else
+								case bridge_is_array is
+									when false =>
+										-- Before appending, the pins of the single 2-pin bridge must be set.
+										-- set_bridge_pins returns a type_bridge
+										append(list_of_bridges, set_bridge_pins(bridge_preliminary));
+									when true =>
+										-- Before appending, the array pins must be checked.
+										verify_array_pins(bridge_preliminary.name, list_of_bridges_within_array_preliminary);
+										append(list_of_bridges, (bridge_preliminary with 
+																	is_array => true, 
+																	list_of_bridges => list_of_bridges_within_array_preliminary));
+								end case;
+							end if;
 						end if; -- bridge_valid
 						
 					end if;
