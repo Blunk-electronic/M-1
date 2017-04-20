@@ -173,6 +173,8 @@ procedure mkoptions is
 		mapping			: type_connector_mapping := one_to_one;
 		processed_pins_a: type_list_of_pin_names.vector;
 		processed_pins_b: type_list_of_pin_names.vector;
+-- 		exempted_pins_a	: type_list_of_pin_names.vector; -- CS: for pins used for special purposes like shielding
+-- 		exempted_pins_b	: type_list_of_pin_names.vector;
 	end record;
 	package type_list_of_connector_pairs is new vectors ( index_type => positive, element_type => type_connector_pair);
 	use type_list_of_connector_pairs;
@@ -185,7 +187,7 @@ procedure mkoptions is
 		pos_asterisk			: natural := type_device_name.index(device, 1 * latin_1.asterisk);
 		pos_question_mark		: natural := type_device_name.index(device, 1 * latin_1.question);		
 		wildcards_found			: boolean := false;
-	begin
+	begin -- has_wildcards
 		if asterisks_count > 0 then -- if there are asterisks
 			if pos_asterisk > 1 then -- make sure the first character is not an asterisk
 				wildcards_found := true;
@@ -374,62 +376,6 @@ procedure mkoptions is
 		return bridge_out;
 	end set_bridge_pins;
 
-	-- CS: move this function to m1_string_processing
-	function wildcard_match (text_with_wildcards : in string; text_exact : in string) return boolean is
-	-- text_with_wildcards is something like R41*
-	-- text_exact is something like R4153
-		count_asterisk		: natural := ada.strings.fixed.count(text_with_wildcards, 1 * latin_1.asterisk);
-		count_question_mark	: natural := ada.strings.fixed.count(text_with_wildcards, 1 * latin_1.question);
-		pos_asterisk		: natural := ada.strings.fixed.index(text_with_wildcards, 1 * latin_1.asterisk); -- first asterisk
-		pos_question_mark	: natural := ada.strings.fixed.index(text_with_wildcards, 1 * latin_1.question); -- first question mark
-		
-		length_text_with_wildcards	: natural := text_with_wildcards'length;
-		length_text_exact			: natural := text_exact'length;		
-		
-		match				: boolean := false;
-	begin
-		-- CS: zero-string length causes a no-match
-		if length_text_exact = 0 or length_text_with_wildcards = 0 then
-			return false;
-		end if;
-		
-		-- CS: currently a question mark results in a no-match
-		if count_question_mark > 0 then
-			return false;
-		end if;
-		
-		case count_asterisk is
-			-- If no asterisks, texts must be equal in order to return a match:
-			when 0 =>
-				if length_text_exact = length_text_with_wildcards then
-					if text_exact = text_with_wildcards then
-						match := true;
-					end if;
-				end if;
-
-			-- If one asterisk, compare left hand side of text_with_wildcards and text_exact:
-			when 1 =>
-				-- If text_exact is shorter than text_with_wildcards then we have no match.
-				-- Example 1: text_exact is R41 and text_with_wildcards is R415*
-				-- Example 2: text_exact is R41 and text_with_wildcards is R41*
-				if length_text_exact < length_text_with_wildcards then
-					match := false;
-				elsif
-				-- If text_exact and text_with_wildcards match from first character to pos_asterisk-1 we have a match.
-				-- Example 1: text_exact is R415 and text_with_wildcards is R4*
-					text_with_wildcards(text_with_wildcards'first .. text_with_wildcards'first - 1 + pos_asterisk - 1) = 
-					text_exact         (text_exact'first          .. text_exact'first          - 1 + pos_asterisk - 1) then
-					match := true;
-				end if;
-
-			-- CS: currently more than one asterisk results in a no-match
-			when others =>
-				match := false;
-		end case;
-		
-		return match;
-	end wildcard_match;
-	
 	-- CS: move this function to m1_datbase
 	function device_occurences_in_netlist( 
 	-- Returns the number of occurences of the given device within the database netlist.
@@ -499,7 +445,6 @@ procedure mkoptions is
 		-- CS: error if a pin occurs more than once
 
 	end verify_array_pins;
-
 	
 	procedure read_mkoptions_configuration is
 	-- Reads mkoptions.conf, checks if connectors and bridge devices exist.
@@ -521,6 +466,83 @@ procedure mkoptions is
 														-- that does exist in database netlist.
 														-- If bridge device is not valid, it will not be added
 														-- to list_of_bridges.
+
+		procedure append_bridge is
+		-- Depending on the flag bridge_is_array we either append a bridge device with a list of sub-bridges (like 1-8, 2-7)
+		-- or a single 2-pin bridge device.
+		begin
+			
+			case bridge_is_array is
+
+				when true =>
+					-- Before appending, the array pins must be checked.
+					verify_array_pins(bridge_preliminary.name, list_of_bridges_within_array_preliminary);
+					append(list_of_bridges, (bridge_preliminary with 
+												is_array => true, 
+												list_of_bridges => list_of_bridges_within_array_preliminary));
+
+				when false =>
+					-- Before appending, the pins of the single 2-pin bridge must be set.
+					-- mkoptions.conf does not provide pin names of a single bridge device.
+					-- set_bridge_pins elaborates the pin names and returns a type_bridge.
+					append(list_of_bridges, set_bridge_pins(bridge_preliminary));
+
+			end case;
+		end append_bridge;
+
+		function bridge_is_listed return boolean is
+		-- Returns true is bridge device already in list_of_bridges.
+			is_listed : boolean := false;
+		begin
+			for i in 1..length(list_of_bridges) loop
+				if element(list_of_bridges, positive(i)).name = bridge_preliminary.name then
+					is_listed := true;
+					exit;
+				end if;
+			end loop;
+			return is_listed;
+		end bridge_is_listed;
+		
+		procedure add_bridges_matching_wildcard_to_list_of_bridges is
+		-- Searches in netlist for bridge devices that match the preliminary bridge name 
+		-- (The preliminary bridge name contains wildcards.)
+		-- and appends them to the list_of_bridges.
+			net		: type_net;
+			pin		: m1_database.type_pin;
+		begin -- add_bridges_matching_wildcard_to_list_of_bridges
+
+			loop_netlist:
+			for i in 1..length_of_netlist loop
+				net := element(list_of_nets, positive(i)); -- load a net
+				for i in 1..length(net.pins) loop
+					pin := element(net.pins, positive(i)); -- load a pin
+					if wildcard_match( -- test if bridge device name matches preliminary bridge name
+						text_exact			=> to_string(pin.device_name),
+						text_with_wildcards	=> to_string(bridge_preliminary.name) ) 
+					then
+						-- On match, overwrite preliminary name with exact name.
+						bridge_preliminary.name := pin.device_name;
+
+						-- if bridge not already in list
+						if not bridge_is_listed then
+						
+							-- report exact bridge name in logfile
+							write_message (
+								file_handle => file_mkoptions_messages,
+								identation => 3,
+								text => to_string(bridge_preliminary.name),
+								console => false);
+							
+							-- Now the bridge name is definite and we can append it to the list_of_bridges.
+							append_bridge;
+							
+						end if;
+					end if;
+				end loop;
+			end loop loop_netlist;
+		end add_bridges_matching_wildcard_to_list_of_bridges;
+
+		
 	begin -- read_mkoptions_configuration
 		write_message (
 			file_handle => file_mkoptions_messages,
@@ -762,20 +784,14 @@ procedure mkoptions is
 
 							if bridge_preliminary.wildcards then 
 								new_line (file_mkoptions_messages);
-								-- CS: get exact bridge names
+
+								-- So far we only have the name of a bridge with wildcards.
+								-- In order to add all matching devices, this procedure does the job:
+								add_bridges_matching_wildcard_to_list_of_bridges;
 							else
-								case bridge_is_array is
-									when false =>
-										-- Before appending, the pins of the single 2-pin bridge must be set.
-										-- set_bridge_pins returns a type_bridge
-										append(list_of_bridges, set_bridge_pins(bridge_preliminary));
-									when true =>
-										-- Before appending, the array pins must be checked.
-										verify_array_pins(bridge_preliminary.name, list_of_bridges_within_array_preliminary);
-										append(list_of_bridges, (bridge_preliminary with 
-																	is_array => true, 
-																	list_of_bridges => list_of_bridges_within_array_preliminary));
-								end case;
+								-- The bridge name is definitive. So we append the bridge to the
+								-- list_of_bridges right away.
+								append_bridge;
 							end if;
 						end if; -- bridge_valid
 						
@@ -919,6 +935,7 @@ procedure mkoptions is
 			for i in 1..length_list_of_connector_pairs loop
 				cp := element(list_of_connector_pairs, positive(i));
 				if pin.device_name = cp.name_a then
+					-- CS: pin must not be list of exempted_pins_a/b. see type spec of type_connector_pair
 					return (
 						is_connector_pin 	=> true,
 						side				=> B,
@@ -928,6 +945,7 @@ procedure mkoptions is
 				end if;
 				
 				if pin.device_name = cp.name_b then
+					-- CS: pin must not be list of exempted_pins_a/b. see type spec of type_connector_pair					
 					return (
 						is_connector_pin 	=> true,
 						side				=> A,
@@ -1001,28 +1019,43 @@ procedure mkoptions is
 	
 	function is_pin_of_bridge (pin : in m1_database.type_pin) return boolean is
 	-- Returns true if pin is part of a bridge.
-		name_of_bridge 			: type_device_name.bounded_string;
-		bridge_has_wildcards 	: boolean := false;
-		pin_of_bridge 			: boolean := false;
+		pin_of_bridge 					: boolean := false;
+		list_of_bridges_within_array	: type_list_of_bridges_within_array.vector;
+		-- CS: use scratch variables for list elements to speed up this query.		
 	begin
 		if length_list_of_bridges > 0 then -- do this test if there are bridges at all
+
+			loop_bridges:
 			for i in 1..length_list_of_bridges loop
-				name_of_bridge			:= element(list_of_bridges, positive(i)).name; -- load name of bridge
-				bridge_has_wildcards	:= element(list_of_bridges, positive(i)).wildcards; -- load wildcards flag of bridge
-				
-				-- check for exact match of pin name and bridge name
-				if pin.device_name = name_of_bridge then
-					pin_of_bridge := true;
-					exit;
+
+				-- on device name match
+				if element(list_of_bridges, positive(i)).name = pin.device_name then 
+
+					-- If bridge is an array:
+					if element(list_of_bridges, positive(i)).is_array then
+
+						-- Load list of bridges of that array and test if pin names match.
+						list_of_bridges_within_array := element(list_of_bridges, positive(i)).list_of_bridges;
+						for i in 1..length(list_of_bridges_within_array) loop
+							if	element(list_of_bridges_within_array, positive(i)).pin_a.name = pin.device_pin_name or
+								element(list_of_bridges_within_array, positive(i)).pin_b.name = pin.device_pin_name then
+									pin_of_bridge := true;
+									exit loop_bridges;
+							end if;
+						end loop;
+						
+					else
+					-- Bridge is a single device.
+					-- Test if pin names match.
+						if 	element(list_of_bridges, positive(i)).pin_a.name = pin.device_pin_name or
+							element(list_of_bridges, positive(i)).pin_b.name = pin.device_pin_name then
+								pin_of_bridge := true;
+								exit loop_bridges;
+						end if;
+					end if;
 				end if;
 
-				-- check for match with wildcard (R99* or R4?0)
-				if bridge_has_wildcards then
-					null;
-					-- CS
-				end if;
-
-			end loop;
+			end loop loop_bridges;
 			-- no bridge with suitable name found
 		end if;
 		
@@ -1030,6 +1063,8 @@ procedure mkoptions is
 	end is_pin_of_bridge;
 
 	procedure set_cluster_id (net : in out type_net) is
+	-- Assigns the current cluster id to the given net.
+	-- Cluster id is just a copy of the global cluster_counter.
 	begin
 		put(standard_output,natural'image(cluster_counter) & ascii.cr); -- CS: progress bar instead ?
 
@@ -1044,12 +1079,14 @@ procedure mkoptions is
 	end set_cluster_id;	
 
 	function pin_processed (pin : in m1_database.type_pin) return boolean is
+	-- Returns true if given pin belongs to a connector pair and if it has been processed.
 		processed			: boolean := false;
 		cp 					: type_connector_pair;
 		pin_scratch			: type_pin_name.bounded_string;
 		length_of_pinlist	: count_type;		
 	begin
 		if length_list_of_connector_pairs > 0 then -- do this test if there are connector pairs at all
+
 			loop_connector_pairs:
 			for i in 1..length_list_of_connector_pairs loop
 				cp := element(list_of_connector_pairs, positive(i)); -- load a connector pair
@@ -1067,8 +1104,24 @@ procedure mkoptions is
 							exit loop_connector_pairs;
 						end if;
 					end loop;
+
+				elsif pin.device_name = cp.name_b then -- if pin belongs to sida B connector
+
+					-- load number of processed pins of side B connector 
+					length_of_pinlist := length(cp.processed_pins_b); 
+					
+					-- Search for given pin among processed pins of side B connector.
+					-- If found exit loop and return true.
+					for p in 1..length_of_pinlist loop
+						pin_scratch := element(cp.processed_pins_b, positive(p));
+						if pin_scratch = pin.device_pin_name then
+							processed := true;
+							exit loop_connector_pairs;
+						end if;
+					end loop;
 				end if;
 			end loop loop_connector_pairs;
+
 		end if;
 		return processed;
 	end pin_processed;
@@ -1083,6 +1136,7 @@ procedure mkoptions is
 
 	
 	procedure find_device_by_net( -- FP
+	-- Locates a device/pin of a connector-pair or bridge within the given net.
 		net_name : in type_net_name.bounded_string) is
 		part_found			: boolean := false;
 		length_of_pinlist	: count_type;
@@ -1532,7 +1586,7 @@ procedure mkoptions is
 			text => "marking cluster nets ...",
 			console => true);
 
-		-- Search in list_of_nets for a pin with same name as a connector or a bridge.
+		-- Search in list_of_nets for a device with same name as a connector or a bridge.
 		-- If found, set the flag "cluster" of that net.
 		for i in 1..length_of_netlist loop
 			net := element(list_of_nets, positive(i)); -- load a net
@@ -1713,7 +1767,8 @@ begin
           
 	prog_position	:= 25;
 	read_uut_database;
-    
+	length_of_netlist := length(list_of_nets); -- CS: should be in read_uut_database
+	
 	-- recreate an empty tmp directory
 	prog_position	:= 30;
 	create_temp_directory;
@@ -1793,7 +1848,6 @@ begin
 	read_mkoptions_configuration;
 -- CS:	write_statistics;
 
-	length_of_netlist := length(list_of_nets);
 	make_netlist;
 
 	
