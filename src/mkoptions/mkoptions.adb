@@ -471,7 +471,6 @@ procedure mkoptions is
 		-- Depending on the flag bridge_is_array we either append a bridge device with a list of sub-bridges (like 1-8, 2-7)
 		-- or a single 2-pin bridge device.
 		begin
-			
 			case bridge_is_array is
 
 				when true =>
@@ -509,6 +508,7 @@ procedure mkoptions is
 		-- and appends them to the list_of_bridges.
 			net		: type_net;
 			pin		: m1_database.type_pin;
+			scratch	: type_device_name.bounded_string;
 		begin -- add_bridges_matching_wildcard_to_list_of_bridges
 
 			loop_netlist:
@@ -516,13 +516,27 @@ procedure mkoptions is
 				net := element(list_of_nets, positive(i)); -- load a net
 				for i in 1..length(net.pins) loop
 					pin := element(net.pins, positive(i)); -- load a pin
+
+-- 					write_message (
+-- 						file_handle => file_mkoptions_messages,
+-- 						identation => 3,
+-- 						text => to_string(pin.device_name),
+-- 						console => true);
+					
 					if wildcard_match( -- test if bridge device name matches preliminary bridge name
 						text_exact			=> to_string(pin.device_name),
 						text_with_wildcards	=> to_string(bridge_preliminary.name) ) 
 					then
 						-- On match, overwrite preliminary name with exact name.
+						scratch := bridge_preliminary.name; -- backup preliminary name
 						bridge_preliminary.name := pin.device_name;
 
+-- 						write_message (
+-- 							file_handle => file_mkoptions_messages,
+-- 							identation => 3,
+-- 							text => to_string(bridge_preliminary.name),
+-- 							console => false);
+						
 						-- if bridge not already in list
 						if not bridge_is_listed then
 						
@@ -531,12 +545,15 @@ procedure mkoptions is
 								file_handle => file_mkoptions_messages,
 								identation => 3,
 								text => to_string(bridge_preliminary.name),
+								lf => false,
 								console => false);
 							
 							-- Now the bridge name is definite and we can append it to the list_of_bridges.
 							append_bridge;
 							
 						end if;
+						
+						bridge_preliminary.name := scratch; -- restore preliminary name
 					end if;
 				end loop;
 			end loop loop_netlist;
@@ -689,7 +706,7 @@ procedure mkoptions is
 						-- If bridge name contains wildcards, count matches. Write a warning if
 						-- no device in netlist matches bridge name and regard bridge as invalid.
 						if bridge_preliminary.wildcards then
-
+							
 							if device_occurences_in_netlist(device => bridge_preliminary.name, wildcards => true) = 0 then
 								bridge_valid := false;
 								new_line(file_mkoptions_messages);
@@ -700,14 +717,14 @@ procedure mkoptions is
 										console => false);
 							else
 								bridge_valid := true;
+
+								write_message (
+									file_handle => file_mkoptions_messages,
+									identation => 1,
+									text => "includes:",
+									lf => true,
+									console => false);
 							end if;
-							
--- 							write_message (
--- 								file_handle => file_mkoptions_messages,
--- 								identation => 1,
--- 								text => "has wildcards",
--- 								lf => false,
--- 								console => false);
 							
 						else
 							-- No wildcards used in bridge device name.
@@ -783,7 +800,7 @@ procedure mkoptions is
 							end if;
 
 							if bridge_preliminary.wildcards then 
-								new_line (file_mkoptions_messages);
+								--new_line (file_mkoptions_messages);
 
 								-- So far we only have the name of a bridge with wildcards.
 								-- In order to add all matching devices, this procedure does the job:
@@ -1784,6 +1801,12 @@ begin
 		 & row_separator_0
 		 & to_string(name_file_database));
 
+	write_message (
+		file_handle => file_mkoptions_messages,
+-- 		identation => 3,
+		text => "number of nets in " & text_identifier_database & ":" & count_type'image(length_of_netlist),
+		console => true);
+	
 	-- write name of options file in logfile
 	put_line(file_mkoptions_messages, "options file"
 		 & row_separator_0
