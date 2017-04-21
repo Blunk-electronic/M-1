@@ -145,6 +145,10 @@ procedure mkoptions is
 	package type_list_of_bridges_within_array is new vectors 
 		(index_type => positive, element_type => type_bridge_within_array);
 	list_of_bridges_within_array_preliminary : type_list_of_bridges_within_array.vector;
+
+	empty_list_of_bridges_within_array : type_list_of_bridges_within_array.vector; -- NOTE: do not append anything to it !	
+	-- CS: reserve capacity of zero might improve performance.
+	
 	use type_list_of_bridges_within_array;
 	
 	type type_bridge ( is_array : boolean) is new type_bridge_preliminary with record
@@ -938,8 +942,15 @@ procedure mkoptions is
 		pin_name_scratch	: type_pin_name.bounded_string;				
 		name_a				: type_pin_name.bounded_string;
 		name_b				: type_pin_name.bounded_string;
--- 		bridge				: type_bridge := ( is_array => true);
-		bridge_within_array	: type_bridge_within_array;
+		bridge				: type_bridge := ( 
+								is_array => true,
+								name => to_bounded_string(""), -- anoying default
+								wildcards => false, -- anoying default
+								list_of_bridges => empty_list_of_bridges_within_array -- anoying default
+								);
+		
+		number_of_bridges_in_array	: count_type;
+		bridge_within_array			: type_bridge_within_array;
 	begin
 		if length_list_of_bridges > 0 then -- do this test if there are bridges at all
 
@@ -950,13 +961,47 @@ procedure mkoptions is
 				-- If device name matches we know the given pin is part of a bridge.
 				-- In addition we also need the pin name of the other side of the bridge.
 				-- This could be a pin of an array or a pin of something simple like a single 2-pin resistor.
-				if pin.device_name = bp.name then 
+				if pin.device_name = bp.name then -- device names match
 
-					if element(list_of_bridges, positive(i)).is_array then
-						null;
--- 						for i in 1..length(element(list_of_bridges, positive(i)).list_of_bridges) loop
--- 							bridge_within_array := element(list_of_bridges, positive(i)).list_of_bridges
-						-- get pin name from array of bridges
+					if element(list_of_bridges, positive(i)).is_array then -- something like "RN4 1-8 2-7"
+						-- Search for given pin in array of bridges.
+						
+						-- load a device with bridges therein
+						bridge := element(list_of_bridges, positive(i));
+
+						-- load number of bridges within array (with the example above, we get 2 bridges)
+						number_of_bridges_in_array := length(element(list_of_bridges, positive(i)).list_of_bridges);
+
+						-- loop in list of bridges of array. 
+						-- On match return side and pin name.
+						for i in 1..number_of_bridges_in_array loop
+							-- load a bridge from array, like "1-8", and save the pin names in name_a and name_b
+							bridge_within_array := element(bridge.list_of_bridges, positive(i));
+							name_a := bridge_within_array.pin_a.name;
+							name_b := bridge_within_array.pin_b.name;
+
+							-- if we are on side a, return name of side b
+							if name_a = pin.device_pin_name then 
+								return ( is_bridge_pin => true, side => B, device_pin_name => name_b);
+
+							-- if we are on side b, return name of side a
+							elsif name_b = pin.device_pin_name then
+								return ( is_bridge_pin => true, side => A, device_pin_name => name_a);
+							end if;
+						end loop;
+
+						-- No matching pin found.
+						-- CS: this case should never occur the given pin must match one pin within
+						-- the array.
+						new_line(file_mkoptions_messages);
+						write_message (
+							file_handle => file_mkoptions_messages,
+							text => message_error & " pin " & to_string(pin.device_pin_name) & " of " 
+								& to_string(pin.device_name) & " invalid !",
+							console => true);
+						raise constraint_error;
+
+						
 					else
 						-- Get pin names of a single two-pin bridge from list_of_bridges.
 						name_a := element(list_of_bridges, positive(i)).pin_a.name;
@@ -1100,50 +1145,50 @@ procedure mkoptions is
 		end loop;
 	end mark_connector_pin_as_processed;
 	
-	function is_pin_of_bridge (pin : in m1_database.type_pin) return boolean is
-	-- Returns true if pin is part of a bridge.
-		pin_of_bridge 					: boolean := false;
-		list_of_bridges_within_array	: type_list_of_bridges_within_array.vector;
-		-- CS: use scratch variables for list elements to speed up this query.		
-	begin -- is_pin_of_bridge
-		if length_list_of_bridges > 0 then -- do this test if there are bridges at all
-
-			loop_bridges:
-			for i in 1..length_list_of_bridges loop
-
-				-- on device name match
-				if element(list_of_bridges, positive(i)).name = pin.device_name then 
-
-					-- If bridge is an array:
-					if element(list_of_bridges, positive(i)).is_array then
-
-						-- Load list of bridges of that array and test if pin names match.
-						list_of_bridges_within_array := element(list_of_bridges, positive(i)).list_of_bridges;
-						for i in 1..length(list_of_bridges_within_array) loop
-							if	element(list_of_bridges_within_array, positive(i)).pin_a.name = pin.device_pin_name or
-								element(list_of_bridges_within_array, positive(i)).pin_b.name = pin.device_pin_name then
-									pin_of_bridge := true;
-									exit loop_bridges;
-							end if;
-						end loop;
-						
-					else
-					-- Bridge is a single device.
-					-- Test if pin names match.
-						if 	element(list_of_bridges, positive(i)).pin_a.name = pin.device_pin_name or
-							element(list_of_bridges, positive(i)).pin_b.name = pin.device_pin_name then
-								pin_of_bridge := true;
-								exit loop_bridges;
-						end if;
-					end if;
-				end if;
-
-			end loop loop_bridges;
-			-- no bridge with suitable name found
-		end if;
-		
-		return pin_of_bridge;
-	end is_pin_of_bridge;
+-- 	function is_pin_of_bridge (pin : in m1_database.type_pin) return boolean is
+-- 	-- Returns true if pin is part of a bridge.
+-- 		pin_of_bridge 					: boolean := false;
+-- 		list_of_bridges_within_array	: type_list_of_bridges_within_array.vector;
+-- 		-- CS: use scratch variables for list elements to speed up this query.		
+-- 	begin -- is_pin_of_bridge
+-- 		if length_list_of_bridges > 0 then -- do this test if there are bridges at all
+-- 
+-- 			loop_bridges:
+-- 			for i in 1..length_list_of_bridges loop
+-- 
+-- 				-- on device name match
+-- 				if element(list_of_bridges, positive(i)).name = pin.device_name then 
+-- 
+-- 					-- If bridge is an array:
+-- 					if element(list_of_bridges, positive(i)).is_array then
+-- 
+-- 						-- Load list of bridges of that array and test if pin names match.
+-- 						list_of_bridges_within_array := element(list_of_bridges, positive(i)).list_of_bridges;
+-- 						for i in 1..length(list_of_bridges_within_array) loop
+-- 							if	element(list_of_bridges_within_array, positive(i)).pin_a.name = pin.device_pin_name or
+-- 								element(list_of_bridges_within_array, positive(i)).pin_b.name = pin.device_pin_name then
+-- 									pin_of_bridge := true;
+-- 									exit loop_bridges;
+-- 							end if;
+-- 						end loop;
+-- 						
+-- 					else
+-- 					-- Bridge is a single device.
+-- 					-- Test if pin names match.
+-- 						if 	element(list_of_bridges, positive(i)).pin_a.name = pin.device_pin_name or
+-- 							element(list_of_bridges, positive(i)).pin_b.name = pin.device_pin_name then
+-- 								pin_of_bridge := true;
+-- 								exit loop_bridges;
+-- 						end if;
+-- 					end if;
+-- 				end if;
+-- 
+-- 			end loop loop_bridges;
+-- 			-- no bridge with suitable name found
+-- 		end if;
+-- 		
+-- 		return pin_of_bridge;
+-- 	end is_pin_of_bridge;
 
 	procedure set_cluster_id (net : in out type_net) is
 	-- Assigns the current cluster id to the given net.
@@ -1153,9 +1198,9 @@ procedure mkoptions is
 
 		write_message (
 			file_handle => file_mkoptions_messages,
-			identation => 2,
-			text => "cluster " & positive'image(cluster_counter) 
-				& " net " & to_string(net.name),
+			identation => 3,
+			text => --"cluster " & positive'image(cluster_counter) 
+				"net " & to_string(net.name),
 			console => false);
 
 		net.cluster_id := cluster_counter;			
@@ -1382,11 +1427,11 @@ procedure mkoptions is
 							-- netlist(net_pt).cluster_id := cluster_ct; -- FN6
 							update_element(list_of_nets, positive(i), set_cluster_id'access);
 
-							write_message (
-								file_handle => file_mkoptions_messages,
-								identation => 3,
-								text => "transit to net " & to_string(net.name),
-								console => false);
+-- 							write_message (
+-- 								file_handle => file_mkoptions_messages,
+-- 								identation => 3,
+-- 								text => "transit to net " & to_string(net.name),
+-- 								console => false);
 							
 							find_device_by_net(net_name => net.name);
 							exit loop_netlist;
@@ -1686,7 +1731,7 @@ procedure mkoptions is
 				end if;
 
 				-- test if pin belongs to a bridge
-				if is_pin_of_bridge(pin) then
+				if is_pin_of_bridge(pin).is_bridge_pin then
 					update_element(list_of_nets, positive(i), set_cluster_flag'access);
 					exit; 	-- Skip testing remaining pins
 							-- as net is already marked as member of a cluster
@@ -1714,6 +1759,12 @@ procedure mkoptions is
 			if net.cluster and net.cluster_id = 0 then
 				cluster_counter := cluster_counter + 1;
 
+				write_message (
+					file_handle => file_mkoptions_messages,
+					identation => 2,
+					text => "cluster" & positive'image(cluster_counter),
+					console => false);
+				
 				-- assign cluster id 
 				--netlist(net_pt).cluster_id := cluster_ct;				
 				update_element(list_of_nets, positive(i), set_cluster_id'access);
@@ -1735,6 +1786,17 @@ procedure mkoptions is
 						-- Result_of_connector_query provides the device and pin name of the
 						-- connector on the other side of the pair.
 
+						write_message (
+							file_handle => file_mkoptions_messages,
+							identation => 4,
+							text => "via connector " 
+								& to_string(pin.device_name) 
+								& " pin " & to_string(pin.device_pin_name) & " -> "
+								& to_string(result_of_connector_query.device_name)
+								& " pin " & to_string(result_of_connector_query.device_pin_name)
+								& " transit to ",
+							console => false);
+						
 						-- Now we transit to the other side of the connector pair:
 						find_net_by_device_and_pin(
 							net_of_origin => net.name, -- CS: probably not required
@@ -1750,6 +1812,16 @@ procedure mkoptions is
 						
 						-- bridge_list(b).pin_a_connected := true; -- ins v027
 						-- bridge_list(b).pin_b_processed := true; --AC3
+
+						write_message (
+							file_handle => file_mkoptions_messages,
+							identation => 4,
+							text => "via bridge " 
+								& to_string(pin.device_name) 
+								& " pin " & to_string(pin.device_pin_name) & " -> "
+								& "pin " & to_string(result_of_bridge_query.device_pin_name)
+								& " transit to ",
+							console => false);
 
 						find_net_by_device_and_pin(
 							net_of_origin => net.name, -- CS: probably not required
