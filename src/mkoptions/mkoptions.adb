@@ -272,7 +272,10 @@ procedure mkoptions is
 
 
 	function set_bridge_pins (bridge_in : in type_bridge_preliminary) return type_bridge is
-	-- Assigns the pin names a and b to the given bridge device.
+	-- Assigns the pin names a and b to the given single 2-pin bridge device.
+	-- In the order the bridge device occurs in the netlist the pin names a and b are assigned
+	-- and the flag "connected" set.
+	-- Raises an error if bridge device occurs more than twice.
 	-- The bridge returned is a type_bridge as a single two-pin bridge.
 		net					: type_net;
 		pin					: m1_database.type_pin;
@@ -283,11 +286,11 @@ procedure mkoptions is
 								is_array => false,
 								pin_a => ( name => to_bounded_string(""), -- to be overwritten later
 										   processed => false, -- CS: anoying default
-										   connected => false -- to be overwritten later
+										   connected => false -- to be overwritten later -- CS: should not be set here. see below
 										 ), 
 								pin_b => ( name => to_bounded_string(""), -- to be overwritten later
 										   processed => false, -- CS: anoying default 
-										   connected => false -- to be overwritten later
+										   connected => false -- to be overwritten later -- CS: should not be set here. see below
 										 ));
 	begin -- set_bridge_pins
 		-- We search the database netlist until the given bridge_in found.
@@ -387,7 +390,7 @@ procedure mkoptions is
 		pin					: m1_database.type_pin;
 		length_of_pinlist	: count_type; -- CS: we assume there are no zero-pin nets
 		occurences			: natural := 0;
-	begin
+	begin -- device_occurences_in_netlist
 		for i in 1..length(list_of_nets) loop -- loop in netlist
 			net := element(list_of_nets, positive(i)); -- load a net
 			length_of_pinlist := length(net.pins); -- load number of pins in the net
@@ -409,14 +412,28 @@ procedure mkoptions is
 		return occurences;
 	end device_occurences_in_netlist;
 
+
 	procedure verify_array_pins ( 
 	-- Checks if the pins of the given array device exist in netlist.
-	-- Checks if the pins of the given array device are conencted.
+	-- Checks if the given array device occurs in netlist more often than pins have been specified in mkoptions.conf.
 		name	: in type_device_name.bounded_string;
-		pins	: in type_list_of_bridges_within_array.vector) is
+		bridges	: in type_list_of_bridges_within_array.vector) is
 
-		bridge	: type_bridge_within_array;
-	begin
+		bridge_count	: positive := positive(length(bridges)); -- number of bridges within array
+		bridge			: type_bridge_within_array; -- a single bridge within array
+
+		procedure message_warning_on_missing_pin (
+			device 	: in type_device_name.bounded_string;
+			pin		: in type_pin_name.bounded_string) is
+		begin
+			-- new_line(file_mkoptions_messages);
+			write_message (
+				file_handle => file_mkoptions_messages,
+				text => message_warning & "device " & to_string(device) & " pin/pad " & to_string(pin) & " not found !",
+				console => false);
+		end message_warning_on_missing_pin;
+		
+	begin -- verify_array_pins
 		write_message (
 			file_handle => file_mkoptions_messages,
 			lf => false,
@@ -424,25 +441,37 @@ procedure mkoptions is
 			console => false);
 
 		-- write pins in logfile		
-		for i in 1..length(pins) loop
-			bridge := element(pins, positive(i));
+		for i in 1..bridge_count loop
+			bridge := element(bridges, i);
 			write_message (
 				file_handle => file_mkoptions_messages,
-				-- 				identation => 3,
 				lf => false,
 				text => to_string(bridge.pin_a.name) & separator & to_string(bridge.pin_b.name) & row_separator_0,
 				console => false);
 		end loop;
 		new_line(file_mkoptions_messages);
-		
--- 		write_message (
--- 			file_handle => file_mkoptions_messages,
--- 			identation => 3,
--- 			text => "verifying array pins ...",
--- 			console => false);
 
-		-- CS: write warning if a pin does not exist in netlist
-		-- CS: error if a pin occurs more than once
+		-- Send warning if pin a or b does not exist in netlist					
+		for i in 1..bridge_count loop
+			bridge := element(bridges, i);
+
+			if occurences_of_pin (device_name => name, pin_name => bridge.pin_a.name) = 0 then
+				message_warning_on_missing_pin(device => name, pin => bridge.pin_a.name);
+			end if;
+
+			if occurences_of_pin (device_name => name, pin_name => bridge.pin_b.name) = 0 then
+				message_warning_on_missing_pin(device => name, pin => bridge.pin_b.name);
+			end if;
+		end loop;
+
+		-- Send warning if a bridge device has more pins than specified in mkoptions.conf
+		if device_occurences_in_netlist(name) > bridge_count*2 then -- bridge_count *2 because a bridge has 2 pins
+			write_message (
+				file_handle => file_mkoptions_messages,
+				text => message_warning & "device " & to_string(name) 
+					& " has more pins/pads than specified here !",
+				console => false);
+		end if;
 
 	end verify_array_pins;
 	
@@ -558,7 +587,6 @@ procedure mkoptions is
 				end loop;
 			end loop loop_netlist;
 		end add_bridges_matching_wildcard_to_list_of_bridges;
-
 		
 	begin -- read_mkoptions_configuration
 		write_message (
