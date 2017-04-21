@@ -932,7 +932,7 @@ procedure mkoptions is
 			when false => null;
 		end case;
 	end record;
-	result_of_bridge_query : type_result_of_bridge_query;
+-- 	result_of_bridge_query : type_result_of_bridge_query;
 
 	function is_pin_of_bridge (pin : in m1_database.type_pin) return type_result_of_bridge_query is
 	-- Returns true if given pin belongs to a bridge.
@@ -1045,7 +1045,7 @@ procedure mkoptions is
 			when false => null;
 		end case;
 	end record;
-	result_of_connector_query : type_result_of_connector_query;
+-- 	result_of_connector_query : type_result_of_connector_query;
 	
 	function is_pin_of_connector (pin : in m1_database.type_pin) return type_result_of_connector_query is
 	-- Returns true if pin is part of a connector pair.
@@ -1270,135 +1270,90 @@ procedure mkoptions is
 		length_of_pinlist	: count_type;
 		pin					: m1_database.type_pin;		
 		net 				: type_net;
-		result				: type_result_of_connector_query;
+		
+		result_of_connector_query	: type_result_of_connector_query;
+		result_of_bridge_query		: type_result_of_bridge_query;
 	begin -- find_device_by_net
-		--put_line("FP");
-		--put_line(standard_output,"FP : " & natural'image(net_id_given));
-
--- 			for net_pt in 1..net_ct	-- search net by given net_id -- FP1
--- 			loop
 		loop_netlist:
 		for i in 1..length_of_netlist loop
 			net := element(list_of_nets, positive(i));
-
--- 				if netlist(net_pt).net_id = net_id_given then -- if net found
-			if net.name = net_name then
--- 				for p in 1..netlist(net_pt).part_ct	-- find conpair or bridge in net
--- 				loop
+			
+			if net.name = net_name then -- if net found
 				length_of_pinlist := length(net.pins);
-					for p in 1..length_of_pinlist loop
-						pin := element(net.pins, positive(p)); -- load a pin
-
-						-- check if pin belongs to a connector pair -- FP2
-						-- if con_pair_list(c).name_a = part or con_pair_list(c).name_b = part then -- part A or B found
-						result := is_pin_of_connector(pin);
-						if result.is_connector_pin then
-							part_found := true; -- FP10
- 							-- if pin_processed(con_pair_list(c).pins_processed,pin) = false then -- if pin not processed yet -- FP4
-							if not pin_processed(pin) then
-
-								--con_pair_list(c).pins_processed := con_pair_list(c).pins_processed & " " & pin; -- mark pin as processed
-								mark_connector_pin_as_processed(
-									device => pin.device_name,
-									pin => pin.device_pin_name,
-									side => opposide_of(result.side)
-									);
-
--- 									if con_pair_list(c).name_a = part then -- if part A found
--- 										--put_line(standard_output,"     con  " & part & " pin " & pin); 
--- 										if find_net_by_part_and_pin
--- 											(
--- 											net_id_origin => netlist(net_pt).net_id,
--- 											part_given => con_pair_list(c).name_b, -- part A has been found, so part B must be passed
--- 											pin_given => pin
--- 											)
--- 										then null;
--- 										end if;
--- 										exit; -- test
--- 									end if; -- if part A found
-
-								-- Result provides the device and pin name of the
-								-- connector on the other side of the pair.
-								-- Now we transit to the other side of the connector pair:
-								find_net_by_device_and_pin(
-									net_of_origin => net.name, -- CS: probably not required
-									device => result_of_connector_query.device_name,
-									pin => result_of_connector_query.device_pin_name);
--- 
--- 									if con_pair_list(c).name_b = part then -- if part B found
--- 										--put_line(standard_output,"     con  " & part & " pin " & pin);
--- 										if find_net_by_part_and_pin
--- 											(
--- 											net_id_origin => netlist(net_pt).net_id,
--- 											part_given => con_pair_list(c).name_a, -- part B has been found, so part A must be passed
--- 											pin_given => pin
--- 											)
--- 										then null;
--- 										end if;
--- 										exit; -- test
--- 									end if; -- if part B found
-							end if; -- if pin not processed yet
-						end if;
-
-
--- 						-- check if part is a bridge
--- 						for b in 1..bridge_ct
--- 						loop
--- 							if bridge_list(b).name = part then -- PF3 -- bridge found
--- 								part_found := true; -- FP10
--- 								if bridge_list(b).pin_a = pin then -- pin A found
--- 									-- this pin is connected with a net, so we mark this pin as "connected" now
--- 									bridge_list(b).pin_a_connected := true; -- ins v027
--- 									if bridge_list(b).pin_a_processed = false then -- if pin A not processed yet -- FP5
--- 										bridge_list(b).pin_b_processed := true; -- mark counter pin B as processed -- FP6
--- 										--put_line(part & " counter pin " & bridge_list(b).pin_b);  -- CS: early exit ?
--- 										if find_net_by_part_and_pin
--- 											(
--- 											net_id_origin => netlist(net_pt).net_id,
--- 											part_given => part,
--- 											pin_given => bridge_list(b).pin_b -- pin A has been found, so pin B must be passed
--- 											)
--- 											then null;
--- 										end if;
--- 									end if;
--- 
--- 								elsif bridge_list(b).pin_b = pin then -- pin B found
--- 									-- this pin is connected with a net, so we mark this pin as "connected" now
--- 									bridge_list(b).pin_b_connected := true; -- ins v027
--- 									if bridge_list(b).pin_b_processed = false then -- if pin B not processed yet -- FP5
--- 										bridge_list(b).pin_a_processed := true;	--  mark counter pin A as processed -- FP6
--- 										--put_line(part & " counter pin " & bridge_list(b).pin_a);  -- CS: early exit ?
--- 										if find_net_by_part_and_pin
--- 											(
--- 											net_id_origin => netlist(net_pt).net_id,
--- 											part_given => part,
--- 											pin_given => bridge_list(b).pin_a -- pin B has been found, so pin A must be passed
--- 											)
--- 											then null;
--- 										end if;
--- 									end if; -- if pin B not processed yet
--- 								else null; -- CS: should we do something here ? (bridge found but not pin found)
--- 								-- is this case a resistor of a resistor array has been found, but the pin does not match
--- 								-- so another looping is required to find the pin -- ins v027
--- 								end if;
--- 							end if; -- FP3 -- bridge found
--- 						end loop; -- search in bridge list
-
-
-					end loop; -- search in pinlist of net
+				for p in 1..length_of_pinlist loop -- search in pinlist of net
 					
--- 					if part_found then return true; -- FP11
--- 					else return false; -- implies an early exit if no conpair or bridge in net found, so no further nets will be searched in
--- 					end if;
-			end if; -- if net found
-		end loop loop_netlist;
+					pin := element(net.pins, positive(p)); -- load a pin
 
--- 		return false; -- if no part found
+					-- Test if pin belongs to a connector pair -- FP2
+					result_of_connector_query := is_pin_of_connector(pin);
+					if result_of_connector_query.is_connector_pin then
+						
+						if not pin_processed(pin) then
+
+							mark_connector_pin_as_processed( -- CS: probably not required
+								device => pin.device_name,
+								pin => pin.device_pin_name,
+								side => opposide_of(result_of_connector_query.side)
+								);
+
+							-- Result provides the device and pin name of the
+							-- connector on the other side of the pair.
+
+							write_message (
+								file_handle => file_mkoptions_messages,
+								identation => 4,
+								text => "via connector " 
+									& to_string(pin.device_name) 
+									& " pin " & to_string(pin.device_pin_name) & " -> "
+									& to_string(result_of_connector_query.device_name)
+									& " pin " & to_string(result_of_connector_query.device_pin_name)
+									& " transit to ",
+								console => false);
+							
+							-- Now we transit to the other side of the connector pair:
+							find_net_by_device_and_pin(
+								net_of_origin => net.name, -- CS: probably not required
+								device => result_of_connector_query.device_name,
+								pin => result_of_connector_query.device_pin_name);
+
+						end if; -- if pin not processed yet
+					end if;
+
+					-- Test if pin belongs to a bridge
+					result_of_bridge_query := is_pin_of_bridge(pin);
+					if result_of_bridge_query.is_bridge_pin then
+
+						-- mark_bridge_pin_as_connected(pin); -- CS not required ?
+						
+						-- bridge_list(b).pin_a_connected := true; -- ins v027
+						-- bridge_list(b).pin_b_processed := true; --AC3
+
+						write_message (
+							file_handle => file_mkoptions_messages,
+							identation => 4,
+							text => "via bridge " 
+								& to_string(pin.device_name) 
+								& " pin " & to_string(pin.device_pin_name) & " -> "
+								& "pin " & to_string(result_of_bridge_query.device_pin_name)
+								& " transit to ",
+							console => false);
+
+						find_net_by_device_and_pin(
+							net_of_origin => net.name, -- CS: probably not required
+							device => pin.device_name,
+							pin => result_of_bridge_query.device_pin_name);
+					end if;
+
+				end loop; -- search in pinlist of net
+			end if; -- if net found
+			
+		end loop loop_netlist;
 	end find_device_by_net;
 
 	
 	procedure find_net_by_device_and_pin( -- FN
 	-- Locates the net connected to given device and pin.
+	-- If no net found, the procedure ends without doing anything.
 		net_of_origin	: in type_net_name.bounded_string; -- CS: probably not required, see below
 		device			: in type_device_name.bounded_string;
 		pin				: in type_pin_name.bounded_string ) is
@@ -1452,6 +1407,10 @@ procedure mkoptions is
 		
 		length_of_pinlist	: count_type;
 		pin					: m1_database.type_pin; -- for temporarily usage		
+
+		result_of_connector_query	: type_result_of_connector_query;
+		result_of_bridge_query		: type_result_of_bridge_query;
+
 		
 -- 		procedure find_non_cluster_bs_nets is
 -- 		begin
@@ -1773,7 +1732,7 @@ procedure mkoptions is
 				for p in 1..length_of_pinlist loop
 					pin := element(net.pins, positive(p)); -- load a pin
 
-					-- Test if pin belongs to a connector. 
+					-- Test if pin belongs to a connector pair. 
 					-- If it is pin of a connector mark it as processed.
 					result_of_connector_query := is_pin_of_connector(pin);
 					if result_of_connector_query.is_connector_pin then
