@@ -2111,7 +2111,9 @@ procedure chkpsn is
 								bs_output_pin_count => n.bs_output_pin_count,
 								bs_capable => n.bs_capable,
 								secondary_net_names => n.secondary_net_names,
-								optimized => n.optimized -- does not matter here
+								optimized => n.optimized, -- does not matter here
+								cluster => false, -- does not matter here
+								cluster_id => 0 --does not matter here		
 								));
 
 						when secondary =>
@@ -2125,7 +2127,9 @@ procedure chkpsn is
 								bs_output_pin_count => n.bs_output_pin_count,
 								bs_capable => n.bs_capable,
 								name_of_primary_net => primary_net_is,
-								optimized => n.optimized -- does not matter here
+								optimized => n.optimized, -- does not matter here
+								cluster => false, -- does not matter here
+								cluster_id => 0 --does not matter here		
 								));
 					end case;
 				end if;
