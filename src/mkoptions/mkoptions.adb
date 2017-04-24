@@ -126,7 +126,7 @@ procedure mkoptions is
 	
 	type type_pin is record
 		name			: type_pin_name.bounded_string;
-		processed		: boolean := false;
+--		processed		: boolean := false;
 		connected		: boolean := false;
 	end record;
 	
@@ -288,11 +288,11 @@ procedure mkoptions is
 		bridge_out			: type_bridge := (bridge_in with
 								is_array => false,
 								pin_a => ( name => to_bounded_string(""), -- to be overwritten later
-										   processed => false, -- CS: anoying default
+-- 										   processed => false, -- CS: anoying default
 										   connected => false -- CS: anoying default
 										 ), 
 								pin_b => ( name => to_bounded_string(""), -- to be overwritten later
-										   processed => false, -- CS: anoying default 
+-- 										   processed => false, -- CS: anoying default 
 										   connected => false -- CS: anoying default
 										 ));
 	begin -- set_bridge_pins
@@ -321,11 +321,9 @@ procedure mkoptions is
 					case occurences is
 						when 1 =>
 							bridge_out.pin_a.name := pin.device_pin_name;
--- 							bridge_out.pin_a.connected := true;
 							
 							write_message (
 								file_handle => file_mkoptions_messages,
--- 								identation => 4,
 								text => to_string(pin.device_pin_name) & row_separator_0,
 								lf => false,
 								console => false);
@@ -344,8 +342,7 @@ procedure mkoptions is
 								raise constraint_error;
 							end if;
 								
--- 							bridge_out.pin_b.connected := true;
-							
+
 							write_message (
 								file_handle => file_mkoptions_messages,
 								text => to_string(pin.device_pin_name) & row_separator_0,
@@ -1182,6 +1179,8 @@ procedure mkoptions is
 		net					: type_net;
 		length_of_pinlist	: count_type;
 		pin_scratch			: m1_database.type_pin;
+-- 		net_found			: boolean := false; -- True once a net has been found. when unchanged
+-- 												-- a warning about an unconnected pin is generated.
 	begin -- find_net
 		loop_netlist:
 		for i in 1..length_of_netlist loop
@@ -1197,6 +1196,7 @@ procedure mkoptions is
 					pin_scratch := element(net.pins, positive(p)); -- load a pin
 
 					if pin_scratch.device_name = device and pin_scratch.device_pin_name = pin then -- FN4 / FN5
+-- 						net_found := true;
 						update_element(list_of_nets, positive(i), set_cluster_id'access);
 
 						-- Find a connector or bridge pin in this net:
@@ -1211,6 +1211,20 @@ procedure mkoptions is
 				end loop;
 			end if;
 		end loop loop_netlist;
+
+-- 		-- If the netlist has been searched without finding a net connected to the given pin.
+-- 		-- Send a warning in logfile.
+-- 		if not net_found then
+-- 			new_line(file_mkoptions_messages);
+-- 			write_message (
+-- 				file_handle => file_mkoptions_messages,
+-- 				text => message_warning
+-- 					& "device " & to_string(device) 
+-- 					& " pin " & to_string(pin)
+-- 					& " is not connected !",
+-- 				console => false);
+-- 		end if;
+		
 	end find_net;
 
 	
@@ -1260,7 +1274,96 @@ procedure mkoptions is
 -- 
 -- 
 -- 
--- 		procedure order_clusters is
+-- 
+-- 
+
+		procedure set_cluster_flag (net : in out type_net) is
+		begin
+			net.cluster := true;
+
+			write_message (
+				file_handle => file_mkoptions_messages,
+				identation => 2,
+				text => to_string(net.name),
+				console => false);
+		
+		end set_cluster_flag;
+
+			
+	begin -- make_netlist
+
+		write_message (
+			file_handle => file_mkoptions_messages,
+			identation => 1,
+			text => "marking cluster nets ...",
+			console => true);
+
+		-- Search in list_of_nets for a device with same name as a connector or a bridge.
+		-- If found, set the flag "cluster" of that net.
+		for i in 1..length_of_netlist loop
+			net := element(list_of_nets, positive(i)); -- load a net
+
+			length_of_pinlist := length(net.pins);
+			for p in 1..length_of_pinlist loop
+				pin := element(net.pins, positive(p)); -- load a pin
+
+				-- test if pin belongs to a connector
+				if is_pin_of_connector(pin).is_connector_pin then
+					update_element(list_of_nets, positive(i), set_cluster_flag'access);
+					exit; 	-- Skip testing remaining pins
+							-- as net is already marked as member of a cluster
+				end if;
+
+				-- test if pin belongs to a bridge
+				if is_pin_of_bridge(pin).is_bridge_pin then
+					update_element(list_of_nets, positive(i), set_cluster_flag'access);
+					exit; 	-- Skip testing remaining pins
+							-- as net is already marked as member of a cluster
+				end if;
+
+				-- mark net as primary net -- CS: no need. is primary by default
+-- 				if is_field(Line,"output2",field_pt) then
+-- 					netlist(scratch).primary_net := true;
+-- 				end if;
+
+			end loop;
+		end loop;
+
+		-- search cluster nets (action AC1)
+		write_message (
+			file_handle => file_mkoptions_messages,
+			identation => 1,
+			text => "examining cluster nets ...",
+			console => true);
+
+		for i in 1..length_of_netlist loop
+			net := element(list_of_nets, positive(i)); -- load a net
+
+			-- Care for cluster nets only:
+			-- If net is a cluster and if it has not been assigned a cluster id yet
+			if net.cluster and net.cluster_id = 0 then
+				cluster_counter := cluster_counter + 1;
+
+				write_message (
+					file_handle => file_mkoptions_messages,
+					identation => 2,
+					text => "cluster" & positive'image(cluster_counter),
+					console => false);
+				
+				-- assign cluster id 
+				update_element(list_of_nets, positive(i), set_cluster_id'access);
+
+				-- Find a connector or bridge pin in the net. Since there is no entry pin
+				-- at this stage, there is no entry pin to be ignored.
+				find_pin(net => net, ignore_entry_pin => true);
+				
+			end if;
+		end loop;
+
+	end make_netlist;	
+
+
+	procedure sort_clusters is
 -- 
 -- 		subtype cluster_list_sized is cluster_list_type (1..cluster_ct);
 -- 		cluster_list	: cluster_list_sized;
@@ -1376,7 +1479,8 @@ procedure mkoptions is
 -- 				end order_bs_cluster;
 -- 
 -- 
--- 			begin
+	begin -- sort_clusters
+		null;
 -- 				-- make cluster_list
 -- 				for c in 1..cluster_ct
 -- 				loop
@@ -1448,130 +1552,33 @@ procedure mkoptions is
 -- 
 -- 				find_non_cluster_non_bs_nets;
 -- 
--- 			end order_clusters;
--- 
--- 
+	end sort_clusters;
+	
+	
 
-		procedure set_cluster_flag (net : in out type_net) is
-		begin
-			net.cluster := true;
-
+	procedure write_netlist is
+		
+	begin
+		put_line("-- NETLIST -----------------------------------------------------------");
+		
+		-- if there are clusters write them first
+		if cluster_counter > 0 then
 			write_message (
 				file_handle => file_mkoptions_messages,
-				identation => 2,
-				text => to_string(net.name),
-				console => false);
-		
-		end set_cluster_flag;
+				identation => 1,
+				text => "sorting clusters ...",
+				console => true);
 
-			
-	begin -- make_netlist
-
-		write_message (
-			file_handle => file_mkoptions_messages,
-			identation => 1,
-			text => "marking cluster nets ...",
-			console => true);
-
-		-- Search in list_of_nets for a device with same name as a connector or a bridge.
-		-- If found, set the flag "cluster" of that net.
-		for i in 1..length_of_netlist loop
-			net := element(list_of_nets, positive(i)); -- load a net
-
-			length_of_pinlist := length(net.pins);
-			for p in 1..length_of_pinlist loop
-				pin := element(net.pins, positive(p)); -- load a pin
-
-				-- test if pin belongs to a connector
-				if is_pin_of_connector(pin).is_connector_pin then
-					update_element(list_of_nets, positive(i), set_cluster_flag'access);
-					exit; 	-- Skip testing remaining pins
-							-- as net is already marked as member of a cluster
-				end if;
-
-				-- test if pin belongs to a bridge
-				if is_pin_of_bridge(pin).is_bridge_pin then
-					update_element(list_of_nets, positive(i), set_cluster_flag'access);
-					exit; 	-- Skip testing remaining pins
-							-- as net is already marked as member of a cluster
-				end if;
-
-				-- mark net as primary net -- CS: no need. is primary by default
--- 				if is_field(Line,"output2",field_pt) then
--- 					netlist(scratch).primary_net := true;
--- 				end if;
-
-			end loop;
-		end loop;
-
-		-- search cluster nets (action AC1)
-		write_message (
-			file_handle => file_mkoptions_messages,
-			identation => 1,
-			text => "examining cluster nets ...",
-			console => true);
-
-		for i in 1..length_of_netlist loop
-			net := element(list_of_nets, positive(i)); -- load a net
-
-			-- Care for cluster nets only:
-			-- If net is a cluster and if it has not been assigned a cluster id yet
-			if net.cluster and net.cluster_id = 0 then
-				cluster_counter := cluster_counter + 1;
-
-				write_message (
-					file_handle => file_mkoptions_messages,
-					identation => 2,
-					text => "cluster" & positive'image(cluster_counter),
-					console => false);
-				
-				-- assign cluster id 
-				update_element(list_of_nets, positive(i), set_cluster_id'access);
-
-				-- Find a connector or bridge pin in the net. Since there is no entry pin
-				-- at this stage, there is no entry pin to be ignored.
-				find_pin(net => net, ignore_entry_pin => true);
-				
-			end if;
-		end loop;
-
--- 
--- 
--- 			-- ins v027 begin
--- 			-- check for open bridge array pins
--- -- 			prog_position := "OP1";
--- 			if bridge_ct > 0 then
--- 				for b in 1..bridge_ct
--- 				loop
--- 					if bridge_list(b).part_of_array = true then -- search in bridges for unconnected pins
--- 						if bridge_list(b).pin_a_connected = false then
--- 							put_line("-- WARNING : Bridge " & bridge_list(b).name & " has unconnected pin " & bridge_list(b).pin_a & " !");
--- 							put_line("-- Check array declaration in mkoptions.conf file !"); new_line;
--- 						end if;
--- 						if bridge_list(b).pin_b_connected = false then
--- 							put_line("-- WARNING : Bridge " & bridge_list(b).name & " has unconnected pin " & bridge_list(b).pin_b & " !"); 
--- 							put_line("-- Check array declaration in mkoptions.conf file !"); new_line; 
--- 						end if;
--- 					end if;
--- 				end loop;
--- 			end if;
--- 
--- 			new_line; put_line("-- NETLIST -----------------------------------------------------------"); new_line; -- ins v027
--- 			-- ins v027 end
--- 
--- 
--- 			if cluster_ct > 0 then 
--- 				-- order net clusters
--- 				put_line(standard_output,"ordering clusters ...");
--- 				order_clusters;
+				sort_clusters;
 -- 			else
 -- 				find_non_cluster_bs_nets;
 -- 				find_non_cluster_non_bs_nets;
 -- 			end if;
 -- 
 -- 			return true;
-	end make_netlist;	
 
+		end if; -- if cluster counter > 0
+	end write_netlist;
 	
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
@@ -1681,7 +1688,7 @@ begin
 
 	make_netlist;
 
-	
+	write_netlist;
 
 	close(file_options);
 
