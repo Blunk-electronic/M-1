@@ -79,14 +79,15 @@ procedure mkoptions is
 -- 	end record;
 
 
--- 	type cluster is
--- 		record
--- 			ordered			: boolean := false;
--- 			bs				: boolean := false; -- bs capable flag
--- 			size			: natural := 0;
--- 			members			: unbounded_string;
--- 		end record;
--- 	type cluster_list_type is array (natural range <>) of cluster;
+ 	type type_cluster is record
+-- 		ordered			: boolean := false;
+		bs_capable		: boolean := false;
+		size			: natural := 0;
+		nets			: type_list_of_nets.vector;
+	end record;
+	package type_list_of_clusters is new vectors (index_type => positive, element_type => type_cluster);
+	use type_list_of_clusters;
+	list_of_clusters : type_list_of_clusters.vector;
 
 
 	procedure write_routing_file_header is
@@ -1363,42 +1364,160 @@ procedure mkoptions is
 	end make_netlist;	
 
 
-	procedure sort_clusters is
--- 
--- 		subtype cluster_list_sized is cluster_list_type (1..cluster_ct);
--- 		cluster_list	: cluster_list_sized;
--- 
--- 			procedure order_bs_cluster
--- 				(
--- 				size	: natural;
--- 				members	: unbounded_string -- holds ids of cluster nets, separated by space
--- 				) is
--- 				primary_net_found	: boolean := false;
--- 				begin
--- 					put("Section ");
--- 	
--- 					-- search for a "must be" primary net (with output2 drivers)
--- 					loop_i1: 
--- 					for i in 1..size
--- 					loop
--- 						for n in 1..net_ct
--- 						loop
--- 							if netlist(n).processed = false then
--- 								if netlist(n).net_id = natural'value(get_field(members,i)) then -- member net found
--- 
+	procedure make_cluster_lists is
+		net		: type_net;
+		cluster	: type_cluster;
+	begin -- make_cluster_lists
+		
+		write_message (
+			file_handle => file_mkoptions_messages,
+			identation => 1,
+			text => "making cluster lists ...",
+			console => false);
+
+		-- loop in clusters
+		for c_id in 1..cluster_counter loop
+
+			write_message (
+				file_handle => file_mkoptions_messages,
+				identation => 2,
+				text => "cluster" & natural'image(c_id) & " with nets:",
+				console => false);
+
+			-- loop in netlist
+			for i in 1..length_of_netlist loop
+
+				-- Load a net. test if it is part of a cluster and if cluster id matches c_id.
+				-- On match, add the net to the list of nets of cluster.
+				-- If any net of the cluster is scan capable, mark the whole cluster as scan capable.
+				-- Count number of nets in cluster and update size accordingly.
+				net := element(list_of_nets, positive(i));
+				if net.cluster and net.cluster_id = c_id then
+
+					write_message (
+						file_handle => file_mkoptions_messages,
+						identation => 3,
+						text => to_string(net.name),
+						console => false);
+
+					append(cluster.nets, net);
+					
+					if net.bs_capable then
+						cluster.bs_capable := true;
+					end if;
+					
+					cluster.size := cluster.size + 1;
+				end if;	-- if cluster id matches
+				
+			end loop; -- loop in netlist
+
+			if cluster.bs_capable then
+				write_message (
+					file_handle => file_mkoptions_messages,
+					identation => 4,
+					text => "... is scan capable",
+					console => false);
+			end if;
+			
+			-- All nets of current cluster found.
+			append(list_of_clusters, cluster);
+			
+		end loop; -- loop in clusters
+
+	end make_cluster_lists;
+	
+
+
+	procedure write_net_content( net : in type_net) is
+	-- Writes the pins of the given net in options file.
+		procedure write_pin ( pin : in m1_database.type_pin) is
+-- 			bic : type_bscan_ic;
+			use type_device_value;
+			use type_package_name;
+			use type_list_of_bics;
+		begin
+			-- write the basic pin info as comment like "-- R101 ? 2k7 0207/10 2"
+			put(2 * row_separator_0 & comment_mark & to_string(pin.device_name) & row_separator_0 &
+				type_device_class'image(device_class_default)(2) & row_separator_0 &
+				to_string(pin.device_value) & row_separator_0 &
+				to_string(pin.device_package) & row_separator_0 &
+				to_string(pin.device_pin_name) & row_separator_0
+			);
+
+			-- CS:
+			-- If pin belongs to a bic, additionally write
+			-- port and cell info like "SOIC24 2 Y1(1) | 7 BC_1 OUTPUT3 X 17 1 Z"
+-- 			for i in 1..type_list_of_bics.length(list_of_bics) loop
+-- 				bic := element(list_of_bics, positive(i));
+-- 				if bic.name = pin.device_name then
+-- 					put(get_cell_info(
+-- 						bic => positive(i),
+-- 						pin => pin.device_pin_name));
+-- 				end if;
+-- 			end loop;
+
+			new_line;
+		end write_pin;
+		
+	begin
+		-- loop in pinlist of given net and write one pin after another
+		for i in 1..length(net.pins) loop
+			write_pin(element(net.pins, positive(i)));
+		end loop;
+	end write_net_content;
+	
+	procedure sort_bs_clusters is
+		-- 				primary_net_found	: boolean := false;		
+
+		cluster : type_cluster;
+		net 	: type_net;		
+		pin		: m1_database.type_pin;
+
+		keyword_allowed : constant string (1..7) := "allowed";
+	begin
+		write_message (
+			file_handle => file_mkoptions_messages,
+			identation => 1,
+			text => "sorting clusters ...",
+			console => false);
+		
+		put(section_mark.section);
+
+
+		for i in 1..length(list_of_clusters) loop
+			
+			cluster := element(list_of_clusters, positive(i));
+			if cluster.bs_capable then
+				for i in 1..length(cluster.nets) loop
+					net := element(cluster.nets, positive(i));
+
+					-- Search for a "must be" primary net (with output2 drivers)
+					if net.bs_output_pin_count > 0 then
+						for p in 1..length(net.pins) loop
+							pin := element(net.pins, positive(p));
+							if pin.is_bscan_capable then
+								if pin.cell_info.control_cell_id = cell_not_available then -- we have an output2 pin
+
+		-- 							if netlist(n).processed = false then
 -- 									if netlist(n).primary_net then
 -- 										netlist(n).processed := true;
--- 										put_line(netlist(n).name & " class NA  -- allowed DH, DL, NR");
+									put_line(to_string(net.name) & row_separator_0 & netlist_keyword_header_class 
+										& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
+										& comment_mark & keyword_allowed & row_separator_0
+										& type_net_class'image(DH) & row_separator_0
+										& type_net_class'image(DL) & row_separator_0
+										& type_net_class'image(NR));
+
 -- 										csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
--- 										put(netlist(n).content);
+									write_net_content(net);
 -- 										primary_net_found := true;
--- 										exit loop_i1;
--- 									end if;
--- 								end if;
--- 							end if;
--- 						end loop;
--- 					end loop loop_i1;
--- 
+									-- 										exit loop_i1;
+								end if;
+							end if;
+						end loop;
+					end if;
+
+
 -- 					if primary_net_found = false then	
 -- 						-- search for a primary net with normal outputs (output3, bidir)
 -- 						loop_i2: 
@@ -1475,27 +1594,28 @@ procedure mkoptions is
 -- 					put_line(" EndSubSection");
 -- 					put_line("EndSection");
 -- 					new_line(2);
--- 					csv.put_lf(routing_file); -- in v028
--- 				end order_bs_cluster;
--- 
--- 
-	begin -- sort_clusters
-		null;
--- 				-- make cluster_list
--- 				for c in 1..cluster_ct
--- 				loop
--- 					for n in 1..net_ct
--- 					loop
--- 						if netlist(n).cluster_id = c then -- find nets belonging to the cluster
--- 							cluster_list(c).size := cluster_list(c).size + 1; -- update cluster size
--- 							cluster_list(c).members := cluster_list(c).members & " " & natural'image(netlist(n).net_id); -- collect net ids
--- 					
--- 							-- if any net of this cluster has bs input or output, mark cluster as bs capable
--- 							if netlist(n).bs_driver_ct > 0 or netlist(n).bs_input_ct > 0 then cluster_list(c).bs := true; end if;
--- 						end if;
--- 					end loop;
--- 				end loop;
--- 
+					-- 					csv.put_lf(routing_file); -- in v028
+				end loop;
+			end if;
+		end loop;
+	end sort_bs_clusters;
+
+	
+	procedure write_netlist is
+		
+	begin
+		set_output(file_options);
+		put_line("-- NETLIST -----------------------------------------------------------");
+		
+		-- if there are clusters write them first
+		if cluster_counter > 0 then
+
+			make_cluster_lists;
+			sort_bs_clusters;
+
+
+
+			
 -- 
 -- 				-- find bs-cluster
 -- 				for c in 1..cluster_ct
@@ -1551,25 +1671,9 @@ procedure mkoptions is
 -- 
 -- 
 -- 				find_non_cluster_non_bs_nets;
--- 
-	end sort_clusters;
-	
-	
-
-	procedure write_netlist is
-		
-	begin
-		put_line("-- NETLIST -----------------------------------------------------------");
-		
-		-- if there are clusters write them first
-		if cluster_counter > 0 then
-			write_message (
-				file_handle => file_mkoptions_messages,
-				identation => 1,
-				text => "sorting clusters ...",
-				console => true);
-
-				sort_clusters;
+					
+			
+-- 				sort_clusters;
 -- 			else
 -- 				find_non_cluster_bs_nets;
 -- 				find_non_cluster_non_bs_nets;
