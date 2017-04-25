@@ -408,19 +408,22 @@ procedure mknets is
 			bic 			: type_bscan_ic;
 			
 			procedure write_pin is
+			-- writes something like: IC303 ? SN74BCT8240ADWR SOIC24 2 Y1(1) | 7 BC_1 OUTPUT3 X 17 1 Z
 				use type_list_of_bics;
 			begin
+				-- write the basic pin info like "R101 ? 2k7 0207/10 2"
 				put(2 * row_separator_0 & to_string(pin_scratch.device_name) & row_separator_0 &
 						 type_device_class'image(device_class_default)(2) & row_separator_0 &
 						 to_string(pin_scratch.device_value) & row_separator_0 &
 						 to_string(pin_scratch.device_package) & row_separator_0 &
 						 to_string(pin_scratch.device_pin_name) & row_separator_0
 				   );
-				
+
+				-- if pin belongs to a bic, additionally write 
+				-- port and cell info like "SOIC24 2 Y1(1) | 7 BC_1 OUTPUT3 X 17 1 Z"
 				for i in 1..type_list_of_bics.length(list_of_bics) loop
 					bic := element(list_of_bics, positive(i));
                     if bic.name = pin_scratch.device_name then
--- 						put(get_cell_info(bic => positive(b), pin => universal_string_type.to_string(pin_scratch.device_pin_name)));
 						put(get_cell_info(
 							bic => positive(i),
 							pin => pin_scratch.device_pin_name));
