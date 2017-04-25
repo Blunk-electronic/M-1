@@ -33,19 +33,19 @@ echo "compiling and installing ..."
 procedure_make bsmcl
 procedure_make chkpsn
 procedure_make udbinfo
-procedure_make compseq
+#procedure_make compseq
 procedure_make impbsdl
-procedure_make impzuken
-procedure_make joinnetlist
-procedure_make mkinfra
-procedure_make mkintercon
-procedure_make mkmemcon
+#procedure_make impzuken
+#procedure_make joinnetlist
+#procedure_make mkinfra
+#procedure_make mkintercon
+#procedure_make mkmemcon
 procedure_make mknets
 procedure_make mkoptions
-procedure_make mktoggle
-procedure_make mkclock
-procedure_make mkvmod
-procedure_gnatmake bsmgui
+#procedure_make mktoggle
+#procedure_make mkclock
+#procedure_make mkvmod
+#procedure_gnatmake bsmgui
 
 exit
 echo done
