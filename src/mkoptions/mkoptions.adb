@@ -78,11 +78,13 @@ procedure mkoptions is
 -- 		cluster		: boolean;
 -- 	end record;
 
-
+	keyword_allowed		: constant string (1..7) := "allowed";
+	
+	-- A cluster is a group of nets with the same cluster id.
  	type type_cluster is record
 -- 		ordered			: boolean := false;
 		bs_capable		: boolean := false;
-		size			: natural := 0;
+-- 		size			: natural := 0;
 		nets			: type_list_of_nets.vector;
 	end record;
 	package type_list_of_clusters is new vectors (index_type => positive, element_type => type_cluster);
@@ -1239,22 +1241,6 @@ procedure mkoptions is
 		result_of_bridge_query		: type_result_of_bridge_query;
 
 		
--- 		procedure find_non_cluster_bs_nets is
--- 		begin
--- 				for n in 1..net_ct
--- 				loop
--- 					if netlist(n).cluster_id = 0 then
--- 						if netlist(n).bs_driver_ct > 0 or netlist(n).bs_input_ct > 0 then
--- 							put("Section " & netlist(n).name & " class NA   -- single bs-net");
--- 							if netlist(n).bs_driver_ct = 0 then put("  -- allowed class : EH , EL"); end if;
--- 							if netlist(n).bs_input_ct = 0 then put("  -- allowed class : NR , DH , DL"); end if;
--- 							new_line;
--- 							put_line(netlist(n).content & "EndSection"); new_line;	
--- 							new_line;
--- 						end if;
--- 					end if;
--- 				end loop;
--- 			end find_non_cluster_bs_nets;
 -- 
 -- 		procedure find_non_cluster_non_bs_nets is
 -- 		begin
@@ -1365,8 +1351,11 @@ procedure mkoptions is
 
 
 	procedure make_cluster_lists is
+	-- Collects all nets with the same cluster_id in a cluster.
+	-- A cluster is a group of nets with the same cluster id.
+	-- Appends cluster to list_of_clusters.
 		net		: type_net;
-		cluster	: type_cluster;
+		cluster	: type_cluster; -- for temporarily usage before appended to list_of_clusters
 	begin -- make_cluster_lists
 		
 		write_message (
@@ -1390,7 +1379,6 @@ procedure mkoptions is
 				-- Load a net. test if it is part of a cluster and if cluster id matches c_id.
 				-- On match, add the net to the list of nets of cluster.
 				-- If any net of the cluster is scan capable, mark the whole cluster as scan capable.
-				-- Count number of nets in cluster and update size accordingly.
 				net := element(list_of_nets, positive(i));
 				if net.cluster and net.cluster_id = c_id then
 
@@ -1401,12 +1389,11 @@ procedure mkoptions is
 						console => false);
 
 					append(cluster.nets, net);
-					
+
 					if net.bs_capable then
 						cluster.bs_capable := true;
 					end if;
 					
-					cluster.size := cluster.size + 1;
 				end if;	-- if cluster id matches
 				
 			end loop; -- loop in netlist
@@ -1421,6 +1408,7 @@ procedure mkoptions is
 			
 			-- All nets of current cluster found.
 			append(list_of_clusters, cluster);
+			delete(cluster.nets, 1, length(cluster.nets)); -- purge netlist of temporarily cluster
 			
 		end loop; -- loop in clusters
 
@@ -1459,7 +1447,7 @@ procedure mkoptions is
 			new_line;
 		end write_pin;
 		
-	begin
+	begin -- write_net_content
 		-- loop in pinlist of given net and write one pin after another
 		for i in 1..length(net.pins) loop
 			write_pin(element(net.pins, positive(i)));
@@ -1467,41 +1455,79 @@ procedure mkoptions is
 	end write_net_content;
 	
 	procedure sort_bs_clusters is
-		-- 				primary_net_found	: boolean := false;		
-
 		cluster : type_cluster;
 		net 	: type_net;		
 		pin		: m1_database.type_pin;
 
-		keyword_allowed : constant string (1..7) := "allowed";
+		primary_net_found	: boolean := false;
+		name_of_primary_net	: type_net_name.bounded_string;
 	begin
 		write_message (
 			file_handle => file_mkoptions_messages,
 			identation => 1,
-			text => "sorting clusters ...",
+			text => "sorting scan capable clusters ...",
 			console => false);
 		
-		put(section_mark.section);
-
-
 		for i in 1..length(list_of_clusters) loop
+
+			write_message (
+				file_handle => file_mkoptions_messages,
+				identation => 2,
+				text => "elaborating primary net ...",
+				console => false);
 			
-			cluster := element(list_of_clusters, positive(i));
+			cluster := element(list_of_clusters, positive(i)); -- load a cluster
+			primary_net_found := false; -- initally we assume there has no primary net been found yet
+			
 			if cluster.bs_capable then
+
+				write_message (
+					file_handle => file_mkoptions_messages,
+					identation => 3,
+					text => "cluster" & count_type'image(i),
+					console => false);
+				
+				-- Search for a primary net with an output2 driver
+				write_message (
+					file_handle => file_mkoptions_messages,
+					identation => 4,
+					text => "searching driver pin WITHOUT disable specification ...",
+					console => false);
+				
+				loop_nets_output2:
 				for i in 1..length(cluster.nets) loop
 					net := element(cluster.nets, positive(i));
 
-					-- Search for a "must be" primary net (with output2 drivers)
+					write_message (
+						file_handle => file_mkoptions_messages,
+						identation => 5,
+						text => "in net " & to_string(net.name) & " ...",
+						console => false);
+					
 					if net.bs_output_pin_count > 0 then
 						for p in 1..length(net.pins) loop
 							pin := element(net.pins, positive(p));
 							if pin.is_bscan_capable then
-								if pin.cell_info.control_cell_id = cell_not_available then -- we have an output2 pin
 
+								-- If pin is an output2 driver
+								if 	pin.cell_info.output_cell_id /= cell_not_available and -- has output cell
+									pin.cell_info.control_cell_id = cell_not_available then -- has no control cell
+									-- we have an output2 pin
+
+									write_message (
+										file_handle => file_mkoptions_messages,
+										identation => 6,
+										text => "pin " & to_string(pin.device_name) & row_separator_0 & to_string(pin.device_pin_name),
+										console => false);
+
+									-- Save name of primary net. Required for sorting secondary nets.
+									name_of_primary_net := net.name;
+									
 		-- 							if netlist(n).processed = false then
 -- 									if netlist(n).primary_net then
 -- 										netlist(n).processed := true;
-									put_line(to_string(net.name) & row_separator_0 & netlist_keyword_header_class 
+									put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+										& netlist_keyword_header_class & row_separator_0
 										& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
 										& comment_mark & keyword_allowed & row_separator_0
 										& type_net_class'image(DH) & row_separator_0
@@ -1510,140 +1536,256 @@ procedure mkoptions is
 
 -- 										csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
 									write_net_content(net);
--- 										primary_net_found := true;
-									-- 										exit loop_i1;
+									primary_net_found := true;
+									exit loop_nets_output2; -- CS: do not exit if more output2 pins are to be found
 								end if;
 							end if;
 						end loop;
 					end if;
+				end loop loop_nets_output2;
 
+				-- Search for a primary net with a driver with disable specification
+				if not primary_net_found then
 
--- 					if primary_net_found = false then	
--- 						-- search for a primary net with normal outputs (output3, bidir)
--- 						loop_i2: 
--- 						for i in 1..size
--- 						loop
--- 							for n in 1..net_ct
--- 							loop
--- 								if netlist(n).processed = false then
--- 									if netlist(n).net_id = natural'value(get_field(members,i)) then -- member net found
--- 
--- 										if netlist(n).bs_driver_ct > 0 then
--- 											netlist(n).processed := true;
--- 											put_line(netlist(n).name & " class NA");
--- 											csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
--- 											put(netlist(n).content);
--- 											primary_net_found := true;
--- 											exit loop_i2;
--- 										end if;
--- 
--- 									end if;
--- 								end if;
--- 							end loop;
--- 						end loop loop_i2;
--- 					end if;
--- 
--- 
--- 					if primary_net_found = false then	
--- 						-- search for a primary net with inputs
--- 						loop_i3: 
--- 						for i in 1..size
--- 						loop
--- 							for n in 1..net_ct
--- 							loop
--- 								if netlist(n).processed = false then
--- 									if netlist(n).net_id = natural'value(get_field(members,i)) then -- member net found
--- 
--- 										if netlist(n).bs_input_ct > 0 then
--- 											netlist(n).processed := true;
--- 											put_line(netlist(n).name & " class NA  -- allowed class: EH , EL");
--- 											csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
--- 											put(netlist(n).content);
--- 											primary_net_found := true;
--- 											exit loop_i3;
--- 										end if;
--- 
--- 									end if;
--- 								end if;
--- 							end loop;
--- 						end loop loop_i3;
--- 					end if;
--- 
--- 					-- CS: check if primary_net_found here ?
--- 
--- 					--put_line(" Subsection secondary_nets"); -- rm v026
--- 					put_line(" SubSection secondary_nets"); -- ins v026
--- 
--- 						-- search for secondary nets
--- 						for i in 1..size
--- 						loop
--- 							for n in 1..net_ct
--- 							loop
--- 								if netlist(n).processed = false then
--- 									if netlist(n).net_id = natural'value(get_field(members,i)) then -- member net found
--- 										netlist(n).processed := true;
--- 										put_line("  Net " & netlist(n).name);
+					write_message (
+						file_handle => file_mkoptions_messages,
+						identation => 4,
+						text => "... none found. Searching driver pin WITH disable specification ...",
+						console => false);
+
+					loop_nets_disable_spec:
+					for i in 1..length(cluster.nets) loop
+						net := element(cluster.nets, positive(i));
+
+						write_message (
+							file_handle => file_mkoptions_messages,
+							identation => 5,
+							text => "in net " & to_string(net.name) & " ...",
+							console => false);
+						
+						if net.bs_output_pin_count > 0 or net.bs_bidir_pin_count > 0 then
+							for p in 1..length(net.pins) loop
+								pin := element(net.pins, positive(p));
+								if pin.is_bscan_capable then
+
+									-- If pin is a driver with disable spec:
+									if 	pin.cell_info.output_cell_id /= cell_not_available and -- has output cell
+										pin.cell_info.control_cell_id /= cell_not_available then -- has control cell
+										-- we have an output pin with disable spec
+
+										write_message (
+											file_handle => file_mkoptions_messages,
+											identation => 6,
+											text => "pin " & to_string(pin.device_name) & row_separator_0 & to_string(pin.device_pin_name),
+											console => false);
+
+										-- Save name of primary net. Required for sorting secondary nets.
+										name_of_primary_net := net.name;
+										
+			-- 							if netlist(n).processed = false then
+	-- 									if netlist(n).primary_net then
+	-- 										netlist(n).processed := true;
+										put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+											& netlist_keyword_header_class & row_separator_0
+											& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
+											);
+
 -- 										csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
--- 										put(netlist(n).content);
--- 									end if;
--- 									-- CS: what if no secondary net found ? this may happen if a bridge has open pins
--- 								end if;
--- 							end loop;
--- 						end loop;
--- 
--- 					put_line(" EndSubSection");
--- 					put_line("EndSection");
--- 					new_line(2);
-					-- 					csv.put_lf(routing_file); -- in v028
-				end loop;
-			end if;
+										write_net_content(net);
+										primary_net_found := true;
+										exit loop_nets_disable_spec;
+									end if;
+								end if;
+							end loop;
+						end if;
+					end loop loop_nets_disable_spec;
+
+				end if;
+
+				-- As a last resort, search for a primary net with receiver pins:
+				if not primary_net_found then
+
+					write_message (
+						file_handle => file_mkoptions_messages,
+						identation => 4,
+						text => "... none found. Searching receiver pin ...",
+						console => false);
+
+					loop_nets_receiver:
+					for i in 1..length(cluster.nets) loop
+						net := element(cluster.nets, positive(i));
+
+						write_message (
+							file_handle => file_mkoptions_messages,
+							identation => 5,
+							text => "in net " & to_string(net.name) & " ...",
+							console => false);
+						
+						if net.bs_input_pin_count > 0 then
+							for p in 1..length(net.pins) loop
+								pin := element(net.pins, positive(p));
+								if pin.is_bscan_capable then
+
+									-- If pin is a driver with disable spec:
+									if 	pin.cell_info.input_cell_id /= cell_not_available then -- has input cell
+										-- we have receiver pin
+
+										write_message (
+											file_handle => file_mkoptions_messages,
+											identation => 6,
+											text => "pin " & to_string(pin.device_name) & row_separator_0 & to_string(pin.device_pin_name),
+											console => false);
+
+										-- Save name of primary net. Required for sorting secondary nets.
+										name_of_primary_net := net.name;
+
+			-- 							if netlist(n).processed = false then
+	-- 									if netlist(n).primary_net then
+	-- 										netlist(n).processed := true;
+										put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+											& netlist_keyword_header_class & row_separator_0
+											& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
+											& comment_mark & keyword_allowed & row_separator_0
+											& type_net_class'image(EH) & row_separator_0
+											& type_net_class'image(EL));
+
+-- 										csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
+										write_net_content(net);
+										primary_net_found := true;
+										exit loop_nets_receiver;
+									end if;
+								end if;
+							end loop;
+						end if;
+					end loop loop_nets_receiver;
+
+				end if;
+				
+				-- No suitable primary net found. CS: This should never happen. 
+				if not primary_net_found then
+					write_message (
+						file_handle => file_mkoptions_messages,
+						text => message_error & "No suitable primary net found in cluster !",
+						console => true);
+					raise constraint_error;
+				end if;
+				
+
+				-- If the cluster has more than one net, write remaining nets a secondary nets:
+				if length(cluster.nets) > 1 then
+
+					write_message (
+						file_handle => file_mkoptions_messages,
+						identation => 2,
+						text => "writing secondary nets ...",
+						console => false);
+					
+					-- write header of section secondary nets
+					put_line(row_separator_0 & section_mark.subsection 
+							& row_separator_0 & netlist_keyword_header_secondary_nets);
+
+					for i in 1..length(cluster.nets) loop
+						net := element(cluster.nets, positive(i));
+						if net.name /= name_of_primary_net then
+
+							write_message (
+								file_handle => file_mkoptions_messages,
+								identation => 3,
+								text => to_string(net.name),
+								console => false);
+							
+							put_line(2*row_separator_0 & options_keyword_net & row_separator_0 & to_string(net.name));
+							-- csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
+							write_net_content(net);
+							-- csv.put_lf(routing_file); -- in v028
+						end if;
+					end loop;
+
+					-- write footer of section seconary nets
+					put_line(row_separator_0 & section_mark.endsubsection);
+				end if;
+				
+				-- write footer of primary net
+				put_line(section_mark.endsection);
+				new_line;
+
+			end if; -- if cluster is bs_capable
+				
 		end loop;
 	end sort_bs_clusters;
 
-	
-	procedure write_netlist is
-		
+	procedure write_single_bs_nets is
+		net 	: type_net;
+		text_single_bs_net : constant string (1..13) := "single bs-net";
 	begin
-		set_output(file_options);
-		put_line("-- NETLIST -----------------------------------------------------------");
+		write_message (
+			file_handle => file_mkoptions_messages,
+			identation => 1,
+			text => "writing single bs nets ...",
+			console => false);
 		
-		-- if there are clusters write them first
-		if cluster_counter > 0 then
+		for i in 1..length(list_of_nets) loop
+			net := element(list_of_nets, positive(i));
+			if not net.cluster and net.bs_capable then
 
-			make_cluster_lists;
-			sort_bs_clusters;
+				write_message (
+					file_handle => file_mkoptions_messages,
+					identation => 2,
+					text => to_string(net.name),
+					console => false);
+
+				put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+					& netlist_keyword_header_class & row_separator_0
+					& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
+					& row_separator_0 & comment_mark & text_single_bs_net);
+
+				if net.bs_bidir_pin_count = 0 then
+					if net.bs_output_pin_count = 0 then
+						put(row_separator_0 & keyword_allowed & row_separator_0 
+							& netlist_keyword_header_class & row_separator_0
+							& type_net_class'image(EH) & row_separator_0 
+							& type_net_class'image(EL));
+					end if;
+
+					if net.bs_input_pin_count = 0 then
+						put(row_separator_0 & keyword_allowed & row_separator_0 
+							& netlist_keyword_header_class & row_separator_0
+							& type_net_class'image(DH) & row_separator_0 
+							& type_net_class'image(DL) & row_separator_0
+							& type_net_class'image(NR));
+					end if;
+				end if;
+				
+				new_line;
+				write_net_content(net);
+				
+				-- write primary net footer
+				put_line(section_mark.endsection);
+				new_line;
+
+			end if;
+		end loop;
+
+	end write_single_bs_nets;
 
 
-
+	procedure write_non_bs_clusters is
+		cluster	: type_cluster;
+		net 	: type_net;
+	begin
+		write_message (
+			file_handle => file_mkoptions_messages,
+			identation => 1,
+			text => "writing non-bs clusters ...",
+			console => false);
+		
+		for i in 1..length(list_of_clusters) loop
 			
--- 
--- 				-- find bs-cluster
--- 				for c in 1..cluster_ct
--- 				loop
--- 					if cluster_list(c).ordered = false then
--- 						if cluster_list(c).bs then
--- 							--put_line("-- bs cluster size : " & natural'image(cluster_list(c).size));					
--- 	--						put_line("-- bs-cluster :");
--- 							order_bs_cluster(cluster_list(c).size,cluster_list(c).members);
--- 							cluster_list(c).ordered := true;
--- 						end if;
--- 
--- 					end if;
--- 				end loop;
--- 
--- 				-- find non-cluster bs nets
--- 				find_non_cluster_bs_nets;
--- 
--- 				-- find non-bs clusters
--- 				for c in 1..cluster_ct
--- 				loop
--- 					if cluster_list(c).ordered = false then
--- 						if cluster_list(c).bs = false then
--- 							--put_line("-- cluster size : " & natural'image(cluster_list(c).size));
--- 							for i in 1..cluster_list(c).size -- i points to cluster member net_id 
--- 							loop
--- 								for n in 1..net_ct
--- 								loop
+			cluster := element(list_of_clusters, positive(i)); -- load a cluster
+			if not cluster.bs_capable then
+				for i in 1..length(cluster.nets) loop
+					net := element(cluster.nets, positive(i));
+					
 -- 									if netlist(n).net_id = natural'value(get_field(cluster_list(c).members,i)) then -- member net found
 -- 										--if netlist(n).bs_driver_ct > 0 then
 -- 										--netlist(n).ordered := true;
@@ -1665,11 +1807,24 @@ procedure mkoptions is
 -- 							new_line(2);
 -- 							csv.put_lf(routing_file); -- in v028
 -- 							cluster_list(c).ordered := true;
--- 						end if;
--- 					end if;
--- 				end loop;
--- 
--- 
+				end loop;
+			end if;
+		end loop;
+	end write_non_bs_clusters;
+	
+	
+	procedure write_netlist is
+		
+	begin
+		set_output(file_options);
+		put_line("-- NETLIST -----------------------------------------------------------");
+		
+		-- if there are clusters write them first
+		if cluster_counter > 0 then
+
+			make_cluster_lists;
+			sort_bs_clusters;
+
 -- 				find_non_cluster_non_bs_nets;
 					
 			
@@ -1682,6 +1837,13 @@ procedure mkoptions is
 -- 			return true;
 
 		end if; -- if cluster counter > 0
+
+		write_single_bs_nets;
+
+		if cluster_counter > 0 then
+			write_non_bs_clusters;
+		end if;
+		
 	end write_netlist;
 	
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
