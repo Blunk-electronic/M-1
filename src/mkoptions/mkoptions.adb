@@ -89,7 +89,7 @@ procedure mkoptions is
 	procedure write_routing_file_header is
 	begin
 		set_output(file_routing);
-		csv.put_field(text => "-- NET ROUTING TABLE"); csv.put_lf;
+		csv.put_field(text => "-- NET/CLUSTER ROUTING TABLE"); csv.put_lf;
 		csv.put_field(text => "-- created by mkoptions version: "); csv.put_field(text => version); csv.put_lf;
 		csv.put_field(text => "-- date:"); csv.put_field(text => date_now);
 		csv.put_lf(count => 2);
@@ -1037,6 +1037,7 @@ procedure mkoptions is
 	procedure find_pin( -- FP
 	-- Locates a device/pin of a connector-pair or bridge within the given net.
 	-- If requested the pin by which we have entered the net is ignored.
+	-- Writes the name of the net in the routing file.
 		net					: in type_net; -- the net to search in
 		ignore_entry_pin	: boolean; -- if entry pin is to be ignored or not
 		entry_pin			: in m1_database.type_pin_base := ( -- the pin itself
@@ -1050,6 +1051,9 @@ procedure mkoptions is
 		result_of_bridge_query		: type_result_of_bridge_query;
 	begin -- find_pin
 
+		-- write net name in routing file
+		csv.put_field(file_routing, to_string(net.name));
+		
 		length_of_pinlist := length(net.pins);
 		for p in 1..length_of_pinlist loop -- search in pinlist of given net
 			pin := element(net.pins, positive(p)); -- load a pin
@@ -1168,8 +1172,10 @@ procedure mkoptions is
 
 	
 	procedure make_netlist is
+	-- Marks nets connected with each other as cluster net.
+	-- Assigns each net of a cluster the cluster id (derived from global cluster_counter).
+	-- Writes cluster id and nets of cluster in routing file.
 		net					: type_net; -- for temporarily usage
-		
 		length_of_pinlist	: count_type;
 		pin					: m1_database.type_pin; -- for temporarily usage		
 
@@ -1189,7 +1195,11 @@ procedure mkoptions is
 		end set_cluster_flag;
 			
 	begin -- make_netlist
-
+		write_message (
+			file_handle => file_mkoptions_messages,
+			text => "generating netlist ...",
+			console => true);
+		
 		write_message (
 			file_handle => file_mkoptions_messages,
 			identation => 1,
@@ -1242,6 +1252,9 @@ procedure mkoptions is
 			if net.cluster and net.cluster_id = 0 then
 				cluster_counter := cluster_counter + 1;
 
+				-- write cluster id in routing file
+				csv.put_field(file_routing, trim(natural'image(cluster_counter),left));
+				
 				write_message (
 					file_handle => file_mkoptions_messages,
 					identation => 2,
@@ -1254,6 +1267,9 @@ procedure mkoptions is
 				-- Find a connector or bridge pin in the net. Since there is no entry pin
 				-- at this stage, there is no entry pin to be ignored.
 				find_pin(net => net, ignore_entry_pin => true);
+
+				-- put a linebread at end of line in routing file
+				csv.put_lf(file_routing);
 				
 			end if;
 		end loop;
@@ -1443,7 +1459,6 @@ procedure mkoptions is
 										& type_net_class'image(DL) & row_separator_0
 										& type_net_class'image(NR));
 
--- 										csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
 									write_net_content(net);
 									primary_net_found := true;
 									exit loop_nets_output2; -- CS: do not exit if more output2 pins are to be found
@@ -1497,7 +1512,6 @@ procedure mkoptions is
 											& row_separator_0 & comment_mark & text_bs_cluster
 											);
 
--- 										csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
 										write_net_content(net);
 										primary_net_found := true;
 										exit loop_nets_disable_spec;
@@ -1554,7 +1568,6 @@ procedure mkoptions is
 											& type_net_class'image(EH) & row_separator_0
 											& type_net_class'image(EL));
 
--- 										csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
 										write_net_content(net);
 										primary_net_found := true;
 										exit loop_nets_receiver;
@@ -1599,9 +1612,9 @@ procedure mkoptions is
 								console => false);
 							
 							put_line(2*row_separator_0 & options_keyword_net & row_separator_0 & to_string(net.name));
-							-- csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
+
 							write_net_content(net);
-							-- csv.put_lf(routing_file); -- in v028
+
 						end if;
 					end loop;
 
@@ -1738,9 +1751,9 @@ procedure mkoptions is
 								console => false);
 							
 							put_line(2*row_separator_0 & options_keyword_net & row_separator_0 & to_string(net.name));
-							-- csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
+
 							write_net_content(net);
-							-- csv.put_lf(routing_file); -- in v028
+
 						end if;
 					end loop;
 
@@ -1795,16 +1808,19 @@ procedure mkoptions is
 	procedure write_netlist is
 	-- Writes the netlist in options file.
 	begin
+		write_message (
+			file_handle => file_mkoptions_messages,
+			text => "writing netlist ...",
+			console => true);
+		
 		set_output(file_options);
 		put_line("-- NETLIST BEGIN -----------------------------------------------------");
 		new_line;
 		
 		-- if there are clusters write them first
 		if cluster_counter > 0 then
-
-			make_cluster_lists;
+ 			make_cluster_lists;
 			write_bs_clusters;
-
 		end if;
 
 		write_single_bs_nets;
@@ -1857,15 +1873,14 @@ begin
 
 	write_message (
 		file_handle => file_mkoptions_messages,
--- 		identation => 3,
-		text => "number of nets in " & text_identifier_database & ":" & count_type'image(length_of_netlist),
-		console => true);
+		text => "number of nets in " & text_identifier_database & row_separator_0 
+			& count_type'image(length_of_netlist),
+		console => false);
 	
 	-- write name of options file in logfile
 	put_line(file_mkoptions_messages, "options file"
 		 & row_separator_0
 		 & to_string(name_file_options));
-	
 	
 	-- if opt file already exists, backup old opt file
 -- 	if exists(universal_string_type.to_string(name_file_options)) then
@@ -1923,7 +1938,6 @@ begin
 	end if;
 	
 	read_mkoptions_configuration;
--- CS:	write_statistics;
 
 	make_netlist;
 
@@ -1951,6 +1965,10 @@ begin
 			close(file_options);
 		end if;
 
+		if is_open(file_routing) then
+			close(file_routing);
+		end if;
+		
 		case prog_position is
 			when 10 =>
 				write_message (
