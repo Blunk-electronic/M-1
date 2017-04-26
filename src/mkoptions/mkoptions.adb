@@ -72,25 +72,19 @@ procedure mkoptions is
 	prog_position		: natural := 0;
 	
 	cluster_counter		: natural := 0;
+	
 	length_of_netlist	: count_type;
-
--- 	type type_options_net is new type_net with record
--- 		cluster		: boolean;
--- 	end record;
 
 	keyword_allowed		: constant string (1..7) := "allowed";
 	
 	-- A cluster is a group of nets with the same cluster id.
  	type type_cluster is record
--- 		ordered			: boolean := false;
 		bs_capable		: boolean := false;
--- 		size			: natural := 0;
 		nets			: type_list_of_nets.vector;
 	end record;
 	package type_list_of_clusters is new vectors (index_type => positive, element_type => type_cluster);
 	use type_list_of_clusters;
-	list_of_clusters : type_list_of_clusters.vector;
-
+	list_of_clusters : type_list_of_clusters.vector; -- after creating clusters, they go here to be globally available
 
 	procedure write_routing_file_header is
 	begin
@@ -108,36 +102,29 @@ procedure mkoptions is
 		put_line ("-- THIS IS AN OPTIONS FILE FOR " & to_upper(text_identifier_database) & row_separator_0 & to_string(name_file_database));
 		put_line ("-- created by " & name_module_mkoptions & " version " & version);	
 		put_line ("-- date " & date_now);
+		new_line;
+		put_line ("-- IMPORTANT : Read warnings in logfile " & name_file_mkoptions_messages & " !!!"); 
+		new_line;
 		put_line ("-- Please modifiy net classes and primary/secondary dependencies according to your needs."); 
+		new_line;
+		put_line ("-- NOTE: Non-bscan nets are commented and shown as supplementary information only."); 
+		put_line ("--       Don't waste your time editing their net classes !");
 		new_line;
 		set_output(standard_output);
 	end write_options_file_header;
 
-
---     length_of_device_name : constant positive := 100;
---     package type_device_name is new generic_bounded_length(length_of_device_name);
--- 	use type_device_name;
--- 
---     length_of_pin_name : constant positive := 10;
---     package type_pin_name is new generic_bounded_length(length_of_pin_name);
---     use type_pin_name;
-
-	type type_side is ( A, B );
+	type type_side is ( A, B ); -- defines the side of a connector pair or a bridge
 	
 	length_pins_of_bridge_max : constant := 1 + 2 * pin_name_length; -- for something like "1-8" or "999-999"
 	package type_pins_of_bridge is new generic_bounded_length(length_pins_of_bridge_max);
 	
 	type type_pin is record
 		name			: type_pin_name.bounded_string;
---		processed		: boolean := false;
-		connected		: boolean := false;
 	end record;
 	
 	type type_bridge_preliminary is tagged record
 		name			: type_device_name.bounded_string;
 		wildcards		: boolean := false; -- true if name contains asterisks (*) or quesition marks (?)
--- 		pin_a			: type_pin;
--- 		pin_b			: type_pin;
 	end record;
 
 	separator	: constant string (1..1) := "-";
@@ -290,13 +277,9 @@ procedure mkoptions is
 
 		bridge_out			: type_bridge := (bridge_in with
 								is_array => false,
-								pin_a => ( name => to_bounded_string(""), -- to be overwritten later
--- 										   processed => false, -- CS: anoying default
-										   connected => false -- CS: anoying default
+								pin_a => ( name => to_bounded_string("") -- to be overwritten later
 										 ), 
-								pin_b => ( name => to_bounded_string(""), -- to be overwritten later
--- 										   processed => false, -- CS: anoying default 
-										   connected => false -- CS: anoying default
+								pin_b => ( name => to_bounded_string("") -- to be overwritten later
 										 ));
 	begin -- set_bridge_pins
 		-- We search the database netlist until the given bridge_in found.
@@ -625,7 +608,6 @@ procedure mkoptions is
 					-- search for footer of section connectors
 					if get_field_from_line(to_string(line),1) = section_mark.endsection then -- we are leaving section connectors
 						section_connectors_entered := false; 
-						append(list_of_connector_pairs,conpair_preliminary);
 					else
 						-- Read names of connectors.
 						-- There must be at least 2 fields per line (for connector A and B and mapping)
@@ -679,6 +661,9 @@ procedure mkoptions is
 								identation => 1, 
 								text => "mapping " & type_connector_mapping'image(conpair_preliminary.mapping),
 								console => false);
+
+							-- Connector pair data complete. Append to list_of_connector_pairs.
+							append(list_of_connector_pairs,conpair_preliminary);
 						else
 							-- put a final linebreak at end of line in logfile
 							new_line (file_mkoptions_messages);
@@ -687,7 +672,7 @@ procedure mkoptions is
 								file_handle => file_mkoptions_messages,
 								text => message_error & "in line" & positive'image(line_counter) & ": " 
 									& "Connector pair expected ! "
-									& "Example: main_X1 sub_X1",
+									& "Example: main_X1 sub_X1 [mapping]",
 								console => true);
 							raise constraint_error;
 
@@ -858,70 +843,21 @@ procedure mkoptions is
 		
 	procedure write_statistics is
 	begin
--- 		conpair_ct := count_connector_pairs;
--- 		put ("-- connector pairs  :" & Natural'Image(conpair_ct)); new_line;	
--- 
--- 		bridge_ct := count_bridges;
--- 		--put ("-- bridges         :" & Natural'Image(bridge_ct)); new_line;	
--- 
--- 		net_ct := count_nets;
--- 		put ("-- net count total  :" & Natural'Image(net_ct) & " (incl. non-bs nets)"); new_line;
--- 		put ("--                    NOTE: Non-bs nets are commented and shown as supplementary information only."); new_line; 
--- 		put ("--                          Don't waste your time editing their net classes !"); new_line;
--- 
--- 		new_line(standard_output);		
--- 		if make_netlist
--- 			(
--- 			con_pair_list_in => make_conpair_list,
--- 			bridge_list_in => make_bridge_list
--- 			)
-		-- 		then null; end if;
-
--- 
--- 			--write_summary
--- 			if conpair_ct > 0 then
--- 				new_line; put_line("-- CONNECTOR PAIRS ---------------------------------------------------"); new_line;
--- 				for c in 1..conpair_ct
--- 				loop
--- 					new_line;
--- 					--put_line("-- pair id       : " & trim(natural'image(c),left));
--- 					put_line("--   name A      : " & con_pair_list(c).name_a);
--- 					put_line("--   pin count A : " & trim(natural'image(con_pair_list(c).pin_ct_a),left));
--- 					put_line("--   name B      : " & con_pair_list(c).name_b);
--- 					put_line("--   pin count B : " & trim(natural'image(con_pair_list(c).pin_ct_b),left));
--- 					if con_pair_list(c).pin_ct_a = 0 then 
--- 						put_line("-- WARNING : No nets found on " & con_pair_list(c).name_a & " !"); end if;
--- 					if con_pair_list(c).pin_ct_b = 0 then 
--- 						put_line("-- WARNING : No nets found on " & con_pair_list(c).name_b & " !"); end if;
--- 					if con_pair_list(c).pin_ct_a /= con_pair_list(c).pin_ct_b then 
--- 						put_line("-- WARNING : pin count of " & con_pair_list(c).name_a & " differs from pin count of " & con_pair_list(c).name_b & " ."); end if;
--- 				end loop;	
--- 			end if;
--- 
--- 			if bridge_ct > 0 then
--- 				new_line; put_line("-- BRIDGE LIST -------------------------------------------------------"); new_line;
--- 				put_line("--   name  pin_A - pin_B "); new_line;
--- 				for b in 1..bridge_ct
--- 				loop
--- 					put_line("--   " & bridge_list(b).name & " " & bridge_list(b).pin_a & "-" & bridge_list(b).pin_b);
--- 					if bridge_list(b).part_of_array = false then -- ins v027 -- output warnings for single bridges only
--- 						-- CS: output warnings for unconnected array pins too
--- 						if bridge_list(b).pin_ct = 0 then
--- 							put("-- WARNING : No nets found on " & bridge_list(b).name ); 
--- 							put_line(". Check bridge declaration in file mkoptions.conf !");
--- 							put_line("--           " & bridge_list(b).name & " may not exist in design."); new_line; 
--- 							-- CS: should we abort the program here  with an error message ?
--- 						end if; -- mod v027
--- 						if bridge_list(b).pin_ct = 1 then
--- 							put_line("-- WARNING : Only one net found on " & bridge_list(b).name & " ! Check design !"); new_line; 
--- 						end if;
--- 
--- 					end if; -- ins v027
--- 				end loop;	
--- 			end if;
-
+		set_output(file_options);
+		new_line;		
+		put_line("-- STATISTICS BEGIN --------------------------------------------------");
+		new_line;
 		
-		null;
+		put_line(comment_mark & " connector pairs :" & count_type'image(length(list_of_connector_pairs)));
+		
+		put_line(comment_mark & " bridges         :" & count_type'image(length(list_of_bridges)));
+		-- CS: break down bridges to number of arrays and discrete bridges
+		
+		put_line(comment_mark & " nets            :" & count_type'image(length_of_netlist));
+		
+		new_line;		
+		put_line("-- STATISTICS END ----------------------------------------------------");
+		set_output(standard_output);
 	end write_statistics;
 
 	type type_result_of_bridge_query (is_bridge_pin : boolean := false) is record
@@ -1240,30 +1176,6 @@ procedure mkoptions is
 		result_of_connector_query	: type_result_of_connector_query;
 		result_of_bridge_query		: type_result_of_bridge_query;
 
-		
--- 
--- 		procedure find_non_cluster_non_bs_nets is
--- 		begin
--- 			-- find non-cluster non-bs nets
--- 			for n in 1..net_ct
--- 			loop
--- 				if netlist(n).cluster_id = 0 then
--- 					if netlist(n).bs_driver_ct = 0 and netlist(n).bs_input_ct = 0 then
--- 						put_line("-- Section " & netlist(n).name & " class NA   -- single non-bs net");
--- 						--put_line(netlist(n).name);
--- 						put(netlist(n).content);
--- 						put_line("-- EndSection");
--- 						new_line;
--- 					end if;
--- 				end if;
--- 			end loop;
--- 		end find_non_cluster_non_bs_nets;
--- 
--- 
--- 
--- 
--- 
-
 		procedure set_cluster_flag (net : in out type_net) is
 		begin
 			net.cluster := true;
@@ -1275,7 +1187,6 @@ procedure mkoptions is
 				console => false);
 		
 		end set_cluster_flag;
-
 			
 	begin -- make_netlist
 
@@ -1413,7 +1324,6 @@ procedure mkoptions is
 		end loop; -- loop in clusters
 
 	end make_cluster_lists;
-	
 
 
 	procedure write_net_content( net : in type_net) is
@@ -1454,18 +1364,19 @@ procedure mkoptions is
 		end loop;
 	end write_net_content;
 	
-	procedure sort_bs_clusters is
+	procedure write_bs_clusters is
 		cluster : type_cluster;
 		net 	: type_net;		
 		pin		: m1_database.type_pin;
 
 		primary_net_found	: boolean := false;
 		name_of_primary_net	: type_net_name.bounded_string;
-	begin
+		text_bs_cluster		: constant string (1..13) := "bscan cluster";
+	begin -- write_bs_clusters
 		write_message (
 			file_handle => file_mkoptions_messages,
 			identation => 1,
-			text => "sorting scan capable clusters ...",
+			text => "writing bscan capable clusters ...",
 			console => false);
 		
 		for i in 1..length(list_of_clusters) loop
@@ -1523,13 +1434,11 @@ procedure mkoptions is
 									-- Save name of primary net. Required for sorting secondary nets.
 									name_of_primary_net := net.name;
 									
-		-- 							if netlist(n).processed = false then
--- 									if netlist(n).primary_net then
--- 										netlist(n).processed := true;
 									put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
 										& netlist_keyword_header_class & row_separator_0
 										& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
-										& comment_mark & keyword_allowed & row_separator_0
+										& row_separator_0 & comment_mark & row_separator_0 & text_bs_cluster
+										& row_separator_0 & keyword_allowed & row_separator_0
 										& type_net_class'image(DH) & row_separator_0
 										& type_net_class'image(DL) & row_separator_0
 										& type_net_class'image(NR));
@@ -1582,12 +1491,10 @@ procedure mkoptions is
 										-- Save name of primary net. Required for sorting secondary nets.
 										name_of_primary_net := net.name;
 										
-			-- 							if netlist(n).processed = false then
-	-- 									if netlist(n).primary_net then
-	-- 										netlist(n).processed := true;
 										put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
 											& netlist_keyword_header_class & row_separator_0
 											& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
+											& row_separator_0 & comment_mark & text_bs_cluster
 											);
 
 -- 										csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
@@ -1639,13 +1546,11 @@ procedure mkoptions is
 										-- Save name of primary net. Required for sorting secondary nets.
 										name_of_primary_net := net.name;
 
-			-- 							if netlist(n).processed = false then
-	-- 									if netlist(n).primary_net then
-	-- 										netlist(n).processed := true;
 										put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
 											& netlist_keyword_header_class & row_separator_0
 											& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
-											& comment_mark & keyword_allowed & row_separator_0
+											& comment_mark & text_bs_cluster
+											& row_separator_0 & keyword_allowed & row_separator_0
 											& type_net_class'image(EH) & row_separator_0
 											& type_net_class'image(EL));
 
@@ -1669,7 +1574,6 @@ procedure mkoptions is
 						console => true);
 					raise constraint_error;
 				end if;
-				
 
 				-- If the cluster has more than one net, write remaining nets a secondary nets:
 				if length(cluster.nets) > 1 then
@@ -1712,16 +1616,16 @@ procedure mkoptions is
 			end if; -- if cluster is bs_capable
 				
 		end loop;
-	end sort_bs_clusters;
+	end write_bs_clusters;
 
 	procedure write_single_bs_nets is
-		net 	: type_net;
-		text_single_bs_net : constant string (1..13) := "single bs-net";
-	begin
+		net					: type_net;
+		text_single_bs_net	: constant string (1..16) := "single bscan net";
+	begin -- write_single_bs_nets
 		write_message (
 			file_handle => file_mkoptions_messages,
 			identation => 1,
-			text => "writing single bs nets ...",
+			text => "writing single bscan nets ...",
 			console => false);
 		
 		for i in 1..length(list_of_nets) loop
@@ -1770,9 +1674,15 @@ procedure mkoptions is
 
 
 	procedure write_non_bs_clusters is
-		cluster	: type_cluster;
-		net 	: type_net;
-	begin
+	-- Writes non-bscan cluster nets in options file.
+	-- Since they have no scan capable pins, it does not matter which net becomes
+	-- the primary net of the cluster. We just assume the first net of the cluster
+	-- as primary net.
+		cluster				: type_cluster;
+		net 				: type_net;
+		name_of_primary_net	: type_net_name.bounded_string;
+		text_non_bs_cluster	: constant string (1..17) := "non-bscan cluster";
+	begin -- write_non_bs_clusters
 		write_message (
 			file_handle => file_mkoptions_messages,
 			identation => 1,
@@ -1783,67 +1693,130 @@ procedure mkoptions is
 			
 			cluster := element(list_of_clusters, positive(i)); -- load a cluster
 			if not cluster.bs_capable then
-				for i in 1..length(cluster.nets) loop
-					net := element(cluster.nets, positive(i));
+
+				-- Take the first net of the cluster as primary net.
+				net := element(cluster.nets, positive(i));
+
+				write_message (
+					file_handle => file_mkoptions_messages,
+					identation => 2,
+					text => "primary net " & to_string(net.name),
+					console => false);
+				
+				-- Save name of primary net. Required for sorting secondary nets.
+				name_of_primary_net := net.name;
+				
+				put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+					& netlist_keyword_header_class & row_separator_0
+					& type_net_class'image(net_class_default)
+					& row_separator_0 & comment_mark & text_non_bs_cluster
+					);
+				
+				write_net_content(net);
+
+				-- If the cluster has more than one net, write remaining nets a secondary nets:
+				if length(cluster.nets) > 1 then
+
+					write_message (
+						file_handle => file_mkoptions_messages,
+						identation => 2,
+						text => "secondary nets ...",
+						console => false);
 					
--- 									if netlist(n).net_id = natural'value(get_field(cluster_list(c).members,i)) then -- member net found
--- 										--if netlist(n).bs_driver_ct > 0 then
--- 										--netlist(n).ordered := true;
--- 										if i = 1 then
--- 											put_line("-- Section " & netlist(n).name & " class NA  -- non-bs cluster");
--- 											csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
--- 											put(netlist(n).content);
--- 											put_line(" -- SubSection secondary_nets");
--- 										else
--- 											put_line("  -- Net " & netlist(n).name);
--- 											csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
--- 											put(netlist(n).content);
--- 										end if;
--- 									end if;
--- 								end loop;
--- 							end loop;
--- 							put_line("--  EndSubSection");
--- 							put_line("-- EndSection");
--- 							new_line(2);
--- 							csv.put_lf(routing_file); -- in v028
--- 							cluster_list(c).ordered := true;
-				end loop;
-			end if;
+					-- write header of section secondary nets
+					put_line(row_separator_0 & section_mark.subsection 
+							& row_separator_0 & netlist_keyword_header_secondary_nets);
+
+					for i in 1..length(cluster.nets) loop
+						net := element(cluster.nets, positive(i));
+						if net.name /= name_of_primary_net then
+
+							write_message (
+								file_handle => file_mkoptions_messages,
+								identation => 3,
+								text => to_string(net.name),
+								console => false);
+							
+							put_line(2*row_separator_0 & options_keyword_net & row_separator_0 & to_string(net.name));
+							-- csv.put_field(routing_file,to_string(netlist(n).name)); -- in v028
+							write_net_content(net);
+							-- csv.put_lf(routing_file); -- in v028
+						end if;
+					end loop;
+
+					-- write footer of section seconary nets
+					put_line(row_separator_0 & section_mark.endsubsection);
+				end if;
+				
+				-- write footer of primary net
+				put_line(section_mark.endsection);
+				new_line;
+
+			end if; -- if cluster is not scan capable
+			
 		end loop;
 	end write_non_bs_clusters;
-	
+
+	procedure write_single_non_bs_nets is
+	-- Writes single non bscan nets in options file.
+		net						: type_net;
+		text_single_non_bs_net	: constant string (1..20) := "single non-bscan net";
+	begin
+		write_message (
+			file_handle => file_mkoptions_messages,
+			identation => 1,
+			text => "writing single non-bscan nets ...",
+			console => false);
+		
+		for i in 1..length(list_of_nets) loop
+			net := element(list_of_nets, positive(i));
+			if not net.cluster and not net.bs_capable then
+
+				write_message (
+					file_handle => file_mkoptions_messages,
+					identation => 2,
+					text => to_string(net.name),
+					console => false);
+
+				put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+					& netlist_keyword_header_class & row_separator_0
+					& type_net_class'image(net_class_default)
+					& row_separator_0 & comment_mark & text_single_non_bs_net);
+
+				write_net_content(net);
+				
+				-- write primary net footer
+				put_line(section_mark.endsection);
+				new_line;
+			end if;
+		end loop;
+	end write_single_non_bs_nets;	
 	
 	procedure write_netlist is
-		
+	-- Writes the netlist in options file.
 	begin
 		set_output(file_options);
-		put_line("-- NETLIST -----------------------------------------------------------");
+		put_line("-- NETLIST BEGIN -----------------------------------------------------");
+		new_line;
 		
 		-- if there are clusters write them first
 		if cluster_counter > 0 then
 
 			make_cluster_lists;
-			sort_bs_clusters;
+			write_bs_clusters;
 
--- 				find_non_cluster_non_bs_nets;
-					
-			
--- 				sort_clusters;
--- 			else
--- 				find_non_cluster_bs_nets;
--- 				find_non_cluster_non_bs_nets;
--- 			end if;
--- 
--- 			return true;
-
-		end if; -- if cluster counter > 0
+		end if;
 
 		write_single_bs_nets;
 
 		if cluster_counter > 0 then
 			write_non_bs_clusters;
 		end if;
+
+		write_single_non_bs_nets;
 		
+		put_line("-- NETLIST END -------------------------------------------------------");
+		set_output(standard_output);
 	end write_netlist;
 	
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
@@ -1956,6 +1929,8 @@ begin
 
 	write_netlist;
 
+	write_statistics;
+	
 	close(file_options);
 
 	csv.put_field(file_routing,"-- END OF TABLE");
