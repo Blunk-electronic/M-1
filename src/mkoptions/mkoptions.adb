@@ -854,6 +854,8 @@ procedure mkoptions is
 		-- CS: break down bridges to number of arrays and discrete bridges
 		
 		put_line(comment_mark & " nets            :" & count_type'image(length_of_netlist));
+		-- CS: number of bscan clusters
+		-- CS: number of single bscan nets
 		
 		new_line;		
 		put_line("-- STATISTICS END ----------------------------------------------------");
@@ -1016,7 +1018,7 @@ procedure mkoptions is
 	-- Assigns the current cluster id to the given net.
 	-- Cluster id is just a copy of the global cluster_counter.
 	begin
-		put(standard_output,natural'image(cluster_counter) & ascii.cr); -- CS: progress bar instead ?
+-- 		put(standard_output,natural'image(cluster_counter) & ascii.cr); -- CS: progress bar instead ?
 
 		write_message (
 			file_handle => file_mkoptions_messages,
@@ -1036,7 +1038,8 @@ procedure mkoptions is
 	
 	procedure find_pin( -- FP
 	-- Locates a device/pin of a connector-pair or bridge within the given net.
-	-- If requested the pin by which we have entered the net is ignored.
+	-- If requested the pin by which we have entered the net is ignored. This prevents returning
+	-- into the net we came from.
 	-- Writes the name of the net in the routing file.
 		net					: in type_net; -- the net to search in
 		ignore_entry_pin	: boolean; -- if entry pin is to be ignored or not
@@ -1080,7 +1083,8 @@ procedure mkoptions is
 							& " transit to ",
 						console => false);
 								
-					-- Now we transit to the other side of the connector pair:
+					-- Now we transit to the other side of the connector pair.
+					-- If the net on the other side has been processed already, find_net does nothing.
 					find_net(
 						device => result_of_connector_query.device_name, -- device on the other side
 						pin => result_of_connector_query.device_pin_name);  -- pin on the other side
@@ -1122,8 +1126,8 @@ procedure mkoptions is
 		net					: type_net;
 		length_of_pinlist	: count_type;
 		pin_scratch			: m1_database.type_pin;
--- 		net_found			: boolean := false; -- True once a net has been found. when unchanged
--- 												-- a warning about an unconnected pin is generated.
+		net_found			: boolean := false; -- True once a net for processing has been found.
+
 	begin -- find_net
 		loop_netlist:
 		for i in 1..length_of_netlist loop
@@ -1132,14 +1136,14 @@ procedure mkoptions is
 			-- The net must be a non-processed cluster net. -- FN9
 			-- This test just speeds up the search. It would be a waste of time
 			-- to search in non-cluster nets or in nets already processed (where cluster id is greater zero).
-			if net.cluster and net.cluster_id = 0 then -- FN2
+			if net.cluster and net.cluster_id = 0 then -- FN2 -- the net has not been processed yet
 
 				length_of_pinlist := length(net.pins);
 				for p in 1..length_of_pinlist loop
 					pin_scratch := element(net.pins, positive(p)); -- load a pin
 
 					if pin_scratch.device_name = device and pin_scratch.device_pin_name = pin then -- FN4 / FN5
--- 						net_found := true;
+						net_found := true;
 						update_element(list_of_nets, positive(i), set_cluster_id'access);
 
 						-- Find a connector or bridge pin in this net:
@@ -1152,12 +1156,21 @@ procedure mkoptions is
 						exit loop_netlist;
 					end if;
 				end loop;
+					
 			end if;
 		end loop loop_netlist;
 
--- 		-- If the netlist has been searched without finding a net connected to the given pin.
--- 		-- Send a warning in logfile.
--- 		if not net_found then
+		-- If no net has been found, the given pin is either not connected
+		-- or it is connected with a net already processed.
+
+		if not net_found then
+			write_message (
+				file_handle => file_mkoptions_messages,
+				identation => 4,
+				text => " an already processed net -> aborted",
+				console => false);
+		end if;
+			
 -- 			new_line(file_mkoptions_messages);
 -- 			write_message (
 -- 				file_handle => file_mkoptions_messages,
@@ -1258,7 +1271,7 @@ procedure mkoptions is
 				write_message (
 					file_handle => file_mkoptions_messages,
 					identation => 2,
-					text => "cluster" & positive'image(cluster_counter),
+					text => "cluster" & positive'image(cluster_counter) & ":",
 					console => false);
 				
 				-- assign cluster id 
@@ -1333,10 +1346,15 @@ procedure mkoptions is
 					console => false);
 			end if;
 			
-			-- All nets of current cluster found.
+			-- All nets of current cluster processed.
 			append(list_of_clusters, cluster);
-			delete(cluster.nets, 1, length(cluster.nets)); -- purge netlist of temporarily cluster
-			
+
+			-- purge netlist of temporarily cluster for next spin
+			delete(cluster.nets, 1, length(cluster.nets));
+
+			-- reset bs_capable flag for next spin
+			cluster.bs_capable := false; 
+
 		end loop; -- loop in clusters
 
 	end make_cluster_lists;
@@ -1389,6 +1407,7 @@ procedure mkoptions is
 		name_of_primary_net	: type_net_name.bounded_string;
 		text_bs_cluster		: constant string (1..13) := "bscan cluster";
 	begin -- write_bs_clusters
+		new_line(file_mkoptions_messages);		
 		write_message (
 			file_handle => file_mkoptions_messages,
 			identation => 1,
@@ -1397,11 +1416,11 @@ procedure mkoptions is
 		
 		for i in 1..length(list_of_clusters) loop
 
-			write_message (
-				file_handle => file_mkoptions_messages,
-				identation => 2,
-				text => "elaborating primary net ...",
-				console => false);
+-- 			write_message (
+-- 				file_handle => file_mkoptions_messages,
+-- 				identation => 2,
+-- 				text => "elaborating primary net ...",
+-- 				console => false);
 			
 			cluster := element(list_of_clusters, positive(i)); -- load a cluster
 			primary_net_found := false; -- initally we assume there has no primary net been found yet
@@ -1410,14 +1429,14 @@ procedure mkoptions is
 
 				write_message (
 					file_handle => file_mkoptions_messages,
-					identation => 3,
-					text => "cluster" & count_type'image(i),
+					identation => 2,
+					text => "cluster" & count_type'image(i) & ":",
 					console => false);
 				
 				-- Search for a primary net with an output2 driver
 				write_message (
 					file_handle => file_mkoptions_messages,
-					identation => 4,
+					identation => 3,
 					text => "searching driver pin WITHOUT disable specification ...",
 					console => false);
 				
@@ -1427,7 +1446,7 @@ procedure mkoptions is
 
 					write_message (
 						file_handle => file_mkoptions_messages,
-						identation => 5,
+						identation => 4,
 						text => "in net " & to_string(net.name) & " ...",
 						console => false);
 					
@@ -1443,7 +1462,7 @@ procedure mkoptions is
 
 									write_message (
 										file_handle => file_mkoptions_messages,
-										identation => 6,
+										identation => 5,
 										text => "pin " & to_string(pin.device_name) & row_separator_0 & to_string(pin.device_pin_name),
 										console => false);
 
@@ -1473,7 +1492,7 @@ procedure mkoptions is
 
 					write_message (
 						file_handle => file_mkoptions_messages,
-						identation => 4,
+						identation => 3,
 						text => "... none found. Searching driver pin WITH disable specification ...",
 						console => false);
 
@@ -1483,7 +1502,7 @@ procedure mkoptions is
 
 						write_message (
 							file_handle => file_mkoptions_messages,
-							identation => 5,
+							identation => 4,
 							text => "in net " & to_string(net.name) & " ...",
 							console => false);
 						
@@ -1499,7 +1518,7 @@ procedure mkoptions is
 
 										write_message (
 											file_handle => file_mkoptions_messages,
-											identation => 6,
+											identation => 5,
 											text => "pin " & to_string(pin.device_name) & row_separator_0 & to_string(pin.device_pin_name),
 											console => false);
 
@@ -1528,7 +1547,7 @@ procedure mkoptions is
 
 					write_message (
 						file_handle => file_mkoptions_messages,
-						identation => 4,
+						identation => 3,
 						text => "... none found. Searching receiver pin ...",
 						console => false);
 
@@ -1538,7 +1557,7 @@ procedure mkoptions is
 
 						write_message (
 							file_handle => file_mkoptions_messages,
-							identation => 5,
+							identation => 4,
 							text => "in net " & to_string(net.name) & " ...",
 							console => false);
 						
@@ -1553,7 +1572,7 @@ procedure mkoptions is
 
 										write_message (
 											file_handle => file_mkoptions_messages,
-											identation => 6,
+											identation => 5,
 											text => "pin " & to_string(pin.device_name) & row_separator_0 & to_string(pin.device_pin_name),
 											console => false);
 
@@ -1593,7 +1612,7 @@ procedure mkoptions is
 
 					write_message (
 						file_handle => file_mkoptions_messages,
-						identation => 2,
+						identation => 3,
 						text => "writing secondary nets ...",
 						console => false);
 					
@@ -1607,7 +1626,7 @@ procedure mkoptions is
 
 							write_message (
 								file_handle => file_mkoptions_messages,
-								identation => 3,
+								identation => 4,
 								text => to_string(net.name),
 								console => false);
 							
@@ -1635,6 +1654,7 @@ procedure mkoptions is
 		net					: type_net;
 		text_single_bs_net	: constant string (1..16) := "single bscan net";
 	begin -- write_single_bs_nets
+		new_line(file_mkoptions_messages);
 		write_message (
 			file_handle => file_mkoptions_messages,
 			identation => 1,
@@ -1696,10 +1716,11 @@ procedure mkoptions is
 		name_of_primary_net	: type_net_name.bounded_string;
 		text_non_bs_cluster	: constant string (1..17) := "non-bscan cluster";
 	begin -- write_non_bs_clusters
+		new_line(file_mkoptions_messages);
 		write_message (
 			file_handle => file_mkoptions_messages,
 			identation => 1,
-			text => "writing non-bs clusters ...",
+			text => "writing non-bscan clusters ...",
 			console => false);
 		
 		for i in 1..length(list_of_clusters) loop
@@ -1708,7 +1729,7 @@ procedure mkoptions is
 			if not cluster.bs_capable then
 
 				-- Take the first net of the cluster as primary net.
-				net := element(cluster.nets, positive(i));
+				net := element(cluster.nets, 1);
 
 				write_message (
 					file_handle => file_mkoptions_messages,
@@ -1775,6 +1796,7 @@ procedure mkoptions is
 		net						: type_net;
 		text_single_non_bs_net	: constant string (1..20) := "single non-bscan net";
 	begin
+		new_line(file_mkoptions_messages);		
 		write_message (
 			file_handle => file_mkoptions_messages,
 			identation => 1,
@@ -1839,7 +1861,7 @@ procedure mkoptions is
 
 begin
 	action := mkoptions;
---	degree_of_database_integrity_check := light; -- CS: for testing only	
+	degree_of_database_integrity_check := light;
 	
 	new_line;
 	put_line(to_upper(name_module_mkoptions) & " version " & version);
