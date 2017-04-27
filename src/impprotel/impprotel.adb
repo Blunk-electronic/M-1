@@ -45,10 +45,11 @@ with ada.exceptions; 			use ada.exceptions;
 with ada.command_line;			use ada.command_line;
 with ada.directories;			use ada.directories;
 
---with m1;
-with m1_internal;               use m1_internal;
+with m1_import;					use m1_import;
+with m1_database;               use m1_database;
 with m1_numbers;                use m1_numbers;
 with m1_files_and_directories;  use m1_files_and_directories;
+with m1_string_processing;		use m1_string_processing;
 
 procedure impprotel is
 
@@ -61,6 +62,10 @@ procedure impprotel is
     line_counter : natural := 0;
     line : type_line.bounded_string;
 
+	use type_extended_string;
+	use type_universal_string;
+	use type_name_file_netlist;
+	
 	-- DEVICES
 	device_count_mounted : natural := 0; -- for statistics
 	
@@ -155,21 +160,21 @@ procedure impprotel is
 		-- reads assembly variants in a list
 			--package type_line_of_assembly_variants is new generic_bounded_length(300); use type_line_of_assembly_variants;
 			line_counter : natural := 0;
-			line : extended_string.bounded_string;
+			line : type_extended_string.bounded_string;
 			assembly_variant_scratch : type_assembly_variant;
 		begin
 			open (file_variants, in_file, to_string(file_list_of_assembly_variants));
 			set_input(file_variants);
 			while not end_of_file loop
-				line := extended_string.to_bounded_string(get_line);
-				line := remove_comment_from_line(line);
-				if get_field_count(extended_string.to_string(line)) > 0 then -- skip empty lines
+				line := to_bounded_string(remove_comment_from_line(get_line));
+-- 				line := remove_comment_from_line(line);
+				if get_field_count(to_string(line)) > 0 then -- skip empty lines
 
 					-- read assembly variant from a line like "R3 RESC1005X40N 12K active"
-					assembly_variant_scratch.name := to_bounded_string(get_field(extended_string.to_string(line),1));
-					assembly_variant_scratch.packge := to_bounded_string(get_field(extended_string.to_string(line),2));
-					assembly_variant_scratch.value := to_bounded_string(get_field(extended_string.to_string(line),3));
-					if get_field(extended_string.to_string(line),4) = "active" then -- CS: output error when typing error ?
+					assembly_variant_scratch.name := to_bounded_string(get_field_from_line(to_string(line),1));
+					assembly_variant_scratch.packge := to_bounded_string(get_field_from_line(to_string(line),2));
+					assembly_variant_scratch.value := to_bounded_string(get_field_from_line(to_string(line),3));
+					if get_field_from_line(to_string(line),4) = "active" then -- CS: output error when typing error ?
 						assembly_variant_scratch.active := true;
 					else
 						assembly_variant_scratch.active := false;
@@ -462,14 +467,14 @@ procedure impprotel is
 			-- build the name of file_list_of_assembly_variants from the given netlist file
 			file_list_of_assembly_variants := to_unbounded_string( compose(
 							containing_directory => name_directory_cad, 
-							name => simple_name(universal_string_type.to_string(name_file_cad_net_list)),
+							name => simple_name(to_string(name_file_cad_netlist)),
 							extension => file_extension_assembly_variants));
 
 			if not exists(to_string(file_list_of_assembly_variants)) then -- create file_list_of_assembly_variants anew
 				put_line(standard_output,"Creating list of assembly variants in " & to_string(file_list_of_assembly_variants));
 				create (file_variants, out_file, to_string(file_list_of_assembly_variants));
 				
-				put_line(file_variants," -- assembly variants of netlist '" & simple_name(universal_string_type.to_string(name_file_cad_net_list)) & "'");
+				put_line(file_variants," -- assembly variants of netlist '" & simple_name(to_string(name_file_cad_netlist)) & "'");
 				put_line(file_variants," -- created by impprotel version " & version);
 				put_line(file_variants," -- date " & date_now);
 				put_line(file_variants," " & column_separator_0);
@@ -561,13 +566,13 @@ procedure impprotel is
 
 			-- write net header like "SubSection CORE_EXT_SRST class NA"
 			put_line(" " & section_mark.subsection & " " & to_string(net.name) & " " &
-				text_udb_class & " " & type_net_class'image(net_class_default));
+				netlist_keyword_header_class & " " & type_net_class'image(net_class_default));
 
 			-- write pins in lines like "R3 ? 270K RESC1005X40N 1"
 			for p in 1..type_list_of_pins.length(net.pins) loop
 				pin := type_list_of_pins.element(net.pins, positive(p)); -- load a pin
 				if pin.mounted then -- address only active assembly variants
-					put_line("  " & to_string(pin.name_device) & " " & strip_quotes(type_device_class'image(device_class_default)) &
+					put_line("  " & to_string(pin.name_device) & " " & type_device_class'image(device_class_default) &
 							" " & get_value_and_package(pin.name_device) & " " & to_string(pin.name_pin)
 							);
 				end if;
@@ -589,8 +594,8 @@ begin
 	put_line("======================================");
 
 	prog_position	:= 10;
- 	name_file_cad_net_list:= universal_string_type.to_bounded_string(argument(1));
-	put_line("netlist       : " & universal_string_type.to_string(name_file_cad_net_list));
+ 	name_file_cad_netlist:= to_bounded_string(argument(1));
+	put_line("netlist       : " & to_string(name_file_cad_netlist));
 	cad_import_target_module := type_cad_import_target_module'value(argument(2));
 	put_line("target module : " & type_cad_import_target_module'image(cad_import_target_module));
 	
@@ -605,11 +610,11 @@ begin
 	case cad_import_target_module is
 		when main => create (file => file_skeleton, mode => out_file, name => name_file_skeleton);
 		when sub => 
-			target_module_prefix := universal_string_type.to_bounded_string(argument(3));
-			put_line("prefix        : " & universal_string_type.to_string(target_module_prefix));
+			target_module_prefix := to_bounded_string(argument(3));
+			put_line("prefix        : " & to_string(target_module_prefix));
 			create (file => file_skeleton, mode => out_file, name => compose( 
 						name => base_name(name_file_skeleton) & "_" & 
-								universal_string_type.to_string(target_module_prefix),
+								to_string(target_module_prefix),
 						extension => file_extension_text)
 					);
 	end case;
@@ -622,8 +627,9 @@ begin
 	put_line(row_separator_0);
 	set_output(standard_output);
 
-    open (file => file_cad_net_list, mode => in_file, name => universal_string_type.to_string(name_file_cad_net_list));
-    set_input(file_cad_net_list);
+    open (file => file_cad_netlist, mode => in_file, name => to_string(name_file_cad_netlist));
+	set_input(file_cad_netlist);
+	
     while not end_of_file loop
         line_counter := line_counter + 1;
         line := to_bounded_string(get_line);
@@ -634,14 +640,14 @@ begin
 			if not device_entered then
 				prog_position	:= 70;
                 --put_line(to_string(line)); -- dbg
-                if get_field(text_in => to_string(line), position => 1) = "[" then
+                if get_field_from_line(text_in => to_string(line), position => 1) = "[" then
                     --put_line("entering device...");
                     device_entered := true;
                     device_attribute_next := name;
                 end if;
             else -- we are inside a device section
                 --put_line(to_string(line));
-				if get_field(text_in => to_string(line), position => 1) = "]" then
+				if get_field_from_line(text_in => to_string(line), position => 1) = "]" then
 					prog_position	:= 50;
                     device_entered := false; -- we are leaving a device section
                     --put_line("device: " & to_string(device_scratch.name)); -- dbg
@@ -655,13 +661,16 @@ begin
 					prog_position	:= 60;
                     case device_attribute_next is
                         when name => 
-                            device_scratch.name := to_bounded_string(get_field(text_in => to_string(line), position => 1));
+							device_scratch.name := to_bounded_string(
+								get_field_from_line(text_in => to_string(line), position => 1));
                             device_attribute_next := packge;
                         when packge =>
-                            device_scratch.packge := to_bounded_string(get_field(text_in => to_string(line), position => 1));
+							device_scratch.packge := to_bounded_string(
+								get_field_from_line(text_in => to_string(line), position => 1));
                             device_attribute_next := value;
                         when value =>
-                            device_scratch.value := to_bounded_string(get_field(text_in => to_string(line), position => 1));                        
+							device_scratch.value := to_bounded_string(
+								get_field_from_line(text_in => to_string(line), position => 1));                        
                     end case;
                 end if;
             end if;
@@ -669,13 +678,13 @@ begin
             -- READ NETS (NAME, PINS)
 			if not net_entered then
 				prog_position	:= 80;
-                if get_field(text_in => to_string(line), position => 1) = "(" then
+                if get_field_from_line(text_in => to_string(line), position => 1) = "(" then
                     net_entered := true;
                     net_item_next := name;
                 end if;
 			else -- we are inside a net section
 				prog_position	:= 90;				
-                if get_field(text_in => to_string(line), position => 1) = ")" then
+                if get_field_from_line(text_in => to_string(line), position => 1) = ")" then
                     net_entered := false; -- we are leaving a net section
                     --put_line("net: " & to_string(net_scratch.name)); -- dbg
                     type_list_of_nets.append(list_of_nets,net_scratch); -- add net to list
@@ -688,7 +697,8 @@ begin
 		            --put_line("line:>" & to_string(line) & "<");
                     case net_item_next is
                         when name => -- read net name from a line like "motor_on"
-							net_scratch.name := to_bounded_string(get_field(text_in => to_string(line), position => 1));                        
+							net_scratch.name := to_bounded_string(
+								get_field_from_line(text_in => to_string(line), position => 1));                        
 							net_item_next := pin;
 						when pin => -- read pin nme from a line like "C37-2"
 							--put_line("line:>" & to_string(line) & "<"); -- dbg
@@ -700,7 +710,7 @@ begin
         end if;
     end loop;
 	set_input(standard_input);
-	close(file_cad_net_list);
+	close(file_cad_netlist);
 
     manage_assembly_variants;
 
