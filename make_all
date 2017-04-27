@@ -35,6 +35,7 @@ procedure_make chkpsn
 procedure_make udbinfo
 #procedure_make compseq
 procedure_make impbsdl
+procedure_make impprotel
 #procedure_make impzuken
 #procedure_make joinnetlist
 #procedure_make mkinfra
