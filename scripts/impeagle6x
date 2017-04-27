@@ -1,6 +1,6 @@
 #! /bin/sh
 
-version=032
+version=033
 
 #reads EAGLE netlist and partlist
 #command is:	impeagle6x netlist.net partlist.part
@@ -390,7 +390,7 @@ version=032
 						[ "${p[0]}" = "${n[0]}" ] &&  #on match
 							(
 							# write part name, part class, value, package, pin
-							echo "  "${n[0]}" ? "${p[1]}" "${p[2]}" "${n[1]}" " >> tmp/np.tmp;
+							echo "  "${n[0]}" NA "${p[1]}" "${p[2]}" "${n[1]}" " >> tmp/np.tmp;
 							break; #no need to further searching
 							);
 					done < tmp/partlist.tmp;
