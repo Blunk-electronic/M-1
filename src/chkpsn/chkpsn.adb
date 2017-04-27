@@ -314,7 +314,7 @@ procedure chkpsn is
 
 
 	procedure disable_remaining_drivers ( d : in type_net) is
-		p : type_pin;
+-- 		p : type_pin;
 	begin
 		write_message (
 			file_handle => file_chkpsn_messages,
@@ -325,25 +325,26 @@ procedure chkpsn is
 		-- FIND CONTROL CELLS TO BE DISABLED:
 		-- 			for p in 1..d.part_ct loop -- loop through pin list of given net
 		for i in 1..length(d.pins) loop
-			p := element(d.pins, positive(i));
-			if p.is_bscan_capable then -- care for scan capable pins only
+			--p := element(d.pins, positive(i));
+			-- NOTE: element(d.pins, positive(i)) equals the particular pin
+			if element(d.pins, positive(i)).is_bscan_capable then -- care for scan capable pins only
 				-- pin must have a control cell and an output cell
-				if p.cell_info.control_cell_id /= -1 and p.cell_info.output_cell_id /= -1 then 
-					if not p.cell_info.selected_as_driver then -- care for drivers not marked as active
+				if element(d.pins, positive(i)).cell_info.control_cell_id /= -1 and element(d.pins, positive(i)).cell_info.output_cell_id /= -1 then 
+					if not element(d.pins, positive(i)).cell_info.selected_as_driver then -- care for drivers not marked as active
 
 						-- if non-shared control cell, just turn it off:
 						--  write disable value in cell list
 						--  write drive value 0 of useless output cell in cell list
-						if not p.cell_info.control_cell_shared then
+						if not element(d.pins, positive(i)).cell_info.control_cell_shared then
 							case d.class is
 								when DH | DL | NR =>
 									-- add control cell to list
 									write_message (
 										file_handle => file_chkpsn_messages,
 										identation => 5,
-										text => "static non-shared control cell: device " & to_string(p.device_name) 
-											& " pin " & to_string(p.device_pin_name) & row_separator_0 
-											& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+										text => "static non-shared control cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+											& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+											& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.control_cell_id),
 										console => false);
 									
 -- 										add_to_locked_control_cells_in_class_DH_DL_NR_nets(
@@ -362,13 +363,13 @@ procedure chkpsn is
 
 									append(list_of_static_control_cells_class_DX_NR,(
 										locked_to_enable_state	=> false, 
-										level					=> d.level,																					 
+										level					=> d.level,
 										class					=> d.class,
 										net						=> d.name,
-										device					=> p.device_name,
-										pin						=> p.device_pin_name,
-										id						=> p.cell_info.control_cell_id,
-										disable_value			=> p.cell_info.disable_value));
+										device					=> element(d.pins, positive(i)).device_name,
+										pin						=> element(d.pins, positive(i)).device_pin_name,
+										id						=> element(d.pins, positive(i)).cell_info.control_cell_id,
+										disable_value			=> element(d.pins, positive(i)).cell_info.disable_value));
 
 									-- add (unused) output cell to list
 -- 										add_to_locked_output_cells_in_class_DH_DL_nets(
@@ -385,27 +386,27 @@ procedure chkpsn is
 									write_message (
 										file_handle => file_chkpsn_messages,
 										identation => 5,
-										text => "static output cell: device " & to_string(p.device_name) 
-											& " pin " & to_string(p.device_pin_name) & row_separator_0 
-											& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+										text => "static output cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+											& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+											& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.output_cell_id),
 										console => false);
 									
 									append(list_of_static_output_cells_class_DX_NR,(
 										class					=> d.class,
 										net						=> d.name,
-										device					=> p.device_name,
-										pin						=> p.device_pin_name,
-										id						=> p.cell_info.output_cell_id,
-										drive_value				=> '0')); -- meaningless since the pin is disabled
+										device					=> element(d.pins, positive(i)).device_name,
+										pin						=> element(d.pins, positive(i)).device_pin_name,
+										id						=> element(d.pins, positive(i)).cell_info.output_cell_id,
+										drive_value				=> '0')); -- meaningless since the pin is disabled -- CS: default constant drive_value_default ?
 
 								when PU | PD =>
 									-- add control cell to list
 									write_message (
 										file_handle => file_chkpsn_messages,
 										identation => 5,
-										text => "static non-shared control cell: device " & to_string(p.device_name) 
-											& " pin " & to_string(p.device_pin_name) & row_separator_0 
-											& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+										text => "static non-shared control cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+											& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+											& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.control_cell_id),
 										console => false);
 
 -- 									add_to_locked_control_cells_in_class_PU_PD_nets(
@@ -426,10 +427,10 @@ procedure chkpsn is
 										level					=> d.level,																					 
 										class					=> d.class,
 										net						=> d.name,
-										device					=> p.device_name,
-										pin						=> p.device_pin_name,
-										id						=> p.cell_info.control_cell_id,
-										disable_value			=> p.cell_info.disable_value));
+										device					=> element(d.pins, positive(i)).device_name,
+										pin						=> element(d.pins, positive(i)).device_pin_name,
+										id						=> element(d.pins, positive(i)).cell_info.control_cell_id,
+										disable_value			=> element(d.pins, positive(i)).cell_info.disable_value));
 									
 								when others => null;
 							end case;
@@ -440,8 +441,8 @@ procedure chkpsn is
 							if not control_cell_in_enable_state_by_any_cell_list( 
 								net		=> d.name,
 								class	=> d.class,
-								device	=> p.device_name,
-								cell_id	=> p.cell_info.control_cell_id) then
+								device	=> element(d.pins, positive(i)).device_name,
+								cell_id	=> element(d.pins, positive(i)).cell_info.control_cell_id) then
 
 								case d.class is
 									when DH | DL | NR =>
@@ -449,9 +450,9 @@ procedure chkpsn is
 										write_message (
 											file_handle => file_chkpsn_messages,
 											identation => 5,
-											text => "static shared control cell: device " & to_string(p.device_name) 
-												& " pin " & to_string(p.device_pin_name) & row_separator_0 
-												& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+											text => "static shared control cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+												& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+												& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.control_cell_id),
 											console => false);
 										
 -- 											add_to_locked_control_cells_in_class_DH_DL_NR_nets(
@@ -473,18 +474,18 @@ procedure chkpsn is
 											level					=> d.level,																					 
 											class					=> d.class,
 											net						=> d.name,
-											device					=> p.device_name,
-											pin						=> p.device_pin_name,
-											id						=> p.cell_info.control_cell_id,
-											disable_value			=> p.cell_info.disable_value));
+											device					=> element(d.pins, positive(i)).device_name,
+											pin						=> element(d.pins, positive(i)).device_pin_name,
+											id						=> element(d.pins, positive(i)).cell_info.control_cell_id,
+											disable_value			=> element(d.pins, positive(i)).cell_info.disable_value));
 									
 										-- add (unused) output cell to list
 										write_message (
 											file_handle => file_chkpsn_messages,
 											identation => 5,
-											text => "static output cell: device " & to_string(p.device_name) 
-												& " pin " & to_string(p.device_pin_name) & row_separator_0 
-												& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+											text => "static output cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+												& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+												& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.output_cell_id),
 											console => false);
 										
 -- 											add_to_locked_output_cells_in_class_DH_DL_nets(
@@ -501,10 +502,10 @@ procedure chkpsn is
 										append(list_of_static_output_cells_class_DX_NR,(
 											class					=> d.class,
 											net						=> d.name,
-											device					=> p.device_name,
-											pin						=> p.device_pin_name,
-											id						=> p.cell_info.output_cell_id,
-											drive_value				=> '0')); -- meaningless since the pin is disabled
+											device					=> element(d.pins, positive(i)).device_name,
+											pin						=> element(d.pins, positive(i)).device_pin_name,
+											id						=> element(d.pins, positive(i)).cell_info.output_cell_id,
+											drive_value				=> '0')); -- meaningless since the pin is disabled -- CS: default constant
 
 
 									when PU | PD =>
@@ -512,9 +513,9 @@ procedure chkpsn is
 										write_message (
 											file_handle => file_chkpsn_messages,
 											identation => 5,
-											text => "static shared control cell: device " & to_string(p.device_name) 
-												& " pin " & to_string(p.device_pin_name) & row_separator_0 
-												& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+											text => "static shared control cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+												& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+												& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.control_cell_id),
 											console => false);
 
 -- 											add_to_locked_control_cells_in_class_PU_PD_nets(
@@ -535,10 +536,10 @@ procedure chkpsn is
 											level					=> d.level,																					 
 											class					=> d.class,
 											net						=> d.name,
-											device					=> p.device_name,
-											pin						=> p.device_pin_name,
-											id						=> p.cell_info.control_cell_id,
-											disable_value			=> p.cell_info.disable_value));
+											device					=> element(d.pins, positive(i)).device_name,
+											pin						=> element(d.pins, positive(i)).device_pin_name,
+											id						=> element(d.pins, positive(i)).cell_info.control_cell_id,
+											disable_value			=> element(d.pins, positive(i)).cell_info.disable_value));
 
 										
 									when others => null;
@@ -667,7 +668,7 @@ procedure chkpsn is
 		driver_with_shared_control_cell_found		: boolean := false;
 
 		d : type_net := net;
-		p : type_pin; -- for temporarily storage of a pin
+-- 		p : type_pin; -- for temporarily storage of a pin
 
 -- 		procedure add_to_locked_control_cells_in_class_EH_EL_NA_nets(
 -- 			-- prepares writing a cell list entry like:
@@ -1003,26 +1004,27 @@ procedure chkpsn is
 		-- FIND INPUT CELLS AND CONTROL CELLS TO BE DISABLED:
 		-- 		for p in 1..d.part_ct loop -- loop through pin list of given net
 		for i in 1..length(d.pins) loop
-			p := element(d.pins, positive(i));
+			-- p := element(d.pins, positive(i));
+			-- NOTE: element(d.pins, positive(i)) equals the particular pin
 
 			-- CS: add a variable that holds the pin count of the net
 
-			if p.is_bscan_capable then -- care for scan capable pins only
+			if element(d.pins, positive(i)).is_bscan_capable then -- care for scan capable pins only
 
 				-- THIS IS ABOUT INPUT CELLS:
 				-- add all input cells of static and dynamic (atg) nets to cell list "static_expect" and "atg_expect"
 				-- since all input cells are listening, the net level (primary/secondary) does not matter
 				-- here and will not be evaluated
-				if p.cell_info.input_cell_id /= -1 then -- if pin does have an input cell
+				if element(d.pins, positive(i)).cell_info.input_cell_id /= -1 then -- if pin does have an input cell
 					case d.class is
 						when EH | EL | DH | DL =>
 
 							write_message (
 								file_handle => file_chkpsn_messages,
 								identation => 4,
-								text => "static input cell: device " & to_string(p.device_name) 
-									& " pin " & to_string(p.device_pin_name) & row_separator_0 
-									& " cell " & type_cell_id'image(p.cell_info.input_cell_id),
+								text => "static input cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+									& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+									& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.input_cell_id),
 								console => false);
 
 							case d.level is
@@ -1031,9 +1033,9 @@ procedure chkpsn is
 										level			=> primary,
 										class			=> d.class,
 										net				=> d.name,
-										device			=> p.device_name,
-										pin				=> p.device_pin_name,
-										id				=> p.cell_info.input_cell_id,
+										device			=> element(d.pins, positive(i)).device_name,
+										pin				=> element(d.pins, positive(i)).device_pin_name,
+										id				=> element(d.pins, positive(i)).cell_info.input_cell_id,
 										expect_value	=> expect_value_derived_from_class(d.class)));
 									
 							   when secondary =>
@@ -1042,9 +1044,9 @@ procedure chkpsn is
 										primary_net_is	=> d.name_of_primary_net,
 										class			=> d.class,
 										net				=> d.name,
-										device			=> p.device_name,
-										pin				=> p.device_pin_name,
-										id				=> p.cell_info.input_cell_id,
+										device			=> element(d.pins, positive(i)).device_name,
+										pin				=> element(d.pins, positive(i)).device_pin_name,
+										id				=> element(d.pins, positive(i)).cell_info.input_cell_id,
 										expect_value	=> expect_value_derived_from_class(d.class)));
 							end case;
 							
@@ -1065,9 +1067,9 @@ procedure chkpsn is
 							write_message (
 								file_handle => file_chkpsn_messages,
 								identation => 4,
-								text => "atg input cell: device " & to_string(p.device_name) 
-									& " pin " & to_string(p.device_pin_name) & row_separator_0 
-									& " cell " & type_cell_id'image(p.cell_info.input_cell_id),
+								text => "atg input cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+									& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+									& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.input_cell_id),
 								console => false);
 
 							case d.level is
@@ -1076,9 +1078,9 @@ procedure chkpsn is
 										level			=> primary,
 										class			=> d.class,
 										net				=> d.name,
-										device			=> p.device_name,
-										pin				=> p.device_pin_name,
-										id				=> p.cell_info.input_cell_id));
+										device			=> element(d.pins, positive(i)).device_name,
+										pin				=> element(d.pins, positive(i)).device_pin_name,
+										id				=> element(d.pins, positive(i)).cell_info.input_cell_id));
 									
 							   when secondary =>
 									append(list_of_atg_expect_cells,(
@@ -1086,9 +1088,9 @@ procedure chkpsn is
 										primary_net_is	=> d.name_of_primary_net,
 										class			=> d.class,
 										net				=> d.name,
-										device			=> p.device_name,
-										pin				=> p.device_pin_name,
-										id				=> p.cell_info.input_cell_id));
+										device			=> element(d.pins, positive(i)).device_name,
+										pin				=> element(d.pins, positive(i)).device_pin_name,
+										id				=> element(d.pins, positive(i)).cell_info.input_cell_id));
 							end case;
 
 						when NA =>
@@ -1106,9 +1108,9 @@ procedure chkpsn is
 							write_message (
 								file_handle => file_chkpsn_messages,
 								identation => 4,
-								text => "input cell: device " & to_string(p.device_name) 
-									& " pin " & to_string(p.device_pin_name) & row_separator_0 
-									& " cell " & type_cell_id'image(p.cell_info.input_cell_id),
+								text => "input cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+									& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+									& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.input_cell_id),
 								console => false);
 														
 							case d.level is
@@ -1117,9 +1119,9 @@ procedure chkpsn is
 										level			=> primary,
 										class			=> d.class,
 										net				=> d.name,
-										device			=> p.device_name,
-										pin				=> p.device_pin_name,
-										id				=> p.cell_info.input_cell_id));
+										device			=> element(d.pins, positive(i)).device_name,
+										pin				=> element(d.pins, positive(i)).device_pin_name,
+										id				=> element(d.pins, positive(i)).cell_info.input_cell_id));
 									
 							   when secondary =>
 									append(list_of_input_cells_class_NA,(
@@ -1127,9 +1129,9 @@ procedure chkpsn is
 										primary_net_is	=> d.name_of_primary_net,
 										class			=> d.class,
 										net				=> d.name,
-										device			=> p.device_name,
-										pin				=> p.device_pin_name,
-										id				=> p.cell_info.input_cell_id));
+										device			=> element(d.pins, positive(i)).device_name,
+										pin				=> element(d.pins, positive(i)).device_pin_name,
+										id				=> element(d.pins, positive(i)).cell_info.input_cell_id));
 							end case;
 
 					end case; -- class
@@ -1137,20 +1139,20 @@ procedure chkpsn is
 
 				-- THIS IS ABOUT CONTROL CELLS IN PRIMARY AND SECONDARY NETS OF CLASS EH, EL, NA:
 				-- in nets of class EH, EL or NA, all control cells must be in disable state, regardless of net level
-				if p.cell_info.control_cell_id /= -1 then -- if pin has disable spec. (means: a control cell)
+				if element(d.pins, positive(i)).cell_info.control_cell_id /= -1 then -- if pin has disable spec. (means: a control cell)
 					case d.class is
 						when EL | EH | NA =>
 
 							write_message (
 								file_handle => file_chkpsn_messages,
 								identation => 4,
-								text => "control cell: device " & to_string(p.device_name) 
-									& " pin " & to_string(p.device_pin_name) & row_separator_0 
-									& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+								text => "control cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+									& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+									& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.control_cell_id),
 								lf => false,
 								console => false);
 
-							if p.cell_info.control_cell_shared then
+							if element(d.pins, positive(i)).cell_info.control_cell_shared then
 								-- if driver has a shared control cell
 								-- the driver pin can be disabled if its control cell is not already enabled 
 								-- or targeted by atg
@@ -1165,8 +1167,8 @@ procedure chkpsn is
 								if not control_cell_in_enable_state_by_any_cell_list( 
 									net		=> d.name,
 									class	=> d.class,
-									device	=> p.device_name,
-									cell_id	=> p.cell_info.control_cell_id) then
+									device	=> element(d.pins, positive(i)).device_name,
+									cell_id	=> element(d.pins, positive(i)).cell_info.control_cell_id) then
 
 									write_message (
 										file_handle => file_chkpsn_messages,
@@ -1189,10 +1191,10 @@ procedure chkpsn is
 										level			=> d.level,																					 
 										class			=> d.class,
 										net				=> d.name,
-										device			=> p.device_name,
-										pin				=> p.device_pin_name,
-										id				=> p.cell_info.control_cell_id,
-										disable_value	=> p.cell_info.disable_value));
+										device			=> element(d.pins, positive(i)).device_name,
+										pin				=> element(d.pins, positive(i)).device_pin_name,
+										id				=> element(d.pins, positive(i)).cell_info.control_cell_id,
+										disable_value	=> element(d.pins, positive(i)).cell_info.disable_value));
 								end if;
 
 							else -- driver has a non-shared control cell
@@ -1220,10 +1222,10 @@ procedure chkpsn is
 									level			=> d.level,																					 
 									class			=> d.class,
 									net				=> d.name,
-									device			=> p.device_name,
-									pin				=> p.device_pin_name,
-									id				=> p.cell_info.control_cell_id,
-									disable_value	=> p.cell_info.disable_value));
+									device			=> element(d.pins, positive(i)).device_name,
+									pin				=> element(d.pins, positive(i)).device_pin_name,
+									id				=> element(d.pins, positive(i)).cell_info.control_cell_id,
+									disable_value	=> element(d.pins, positive(i)).cell_info.disable_value));
 
 							end if; -- if driver has a shared control cell
 
@@ -1244,7 +1246,7 @@ procedure chkpsn is
 				case d.level is
 					when secondary =>
 						-- all control cells in secondary nets must be in disable state
-						if p.cell_info.control_cell_id /= -1 then -- if pin has a control cell
+						if element(d.pins, positive(i)).cell_info.control_cell_id /= -1 then -- if pin has a control cell
 							case d.class is
 								when EL | EH | NA =>
 -- 									prog_position := "UC2310"; -- no need to disable control cells again, as this has been done earlier (see above)
@@ -1264,14 +1266,14 @@ procedure chkpsn is
 									write_message (
 										file_handle => file_chkpsn_messages,
 										identation => 4,
-										text => "control cell: device " & to_string(p.device_name) 
-											& " pin " & to_string(p.device_pin_name) & row_separator_0 
-											& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+										text => "control cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+											& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+											& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.control_cell_id),
 										lf => false,
 										console => false);
 
 -- 									prog_position := "UC2320";
-									if p.cell_info.control_cell_shared then
+									if element(d.pins, positive(i)).cell_info.control_cell_shared then
 										-- if driver has a shared control cell
 										-- the driver pin can be disabled if its control cell is not already enabled 
 										-- or targeted by atg
@@ -1287,8 +1289,8 @@ procedure chkpsn is
 										if not control_cell_in_enable_state_by_any_cell_list( 
 											net		=> d.name,
 											class	=> d.class,
-											device	=> p.device_name,
-											cell_id	=> p.cell_info.control_cell_id) then
+											device	=> element(d.pins, positive(i)).device_name,
+											cell_id	=> element(d.pins, positive(i)).cell_info.control_cell_id) then
 
 											write_message (
 												file_handle => file_chkpsn_messages,
@@ -1315,10 +1317,10 @@ procedure chkpsn is
 												level					=> d.level,																					 
 												class					=> d.class,
 												net						=> d.name,
-												device					=> p.device_name,
-												pin						=> p.device_pin_name,
-												id						=> p.cell_info.control_cell_id,
-												disable_value			=> p.cell_info.disable_value));
+												device					=> element(d.pins, positive(i)).device_name,
+												pin						=> element(d.pins, positive(i)).device_pin_name,
+												id						=> element(d.pins, positive(i)).cell_info.control_cell_id,
+												disable_value			=> element(d.pins, positive(i)).cell_info.disable_value));
 										end if; -- check if control cell can be set to disable state
 
 									else 
@@ -1351,10 +1353,10 @@ procedure chkpsn is
 											level					=> d.level,																					 
 											class					=> d.class,
 											net						=> d.name,
-											device					=> p.device_name,
-											pin						=> p.device_pin_name,
-											id						=> p.cell_info.control_cell_id,
-											disable_value			=> p.cell_info.disable_value));
+											device					=> element(d.pins, positive(i)).device_name,
+											pin						=> element(d.pins, positive(i)).device_pin_name,
+											id						=> element(d.pins, positive(i)).cell_info.control_cell_id,
+											disable_value			=> element(d.pins, positive(i)).cell_info.disable_value));
 										
 									end if; -- if driver has a shared control cell
 
@@ -1369,13 +1371,13 @@ procedure chkpsn is
 									write_message (
 										file_handle => file_chkpsn_messages,
 										identation => 4,
-										text => "control cell: device " & to_string(p.device_name) 
-											& " pin " & to_string(p.device_pin_name) & row_separator_0 
-											& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+										text => "control cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+											& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+											& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.control_cell_id),
 										lf => false,
 										console => false);
 									
-									if p.cell_info.control_cell_shared then
+									if element(d.pins, positive(i)).cell_info.control_cell_shared then
 										-- if driver has a shared control cell
 										-- the driver pin can be disabled if its control cell is not already enabled 
 										-- or targeted by atg
@@ -1390,8 +1392,8 @@ procedure chkpsn is
 										if not control_cell_in_enable_state_by_any_cell_list( 
 											net		=> d.name,
 											class	=> d.class,
-											device	=> p.device_name,
-											cell_id	=> p.cell_info.control_cell_id) then
+											device	=> element(d.pins, positive(i)).device_name,
+											cell_id	=> element(d.pins, positive(i)).cell_info.control_cell_id) then
 
 											write_message (
 												file_handle => file_chkpsn_messages,
@@ -1416,10 +1418,10 @@ procedure chkpsn is
 												level					=> d.level,																					 
 												class					=> d.class,
 												net						=> d.name,
-												device					=> p.device_name,
-												pin						=> p.device_pin_name,
-												id						=> p.cell_info.control_cell_id,
-												disable_value			=> p.cell_info.disable_value));
+												device					=> element(d.pins, positive(i)).device_name,
+												pin						=> element(d.pins, positive(i)).device_pin_name,
+												id						=> element(d.pins, positive(i)).cell_info.control_cell_id,
+												disable_value			=> element(d.pins, positive(i)).cell_info.disable_value));
 											
 										end if;  -- check if control cell can be set to disable state
 
@@ -1452,10 +1454,10 @@ procedure chkpsn is
 											level					=> d.level,																					 
 											class					=> d.class,
 											net						=> d.name,
-											device					=> p.device_name,
-											pin						=> p.device_pin_name,
-											id						=> p.cell_info.control_cell_id,
-											disable_value			=> p.cell_info.disable_value));
+											device					=> element(d.pins, positive(i)).device_name,
+											pin						=> element(d.pins, positive(i)).device_pin_name,
+											id						=> element(d.pins, positive(i)).cell_info.control_cell_id,
+											disable_value			=> element(d.pins, positive(i)).cell_info.disable_value));
 									
 									end if; -- if driver has a shared control cell
 
@@ -1498,10 +1500,11 @@ procedure chkpsn is
 						-- if there is such a pin, it is to be preferred over other drivers
 						drivers_without_disable_spec_ct := 0; -- reset counter for drivers without disable spec
 						for i in 1..length(d.pins) loop -- loop through pin list of given net
-							p := element(d.pins, positive(i));
-							if p.is_bscan_capable then -- care for scan capable pins only
+							--p := element(d.pins, positive(i));
+							-- NOTE: element(d.pins, positive(i)) equals the particular pin
+							if element(d.pins, positive(i)).is_bscan_capable then -- care for scan capable pins only
 								-- if pin has no disable spec. (means: no control cell)
-								if p.cell_info.output_cell_id /= -1 and p.cell_info.control_cell_id = -1 then
+								if element(d.pins, positive(i)).cell_info.output_cell_id /= -1 and element(d.pins, positive(i)).cell_info.control_cell_id = -1 then
 									
 									case d.class is
 										when DH | DL =>
@@ -1509,9 +1512,9 @@ procedure chkpsn is
 											write_message (
 												file_handle => file_chkpsn_messages,
 												identation => 6,
-												text => "static output cell: device " & to_string(p.device_name) 
-													& " pin " & to_string(p.device_pin_name) & row_separator_0 
-													& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+												text => "static output cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+													& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+													& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.output_cell_id),
 												console => false);
 											
 -- 											add_to_locked_output_cells_in_class_DH_DL_nets(
@@ -1527,9 +1530,9 @@ procedure chkpsn is
 											append(list_of_static_output_cells_class_DX_NR,(
 												class					=> d.class,
 												net						=> d.name,
-												device					=> p.device_name,
-												pin						=> p.device_pin_name,
-												id						=> p.cell_info.output_cell_id,
+												device					=> element(d.pins, positive(i)).device_name,
+												pin						=> element(d.pins, positive(i)).device_pin_name,
+												id						=> element(d.pins, positive(i)).cell_info.output_cell_id,
 												drive_value				=> drive_value_derived_from_class(d.class)));
 										
 										when NR =>
@@ -1537,9 +1540,9 @@ procedure chkpsn is
 											write_message (
 												file_handle => file_chkpsn_messages,
 												identation => 5,
-												text => "static output cell: device " & to_string(p.device_name) 
-													& " pin " & to_string(p.device_pin_name) & row_separator_0 
-													& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+												text => "static output cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+													& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+													& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.control_cell_id),
 												console => false);
 											
 -- 											add_to_atg_drive(
@@ -1556,9 +1559,9 @@ procedure chkpsn is
 											append(list_of_atg_drive_cells,(
 												class						=> d.class,
 												net							=> d.name,
-												device						=> p.device_name,
-												pin							=> p.device_pin_name,
-												id							=> p.cell_info.control_cell_id,
+												device						=> element(d.pins, positive(i)).device_name,
+												pin							=> element(d.pins, positive(i)).device_pin_name,
+												id							=> element(d.pins, positive(i)).cell_info.control_cell_id,
 												controlled_by_control_cell	=> false));
 
 										when others => 
@@ -1596,13 +1599,14 @@ procedure chkpsn is
 								console => false);
 
 							for i in 1..length(d.pins) loop -- loop through pin list of given net -- CS: use a variable that holds the pin count of the net
-								p := element(d.pins, positive(i));
-								if p.is_bscan_capable then -- care for scan capable pins only
+								--p := element(d.pins, positive(i));
+								-- NOTE: element(d.pins, positive(i)) equals the particular pin
+								if element(d.pins, positive(i)).is_bscan_capable then -- care for scan capable pins only
 									-- if pin has output cell with disable spec. (means: there is a control cell)
-									if p.cell_info.output_cell_id /= -1 and p.cell_info.control_cell_id /= -1 then
+									if element(d.pins, positive(i)).cell_info.output_cell_id /= -1 and element(d.pins, positive(i)).cell_info.control_cell_id /= -1 then
 										-- select non-shared control cells
 
-										if not p.cell_info.control_cell_shared then
+										if not element(d.pins, positive(i)).cell_info.control_cell_shared then
 
 											case d.class is
 												when DH | DL =>
@@ -1610,9 +1614,9 @@ procedure chkpsn is
 													write_message (
 														file_handle => file_chkpsn_messages,
 														identation => 6,
-														text => "static control cell: device " & to_string(p.device_name) 
-															& " pin " & to_string(p.device_pin_name) & row_separator_0 
-															& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+														text => "static control cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+															& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+															& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.control_cell_id),
 														console => false);
 
 													-- add control cell to list (no need to check cell lists, as this control cell is non-shared)
@@ -1633,10 +1637,10 @@ procedure chkpsn is
 														level					=> d.level,																					 
 														class					=> d.class,
 														net						=> d.name,
-														device					=> p.device_name,
-														pin						=> p.device_pin_name,
-														id						=> p.cell_info.control_cell_id,
-														enable_value			=> negate_bit_character_class_0(p.cell_info.disable_value)));
+														device					=> element(d.pins, positive(i)).device_name,
+														pin						=> element(d.pins, positive(i)).device_pin_name,
+														id						=> element(d.pins, positive(i)).cell_info.control_cell_id,
+														enable_value			=> negate_bit_character_class_0(element(d.pins, positive(i)).cell_info.disable_value)));
 
 													
 													-- add output cell to list
@@ -1644,9 +1648,9 @@ procedure chkpsn is
 													write_message (
 														file_handle => file_chkpsn_messages,
 														identation => 6,
-														text => "static output cell: device " & to_string(p.device_name) 
-															& " pin " & to_string(p.device_pin_name) & row_separator_0 
-															& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+														text => "static output cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+															& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+															& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.output_cell_id),
 														console => false);
 													
 -- 													add_to_locked_output_cells_in_class_DH_DL_nets(
@@ -1662,9 +1666,9 @@ procedure chkpsn is
 													append(list_of_static_output_cells_class_DX_NR,(
 														class					=> d.class,
 														net						=> d.name,
-														device					=> p.device_name,
-														pin						=> p.device_pin_name,
-														id						=> p.cell_info.output_cell_id,
+														device					=> element(d.pins, positive(i)).device_name,
+														pin						=> element(d.pins, positive(i)).device_pin_name,
+														id						=> element(d.pins, positive(i)).cell_info.output_cell_id,
 														drive_value				=> drive_value_derived_from_class(d.class)));
 
 												when NR =>
@@ -1673,9 +1677,9 @@ procedure chkpsn is
 													write_message (
 														file_handle => file_chkpsn_messages,
 														identation => 6,
-														text => "static control cell: device " & to_string(p.device_name) 
-															& " pin " & to_string(p.device_pin_name) & row_separator_0 
-															& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+														text => "static control cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+															& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+															& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.control_cell_id),
 														console => false);
 													
 -- 													add_to_locked_control_cells_in_class_DH_DL_NR_nets(
@@ -1695,19 +1699,19 @@ procedure chkpsn is
 														level					=> d.level,																					 
 														class					=> d.class,
 														net						=> d.name,
-														device					=> p.device_name,
-														pin						=> p.device_pin_name,
-														id						=> p.cell_info.control_cell_id,
-														enable_value			=> negate_bit_character_class_0(p.cell_info.disable_value)));
-
+														device					=> element(d.pins, positive(i)).device_name,
+														pin						=> element(d.pins, positive(i)).device_pin_name,
+														id						=> element(d.pins, positive(i)).cell_info.control_cell_id,
+														enable_value			=> negate_bit_character_class_0(
+																					element(d.pins, positive(i)).cell_info.disable_value)));
 													
 -- 													-- add output cell to list
 													write_message (
 														file_handle => file_chkpsn_messages,
 														identation => 6,
-														text => "atg drive cell: device " & to_string(p.device_name) 
-															& " pin " & to_string(p.device_pin_name) & row_separator_0 
-															& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+														text => "atg drive cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+															& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+															& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.output_cell_id),
 														console => false);
 													
 -- 													add_to_atg_drive(
@@ -1724,9 +1728,9 @@ procedure chkpsn is
 													append(list_of_atg_drive_cells,(
 														class						=> d.class,
 														net							=> d.name,
-														device						=> p.device_name,
-														pin							=> p.device_pin_name,
-														id							=> p.cell_info.output_cell_id,
+														device						=> element(d.pins, positive(i)).device_name,
+														pin							=> element(d.pins, positive(i)).device_pin_name,
+														id							=> element(d.pins, positive(i)).cell_info.output_cell_id,
 														controlled_by_control_cell	=> false));
 
 												when PU | PD =>
@@ -1736,9 +1740,9 @@ procedure chkpsn is
 													write_message (
 														file_handle => file_chkpsn_messages,
 														identation => 6,
-														text => "static output cell: device " & to_string(p.device_name) 
-															& " pin " & to_string(p.device_pin_name) & row_separator_0 
-															& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+														text => "static output cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+															& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+															& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.output_cell_id),
 														console => false);
 													
 -- 													add_to_locked_output_cells_in_class_PU_PD_nets(
@@ -1755,9 +1759,9 @@ procedure chkpsn is
 													append(list_of_static_output_cells_class_PX,(
 														class						=> d.class,
 														net							=> d.name,
-														device						=> p.device_name,
-														pin							=> p.device_pin_name,
-														id							=> p.cell_info.output_cell_id,
+														device						=> element(d.pins, positive(i)).device_name,
+														pin							=> element(d.pins, positive(i)).device_pin_name,
+														id							=> element(d.pins, positive(i)).cell_info.output_cell_id,
 														drive_value					=> drive_value_derived_from_class(d.class)));
 
 													-- add control cell to list
@@ -1765,9 +1769,9 @@ procedure chkpsn is
 													write_message (
 														file_handle => file_chkpsn_messages,
 														identation => 6,
-														text => "atg drive cell: device " & to_string(p.device_name) 
-															& " pin " & to_string(p.device_pin_name) & row_separator_0 
-															& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+														text => "atg drive cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+															& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+															& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.control_cell_id),
 														console => false);													
 
 -- 													add_to_atg_drive(
@@ -1788,13 +1792,14 @@ procedure chkpsn is
 													append(list_of_atg_drive_cells,(
 														class						=> d.class,
 														net							=> d.name,
-														device						=> p.device_name,
-														pin							=> p.device_pin_name,
-														id							=> p.cell_info.control_cell_id,
+														device						=> element(d.pins, positive(i)).device_name,
+														pin							=> element(d.pins, positive(i)).device_pin_name,
+														id							=> element(d.pins, positive(i)).cell_info.control_cell_id,
 														controlled_by_control_cell	=> true,
 														inverted					=> inverted_status_derived_from_class_and_disable_value(
 																							class => d.class,
-																							disable_value => p.cell_info.disable_value)));
+																							disable_value => element(
+																								d.pins, positive(i)).cell_info.disable_value)));
 
 
 												when others => 
@@ -1841,13 +1846,14 @@ procedure chkpsn is
 
 								-- for p in 1..d.part_ct loop -- loop through pin list of given net
 								for i in 1..length(d.pins) loop
-									p := element(d.pins, positive(i));
-									if p.is_bscan_capable then -- care for scan capable pins only
+									--p := element(d.pins, positive(i));
+									-- NOTE: element(d.pins, positive(i)) equals the particular pin
+									if element(d.pins, positive(i)).is_bscan_capable then -- care for scan capable pins only
 										-- if pin has output cell with disable spec. (means: there is a control cell)
-										if p.cell_info.output_cell_id /= -1 and p.cell_info.control_cell_id /= -1 then
+										if element(d.pins, positive(i)).cell_info.output_cell_id /= -1 and element(d.pins, positive(i)).cell_info.control_cell_id /= -1 then
 
 											-- care for shared control cells only
-											if p.cell_info.control_cell_shared then
+											if element(d.pins, positive(i)).cell_info.control_cell_shared then
 
 												case d.class is
 													when DH | DL | NR =>
@@ -1858,8 +1864,8 @@ procedure chkpsn is
 														if not control_cell_in_disable_state_by_any_cell_list( 
 															net		=> d.name,
 															class	=> d.class,
-															device	=> p.device_name,
-															cell_id	=> p.cell_info.control_cell_id) then
+															device	=> element(d.pins, positive(i)).device_name,
+															cell_id	=> element(d.pins, positive(i)).cell_info.control_cell_id) then
 
 															-- the driver pin can be used as driver, its control cell is not in use by atg and not in disable state
 
@@ -1867,9 +1873,9 @@ procedure chkpsn is
 															write_message (
 																file_handle => file_chkpsn_messages,
 																identation => 6,
-																text => "static control cell: device " & to_string(p.device_name) 
-																	& " pin " & to_string(p.device_pin_name) & row_separator_0 
-																	& " cell " & type_cell_id'image(p.cell_info.control_cell_id),
+																text => "static control cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+																	& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+																	& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.control_cell_id),
 																console => false);
 															
 -- 															add_to_locked_control_cells_in_class_DH_DL_NR_nets(
@@ -1888,11 +1894,12 @@ procedure chkpsn is
 																class					=> d.class,
 																level					=> d.level,
 																net						=> d.name,
-																device					=> p.device_name,
-																pin						=> p.device_pin_name,
-																id						=> p.cell_info.control_cell_id,
+																device					=> element(d.pins, positive(i)).device_name,
+																pin						=> element(d.pins, positive(i)).device_pin_name,
+																id						=> element(d.pins, positive(i)).cell_info.control_cell_id,
 																locked_to_enable_state	=> true,
-																enable_value			=> negate_bit_character_class_0(p.cell_info.disable_value)));
+																enable_value			=> negate_bit_character_class_0(element(
+																							d.pins, positive(i)).cell_info.disable_value)));
 
 															case d.class is
 																when DH | DL =>
@@ -1900,9 +1907,9 @@ procedure chkpsn is
 																	write_message (
 																		file_handle => file_chkpsn_messages,
 																		identation => 6,
-																		text => "static output cell: device " & to_string(p.device_name) 
-																			& " pin " & to_string(p.device_pin_name) & row_separator_0 
-																			& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+																		text => "static output cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+																			& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+																			& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.output_cell_id),
 																		console => false);
 																	
 -- 																	add_to_locked_output_cells_in_class_DH_DL_nets(
@@ -1918,9 +1925,9 @@ procedure chkpsn is
 																	append(list_of_static_output_cells_class_DX_NR,(
 																		class				=> d.class,
 																		net					=> d.name,
-																		device				=> p.device_name,
-																		pin					=> p.device_pin_name,
-																		id					=> p.cell_info.output_cell_id,
+																		device				=> element(d.pins, positive(i)).device_name,
+																		pin					=> element(d.pins, positive(i)).device_pin_name,
+																		id					=> element(d.pins, positive(i)).cell_info.output_cell_id,
 																		drive_value			=> drive_value_derived_from_class(d.class)));
 
 																when NR =>
@@ -1929,9 +1936,9 @@ procedure chkpsn is
 																	write_message (
 																		file_handle => file_chkpsn_messages,
 																		identation => 6,
-																		text => "atg drive cell: device " & to_string(p.device_name) 
-																			& " pin " & to_string(p.device_pin_name) & row_separator_0 
-																			& " cell " & type_cell_id'image(p.cell_info.output_cell_id),
+																		text => "atg drive cell: device " & to_string(element(d.pins, positive(i)).device_name) 
+																			& " pin " & to_string(element(d.pins, positive(i)).device_pin_name) & row_separator_0 
+																			& " cell " & type_cell_id'image(element(d.pins, positive(i)).cell_info.output_cell_id),
 																		console => false);
 																	
 -- 																	add_to_atg_drive(
@@ -1947,9 +1954,9 @@ procedure chkpsn is
 																	append(list_of_atg_drive_cells,(
 																		class						=> d.class,
 																		net							=> d.name,
-																		device						=> p.device_name,
-																		pin							=> p.device_pin_name,
-																		id							=> p.cell_info.output_cell_id,
+																		device						=> element(d.pins, positive(i)).device_name,
+																		pin							=> element(d.pins, positive(i)).device_pin_name,
+																		id							=> element(d.pins, positive(i)).cell_info.output_cell_id,
 																		controlled_by_control_cell	=> false));
 																
 																when others => -- should never happen
@@ -1958,7 +1965,13 @@ procedure chkpsn is
 																	raise constraint_error; 
 															end case;
 
-															p.cell_info.selected_as_driver := true; -- mark driver as active
+															-- mark driver as active
+															--p.cell_info.selected_as_driver := true; 
+															update_element(
+																container => d.pins,
+																index => positive(i),
+																process => set_selected_as_driver'access);
+															
 															driver_with_shared_control_cell_found := true;
 															exit; -- no more driver search required
 
@@ -2012,7 +2025,7 @@ procedure chkpsn is
 		spacing_from_left 	: in positive -- CS: should read "identation"
 		) is
 		n : type_net; -- for temporarily storage of a net taken from current database
-		p : type_pin; -- for temporarily storage of a pin of net d
+-- 		p : type_pin; -- for temporarily storage of a pin of net d
 
 		procedure set_optimized_flag (net : in out type_net) is
 		begin
@@ -2052,44 +2065,45 @@ procedure chkpsn is
 				-- and dump the net content like "IC301 ? XC9536 PLCC-S44 2  pb00_00 | 107 bc_1 input x | 106 bc_1 output3 x 105 0 z"
 				-- into the preliminary data base
 				for i in 1..length(n.pins) loop
-					p := element(n.pins, positive(i));
+					--  p := element(n.pins, positive(i));
+					-- NOTE: element(n.pins, positive(i)) equals the particular pin
 					-- dump the standard segment like "IC301 ? XC9536 PLCC-S44 2"
-					put(spacing_from_left*row_separator_0 & to_string(p.device_name)
-						& row_separator_0 & type_device_class'image(p.device_class)
-						& row_separator_0 & to_string(p.device_value)
-						& row_separator_0 & to_string(p.device_package)
-						& row_separator_0 & to_string(p.device_pin_name)
+					put(spacing_from_left*row_separator_0 & to_string(element(n.pins, positive(i)).device_name)
+						& row_separator_0 & type_device_class'image(element(n.pins, positive(i)).device_class)
+						& row_separator_0 & to_string(element(n.pins, positive(i)).device_value)
+						& row_separator_0 & to_string(element(n.pins, positive(i)).device_package)
+						& row_separator_0 & to_string(element(n.pins, positive(i)).device_pin_name)
 					);
-					if p.is_bscan_capable then
+					if element(n.pins, positive(i)).is_bscan_capable then
 						-- dump the input cell segment like "| 107 bc_1 input x "
-						put(row_separator_0 & to_string(p.device_port_name));
-						if p.cell_info.input_cell_id /= -1 then
-							put(row_separator_1 & trim(natural'image(p.cell_info.input_cell_id),left)
-								& row_separator_0 & type_boundary_register_cell'image(p.cell_info.input_cell_type)
-								& row_separator_0 & type_cell_function'image(p.cell_info.input_cell_function)
-								& row_separator_0 & type_bit_char_class_1'image(p.cell_info.input_cell_safe_value)(2)
+						put(row_separator_0 & to_string(element(n.pins, positive(i)).device_port_name));
+						if element(n.pins, positive(i)).cell_info.input_cell_id /= -1 then
+							put(row_separator_1 & trim(natural'image(element(n.pins, positive(i)).cell_info.input_cell_id),left)
+								& row_separator_0 & type_boundary_register_cell'image(element(n.pins, positive(i)).cell_info.input_cell_type)
+								& row_separator_0 & type_cell_function'image(element(n.pins, positive(i)).cell_info.input_cell_function)
+								& row_separator_0 & type_bit_char_class_1'image(element(n.pins, positive(i)).cell_info.input_cell_safe_value)(2)
 								);
 						end if;
 
-						if p.cell_info.output_cell_id /= -1 then
+						if element(n.pins, positive(i)).cell_info.output_cell_id /= -1 then
 							-- dump the output cell segment like "| 106 bc_1 output3"
-							put(row_separator_1 & trim(natural'image(p.cell_info.output_cell_id),left)
-								& row_separator_0 & type_boundary_register_cell'image(p.cell_info.output_cell_type)
-								& row_separator_0 & type_cell_function'image(p.cell_info.output_cell_function)
-								& row_separator_0 & type_bit_char_class_1'image(p.cell_info.output_cell_safe_value)(2)
+							put(row_separator_1 & trim(natural'image(element(n.pins, positive(i)).cell_info.output_cell_id),left)
+								& row_separator_0 & type_boundary_register_cell'image(element(n.pins, positive(i)).cell_info.output_cell_type)
+								& row_separator_0 & type_cell_function'image(element(n.pins, positive(i)).cell_info.output_cell_function)
+								& row_separator_0 & type_bit_char_class_1'image(element(n.pins, positive(i)).cell_info.output_cell_safe_value)(2)
 								);
 
-							if p.cell_info.control_cell_id /= -1 then
+							if element(n.pins, positive(i)).cell_info.control_cell_id /= -1 then
 								-- dump the contol cell segment like "x 105 0 z"
-								put(row_separator_0 & trim(natural'image(p.cell_info.control_cell_id),left)
-									& row_separator_0 & type_bit_char_class_0'image(p.cell_info.disable_value)(2)
-									& row_separator_0 & type_disable_result'image(p.cell_info.disable_result)
+								put(row_separator_0 & trim(natural'image(element(n.pins, positive(i)).cell_info.control_cell_id),left)
+									& row_separator_0 & type_bit_char_class_0'image(element(n.pins, positive(i)).cell_info.disable_value)(2)
+									& row_separator_0 & type_disable_result'image(element(n.pins, positive(i)).cell_info.disable_result)
 									);
 							end if;
 						end if;
 					else -- pin is not scan capable, but it might have a port name (linkage pins of bic)
-						if to_string(p.device_port_name) /= "" then
-							put(row_separator_0 & to_string(p.device_port_name));
+						if to_string(element(n.pins, positive(i)).device_port_name) /= "" then
+							put(row_separator_0 & to_string(element(n.pins, positive(i)).device_port_name));
 						end if;
 					end if;
 					new_line; -- line finished, add line break for next line
