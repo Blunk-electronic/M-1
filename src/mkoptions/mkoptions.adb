@@ -271,7 +271,7 @@ procedure mkoptions is
 	-- Raises an error if bridge device occurs more than twice.
 	-- The bridge returned is a type_bridge as a single two-pin bridge.
 		net					: type_net;
-		pin					: m1_database.type_pin;
+		pin					: m1_database.type_pin_base;
 		length_of_pinlist	: count_type; -- CS: we assume there are no zero-pin nets
 		occurences			: natural := 0;
 
@@ -297,7 +297,7 @@ procedure mkoptions is
 			net := element(list_of_nets, positive(i)); -- load a net
 			length_of_pinlist := length(net.pins); -- load number of pins in the net
 			for i in 1..length_of_pinlist loop -- loop in pinlist
-				pin := element(net.pins, positive(i)); -- load a pin
+				pin := type_pin_base(element(net.pins, positive(i))); -- load a pin
 				if pin.device_name = bridge_in.name then -- on device name match
 
 					-- Count occurences. The first occurence is pin a. The second pin b.
@@ -373,7 +373,7 @@ procedure mkoptions is
 		wildcards	: in boolean := false ) return natural is
 
 		net					: type_net;
-		pin					: m1_database.type_pin;
+		pin					: m1_database.type_pin_base;
 		length_of_pinlist	: count_type; -- CS: we assume there are no zero-pin nets
 		occurences			: natural := 0;
 	begin -- device_occurences_in_netlist
@@ -381,7 +381,7 @@ procedure mkoptions is
 			net := element(list_of_nets, positive(i)); -- load a net
 			length_of_pinlist := length(net.pins); -- load number of pins in the net
 			for i in 1..length_of_pinlist loop -- loop in pinlist
-				pin := element(net.pins, positive(i)); -- load a pin
+				pin := type_pin_base(element(net.pins, positive(i))); -- load a pin
 				if wildcards then
 					if wildcard_match(
 						text_with_wildcards => to_string(device), -- the device being inquired for
@@ -522,7 +522,7 @@ procedure mkoptions is
 		-- (The preliminary bridge name contains wildcards.)
 		-- and appends them to the list_of_bridges.
 			net		: type_net;
-			pin		: m1_database.type_pin;
+			pin		: m1_database.type_pin_base;
 			scratch	: type_device_name.bounded_string;
 		begin -- add_bridges_matching_wildcard_to_list_of_bridges
 
@@ -530,7 +530,7 @@ procedure mkoptions is
 			for i in 1..length_of_netlist loop
 				net := element(list_of_nets, positive(i)); -- load a net
 				for i in 1..length(net.pins) loop
-					pin := element(net.pins, positive(i)); -- load a pin
+					pin := type_pin_base(element(net.pins, positive(i))); -- load a pin
 
 -- 					write_message (
 -- 						file_handle => file_mkoptions_messages,
@@ -871,7 +871,7 @@ procedure mkoptions is
 		end case;
 	end record;
 
-	function is_pin_of_bridge (pin : in m1_database.type_pin) return type_result_of_bridge_query is
+	function is_pin_of_bridge (pin : in m1_database.type_pin_base) return type_result_of_bridge_query is
 	-- Returns true if given pin belongs to a bridge.
 	-- When true, the return contains the side and pin of the opposide of the bridge.
 		bp 					: type_bridge_preliminary; -- a scratch variable
@@ -982,7 +982,7 @@ procedure mkoptions is
 		end case;
 	end record;
 	
-	function is_pin_of_connector (pin : in m1_database.type_pin) return type_result_of_connector_query is
+	function is_pin_of_connector (pin : in m1_database.type_pin_base) return type_result_of_connector_query is
 	-- Returns true if pin is part of a connector pair.
 	-- When true, the return contains the device and pin of the opposide connector of the pair.
 		cp : type_connector_pair;
@@ -1048,7 +1048,7 @@ procedure mkoptions is
 									device_pin_name => to_bounded_string(""))
 		) is
 		length_of_pinlist	: count_type;
-		pin					: m1_database.type_pin;		
+		pin					: m1_database.type_pin_base;
 		
 		result_of_connector_query	: type_result_of_connector_query;
 		result_of_bridge_query		: type_result_of_bridge_query;
@@ -1059,7 +1059,7 @@ procedure mkoptions is
 		
 		length_of_pinlist := length(net.pins);
 		for p in 1..length_of_pinlist loop -- search in pinlist of given net
-			pin := element(net.pins, positive(p)); -- load a pin
+			pin := type_pin_base(element(net.pins, positive(p))); -- load a pin
 
 			-- If requested, the entry pin is ignored.
 			if ignore_entry_pin and type_pin_base(pin) = entry_pin then
@@ -1125,9 +1125,8 @@ procedure mkoptions is
 
 		net					: type_net;
 		length_of_pinlist	: count_type;
-		pin_scratch			: m1_database.type_pin;
+		pin_scratch			: m1_database.type_pin_base;
 		net_found			: boolean := false; -- True once a net for processing has been found.
-
 	begin -- find_net
 		loop_netlist:
 		for i in 1..length_of_netlist loop
@@ -1140,7 +1139,7 @@ procedure mkoptions is
 
 				length_of_pinlist := length(net.pins);
 				for p in 1..length_of_pinlist loop
-					pin_scratch := element(net.pins, positive(p)); -- load a pin
+					pin_scratch := type_pin_base(element(net.pins, positive(p))); -- load a pin
 
 					if pin_scratch.device_name = device and pin_scratch.device_pin_name = pin then -- FN4 / FN5
 						net_found := true;
@@ -1190,7 +1189,7 @@ procedure mkoptions is
 	-- Writes cluster id and nets of cluster in routing file.
 		net					: type_net; -- for temporarily usage
 		length_of_pinlist	: count_type;
-		pin					: m1_database.type_pin; -- for temporarily usage		
+		pin					: m1_database.type_pin_base; -- for temporarily usage		
 
 		result_of_connector_query	: type_result_of_connector_query;
 		result_of_bridge_query		: type_result_of_bridge_query;
@@ -1226,7 +1225,7 @@ procedure mkoptions is
 
 			length_of_pinlist := length(net.pins);
 			for p in 1..length_of_pinlist loop
-				pin := element(net.pins, positive(p)); -- load a pin
+				pin := type_pin_base(element(net.pins, positive(p))); -- load a pin
 
 				-- test if pin belongs to a connector
 				if is_pin_of_connector(pin).is_connector_pin then
@@ -1386,7 +1385,9 @@ procedure mkoptions is
 -- 						bic => positive(i),
 -- 						pin => pin.device_pin_name));
 -- 				end if;
--- 			end loop;
+			-- 			end loop;
+
+-- 			if length(pin.
 
 			new_line;
 		end write_pin;
@@ -1401,7 +1402,7 @@ procedure mkoptions is
 	procedure write_bs_clusters is
 		cluster : type_cluster;
 		net 	: type_net;		
-		pin		: m1_database.type_pin;
+-- 		pin		: m1_database.type_pin;
 
 		primary_net_found	: boolean := false;
 		name_of_primary_net	: type_net_name.bounded_string;
@@ -1452,18 +1453,21 @@ procedure mkoptions is
 					
 					if net.bs_output_pin_count > 0 then
 						for p in 1..length(net.pins) loop
-							pin := element(net.pins, positive(p));
-							if pin.is_bscan_capable then
+							--pin := element(net.pins, positive(p));
+							--if pin.is_bscan_capable then
+							-- NOTE: element(net.pins, positive(p)) equals the particular pin
+							if element(net.pins, positive(p)).is_bscan_capable then
 
 								-- If pin is an output2 driver
-								if 	pin.cell_info.output_cell_id /= cell_not_available and -- has output cell
-									pin.cell_info.control_cell_id = cell_not_available then -- has no control cell
+								if 	element(net.pins, positive(p)).cell_info.output_cell_id /= cell_not_available and -- has output cell
+									element(net.pins, positive(p)).cell_info.control_cell_id = cell_not_available then -- has no control cell
 									-- we have an output2 pin
 
 									write_message (
 										file_handle => file_mkoptions_messages,
 										identation => 5,
-										text => "pin " & to_string(pin.device_name) & row_separator_0 & to_string(pin.device_pin_name),
+										text => "pin " & to_string(element(net.pins, positive(p)).device_name) 
+											& row_separator_0 & to_string(element(net.pins, positive(p)).device_pin_name),
 										console => false);
 
 									-- Save name of primary net. Required for sorting secondary nets.
@@ -1508,18 +1512,20 @@ procedure mkoptions is
 						
 						if net.bs_output_pin_count > 0 or net.bs_bidir_pin_count > 0 then
 							for p in 1..length(net.pins) loop
-								pin := element(net.pins, positive(p));
-								if pin.is_bscan_capable then
+								--pin := element(net.pins, positive(p));
+								-- NOTE: element(net.pins, positive(p)) equals the particular pin
+								if element(net.pins, positive(p)).is_bscan_capable then
 
 									-- If pin is a driver with disable spec:
-									if 	pin.cell_info.output_cell_id /= cell_not_available and -- has output cell
-										pin.cell_info.control_cell_id /= cell_not_available then -- has control cell
+									if 	element(net.pins, positive(p)).cell_info.output_cell_id /= cell_not_available and -- has output cell
+										element(net.pins, positive(p)).cell_info.control_cell_id /= cell_not_available then -- has control cell
 										-- we have an output pin with disable spec
 
 										write_message (
 											file_handle => file_mkoptions_messages,
 											identation => 5,
-											text => "pin " & to_string(pin.device_name) & row_separator_0 & to_string(pin.device_pin_name),
+											text => "pin " & to_string(element(net.pins, positive(p)).device_name) 
+												& row_separator_0 & to_string(element(net.pins, positive(p)).device_pin_name),
 											console => false);
 
 										-- Save name of primary net. Required for sorting secondary nets.
@@ -1563,17 +1569,19 @@ procedure mkoptions is
 						
 						if net.bs_input_pin_count > 0 then
 							for p in 1..length(net.pins) loop
-								pin := element(net.pins, positive(p));
-								if pin.is_bscan_capable then
+								--pin := element(net.pins, positive(p));
+								-- NOTE: element(net.pins, positive(p)) equals the particular pin
+								if element(net.pins, positive(p)).is_bscan_capable then
 
 									-- If pin is a driver with disable spec:
-									if 	pin.cell_info.input_cell_id /= cell_not_available then -- has input cell
+									if 	element(net.pins, positive(p)).cell_info.input_cell_id /= cell_not_available then -- has input cell
 										-- we have receiver pin
 
 										write_message (
 											file_handle => file_mkoptions_messages,
 											identation => 5,
-											text => "pin " & to_string(pin.device_name) & row_separator_0 & to_string(pin.device_pin_name),
+											text => "pin " & to_string(element(net.pins, positive(p)).device_name) 
+												& row_separator_0 & to_string(element(net.pins, positive(p)).device_pin_name),
 											console => false);
 
 										-- Save name of primary net. Required for sorting secondary nets.
