@@ -53,6 +53,7 @@ with m1_base; 					use m1_base;
 with m1_string_processing;		use m1_string_processing;
 with m1_database;				use m1_database;
 with m1_files_and_directories;	use m1_files_and_directories;
+with m1_numbers;				use m1_numbers;
 
 procedure mkoptions is
 
@@ -1166,7 +1167,7 @@ procedure mkoptions is
 			write_message (
 				file_handle => file_mkoptions_messages,
 				identation => 4,
-				text => " an already processed net -> aborted",
+				text => " an already processed net or not connected -> aborted",
 				console => false);
 		end if;
 			
@@ -1362,12 +1363,16 @@ procedure mkoptions is
 	procedure write_net_content( net : in type_net) is
 	-- Writes the pins of the given net in options file.
 		procedure write_pin ( pin : in m1_database.type_pin) is
+		-- writes something like 
+		-- "-- XC2C384-10TQG144C S_TQFP144 45 IO_91 | 416 BC_1 INPUT X | 415 BC_1 OUTPUT3 X 414 0 Z"
 -- 			bic : type_bscan_ic;
 			use type_device_value;
 			use type_package_name;
+			use type_port_name;
+--			use m1_numbers.type_bit_char_class_1;
 			use type_list_of_bics;
 		begin
-			-- write the basic pin info as comment like "-- R101 ? 2k7 0207/10 2"
+			-- write the basic pin info as like "-- XC2C384-10TQG144C S_TQFP144 45 IO_91"
 			put(2 * row_separator_0 & comment_mark & to_string(pin.device_name) & row_separator_0 &
 				type_device_class'image(device_class_default)(2) & row_separator_0 &
 				to_string(pin.device_value) & row_separator_0 &
@@ -1375,20 +1380,48 @@ procedure mkoptions is
 				to_string(pin.device_pin_name) & row_separator_0
 			);
 
-			-- CS:
-			-- If pin belongs to a bic, additionally write
-			-- port and cell info like "SOIC24 2 Y1(1) | 7 BC_1 OUTPUT3 X 17 1 Z"
--- 			for i in 1..type_list_of_bics.length(list_of_bics) loop
--- 				bic := element(list_of_bics, positive(i));
--- 				if bic.name = pin.device_name then
--- 					put(get_cell_info(
--- 						bic => positive(i),
--- 						pin => pin.device_pin_name));
--- 				end if;
-			-- 			end loop;
+			-- write port name of linkage pins
+			if length(pin.device_port_name) > 0 then
+				put(to_string(pin.device_port_name));
+			end if;
 
--- 			if length(pin.
+			-- write supplementary stuff of scan capable pins
+			if pin.is_bscan_capable then
+-- 				put(row_separator_0);
+				
+				-- write input cell if available
+				-- example " | 416 BC_1 INPUT X "
+				if pin.cell_info.input_cell_id /= cell_not_available then
+					put(row_separator_0 & cell_info_ifs
+						& type_cell_id'image(pin.cell_info.input_cell_id)
+						& row_separator_0 & type_boundary_register_cell'image(pin.cell_info.input_cell_type)
+						& row_separator_0 & type_cell_function'image(pin.cell_info.input_cell_function)
+						& row_separator_0 & strip_quotes(type_bit_char_class_1'image(pin.cell_info.input_cell_safe_value))
+					   );
+				end if;
 
+				-- write output cell if available
+				-- example " | 415 BC_1 OUTPUT3 X" 
+				if pin.cell_info.output_cell_id /= cell_not_available then
+					put(row_separator_0 & cell_info_ifs
+						& type_cell_id'image(pin.cell_info.output_cell_id)
+						& row_separator_0 & type_boundary_register_cell'image(pin.cell_info.output_cell_type)
+						& row_separator_0 & type_cell_function'image(pin.cell_info.output_cell_function)
+						& row_separator_0 & strip_quotes(type_bit_char_class_1'image(pin.cell_info.output_cell_safe_value))
+					   );
+				end if;
+
+				-- write disable spec if available
+				-- example " 414 0 Z"
+				if pin.cell_info.control_cell_id /= cell_not_available then
+					put(type_cell_id'image(pin.cell_info.control_cell_id)
+						& row_separator_0 & strip_quotes(type_bit_char_class_0'image(pin.cell_info.disable_value))
+						& row_separator_0 & type_disable_result'image(pin.cell_info.disable_result)
+					   );
+				end if;
+				
+			end if;
+			
 			new_line;
 		end write_pin;
 		
