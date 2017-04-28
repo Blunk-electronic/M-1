@@ -6,7 +6,7 @@
 --                                                                          --
 --                               B o d y                                    --
 --                                                                          --
---         Copyright (C) 2016 Mario Blunk, Blunk electronic                 --
+--         Copyright (C) 2017 Mario Blunk, Blunk electronic                 --
 --                                                                          --
 --    This program is free software: you can redistribute it and/or modify  --
 --    it under the terms of the GNU General Public License as published by  --
@@ -24,70 +24,81 @@
 
 --   Please send your questions and comments to:
 --
---   Mario.Blunk@blunk-electronic.de
+--   info@blunk-electronic.de
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
 --
 
 
-with Ada.Text_IO;		use Ada.Text_IO;
-with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
-with Ada.Sequential_IO;
---with System.OS_Lib;   use System.OS_Lib;
-with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
-with Ada.Task_Identification;  use Ada.Task_Identification;
-with Ada.Exceptions; use Ada.Exceptions;
- 
-with GNAT.OS_Lib;   	use GNAT.OS_Lib;
-with Ada.Command_Line;	use Ada.Command_Line;
-with Ada.Directories;	use Ada.Directories;
- 
-with Ada.Calendar;				use Ada.Calendar;
-with Ada.Calendar.Formatting;	use Ada.Calendar.Formatting;
-with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
+with ada.text_io;				use ada.text_io;
+with ada.characters.handling;   use ada.characters.handling;
+with ada.strings.unbounded; 	use ada.strings.unbounded;
+with ada.characters;			use ada.characters;
+with ada.characters.latin_1;	use ada.characters.latin_1;
+with ada.strings; 				use ada.strings;
+with ada.strings.maps;			use ada.strings.maps;
+with ada.strings.bounded; 		use ada.strings.bounded;
+with ada.strings.fixed; 		use ada.strings.fixed;
+with ada.exceptions; 			use ada.exceptions;
+with ada.containers;			use ada.containers;
+with ada.containers.doubly_linked_lists;
 
-with m1; use m1;
+with gnat.os_lib;   			use gnat.os_lib;
+with ada.command_line;			use ada.command_line;
+with ada.directories;			use ada.directories;
+
+with m1_base; 					use m1_base;
+with m1_database;				use m1_database;
+with m1_import;					use m1_import;
+with m1_numbers; 				use m1_numbers;
+with m1_string_processing;		use m1_string_processing;
+with m1_files_and_directories; 	use m1_files_and_directories;
+
  
 procedure joinnetlist is
-	Version			: String (1..3) := "002";
-	skeleton_sub 	: unbounded_string;
-	prog_position	: String (1..3) := "---";
-	OutputFile 		: Ada.Text_IO.File_Type;
-	scratch			: Unbounded_string;
-	Line			: Unbounded_string;
-	dummy			: Integer;
-	InputFile		: Ada.Text_IO.File_Type;
+
+	version				: constant string (1..3) := "003";
+	prog_position		: natural := 0;
+	file_skeleton_temp	: ada.text_io.file_type;
+
+	use type_name_file_skeleton_submodule;
+
+	procedure write_skeleton_file_header is
+	begin
+		set_output(file_skeleton_temp);
+		put_line ("-- THIS IS A SKELETON FILE. DO NOT EDIT !");
+		put_line ("-- created by " & name_module_join_netlist & " version " & version);	
+		put_line ("-- date " & date_now);
+		new_line;
+		put_line ("-- merged with submodule skeleton " & to_string(name_file_skeleton_submodule));
+		new_line;
+		set_output(standard_output);
+	end write_skeleton_file_header;
 	
-
-	function umask( mask : integer ) return integer;
-		pragma import( c, umask );
-
-
 
 begin
+	action := join_netlist;
 
 	new_line;
-	put("Netlist Joiner version "& Version); new_line;
+	put_line(to_upper(name_module_join_netlist) & " version " & version);
+	put_line("===============================");
+	
+	name_file_skeleton_submodule := to_bounded_string(argument(1));
+	put_line("submodule      : " & to_string(name_file_skeleton_submodule));
 
-	skeleton_sub:=to_unbounded_string(Argument(1));
-	put ("submodule      : ");	put(skeleton_sub); new_line;
-
-	dummy := umask ( 003 );
 	
 	-- recreate an empty tmp directory
-	if exists ("tmp") then 
-		Delete_Tree("tmp");
-		Create_Directory("tmp");
-	else Create_Directory("tmp");
-	end if;
+	create_temp_directory;
 
-	extract_section("skeleton.txt","tmp/skeleton_brutto.tmp","Section","EndSection","netlist_skeleton");
-	extract_netto_from_Section("tmp/skeleton_brutto.tmp","tmp/skeleton_netto.tmp");
+	-- create message/log file
+ 	write_log_header(version);
 	
-	extract_section(to_string(skeleton_sub),"tmp/skeleton_brutto_sub.tmp","Section","EndSection","netlist_skeleton");
-	extract_netto_from_Section("tmp/skeleton_brutto_sub.tmp","tmp/skeleton_netto_sub.tmp");
+-- 	extract_section("skeleton.txt","tmp/skeleton_brutto.tmp","Section","EndSection","netlist_skeleton");
+-- 	extract_netto_from_Section("tmp/skeleton_brutto.tmp","tmp/skeleton_netto.tmp");
+-- 	
+-- 	extract_section(to_string(skeleton_sub),"tmp/skeleton_brutto_sub.tmp","Section","EndSection","netlist_skeleton");
+-- 	extract_netto_from_Section("tmp/skeleton_brutto_sub.tmp","tmp/skeleton_netto_sub.tmp");
 	
 	--scratch:= ( delete(skeleton_sub,1,9) );
 	--put(scratch(scratch'first .. scratch'last-1));
@@ -95,96 +106,110 @@ begin
 	--put (to_string(scratch)(to_string(scratch)'first+9 .. to_string(scratch)'last-4));
 	--append_sub_name(to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4));
 	--(to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4));
+
+	if exists(name_file_skeleton) then
+		open( -- this is the current skeleton
+			file => file_skeleton,
+			mode => in_file,
+			name => name_file_skeleton
+			);
+	else
+		write_message (
+			file_handle => file_join_netlist_messages,
+			text => message_error & name_file_skeleton
+				& " does not exist. Please import netlist first !",
+			console => true);
+	end if;
 	
-	Create( OutputFile, Name => Compose("tmp","skeleton_netto_sub_ext.tmp")); Close(OutputFile);
-	Open( 
-		File => OutputFile,
-		Mode => Append_File,
-		Name => ("tmp/skeleton_netto_sub_ext.tmp")
-		);
-	Set_Output(OutputFile);
+	create( -- this is going to be the new skeleton
+		file => file_skeleton_temp, 
+		mode => out_file,
+		name => compose(name_directory_temp, to_string(name_file_skeleton_submodule)));
+		
+	write_skeleton_file_header;
+
+
+
 	
-	Open( 
-		File => InputFile,
-		Mode => In_File,
-		Name => ("tmp/skeleton_netto_sub.tmp")
-		);
-	Set_Input(InputFile);
+	close(file_skeleton);
+	close(file_skeleton_temp);
+	write_log_footer;
 	
-	while not End_Of_File
-		loop
-			Line:=Get_Line;
-			if Get_Field_Count(Line) = 0 then new_line;
+-- 	-- backup existing main module
+-- 	--extract_section( (to_string(data_base)) ,"tmp/spc_seed.tmp","Section","EndSection","scanpath_configuration");
+-- 	Copy_File( "skeleton.txt", Compose("bak","skeleton.txt"));
+-- 	Create( OutputFile, Name => Compose("tmp","skeleton.tmp")); Close(OutputFile);
+-- 	put ("NOTE           : A backup of the mainmodule skeleton can be found in directory 'bak'."); new_line;
+-- 
+-- 	Open( 
+-- 		File => OutputFile,
+-- 		Mode => Append_File,
+-- 		Name => Compose("tmp","skeleton.tmp")
+-- 		);
+-- 	Set_Output(OutputFile);
+
+-- 	put ("Section info"); new_line;
+-- 	put ("---------------------------------------------------------------"); new_line;
+-- 	put ("-- created by Netlist Joiner version " & version); new_line;
+-- 	put ("-- date           : " ); put (Image(clock)); new_line; 
+-- 	put ("-- UTC_Offset     : " ); Put (Integer(UTC_Time_Offset/60),1); put(" hours"); new_line; new_line;
+-- 	put ("-- joined netlist : " & skeleton_sub); new_line;
+-- 	put ("-- prefix         : " & (to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4))); new_line; -- ins V002
+-- 	put ("EndSection "); new_line; new_line;
+-- 	
+-- 	put ("Section netlist_skeleton"); new_line; new_line;
+-- 	put ("------MAINMODULE BEGIN-------------------------------------------"); new_line(2);	
+-- 	append_file_open("tmp/skeleton_netto.tmp");
+-- 	new_line(2);
+-- 	put ("------SUBMODULE BEGIN--------------------------------------------"); new_line;
+-- 	put ("-- origin         : " & skeleton_sub); new_line(2);
+-- 	append_file_open("tmp/skeleton_netto_sub_ext.tmp");
+-- 	put ("EndSection"); new_line; new_line;
 			
-			elsif Is_Field(Line,"SubSection",1) then
--- rm V002 begin			
--- 				put ( " SubSection " & Get_Field(Line,2) & "_" 
--- 				 & (to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4))
--- 				 & " " & Get_Field(Line,3) & " " & Get_Field(Line,4) ); new_line;
--- rm V002 end
 
--- ins V002 begin			-- put prefix first before net name
- 				put ( " SubSection " & (to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4)) & "_" 
- 				 & Get_Field(Line,2)
- 				 & " " & Get_Field(Line,3) & " " & Get_Field(Line,4) ); new_line;
--- ins V002 end
+--	Copy_File( "tmp/skeleton.tmp" , "skeleton.txt" );
 
-			--end if;
-			
-			elsif Is_Field(Line,"EndSubSection",1) then put(" EndSubSection"); new_line; --end if;
+	exception when event: others =>
+		set_exit_status(failure);
+		set_output(standard_output);
 
--- rm V002 begin			
---			else put ("  " & Get_Field(Line,1) & "_" 
--- 				 & (to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4))
--- 				 & " " & Get_Field(Line,2) & " " & Get_Field(Line,3) & " " & Get_Field(Line,4) & " " & Get_Field(Line,5) ); new_line;
--- rm V002 end
+		write_message (
+			file_handle => file_join_netlist_messages,
+			text => message_error & " at program position " & natural'image(prog_position),
+			console => true);
 
--- ins V002 begin 	- put prefix first before part name
-			else put ("  " & (to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4)) & "_" 
-				 & Get_Field(Line,1)
-				 & " " & Get_Field(Line,2) & " " & Get_Field(Line,3) & " " & Get_Field(Line,4) & " " & Get_Field(Line,5) ); new_line;
--- ins V002 end
+		if is_open(file_skeleton) then
+			close(file_skeleton);
+		end if;
 
-			end if;
-		end loop;
-	Set_Output(Standard_Output);	
-	Set_Input(Standard_Input);	
-	Close(InputFile);
-	Close(OutputFile);	
-	
-	-- backup existing main module
-	--extract_section( (to_string(data_base)) ,"tmp/spc_seed.tmp","Section","EndSection","scanpath_configuration");
-	Copy_File( "skeleton.txt", Compose("bak","skeleton.txt"));
-	Create( OutputFile, Name => Compose("tmp","skeleton.tmp")); Close(OutputFile);
-	put ("NOTE           : A backup of the mainmodule skeleton can be found in directory 'bak'."); new_line;
+		if is_open(file_skeleton_temp) then
+			close(file_skeleton_temp);
+		end if;
+		
+-- 		case prog_position is
+-- 			when 10 =>
+-- 				write_message (
+-- 					file_handle => file_mknets_messages,
+-- 					text => message_error & text_identifier_database & " file missing or insufficient access rights !",
+-- 					console => true);
+-- 
+-- 				write_message (
+-- 					file_handle => file_mknets_messages,
+-- 					text => "       Provide " & text_identifier_database & " name as argument. Example: mknets my_uut.udb",
+-- 					console => true);
+-- 
+-- 			when others =>
+-- 				write_message (
+-- 					file_handle => file_mknets_messages,
+-- 					text => "exception name: " & exception_name(event),
+-- 					console => true);
+-- 
+-- 				write_message (
+-- 					file_handle => file_mknets_messages,
+-- 					text => "exception message: " & exception_message(event),
+-- 					console => true);
+-- 		end case;
 
-	Open( 
-		File => OutputFile,
-		Mode => Append_File,
-		Name => Compose("tmp","skeleton.tmp")
-		);
-	Set_Output(OutputFile);
-
-	put ("Section info"); new_line;
-	put ("---------------------------------------------------------------"); new_line;
-	put ("-- created by Netlist Joiner version " & version); new_line;
-	put ("-- date           : " ); put (Image(clock)); new_line; 
-	put ("-- UTC_Offset     : " ); Put (Integer(UTC_Time_Offset/60),1); put(" hours"); new_line; new_line;
-	put ("-- joined netlist : " & skeleton_sub); new_line;
---	put ("-- suffix         : " & (to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4))); new_line; -- rm V002
-	put ("-- prefix         : " & (to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4))); new_line; -- ins V002
-	put ("EndSection "); new_line; new_line;
-	
-	put ("Section netlist_skeleton"); new_line; new_line;
-	put ("------MAINMODULE BEGIN-------------------------------------------"); new_line(2);	
-	append_file_open("tmp/skeleton_netto.tmp");
-	new_line(2);
-	put ("------SUBMODULE BEGIN--------------------------------------------"); new_line;
-	put ("-- origin         : " & skeleton_sub); new_line(2);
-	append_file_open("tmp/skeleton_netto_sub_ext.tmp");
-	put ("EndSection"); new_line; new_line;
-			
-	Close(OutputFile);
-	Copy_File( "tmp/skeleton.tmp" , "skeleton.txt" );
+		write_log_footer;
 
 end joinnetlist;
