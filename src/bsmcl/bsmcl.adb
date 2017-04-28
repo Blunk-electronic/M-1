@@ -226,6 +226,11 @@ procedure bsmcl is
 		result		: integer; -- the return code of the importer
 		importer	: type_universal_string.bounded_string;
 	begin
+		put_line ("target module  : " & type_cad_import_target_module'image(target));
+		if target = sub then
+			put_line ("prefix         : " & to_string(prefix));
+		end if;
+		
 		-- set name of importer executable file
 		case format is
 			when orcad => 
@@ -247,7 +252,7 @@ procedure bsmcl is
 				program_name           => compose( to_string(name_directory_bin), to_string(importer)),
 				args                   => 	(
 											1=> new string'(to_string(name_file_cad_netlist)),
-											2=> new string'(type_cad_import_target_module'image(cad_import_target_module)),
+											2=> new string'(to_lower(type_cad_import_target_module'image(cad_import_target_module))),
 											3=> new string'(to_string(target_module_prefix)) -- dont care if target module is "main"
 											),
 				output_file_descriptor => standout,
@@ -261,7 +266,7 @@ procedure bsmcl is
 				args                   => 	(
 											1=> new string'(to_string(name_file_cad_netlist)),
 											2=> new string'(to_string(name_file_cad_partlist)),
-											3=> new string'(type_cad_import_target_module'image(cad_import_target_module)),
+											3=> new string'(to_lower(type_cad_import_target_module'image(cad_import_target_module))),
 											4=> new string'(to_string(target_module_prefix)) -- dont care if target module is "main"
 											),
 				output_file_descriptor => standout,
@@ -368,14 +373,16 @@ begin
 				case format_cad is
 					when orcad | protel | zuken => -- CS: update documentation and help
 						if exists_netlist(name_file_cad_netlist) then
+						
+							prog_position := "INE10";
 							cad_import_target_module := type_cad_import_target_module'value(argument(4)); -- main or sub
-							put_line ("target module  : " & type_cad_import_target_module'image(cad_import_target_module));
 							if cad_import_target_module = sub then
+								prog_position := "INE20";
 								target_module_prefix := to_bounded_string(argument(5)); -- prefix
-								put_line ("prefix         : " & to_string(target_module_prefix));
 							end if;
 						
 							-- launch cad importer
+							prog_position := "INE30";
 							launch_netlist_importer(
 								format	=> format_cad,
 								netlist	=> name_file_cad_netlist,
@@ -389,12 +396,15 @@ begin
 							name_file_cad_partlist := to_bounded_string(argument(4));
 							if exists_partlist(name_file_cad_partlist) then
 
+								prog_position := "INE40";
 								cad_import_target_module := type_cad_import_target_module'value(argument(5)); -- main or sub
 								if cad_import_target_module = sub then
+									prog_position := "INE50";
 									target_module_prefix := to_bounded_string(argument(6)); -- prefix
 								end if;
 
 								-- launch cad importer
+								prog_position := "INE60";
 								launch_netlist_importer(
 									format		=> format_cad,
 									netlist		=> name_file_cad_netlist,
@@ -1463,6 +1473,25 @@ begin
 							to_lower(type_format_cad'image(format_cad)) & row_separator_0 &
 							compose(containing_directory => name_directory_cad, name => "board", extension => "net"));
 
+				elsif prog_position = "INE10" then
+						put_line(message_error & "target module level not specified !");
+						ada.text_io.put_line(message_error'length * row_separator_0 
+							& "Specify level " & type_cad_import_target_module'image(main)
+							& " or " & type_cad_import_target_module'image(sub)
+							& " after netlist !");
+
+				elsif prog_position = "INE20" or prog_position = "INE50" then
+						put_line(message_error & "prefix for submodule not specified !");
+						ada.text_io.put_line(message_error'length * row_separator_0 
+							& "Specify prefix after module level !");
+						
+				elsif prog_position = "INE40" then
+						put_line(message_error & "target module level not specified !");
+						ada.text_io.put_line(message_error'length * row_separator_0 
+							& "Specify level " & type_cad_import_target_module'image(main)
+							& " or " & type_cad_import_target_module'image(sub)
+							& " after partlist !");
+						
 				elsif prog_position = "IPA00" then
 						put_line(message_error & text_identifier_cad_partlist & " not specified " & exclamation);
 						ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli &
