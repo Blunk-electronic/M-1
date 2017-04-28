@@ -215,6 +215,67 @@ procedure bsmcl is
 		put_line("           - Push YELLOW reset button on front panel of" & row_separator_0 & name_bsc & row_separator_0 & "then try again !");
 	end advise_on_bsc_error;
 
+	procedure launch_netlist_importer (
+	-- Launches external netlist importer.
+		format 	: in type_format_cad;
+		netlist	: in type_name_file_netlist.bounded_string;
+		partlist: in type_name_file_partlist.bounded_string := to_bounded_string(""); -- in case no partlist provided
+		target	: in type_cad_import_target_module;
+		prefix	: in type_universal_string.bounded_string
+		) is
+		result		: integer; -- the return code of the importer
+		importer	: type_universal_string.bounded_string;
+	begin
+		-- set name of importer executable file
+		case format is
+			when orcad => 
+				importer := to_bounded_string(name_module_cad_importer_orcad);
+			when zuken =>
+				importer := to_bounded_string(name_module_cad_importer_zuken);
+			when protel =>
+				importer := to_bounded_string(name_module_cad_importer_protel);
+			when eagle =>
+				importer := to_bounded_string(name_module_cad_importer_eagle);
+		end case;
+		
+		new_line;
+
+		-- launch external executable
+		if length(partlist) = 0 then -- if no partlist given
+			spawn 
+				(  
+				program_name           => compose( to_string(name_directory_bin), to_string(importer)),
+				args                   => 	(
+											1=> new string'(to_string(name_file_cad_netlist)),
+											2=> new string'(type_cad_import_target_module'image(cad_import_target_module)),
+											3=> new string'(to_string(target_module_prefix)) -- dont care if target module is "main"
+											),
+				output_file_descriptor => standout,
+				return_code            => result
+				);
+			
+		else -- if partlist given
+			spawn 
+				(  
+				program_name           => compose( to_string(name_directory_bin), to_string(importer)),
+				args                   => 	(
+											1=> new string'(to_string(name_file_cad_netlist)),
+											2=> new string'(to_string(name_file_cad_partlist)),
+											3=> new string'(type_cad_import_target_module'image(cad_import_target_module)),
+											4=> new string'(to_string(target_module_prefix)) -- dont care if target module is "main"
+											),
+				output_file_descriptor => standout,
+				return_code            => result
+				);
+
+			if result = 0 then
+				advise_next_step_cad_import;
+			else
+				put_message_on_failed_cad_import(format_cad);
+			end if;
+			
+		end if; -- if no partlist given
+	end launch_netlist_importer;	
 
 begin
 
@@ -305,102 +366,42 @@ begin
 				name_file_cad_netlist := to_bounded_string(argument(3));
 
 				case format_cad is
-					when orcad =>
-						if exists_netlist(name_file_cad_netlist) then
-						
-							-- launch ORCAD importer
-							new_line;
-							spawn 
-								(  
-								program_name           => compose( to_string(name_directory_bin), name_module_cad_importer_orcad),
-								args                   => 	(
-															1=> new string'(to_string(name_file_cad_netlist))
-															),
-								output_file_descriptor => standout,
-								return_code            => result
-								);
-
-							if result = 0 then
-								advise_next_step_cad_import;
-							else
-								put_message_on_failed_cad_import(format_cad);
-							end if;
-						end if;
-
-					when protel => -- CS: apply this way of providing target module and prefix to other cad formats, update documentation and help
+					when orcad | protel | zuken => -- CS: update documentation and help
 						if exists_netlist(name_file_cad_netlist) then
 							cad_import_target_module := type_cad_import_target_module'value(argument(4)); -- main or sub
+							put_line ("target module  : " & type_cad_import_target_module'image(cad_import_target_module));
 							if cad_import_target_module = sub then
 								target_module_prefix := to_bounded_string(argument(5)); -- prefix
+								put_line ("prefix         : " & to_string(target_module_prefix));
 							end if;
+						
+							-- launch cad importer
+							launch_netlist_importer(
+								format	=> format_cad,
+								netlist	=> name_file_cad_netlist,
+								target	=> cad_import_target_module,
+								prefix	=> target_module_prefix);
 							
-							-- launch PROTEL importer
-							new_line;
-							spawn 
-								(  
-								program_name           => compose( to_string(name_directory_bin), name_module_cad_importer_protel),
-								args                   => 	(
-																1=> new string'(to_string(name_file_cad_netlist)),
-																2=> new string'(type_cad_import_target_module'image(cad_import_target_module)),
-																3=> new string'(to_string(target_module_prefix)) -- dont care if target module is "main"
-															),
-								output_file_descriptor => standout,
-								return_code            => result
-								);
-
-							if result = 0 then
-								advise_next_step_cad_import;
-							else
-								put_message_on_failed_cad_import(format_cad);
-							end if;
 						end if;
 
-					when zuken =>
+					when eagle => -- CS: update documentation and help
 						if exists_netlist(name_file_cad_netlist) then
-					
-							-- launch ZUKEN importer
-							new_line;
-							spawn 
-								(  
-								program_name           => compose( to_string(name_directory_bin), name_module_cad_importer_zuken),
-								args                   => 	(
-															1=> new string'(to_string(name_file_cad_netlist))
-															),
-								output_file_descriptor => standout,
-								return_code            => result
-								);
-
-							if result = 0 then
-								advise_next_step_cad_import;
-							else
-								put_message_on_failed_cad_import(format_cad);
-							end if;
-						end if;
-
-					when eagle =>
-						if exists_netlist(name_file_cad_netlist) then
-							prog_position := "IPA00";
 							name_file_cad_partlist := to_bounded_string(argument(4));
 							if exists_partlist(name_file_cad_partlist) then
 
-								-- launch EAGLE importer
-								new_line;
-								spawn 
-									(  
-									program_name           => compose( to_string(name_directory_bin), name_module_cad_importer_eagle),
-									args                   => 	(
-																1=> new string'(to_string(name_file_cad_netlist)),
-																2=> new string'(to_string(name_file_cad_partlist))
-																),
-									output_file_descriptor => standout,
-									return_code            => result
-									);
-
-								if result = 0 then
-									advise_next_step_cad_import;
-								else
-									put_message_on_failed_cad_import(format_cad);
+								cad_import_target_module := type_cad_import_target_module'value(argument(5)); -- main or sub
+								if cad_import_target_module = sub then
+									target_module_prefix := to_bounded_string(argument(6)); -- prefix
 								end if;
+
+								-- launch cad importer
+								launch_netlist_importer(
+									format		=> format_cad,
+									netlist		=> name_file_cad_netlist,
+									partlist	=> name_file_cad_partlist,
+									target		=> cad_import_target_module,
+									prefix		=> target_module_prefix);
+
 							end if;
 						end if;
 				end case;
