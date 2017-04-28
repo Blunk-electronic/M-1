@@ -158,9 +158,16 @@ procedure mkoptions is
 
 	type type_connector_mapping is ( one_to_one , cross_pairwise );
 	connector_mapping_default : constant type_connector_mapping := one_to_one;
+
+	-- If connector pins are specified for a mapping type:
+	type type_connector_pin_range is record
+		first	: positive := 1; -- CS: This does not allow pin name "0"
+		last	: positive; -- CS: limit pin number to something reasonable
+	end record;
+	
 	package type_list_of_pin_names is new vectors ( index_type => positive, element_type => type_pin_name.bounded_string);
 	use type_list_of_pin_names;
-	type type_connector_pair is record
+	type type_connector_pair (with_range : boolean := false) is record
 		name_a			: type_device_name.bounded_string;
  		name_b			: type_device_name.bounded_string;
 		pin_ct_a		: natural := 0;
@@ -168,6 +175,10 @@ procedure mkoptions is
 		mapping			: type_connector_mapping := one_to_one;
 		processed_pins_a: type_list_of_pin_names.vector;
 		processed_pins_b: type_list_of_pin_names.vector;
+		case with_range is
+			when true => pin_range : type_connector_pin_range;
+			when false => null;
+		end case;
 -- 		exempted_pins_a	: type_list_of_pin_names.vector; -- CS: for pins used for special purposes like shielding
 -- 		exempted_pins_b	: type_list_of_pin_names.vector;
 	end record;
@@ -982,34 +993,162 @@ procedure mkoptions is
 			when false => null;
 		end case;
 	end record;
+
+	function connector_pin_by_mapping (
+	-- Returns the pin name of the pin depending on the given mapping.
+		pair	: in type_connector_pair;
+-- 		side			: in type_side;
+		pin		: in m1_database.type_pin_base) return type_pin_name.bounded_string is
+
+		pin_number		: positive;
+		pin_to_return	: type_pin_name.bounded_string;
+	begin
+		case pair.mapping is
+			when one_to_one =>
+				-- The pin names on both sides are the same. So return the given pin name as it is.
+				return pin.device_pin_name;
+				
+			when cross_pairwise =>
+				-- CS: This mapping requires pin names as natural numbers such as 1,2,3,4,.. .
+				-- CS: Pin names like 0, A3 or F1 are not supported currently and cause an error.
+				pin_number := natural'value(to_string(pin.device_pin_name));
+
+				-- Compute pin number according to this kind of mapping:
+				--  Example: given pin number 1 -> resulting pin number 2
+				--  Example: given pin number 35 -> resulting pin number 36
+				--  Example: given pin number 2 -> resulting pin number 1
+				--  Example: given pin number 46 -> resulting pin number 45
+
+				
+-- 				CS: in case we have to deal with pin number 0 someday
+-- 				if pin_number > 0 then
+-- 					write_message (
+-- 						file_handle => file_mkoptions_messages,
+-- 						text => message_warning 
+-- 							& "connector device " & to_string(pin.device_name)
+-- 							& " pin number is" & to_string(pin.device_pin_name) 
+-- 							& " . Check design !",
+-- 						console => true);
+-- 					pin_to_return := to_bounded_string("1");
+-- 				else
+
+				case is_even(pin_number) is
+					when false	=> pin_number := pin_number + 1;
+					when true	=> pin_number := pin_number - 1;
+				end case;
+
+				-- convert pin_number back to type_pin_name
+				pin_to_return := to_bounded_string(
+									trim(positive'image(pin_number),left) );
+
+		end case;
+
+		return pin_to_return;
+
+		exception
+			when constraint_error => 
+
+				write_message (
+					file_handle => file_mkoptions_messages,
+					text => message_error 
+						& "connector device " & to_string(pin.device_name)
+						& " pin " & to_string(pin.device_pin_name) 
+						& " not supported for mapping " & type_connector_mapping'image(pair.mapping) & " !",
+						console => true);
+				raise constraint_error;
+			return pin_to_return;
+		
+	end connector_pin_by_mapping;
+
 	
 	function is_pin_of_connector (pin : in m1_database.type_pin_base) return type_result_of_connector_query is
 	-- Returns true if pin is part of a connector pair.
 	-- When true, the return contains the device and pin of the opposide connector of the pair.
 		cp : type_connector_pair;
-	begin
+
+		function in_range return boolean is
+		-- Tests if pin.device_pin_name is withing range of pins of cp.
+		-- Returns false if outside range or if pin name is not a natural.
+		-- CS: This implies that pin ranging does not support pin names such as "A4" or "F1"
+		-- CS: Those pins result in a warning message and return of value FALSE.
+			is_in_range : boolean := false;
+		begin -- in_range
+			if positive'value(to_string(pin.device_pin_name)) >= cp.pin_range.first and
+			   positive'value(to_string(pin.device_pin_name)) <= cp.pin_range.last then
+				is_in_range := true;
+			else
+				is_in_range := false;
+			end if;
+			return is_in_range;
+
+			exception
+				when constraint_error => 
+
+					write_message (
+						file_handle => file_mkoptions_messages,
+						identation => 3,
+						text => message_warning 
+							& "connector device " & to_string(pin.device_name)
+							& " pin " & to_string(pin.device_pin_name) 
+							& " outside range -> skipped",
+						console => false);
+				
+					return false;
+		end in_range;
+		
+	begin -- is_pin_of_connector
 		if length_list_of_connector_pairs > 0 then -- do this test if there are connector pairs at all
 			for i in 1..length_list_of_connector_pairs loop
 				cp := element(list_of_connector_pairs, positive(i));
-				if pin.device_name = cp.name_a then
-					-- CS: pin must not be list of exempted_pins_a/b. see type spec of type_connector_pair
-					return (
-						is_connector_pin 	=> true,
-						side				=> B,
-						device_name			=> cp.name_b,
-						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
-						);
-				end if;
+
+				if pin.device_name = cp.name_a then -- if device name A matches
+
+					-- if connector pair uses pin range, check range
+					if cp.with_range then 
+						if in_range then
+							return (
+								is_connector_pin 	=> true,
+								side				=> B,
+								device_name			=> cp.name_b,
+		-- 						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
+								device_pin_name		=> connector_pin_by_mapping(pair => cp, pin => pin)
+								);
+						end if;
+					else					
+						return (
+							is_connector_pin 	=> true,
+							side				=> B,
+							device_name			=> cp.name_b,
+	-- 						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
+							device_pin_name		=> connector_pin_by_mapping(pair => cp, pin => pin)
+							);
+					end if;
 				
-				if pin.device_name = cp.name_b then
-					-- CS: pin must not be list of exempted_pins_a/b. see type spec of type_connector_pair					
-					return (
-						is_connector_pin 	=> true,
-						side				=> A,
-						device_name			=> cp.name_a,
-						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
-						);
-				end if;
+				elsif pin.device_name = cp.name_b then -- if device name B matches
+
+					-- if connector pair uses pin range, check range
+					if cp.with_range then
+						if in_range then
+							return (
+								is_connector_pin 	=> true,
+								side				=> A,
+								device_name			=> cp.name_a,
+		-- 						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
+								device_pin_name		=> connector_pin_by_mapping(pair => cp, pin => pin)
+								);
+						end if;
+					else
+						return (
+							is_connector_pin 	=> true,
+							side				=> A,
+							device_name			=> cp.name_a,
+	-- 						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
+							device_pin_name		=> connector_pin_by_mapping(pair => cp, pin => pin)
+							);
+					end if;
+					
+				end if; -- if device name matches
+
 			end loop;
 		end if;
 		return ( is_connector_pin => false);
