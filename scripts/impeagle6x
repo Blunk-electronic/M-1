@@ -6,44 +6,44 @@ version=033
 #command is:	impeagle6x netlist.net partlist.part
 #written by MBL
 
-	overwrite_main_module=no
-	overwrite_sub_module=no
-	[ -e skeleton.txt ] &&
-		{
-		echo 'WARNING ! CAD data for main module already exists.'
-		echo -n '          Overwrite existing data set ? (y/n/c) '
-		read key
-		[ "$key" != "y" -a "$key" != "n" ] && 
-					{
-					echo 'CAD data import cancelled'
-					exit 1;
-					}
-
-		[ "$key" = "y" ] && 
-			{
-			overwrite_main_module=yes
-			break
-			}
-		[ "$key" = "n" ] && 
-			{
-			overwrite_sub_module=yes
-			#echo $overwrite_sub_module	
-			echo 'Importing CAD data as UUT submodule.'
-			echo -n 'Enter submodule name : '
-			read sub_name;
-			[ -e skeleton_$sub_name.txt ] &&
-				{ 
-				echo 'WARNING ! Cad data for submodule '$sub_name' already exists.'
-				echo -n '          Overwrite existing data set ? (y/n/c) '
-				read key2
-				[ "$key2" != "y" ] && 
-					{
-					echo 'CAD data import cancelled'
-					exit 1;
-					}
-				}
-			}
-		}
+# 	overwrite_main_module=no
+# 	overwrite_sub_module=no
+# 	[ -e skeleton.txt ] &&
+# 		{
+# 		echo 'WARNING ! CAD data for main module already exists.'
+# 		echo -n '          Overwrite existing data set ? (y/n/c) '
+# 		read key
+# 		[ "$key" != "y" -a "$key" != "n" ] && 
+# 					{
+# 					echo 'CAD data import cancelled'
+# 					exit 1;
+# 					}
+# 
+# 		[ "$key" = "y" ] && 
+# 			{
+# 			overwrite_main_module=yes
+# 			break
+# 			}
+# 		[ "$key" = "n" ] && 
+# 			{
+# 			overwrite_sub_module=yes
+# 			#echo $overwrite_sub_module	
+# 			echo 'Importing CAD data as UUT submodule.'
+# 			echo -n 'Enter submodule name : '
+# 			read sub_name;
+# 			[ -e skeleton_$sub_name.txt ] &&
+# 				{ 
+# 				echo 'WARNING ! Cad data for submodule '$sub_name' already exists.'
+# 				echo -n '          Overwrite existing data set ? (y/n/c) '
+# 				read key2
+# 				[ "$key2" != "y" ] && 
+# 					{
+# 					echo 'CAD data import cancelled'
+# 					exit 1;
+# 					}
+# 				}
+# 			}
+# 		}
 
 
 
@@ -54,17 +54,23 @@ version=033
 #read files passed to this script into shell variables
 	netlist=$1
 	partlist=$2
+	target=$3
+	prefix=$4
 
 	echo
-	echo "importing EAGLE Version 6.x CAD-Data with importer version" $version
+	echo "net and partlist importer EAGLE V6 version" $version
 	echo 'netlist        : '$netlist 
 	echo 'partlist       : '$partlist
+	echo 'target         : '$target
+	echo 'prefix         : '$prefix
 	echo
 
 	echo 'Section info' > tmp/np.tmp
 
-	[ "$overwrite_sub_module" = "yes" ] && echo ' -- netlist skeleton submodule' >> tmp/np.tmp
-	[ "$overwrite_sub_module" = "no" ] && echo ' -- netlist skeleton' >> tmp/np.tmp
+# 	[ "$overwrite_sub_module" = "yes" ] && echo ' -- netlist skeleton submodule' >> tmp/np.tmp
+# 	[ "$overwrite_sub_module" = "no" ] && echo ' -- netlist skeleton' >> tmp/np.tmp
+	[ "$target" = "main" ] && echo ' -- netlist skeleton' >> tmp/np.tmp
+	[ "$target" = "sub"  ] && echo ' -- netlist skeleton submodule' >> tmp/np.tmp
 	echo ' -- created by impeagle6x version' $version >> tmp/np.tmp
 	echo -n ' -- ' >> tmp/np.tmp
 	date >> tmp/np.tmp
@@ -413,22 +419,34 @@ version=033
 	echo
 
 
-	[ "$overwrite_main_module" = "no" -a "$overwrite_sub_module" = "no" ] && 
-		{
-		cp tmp/np.tmp skeleton.txt # ins V2.4
-		echo "NOTE: Please read "skeleton.txt" for warnings !" # ins V2.4
-		}
+# 	[ "$overwrite_main_module" = "no" -a "$overwrite_sub_module" = "no" ] && 
+# 		{
+# 		cp tmp/np.tmp skeleton.txt # ins V2.4
+# 		echo "NOTE: Please read "skeleton.txt" for warnings !" # ins V2.4
+# 		}
+# 
+# 	[ "$overwrite_main_module" = "yes" ] && 
+# 		{
+# 		mv tmp/np.tmp skeleton.txt
+# 		echo "NOTE: Please read "skeleton.txt" for warnings !"
+# 		}
+# 	[ "$overwrite_sub_module" = "yes" ] && 
+#         {
+# 		mv tmp/np.tmp skeleton_$sub_name.txt
+# 		echo "NOTE: Please read "skeleton_$sub_name.txt" for warnings !"
+#         }
 
-	[ "$overwrite_main_module" = "yes" ] && 
+	[ "$target" = "main" ] &&
 		{
 		mv tmp/np.tmp skeleton.txt
 		echo "NOTE: Please read "skeleton.txt" for warnings !"
 		}
-	[ "$overwrite_sub_module" = "yes" ] && 
-        {
-		mv tmp/np.tmp skeleton_$sub_name.txt
-		echo "NOTE: Please read "skeleton_$sub_name.txt" for warnings !"
-        }
+
+	[ "$target" = "sub" ] &&
+		{
+		mv tmp/np.tmp skeleton_$prefix.txt
+		echo "NOTE: Please read "skeleton_$prefix.txt" for warnings !"
+		}
 
 # np.txt ready
 ####################################################
