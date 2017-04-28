@@ -75,7 +75,7 @@ procedure mknets is
 
 	type type_skeleton_pin is record
 			device_name			: type_device_name.bounded_string;
-			device_class		: type_device_class := '?'; -- default is an unknown device
+			device_class		: type_device_class := device_class_default;
 			device_value		: type_device_value.bounded_string;
 			device_package		: type_package_name.bounded_string;
 			device_pin_name		: type_pin_name.bounded_string;
@@ -178,11 +178,11 @@ procedure mknets is
 								end if;
 
 								-- check for default class 
-								if get_field_from_line(to_string(line_of_file),4) = type_net_class'image(NA) then
+								if get_field_from_line(to_string(line_of_file),4) = type_net_class'image(net_class_default) then
 									--net_scratch.class := NA;
 									null;
 								else
-									put_line(message_error & "expecting default net class " & type_net_class'image(NA));
+									put_line(message_error & "expecting default net class " & type_net_class'image(net_class_default));
 									put_faulty_line;
 									raise constraint_error;
 								end if;
@@ -408,10 +408,10 @@ procedure mknets is
 			bic 			: type_bscan_ic;
 			
 			procedure write_pin is
-			-- writes something like: IC303 ? SN74BCT8240ADWR SOIC24 2 Y1(1) | 7 BC_1 OUTPUT3 X 17 1 Z
+			-- writes something like: IC303 NA SN74BCT8240ADWR SOIC24 2 Y1(1) | 7 BC_1 OUTPUT3 X 17 1 Z
 				use type_list_of_bics;
 			begin
-				-- write the basic pin info like "R101 ? 2k7 0207/10 2"
+				-- write the basic pin info like "R101 NA 2k7 0207/10 2"
 				put(2 * row_separator_0 & to_string(pin_scratch.device_name) & row_separator_0 &
 						 type_device_class'image(device_class_default)(2) & row_separator_0 &
 						 to_string(pin_scratch.device_value) & row_separator_0 &
