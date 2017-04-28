@@ -38,6 +38,7 @@ mkdir $project_name/models;
 mkdir $project_name/setup;
 mkdir $project_name/scripts;
 mkdir $project_name/msg;
+mkdir $project_name/messages;
 
 echo "Project description:" > $project_name/proj_desc.txt
 
