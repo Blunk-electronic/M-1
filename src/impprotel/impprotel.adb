@@ -45,6 +45,7 @@ with ada.exceptions; 			use ada.exceptions;
 with ada.command_line;			use ada.command_line;
 with ada.directories;			use ada.directories;
 
+with m1_base;					use m1_base;
 with m1_import;					use m1_import;
 with m1_database;               use m1_database;
 with m1_numbers;                use m1_numbers;
@@ -53,7 +54,7 @@ with m1_string_processing;		use m1_string_processing;
 
 procedure impprotel is
 
-	version			: String (1..3) := "002";
+	version			: String (1..3) := "003";
     prog_position	: natural := 0;
 
     length_of_line_in_netlist : constant positive := 200;
@@ -435,6 +436,13 @@ procedure impprotel is
 		-- Search in device list for multiple occurences. If a device occurs more than once, it has variants.
 		-- If there are variants: Write them in a file_list_of_assembly_variants. If file_list_of_assembly_variants already
 		-- exists, read its content.
+
+		write_message (
+			file_handle => file_import_cad_messages,
+			identation => 1,
+			text => "managing assembly variants ...",
+			console => true);
+
         if l > 0 then -- do that if there are devices at all
 			for dp in 1..l loop
 				device_scratch := element(list_of_devices,dp);
@@ -526,9 +534,14 @@ procedure impprotel is
 
 	procedure write_statistics is
 	begin
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => "writing statistics ...",
+			console => true);
+
 		put_line(file_skeleton, " statistics:");
 		put_line(file_skeleton, "  devices :" & natural'image(device_count_mounted));
-		put_line(file_skeleton, "  nets    :" & positive'image(positive(type_list_of_nets.length(list_of_nets))));
+		put_line(file_skeleton, "  nets    :" & count_type'image(type_list_of_nets.length(list_of_nets)));
 		put_line(file_skeleton, "  pins    :" & natural'image(pin_count_mounted));
 		
 		put_line(file_skeleton,section_mark.endsection);		
@@ -556,7 +569,12 @@ procedure impprotel is
 			return to_string(device_scratch.value) & " " & to_string(device_scratch.packge);
 		end get_value_and_package;
 		
-	begin
+	begin -- write_skeleton
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => "writing skeleton ...",
+			console => true);
+
 		set_output(file_skeleton);
 		new_line;
 		put_line(section_mark.section & " " & text_skeleton_section_netlist); new_line;
@@ -585,10 +603,123 @@ procedure impprotel is
 		set_output(standard_output);
 	end write_skeleton;
 
+	procedure write_info is
+	begin
+		set_output(file_skeleton);
+
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => "writing info section ...",
+			console => false);
+		
+		put_line(section_mark.section & " info");
+		put_line(" -- netlist skeleton");
+		put_line(" -- created by " & name_module_cad_importer_protel & " version " & version);
+		put_line(" -- date " & date_now);
+		put_line(row_separator_0);
+		set_output(standard_output);
+	end write_info;
+
+
+	procedure read_netlist is
+	begin
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => "reading protel netlist file ...",
+			console => true);
+
+		open (file => file_cad_netlist, mode => in_file, name => to_string(name_file_cad_netlist));
+		set_input(file_cad_netlist);
+
+		while not end_of_file loop
+			line_counter := line_counter + 1;
+			line := to_bounded_string(get_line);
+			if get_field_count(to_string(line)) > 0 then -- skip empty lines
+				--put_line("line:>" & to_string(line) & "<");
+				
+				-- READ DEVICES (NAME, PACKAGE, VALUE)
+				if not device_entered then
+					prog_position	:= 70;
+					--put_line(to_string(line)); -- dbg
+					if get_field_from_line(text_in => to_string(line), position => 1) = "[" then
+						--put_line("entering device...");
+						device_entered := true;
+						device_attribute_next := name;
+					end if;
+				else -- we are inside a device section
+					--put_line(to_string(line));
+					if get_field_from_line(text_in => to_string(line), position => 1) = "]" then
+						prog_position	:= 50;
+						device_entered := false; -- we are leaving a device section
+						--put_line("device: " & to_string(device_scratch.name)); -- dbg
+						append(list_of_devices,device_scratch); -- add device to list
+
+						-- purge device contents for next spin
+						device_scratch.name := to_bounded_string(""); 
+						device_scratch.packge := to_bounded_string("");
+						device_scratch.value := to_bounded_string("");
+					else
+						prog_position	:= 60;
+						case device_attribute_next is
+							when name => 
+								device_scratch.name := to_bounded_string(
+									get_field_from_line(text_in => to_string(line), position => 1));
+								device_attribute_next := packge;
+							when packge =>
+								device_scratch.packge := to_bounded_string(
+									get_field_from_line(text_in => to_string(line), position => 1));
+								device_attribute_next := value;
+							when value =>
+								device_scratch.value := to_bounded_string(
+									get_field_from_line(text_in => to_string(line), position => 1));                        
+						end case;
+					end if;
+				end if;
+
+				-- READ NETS (NAME, PINS)
+				if not net_entered then
+					prog_position	:= 80;
+					if get_field_from_line(text_in => to_string(line), position => 1) = "(" then
+						net_entered := true;
+						net_item_next := name;
+					end if;
+				else -- we are inside a net section
+					prog_position	:= 90;				
+					if get_field_from_line(text_in => to_string(line), position => 1) = ")" then
+						net_entered := false; -- we are leaving a net section
+						--put_line("net: " & to_string(net_scratch.name)); -- dbg
+						type_list_of_nets.append(list_of_nets,net_scratch); -- add net to list
+
+						-- purge net contents for next spin
+						net_scratch.name := to_bounded_string(""); -- clear name
+						type_list_of_pins.delete(net_scratch.pins,1,type_list_of_pins.length(net_scratch.pins)); -- clear pin list
+					else
+						prog_position	:= 100;
+						--put_line("line:>" & to_string(line) & "<");
+						case net_item_next is
+							when name => -- read net name from a line like "motor_on"
+								net_scratch.name := to_bounded_string(
+									get_field_from_line(text_in => to_string(line), position => 1));                        
+								net_item_next := pin;
+							when pin => -- read pin nme from a line like "C37-2"
+								--put_line("line:>" & to_string(line) & "<"); -- dbg
+								pin_scratch := split_device_pin(line); --to_bounded_string(get_field(text_in => to_string(line), position => 1)));
+								type_list_of_pins.append(net_scratch.pins, pin_scratch);
+						end case;
+					end if;
+				end if;
+			end if;
+		end loop;
+		set_input(standard_input);
+		close(file_cad_netlist);
+	end read_netlist;
 
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
+	action := import_cad;
+	format_cad := protel;
+
 	new_line;
 	put_line("PROTEL CAD IMPORTER VERSION "& version);
 	put_line("======================================");
@@ -606,10 +737,23 @@ begin
 -- 	end if;
 
 	prog_position	:= 40;
+ 	write_log_header(version);
 
 	case cad_import_target_module is
-		when main => create (file => file_skeleton, mode => out_file, name => name_file_skeleton);
+		when main => 
+			write_message (
+				file_handle => file_import_cad_messages,
+				text => "creating skeleton for main module ...",
+				console => false);
+
+			create (file => file_skeleton, mode => out_file, name => name_file_skeleton);
+
 		when sub => 
+			write_message (
+				file_handle => file_import_cad_messages,
+				text => "creating skeleton for submodule " & to_string(target_module_prefix) & " ...",
+				console => false);
+
 			target_module_prefix := to_bounded_string(argument(3));
 			put_line("prefix        : " & to_string(target_module_prefix));
 			create (file => file_skeleton, mode => out_file, name => compose( 
@@ -619,98 +763,9 @@ begin
 					);
 	end case;
 	
-	set_output(file_skeleton);
-	put_line(section_mark.section & " info");
-	put_line(" -- netlist skeleton");
-	put_line(" -- created by impprotel version " & version);
-	put_line(" -- date " & date_now);
-	put_line(row_separator_0);
-	set_output(standard_output);
+	write_info;
 
-    open (file => file_cad_netlist, mode => in_file, name => to_string(name_file_cad_netlist));
-	set_input(file_cad_netlist);
-	
-    while not end_of_file loop
-        line_counter := line_counter + 1;
-        line := to_bounded_string(get_line);
-        if get_field_count(to_string(line)) > 0 then -- skip empty lines
-            --put_line("line:>" & to_string(line) & "<");
-            
-            -- READ DEVICES (NAME, PACKAGE, VALUE)
-			if not device_entered then
-				prog_position	:= 70;
-                --put_line(to_string(line)); -- dbg
-                if get_field_from_line(text_in => to_string(line), position => 1) = "[" then
-                    --put_line("entering device...");
-                    device_entered := true;
-                    device_attribute_next := name;
-                end if;
-            else -- we are inside a device section
-                --put_line(to_string(line));
-				if get_field_from_line(text_in => to_string(line), position => 1) = "]" then
-					prog_position	:= 50;
-                    device_entered := false; -- we are leaving a device section
-                    --put_line("device: " & to_string(device_scratch.name)); -- dbg
-                    append(list_of_devices,device_scratch); -- add device to list
-
-                    -- purge device contents for next spin
-                    device_scratch.name := to_bounded_string(""); 
-                    device_scratch.packge := to_bounded_string("");
-                    device_scratch.value := to_bounded_string("");
-				else
-					prog_position	:= 60;
-                    case device_attribute_next is
-                        when name => 
-							device_scratch.name := to_bounded_string(
-								get_field_from_line(text_in => to_string(line), position => 1));
-                            device_attribute_next := packge;
-                        when packge =>
-							device_scratch.packge := to_bounded_string(
-								get_field_from_line(text_in => to_string(line), position => 1));
-                            device_attribute_next := value;
-                        when value =>
-							device_scratch.value := to_bounded_string(
-								get_field_from_line(text_in => to_string(line), position => 1));                        
-                    end case;
-                end if;
-            end if;
-
-            -- READ NETS (NAME, PINS)
-			if not net_entered then
-				prog_position	:= 80;
-                if get_field_from_line(text_in => to_string(line), position => 1) = "(" then
-                    net_entered := true;
-                    net_item_next := name;
-                end if;
-			else -- we are inside a net section
-				prog_position	:= 90;				
-                if get_field_from_line(text_in => to_string(line), position => 1) = ")" then
-                    net_entered := false; -- we are leaving a net section
-                    --put_line("net: " & to_string(net_scratch.name)); -- dbg
-                    type_list_of_nets.append(list_of_nets,net_scratch); -- add net to list
-
-                    -- purge net contents for next spin
-                    net_scratch.name := to_bounded_string(""); -- clear name
-                    type_list_of_pins.delete(net_scratch.pins,1,type_list_of_pins.length(net_scratch.pins)); -- clear pin list
-				else
-					prog_position	:= 100;
-		            --put_line("line:>" & to_string(line) & "<");
-                    case net_item_next is
-                        when name => -- read net name from a line like "motor_on"
-							net_scratch.name := to_bounded_string(
-								get_field_from_line(text_in => to_string(line), position => 1));                        
-							net_item_next := pin;
-						when pin => -- read pin nme from a line like "C37-2"
-							--put_line("line:>" & to_string(line) & "<"); -- dbg
-							pin_scratch := split_device_pin(line); --to_bounded_string(get_field(text_in => to_string(line), position => 1)));
-                            type_list_of_pins.append(net_scratch.pins, pin_scratch);
-                    end case;
-                end if;
-            end if;
-        end if;
-    end loop;
-	set_input(standard_input);
-	close(file_cad_netlist);
+	read_netlist;
 
     manage_assembly_variants;
 
@@ -719,29 +774,43 @@ begin
 	write_skeleton;
 
 	close(file_skeleton);
+
+	write_log_footer;	
 	
+	exception when event: others =>
+		set_exit_status(failure);
+		set_output(standard_output);
+
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => message_error & " at program position " & natural'image(prog_position),
+			console => true);
+
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => message_error & "in netlist line" & natural'image(line_counter),
+			console => true);
 	
-	exception
--- 		when constraint_error => 
+		if is_open(file_skeleton) then
+			close(file_skeleton);
+		end if;
 
-		when event: others =>
-			set_exit_status(failure);
-			case prog_position is
--- 				when 10 =>
--- 					put_line(message_error & "ERROR: Data base file missing or insufficient access rights !");
--- 					put_line("       Provide data base name as argument. Example: mkinfra my_uut.udb");
--- 				when 20 =>
--- 					put_line("ERROR: Test name missing !");
--- 					put_line("       Provide test name as argument ! Example: mkinfra my_uut.udb my_infrastructure_test");
--- 				when 30 =>
--- 					put_line("ERROR: Invalid argument for debug level. Debug level must be provided as natural number !");
+		if is_open(file_cad_netlist) then
+			close(file_cad_netlist);
+		end if;
 
+		case prog_position is
+			when others =>
+				write_message (
+					file_handle => file_import_cad_messages,
+					text => "exception name: " & exception_name(event),
+					console => true);
 
-				when others =>
-					put("unexpected exception: ");
-					put_line(exception_name(event));
-					put(exception_message(event)); new_line;
-					put_line("program error at position " & natural'image(prog_position));
-					put_line("line in netlist" & natural'image(line_counter));
-			end case;
+				write_message (
+					file_handle => file_import_cad_messages,
+					text => "exception message: " & exception_message(event),
+					console => true);
+		end case;
+
+		write_log_footer;
 end impprotel;
