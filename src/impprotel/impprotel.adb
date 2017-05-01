@@ -114,7 +114,8 @@ procedure impprotel is
 	end record;
 	pin_scratch : type_pin;
 	package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin);
-
+	use type_list_of_pins;
+	
     -- NETS
     length_of_net_name : constant positive := 100;
     package type_net_name is new generic_bounded_length(length_of_net_name);
@@ -125,7 +126,8 @@ procedure impprotel is
         pins    : type_list_of_pins.vector;
     end record;
     package type_list_of_nets is new vectors ( index_type => positive, element_type => type_net);
-    list_of_nets : type_list_of_nets.vector;
+	list_of_nets : type_list_of_nets.vector;
+	use type_list_of_nets;
 
     net_entered : boolean := false;
     net_scratch : type_net;
@@ -437,9 +439,10 @@ procedure impprotel is
 		-- If there are variants: Write them in a file_list_of_assembly_variants. If file_list_of_assembly_variants already
 		-- exists, read its content.
 
+		new_line(file_import_cad_messages);
 		write_message (
 			file_handle => file_import_cad_messages,
-			identation => 1,
+			--identation => 1,
 			text => "managing assembly variants ...",
 			console => true);
 
@@ -464,13 +467,19 @@ procedure impprotel is
 				end if;
             end loop;
         else
-			write_message(
-				file_handle => file_skeleton, text => message_warning & " no devices found !", console => true, identation => 1);
+			write_message (
+				file_handle => file_import_cad_messages,
+				text => message_warning & " no devices found !",
+				console => true,
+				identation => 1);
 		end if;
 
 		if variants_found then
 			write_message(
-				 file_handle => file_skeleton, text => message_warning & "Design has assembly variants:", console => true, identation => 1);
+				 file_handle => file_import_cad_messages,
+				 text => message_warning & "Design has assembly variants:",
+				 console => true,
+				 identation => 1);
 
 			-- build the name of file_list_of_assembly_variants from the given netlist file
 			file_list_of_assembly_variants := to_unbounded_string( compose(
@@ -534,6 +543,7 @@ procedure impprotel is
 
 	procedure write_statistics is
 	begin
+		new_line(file_import_cad_messages);		
 		write_message (
 			file_handle => file_import_cad_messages,
 			text => "writing statistics ...",
@@ -570,6 +580,7 @@ procedure impprotel is
 		end get_value_and_package;
 		
 	begin -- write_skeleton
+		new_line(file_import_cad_messages);
 		write_message (
 			file_handle => file_import_cad_messages,
 			text => "writing skeleton ...",
@@ -579,9 +590,15 @@ procedure impprotel is
 		new_line;
 		put_line(section_mark.section & " " & text_skeleton_section_netlist); new_line;
 		
-		for n in 1..type_list_of_nets.length(list_of_nets) loop
+		for n in 1..length(list_of_nets) loop
 			net := type_list_of_nets.element(list_of_nets, positive(n)); -- load a net
 
+			write_message (
+				file_handle => file_import_cad_messages,
+				text => "net " & to_string(net.name),
+				identation => 1,
+				console => false);
+			
 			-- write net header like "SubSection CORE_EXT_SRST class NA"
 			put_line(" " & section_mark.subsection & " " & to_string(net.name) & " " &
 				netlist_keyword_header_class & " " & type_net_class'image(net_class_default));
@@ -635,9 +652,15 @@ procedure impprotel is
 			line_counter := line_counter + 1;
 			line := to_bounded_string(get_line);
 			if get_field_count(to_string(line)) > 0 then -- skip empty lines
-				--put_line("line:>" & to_string(line) & "<");
+-- 				put_line("line:>" & to_string(line) & "<");
 				
 				-- READ DEVICES (NAME, PACKAGE, VALUE)
+-- 				write_message (
+-- 					file_handle => file_import_cad_messages,
+-- 					identation => 1,
+-- 					text => "reading devices:",
+-- 					console => true);
+
 				if not device_entered then
 					prog_position	:= 70;
 					--put_line(to_string(line)); -- dbg
@@ -652,6 +675,15 @@ procedure impprotel is
 						prog_position	:= 50;
 						device_entered := false; -- we are leaving a device section
 						--put_line("device: " & to_string(device_scratch.name)); -- dbg
+
+						write_message (
+							file_handle => file_import_cad_messages,
+							identation => 1,
+							text => "device " & to_string(device_scratch.name)
+								& " value " & to_string(device_scratch.value)
+								& " package " & to_string(device_scratch.packge),
+							console => false);
+						
 						append(list_of_devices,device_scratch); -- add device to list
 
 						-- purge device contents for next spin
@@ -687,7 +719,33 @@ procedure impprotel is
 					prog_position	:= 90;				
 					if get_field_from_line(text_in => to_string(line), position => 1) = ")" then
 						net_entered := false; -- we are leaving a net section
-						--put_line("net: " & to_string(net_scratch.name)); -- dbg
+
+						write_message (
+							file_handle => file_import_cad_messages,
+							identation => 1,
+							text => "net " & to_string(net_scratch.name)
+								& " with:",
+							console => false);
+
+						-- If net has pins, write them in logfile. Otherwise write warning.
+						if length(net_scratch.pins) > 0 then
+							for i in 1..length(net_scratch.pins) loop
+								write_message (
+									file_handle => file_import_cad_messages,
+									identation => 2,
+									text => "device " & to_string(element(net_scratch.pins, positive(i)).name_device)
+										& " pin " & to_string(element(net_scratch.pins, positive(i)).name_pin),
+									console => false);
+							end loop;
+						else
+							write_message (
+								file_handle => file_import_cad_messages,
+								identation => 1,
+								text => message_warning & "net " & to_string(net_scratch.name)
+									& " has no pins/pads connected !",
+								console => false);
+						end if;
+						
 						type_list_of_nets.append(list_of_nets,net_scratch); -- add net to list
 
 						-- purge net contents for next spin
@@ -703,6 +761,7 @@ procedure impprotel is
 								net_item_next := pin;
 							when pin => -- read pin nme from a line like "C37-2"
 								--put_line("line:>" & to_string(line) & "<"); -- dbg
+
 								pin_scratch := split_device_pin(line); --to_bounded_string(get_field(text_in => to_string(line), position => 1)));
 								type_list_of_pins.append(net_scratch.pins, pin_scratch);
 						end case;
