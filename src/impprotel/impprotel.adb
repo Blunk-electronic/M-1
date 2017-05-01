@@ -150,27 +150,40 @@ procedure impprotel is
 		
 
 	procedure manage_assembly_variants is
+		
+		-- Once an assembly variant has been detected in the netlist, this flag goes true.
+		variants_found : boolean := false; 
+		
 		l : natural := natural(length(list_of_devices));
---		np : type_device_name.bounded_string;
-		variants_found : boolean := false;
 		file_variants : ada.text_io.file_type;
 		file_list_of_assembly_variants : unbounded_string;
 		package type_pin_name is new generic_bounded_length(length_of_pin_name);
 		use type_pin_name;
 		--package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin_name.bounded_string);
-		
+
+		procedure mark_device_as_mounted (device : in out type_device) is
+		begin 
+			device.mounted := true;
+			device_count_mounted := device_count_mounted + 1; -- count mounted devices for statistics
+		end mark_device_as_mounted;
+
+		procedure mark_pin_as_mounted (pin : in out type_pin) is
+		begin 
+			pin.mounted := true; 
+			pin_count_mounted := pin_count_mounted + 1; -- count pins for statistics
+		end mark_pin_as_mounted;
+
 		procedure read_assembly_variants is
-		-- reads assembly variants in a list
-			--package type_line_of_assembly_variants is new generic_bounded_length(300); use type_line_of_assembly_variants;
-			line_counter : natural := 0;
-			line : type_extended_string.bounded_string;
-			assembly_variant_scratch : type_assembly_variant;
+		-- Reads assembly variants from file_list_of_assembly_variants in list_of_assembly_variants.
+		-- The variant with the trailing keyword "active" get the flag "active" set.
+			line_counter 				: natural := 0;
+			line 						: type_extended_string.bounded_string;
+			assembly_variant_scratch	: type_assembly_variant;
 		begin
 			open (file_variants, in_file, to_string(file_list_of_assembly_variants));
 			set_input(file_variants);
 			while not end_of_file loop
 				line := to_bounded_string(remove_comment_from_line(get_line));
--- 				line := remove_comment_from_line(line);
 				if get_field_count(to_string(line)) > 0 then -- skip empty lines
 
 					-- read assembly variant from a line like "R3 RESC1005X40N 12K active"
@@ -211,8 +224,8 @@ procedure impprotel is
 
 			procedure write_assembly_variant (variant : in type_assembly_variant) is
 			begin
-				put_line(file_skeleton, " " & natural'image(p) & " " & to_string(variant.name) &
-					" " & to_string(variant.packge) & " " & to_string(variant.value));
+				put_line(file_skeleton, row_separator_0 & natural'image(p) & row_separator_0 & to_string(variant.name) &
+					row_separator_0 & to_string(variant.packge) & row_separator_0 & to_string(variant.value));
 			end write_assembly_variant;
 			
 		begin -- get_position_of_active_variants
@@ -252,16 +265,11 @@ procedure impprotel is
 		end get_position_of_active_variants;
 
 		procedure apply_assembly_variants_on_device_list is
+		-- Sets the flag "mounted" in list_of_devices of an active assembly variant.
 			la : positive := natural(length(list_of_assembly_variants));
 			active_variant_found : boolean := false;
 			v : type_assembly_variant;
 			device_scratch : type_device;
-
-			procedure mark_device_as_mounted (device : in out type_device) is
-			begin 
-				device.mounted := true;
-				device_count_mounted := device_count_mounted + 1; -- count mounted devices for statistics
-			end mark_device_as_mounted;
 			
 		begin -- apply_assembly_variants_on_device_list
 			for d in 1..l loop -- loop in device list
@@ -301,6 +309,7 @@ procedure impprotel is
 
 
 		procedure apply_assembly_variants_on_netlist is
+		-- Sets the flag "mounted" of pins.
 			ln : positive := natural(type_list_of_nets.length(list_of_nets));
 			variant_position : natural;
 			pin_occurence : positive;
@@ -375,12 +384,6 @@ procedure impprotel is
 				end if;
 				return occurence;
 			end pin_occurence_in_net;
-			
-			procedure mark_pin_as_mounted (pin : in out type_pin) is
-			begin 
-				pin.mounted := true; 
-				pin_count_mounted := pin_count_mounted + 1; -- count pins for statistics
-			end mark_pin_as_mounted;
 
 		begin -- apply_assembly_variants_on_netlist
 			for n in 1..ln loop -- loop in netlist
@@ -433,9 +436,38 @@ procedure impprotel is
 
 		device_scratch : type_device;
 
+		procedure mark_all_devices_as_mounted is
+		begin
+			for i in 1..length(list_of_devices) loop
+				update_element(list_of_devices, positive(i), mark_device_as_mounted'access);
+			end loop;
+		end mark_all_devices_as_mounted;
+		
+		procedure mark_all_pins_as_mounted is
+			ln	: count_type := length(list_of_nets);
+			lp 	: count_type;
+			net	: type_net;
+		begin
+			for n in 1..ln loop -- loop in netlist
+				net := element(list_of_nets, positive(n)); -- load a net
+				lp := length( net.pins ); -- set number of pins
+				if lp > 0 then -- if there are pins in the net
+					
+					for p in 1..lp loop -- loop in pinlist
+						update_element(
+							net.pins, 		-- the pinlist of the net at position n
+							positive(p),	-- the pin at position p
+							mark_pin_as_mounted'access);
+					end loop;
+					
+				end if; -- if there are pins in the net
+				replace_element(list_of_nets, positive(n), net);
+			end loop;
+		end mark_all_pins_as_mounted;
+		
 		
 	begin -- manage_assembly_variants
-		-- Search in device list for multiple occurences. If a device occurs more than once, it has variants.
+		-- Search in list_of_devicest for multiple occurences. If a device occurs more than once, it has variants.
 		-- If there are variants: Write them in a file_list_of_assembly_variants. If file_list_of_assembly_variants already
 		-- exists, read its content.
 
@@ -446,6 +478,8 @@ procedure impprotel is
 			text => "managing assembly variants ...",
 			console => true);
 
+		-- Search for multiple occurences of devices:
+		-- Sets the flag variants_found once any device occurs more than once.
         if l > 0 then -- do that if there are devices at all
 			for dp in 1..l loop
 				device_scratch := element(list_of_devices,dp);
@@ -494,7 +528,7 @@ procedure impprotel is
 				put_line(file_variants," -- assembly variants of netlist '" & simple_name(to_string(name_file_cad_netlist)) & "'");
 				put_line(file_variants," -- created by impprotel version " & version);
 				put_line(file_variants," -- date " & date_now);
-				put_line(file_variants," " & column_separator_0);
+				put_line(file_variants,row_separator_0 & column_separator_0);
 				put_line(file_variants," -- device name | package | value");
 
 				-- write assembly variants both in the skeleton and in file_list_of_assembly_variants 
@@ -508,14 +542,15 @@ procedure impprotel is
 							console => true, identation => 2);
 
 						write_message(file_handle => file_variants, 
-							text => to_string(device_scratch.name) & " " &
-									to_string(device_scratch.packge) & " " &
+							text => to_string(device_scratch.name) & row_separator_0 &
+									to_string(device_scratch.packge) & row_separator_0 &
 									to_string(device_scratch.value),
 							console => false, identation => 2);
 					end if;
 				end loop;
 				put_line(file_variants," -- end of variants");
 				close(file_variants);
+				
 			else -- file_list_of_assembly_variants exists, so read it and apply active assembly variants
 				put_line(standard_output,"Applying active assembly variants from " & to_string(file_list_of_assembly_variants));
 				write_message(
@@ -525,8 +560,19 @@ procedure impprotel is
 				-- CS: check assembly variants (make sure only one of them is active)
 				get_position_of_active_variants; -- set id in assembly variant
 				apply_assembly_variants_on_device_list; -- mark mounted devices
-				apply_assembly_variants_on_netlist; -- mark "mounted" pins 
+				apply_assembly_variants_on_netlist; -- mark mounted pins 
 			end if;	
+
+		else -- no variants found
+			-- All devices are mounted. All pins are "mounted".
+			write_message(
+				 file_handle => file_import_cad_messages,
+				 text => "design has no assembly variants -> all devices mounted !",
+				 console => true,
+				 identation => 1);
+
+			mark_all_devices_as_mounted;
+			mark_all_pins_as_mounted;
 		end if;
     end manage_assembly_variants;
 
@@ -550,8 +596,16 @@ procedure impprotel is
 			console => true);
 
 		put_line(file_skeleton, " statistics:");
+
+		-- The device_count_mounted was computed when a device was marked as "mounted" 
+		-- by procedure mark_device_as_mounted.
 		put_line(file_skeleton, "  devices :" & natural'image(device_count_mounted));
+
+		-- The number of nets can be taken directly from the list_of_nets.
 		put_line(file_skeleton, "  nets    :" & count_type'image(type_list_of_nets.length(list_of_nets)));
+
+		-- The pin_count_mounted was computed when a pin was marked as "mounted"
+		-- by procdure mark_pin_as_mounted.
 		put_line(file_skeleton, "  pins    :" & natural'image(pin_count_mounted));
 		
 		put_line(file_skeleton,section_mark.endsection);		
@@ -559,6 +613,8 @@ procedure impprotel is
 
 	
 	procedure write_skeleton is
+	-- Writes the skeleton file from the list_of_nets.
+	-- Reads the global flag variants_found in order to care for the "mounted" flag of pins or not.
 		net : type_net;
 		pin : type_pin;
 		ld 	: natural := natural(length(list_of_devices));
@@ -576,7 +632,7 @@ procedure impprotel is
 				end if;
 			end loop;
 			
-			return to_string(device_scratch.value) & " " & to_string(device_scratch.packge);
+			return to_string(device_scratch.value) & row_separator_0 & to_string(device_scratch.packge);
 		end get_value_and_package;
 		
 	begin -- write_skeleton
@@ -588,7 +644,7 @@ procedure impprotel is
 
 		set_output(file_skeleton);
 		new_line;
-		put_line(section_mark.section & " " & text_skeleton_section_netlist); new_line;
+		put_line(section_mark.section & row_separator_0 & text_skeleton_section_netlist); new_line;
 		
 		for n in 1..length(list_of_nets) loop
 			net := type_list_of_nets.element(list_of_nets, positive(n)); -- load a net
@@ -600,20 +656,24 @@ procedure impprotel is
 				console => false);
 			
 			-- write net header like "SubSection CORE_EXT_SRST class NA"
-			put_line(" " & section_mark.subsection & " " & to_string(net.name) & " " &
-				netlist_keyword_header_class & " " & type_net_class'image(net_class_default));
+			put_line(row_separator_0 & section_mark.subsection & row_separator_0 & to_string(net.name) & row_separator_0 &
+				netlist_keyword_header_class & row_separator_0 & type_net_class'image(net_class_default));
 
 			-- write pins in lines like "R3 ? 270K RESC1005X40N 1"
 			for p in 1..type_list_of_pins.length(net.pins) loop
 				pin := type_list_of_pins.element(net.pins, positive(p)); -- load a pin
+
 				if pin.mounted then -- address only active assembly variants
-					put_line("  " & to_string(pin.name_device) & " " & type_device_class'image(device_class_default) &
-							" " & get_value_and_package(pin.name_device) & " " & to_string(pin.name_pin)
-							);
+					-- CS: write a procedure for this in m1_import:
+					put_line("  " & to_string(pin.name_device) 
+						& row_separator_0 & type_device_class'image(device_class_default) 
+						& row_separator_0 & get_value_and_package(pin.name_device) 
+						& row_separator_0 & to_string(pin.name_pin)
+						);
 				end if;
 			end loop;
 
-			put_line(" " & section_mark.endsubsection); new_line;
+			put_line(row_separator_0 & section_mark.endsubsection); new_line;
 		end loop;
 		
 		put_line(section_mark.endsection);
@@ -639,6 +699,8 @@ procedure impprotel is
 
 
 	procedure read_netlist is
+	-- Appends devices to list_of_devices.
+	-- Appends nets to list_of_nets. Each net has a list of pins.
 	begin
 		write_message (
 			file_handle => file_import_cad_messages,
