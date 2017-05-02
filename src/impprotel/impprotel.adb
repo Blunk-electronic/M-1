@@ -134,6 +134,10 @@ procedure impprotel is
     net_item_next : type_net_item;
 
 	-- ASSEMBLY VARIANTS
+	
+	list_of_variants_created : boolean := false;
+	-- Goes true if new list of assembly variants has been created.
+	
 	type type_assembly_variant is record
 		name		: type_device_name.bounded_string;
 		position	: positive; -- position in file_list_of_assembly_variants
@@ -149,6 +153,11 @@ procedure impprotel is
 		
 
 	procedure manage_assembly_variants is
+	-- Detects assembly variants in netlist.
+	-- If there are any, it creates file_list_of_assembly_variants. 
+	-- The operator must edit the file in order to select active variants.
+	-- If variants are set active in file_list_of_assembly_variants they are applied
+	-- to the list_of_nets and list_of_devices.
 		
 		-- Once an assembly variant has been detected in the netlist, this flag goes true.
 		variants_found : boolean := false; 
@@ -178,6 +187,13 @@ procedure impprotel is
 			line 						: type_extended_string.bounded_string;
 			assembly_variant_scratch	: type_assembly_variant;
 		begin
+
+			write_message(
+				file_handle => file_import_cad_messages,
+				text => "reading list of assembly variants ...",
+				identation => 1,
+				console => false);
+			
 			open (file_variants, in_file, to_string(file_list_of_assembly_variants));
 			set_input(file_variants);
 			while not end_of_file loop
@@ -185,14 +201,25 @@ procedure impprotel is
 				if get_field_count(to_string(line)) > 0 then -- skip empty lines
 
 					-- read assembly variant from a line like "R3 RESC1005X40N 12K active"
+					
 					assembly_variant_scratch.name := to_bounded_string(get_field_from_line(to_string(line),1));
 					assembly_variant_scratch.packge := to_bounded_string(get_field_from_line(to_string(line),2));
 					assembly_variant_scratch.value := to_bounded_string(get_field_from_line(to_string(line),3));
-					if get_field_from_line(to_string(line),4) = "active" then -- CS: output error when typing error ?
+					if get_field_from_line(to_string(line),4) = keyword_assembly_variant_active then -- CS: output error when typing error ?
 						assembly_variant_scratch.active := true;
 					else
 						assembly_variant_scratch.active := false;
 					end if;
+
+					write_message(
+						file_handle => file_import_cad_messages,
+						text => to_string(assembly_variant_scratch.name) & row_separator_0
+							& to_string(assembly_variant_scratch.packge) & row_separator_0
+							& to_string(assembly_variant_scratch.value) & row_separator_0
+							& keyword_assembly_variant_active & row_separator_0 
+							& boolean'image(assembly_variant_scratch.active),
+						identation => 2,
+						console => false);
 
 					-- append assembly variant to list
 					append(list_of_assembly_variants,assembly_variant_scratch);
@@ -200,7 +227,8 @@ procedure impprotel is
 					-- purge temporarly assembly variant
 					assembly_variant_scratch.name := to_bounded_string("");
 					assembly_variant_scratch.packge := to_bounded_string("");					
-					assembly_variant_scratch.value := to_bounded_string("");					
+					assembly_variant_scratch.value := to_bounded_string("");
+					assembly_variant_scratch.active := false; -- reset active flag for next spin
 				end if;
 			end loop;
 			set_input(standard_input);
@@ -208,8 +236,9 @@ procedure impprotel is
 		end read_assembly_variants;
 
 		procedure get_position_of_active_variants is
-			-- Assigns to active assembly variants the position where
-			-- they appear in the file file_list_of_assembly_variants.
+		-- Assigns to active assembly variants the position where
+		-- they appear in the file file_list_of_assembly_variants.
+			
 			l : natural := natural(length(list_of_assembly_variants));
 			vp, vs : type_assembly_variant;
 			p : positive := 1; -- position of variant
@@ -227,16 +256,23 @@ procedure impprotel is
 			end write_assembly_variant;
 			
 		begin -- get_position_of_active_variants
-			put_line(file_skeleton, " active variants: ");
-			put_line(file_skeleton, "  # | device | package | value");
-			put_line(file_skeleton, "  " & column_separator_0);
-			for ap in 1..l loop
-				vp := element(list_of_assembly_variants,ap); -- first occurence
+-- 			put_line(file_skeleton, " active variants: ");
+-- 			put_line(file_skeleton, "  # | device | package | value");
+-- 			put_line(file_skeleton, "  " & column_separator_0);
+
+			write_message(
+				file_handle => file_import_cad_messages,
+				text => "getting position of active variants ...",
+				identation => 1,
+				console => false);
+			
+			for ap in 1..l loop -- loop in list of assembly variants
+				vp := element(list_of_assembly_variants,ap); -- load first occurence
 				p := 1; -- reset position
 				if not vp.processed then -- skip already processed variants
 					if vp.active then -- if first variant active, set position as proposed by p
 						update_element(list_of_assembly_variants,ap,set_position'access);
-						write_assembly_variant(vp);
+						--write_assembly_variant(vp);
 						for as in ap+1..l loop -- serach for further occurences and mark them as processed
 							vs := element(list_of_assembly_variants,as);
 							if vp.name = vs.name then -- on name match
@@ -251,7 +287,7 @@ procedure impprotel is
 								p := p + 1; -- increment position on match
 								if vs.active then -- if variant active, set position as proposed by p
 									update_element(list_of_assembly_variants,as,set_position'access);
-									write_assembly_variant(vs);
+									--write_assembly_variant(vs);
 								end if;
 								-- mark this variant and all others as processed
 								update_element(list_of_assembly_variants,as,mark_variant_as_processed'access);
@@ -294,8 +330,12 @@ procedure impprotel is
 
 					-- safety measure;
 					if not active_variant_found then
-						put_line(standard_output,message_error & "No active variant found for device '" & 
-							to_string(device_scratch.name) & "' !");
+						write_message(
+							file_handle => file_import_cad_messages,
+							text => message_error & "No active variant found for device " 
+								& to_string(device_scratch.name) & " !",
+							console => true);
+
 						raise constraint_error;
 					end if;
 				else
@@ -343,7 +383,7 @@ procedure impprotel is
 				lp 						: positive := positive(length(net.pins)); -- length of pin list
 				device_name_scratch		: type_device_name.bounded_string;
 				active_variant_found	: boolean := false; -- safety measure: used to verify that the variant has been found
-			begin
+			begin -- pin_occurence_in_net
 				-- Loop in pin list. Advance position after fetching a pin. Search for a pin with same device
 				-- further down the list. Count occurences of same device. 
 				-- Abort when given pin_id reached and return occurence.
@@ -376,8 +416,14 @@ procedure impprotel is
 
 				-- safety measure:
 				if not active_variant_found then
-					put_line(standard_output,message_error & "No active variant for '" & to_string(device_name_given) & 
-							 "' found in net '" & to_string(net.name) & "' !");
+	
+					write_message(
+						file_handle => file_import_cad_messages,
+						text => message_error & "No active variant for device " 
+							& to_string(device_name_given) 
+							& " found in net " & to_string(net.name) & " !",
+						console => true);
+					
 					raise constraint_error;
 				end if;
 				return occurence;
@@ -509,9 +555,8 @@ procedure impprotel is
 		if variants_found then
 			write_message(
 				 file_handle => file_import_cad_messages,
-				 text => message_warning & "Design has assembly variants:",
-				 console => true,
-				 identation => 1);
+				 text => message_warning & "Design has assembly variants !",
+				 console => true);
 
 			-- build the name of file_list_of_assembly_variants from the given netlist file
 			file_list_of_assembly_variants := to_unbounded_string( compose(
@@ -520,39 +565,63 @@ procedure impprotel is
 							extension => file_extension_assembly_variants));
 
 			if not exists(to_string(file_list_of_assembly_variants)) then -- create file_list_of_assembly_variants anew
-				put_line(standard_output,"Creating list of assembly variants in " & to_string(file_list_of_assembly_variants));
+
+				write_message(
+					file_handle => file_import_cad_messages,
+					text => "creating list of assembly variants in " & to_string(file_list_of_assembly_variants),
+					console => false,
+					identation => 1);
+
 				create (file_variants, out_file, to_string(file_list_of_assembly_variants));
 				
 				put_line(file_variants," -- assembly variants of netlist '" & simple_name(to_string(name_file_cad_netlist)) & "'");
 				put_line(file_variants," -- created by impprotel version " & version);
 				put_line(file_variants," -- date " & date_now);
 				put_line(file_variants,row_separator_0 & column_separator_0);
-				put_line(file_variants," -- device name | package | value");
+				put_line(file_variants," -- device name | package | value | [" & keyword_assembly_variant_active & "]");
 
-				-- write assembly variants both in the skeleton and in file_list_of_assembly_variants 
+				-- write assembly variants in file_list_of_assembly_variants 
 				for d in 1..l loop
 					device_scratch := element(list_of_devices,d);
 					if device_scratch.has_variants then
-						write_message(file_handle => file_skeleton, 
-							text => "device: " & to_string(device_scratch.name) &
-									" package: " & to_string(device_scratch.packge) &
-									" value: " & to_string(device_scratch.value),
-							console => true, identation => 2);
+-- 						write_message(file_handle => file_skeleton, -- CS: ?
+-- 							text => "device: " & to_string(device_scratch.name) &
+-- 									" package: " & to_string(device_scratch.packge) &
+-- 									" value: " & to_string(device_scratch.value),
+-- 							console => true, identation => 2);
 
-						write_message(file_handle => file_variants, 
+						put_line(file_variants, 2 * row_separator_0
+							& to_string(device_scratch.name) & row_separator_0 
+							& to_string(device_scratch.packge) & row_separator_0 
+							& to_string(device_scratch.value));
+						
+						write_message(file_handle => file_import_cad_messages, 
 							text => to_string(device_scratch.name) & row_separator_0 &
 									to_string(device_scratch.packge) & row_separator_0 &
 									to_string(device_scratch.value),
-							console => false, identation => 2);
+							console => false, 
+							identation => 3);
+
 					end if;
 				end loop;
 				put_line(file_variants," -- end of variants");
 				close(file_variants);
+
+				put_line("IMPORTANT: Mark active assembly variants in " & to_string(file_list_of_assembly_variants) & " !");
+				put_line("           Then run the import again !");
+
+				list_of_variants_created := true; -- This means to skip writing the skeleton and exit prematurely.
 				
 			else -- file_list_of_assembly_variants exists, so read it and apply active assembly variants
-				put_line(standard_output,"Applying active assembly variants from " & to_string(file_list_of_assembly_variants));
+
 				write_message(
-					file_handle => file_skeleton, text => "as specified in file " & to_string(file_list_of_assembly_variants), identation => 1);
+					file_handle => file_import_cad_messages,
+					text => "applying active assembly variants from " & to_string(file_list_of_assembly_variants),
+					console => true,
+					identation => 1);
+				
+-- 				write_message( -- CS: ?
+-- 					file_handle => file_skeleton, text => "as specified in file " & to_string(file_list_of_assembly_variants), identation => 1);
 
 				read_assembly_variants; -- read them from file_list_of_assembly_variants
 				-- CS: check assembly variants (make sure only one of them is active)
@@ -606,9 +675,29 @@ procedure impprotel is
 		-- by procdure mark_pin_as_mounted.
 		put_line(file_skeleton, "  pins    :" & natural'image(pin_count_mounted));
 		
-		put_line(file_skeleton,section_mark.endsection);		
+-- 		put_line(file_skeleton,section_mark.endsection);		
 	end write_statistics;
 
+	procedure write_info is
+	begin
+-- 		set_output(file_skeleton);
+
+		new_line(file_import_cad_messages);
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => "writing info section ...",
+			console => false);
+		
+		put_line(section_mark.section & row_separator_0 & text_skeleton_section_info);
+-- 		put_line(" netlist skeleton");
+		put_line(" created by " & name_module_cad_importer_protel & " version " & version);
+		put_line(" date " & date_now);
+
+		write_statistics;
+		
+		put_line(file_skeleton,section_mark.endsection);
+-- 		set_output(standard_output);
+	end write_info;
 	
 	procedure write_skeleton is
 	-- Writes the skeleton file from the list_of_nets.
@@ -635,12 +724,42 @@ procedure impprotel is
 		
 	begin -- write_skeleton
 		new_line(file_import_cad_messages);
+
+		-- The skeleton file is named with the standard name or
+		-- with the standard name + prefix:
+		case cad_import_target_module is
+			when main => 
+				write_message (
+					file_handle => file_import_cad_messages,
+					text => "creating skeleton for main module ...",
+					console => false);
+
+				create (file => file_skeleton, mode => out_file, name => name_file_skeleton);
+
+			when sub => 
+				write_message (
+					file_handle => file_import_cad_messages,
+					text => "creating skeleton for submodule " & to_string(target_module_prefix) & " ...",
+					console => false);
+
+				target_module_prefix := to_bounded_string(argument(3));
+				put_line("prefix        : " & to_string(target_module_prefix));
+				create (file => file_skeleton, mode => out_file, name => compose( 
+							name => base_name(name_file_skeleton) & "_" & 
+									to_string(target_module_prefix),
+							extension => file_extension_text)
+						);
+		end case;
+
 		write_message (
 			file_handle => file_import_cad_messages,
 			text => "writing skeleton ...",
 			console => true);
 
 		set_output(file_skeleton);
+		
+		write_info;
+		
 		new_line;
 		put_line(section_mark.section & row_separator_0 & text_skeleton_section_netlist); new_line;
 		
@@ -676,25 +795,8 @@ procedure impprotel is
 		
 		put_line(section_mark.endsection);
 		set_output(standard_output);
+		close(file_skeleton);
 	end write_skeleton;
-
-	procedure write_info is
-	begin
-		set_output(file_skeleton);
-
-		write_message (
-			file_handle => file_import_cad_messages,
-			text => "writing info section ...",
-			console => false);
-		
-		put_line(section_mark.section & " info");
-		put_line(" -- netlist skeleton");
-		put_line(" -- created by " & name_module_cad_importer_protel & " version " & version);
-		put_line(" -- date " & date_now);
-		put_line(row_separator_0);
-		set_output(standard_output);
-	end write_info;
-
 
 	procedure read_netlist is
 	-- Appends devices to list_of_devices.
@@ -858,42 +960,29 @@ begin
 	prog_position	:= 40;
  	write_log_header(version);
 
-	case cad_import_target_module is
-		when main => 
-			write_message (
-				file_handle => file_import_cad_messages,
-				text => "creating skeleton for main module ...",
-				console => false);
-
-			create (file => file_skeleton, mode => out_file, name => name_file_skeleton);
-
-		when sub => 
-			write_message (
-				file_handle => file_import_cad_messages,
-				text => "creating skeleton for submodule " & to_string(target_module_prefix) & " ...",
-				console => false);
-
-			target_module_prefix := to_bounded_string(argument(3));
-			put_line("prefix        : " & to_string(target_module_prefix));
-			create (file => file_skeleton, mode => out_file, name => compose( 
-						name => base_name(name_file_skeleton) & "_" & 
-								to_string(target_module_prefix),
-						extension => file_extension_text)
-					);
-	end case;
-	
-	write_info;
+-- 	write_info;
 
 	read_netlist;
 
     manage_assembly_variants;
 
-	write_statistics;
+	-- If a list of assembly variants has been created, we remove the stale (and confusing) skeleton.
+	-- If there was a list already, we create a new skeleton.
+	if list_of_variants_created then
+		if exists(name_file_skeleton) then
+			
+			write_message (
+				file_handle => file_import_cad_messages,
+				text => "deleting stale skeleton ...",
+				console => false);
 
-	write_skeleton;
+			delete_file(name_file_skeleton);
+		end if;
+	else
+		write_skeleton;
+	end if;
 
-	close(file_skeleton);
-
+	
 	write_log_footer;	
 	
 	exception when event: others =>
