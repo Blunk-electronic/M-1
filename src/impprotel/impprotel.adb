@@ -140,7 +140,7 @@ procedure impprotel is
 	
 	type type_assembly_variant is record
 		name		: type_device_name.bounded_string;
-		position	: positive; -- position in file_list_of_assembly_variants
+		position	: positive := 1; -- position in file_list_of_assembly_variants
 		packge		: type_package_name.bounded_string;
 		value		: type_value.bounded_string; -- CS: package and value should be read and verified
 		active		: boolean := false;
@@ -247,7 +247,18 @@ procedure impprotel is
 			begin variant.processed := true; end mark_variant_as_processed;
 
 			procedure set_position (variant : in out type_assembly_variant) is
-			begin variant.position := p; end set_position;
+			begin 
+				variant.position := p; 
+
+				write_message(
+					file_handle => file_import_cad_messages,
+					text => "active variant of " 
+						& to_string(variant.name) 
+						& " is number" & positive'image(p),
+					identation => 2,
+					console => false);
+
+			end set_position;
 
 			procedure write_assembly_variant (variant : in type_assembly_variant) is
 			begin
@@ -267,35 +278,69 @@ procedure impprotel is
 				console => false);
 			
 			for ap in 1..l loop -- loop in list of assembly variants
-				vp := element(list_of_assembly_variants,ap); -- load first occurence
-				p := 1; -- reset position
-				if not vp.processed then -- skip already processed variants
-					if vp.active then -- if first variant active, set position as proposed by p
+				vp := element(list_of_assembly_variants,ap); -- load variant
+				if not vp.processed then
+					p := 1; -- reset position
+					if vp.active then
+
+						write_message(
+							file_handle => file_import_cad_messages,
+							text => "first position" & positive'image(p),
+							identation => 2,
+							console => false);
+						
 						update_element(list_of_assembly_variants,ap,set_position'access);
-						--write_assembly_variant(vp);
+					else
+	-- 				if not vp.processed then -- skip already processed variants
+	-- 					if vp.active then -- if first variant active, set position as proposed by p
+	-- 						update_element(list_of_assembly_variants,ap,set_position'access);
+	-- 						--write_assembly_variant(vp);
+	-- 						for as in ap+1..l loop -- serach for further occurences and mark them as processed
+	-- 							vs := element(list_of_assembly_variants,as);
+	-- 							if vp.name = vs.name then -- on name match
+	-- 								-- mark this variant as processed
+	-- 								update_element(list_of_assembly_variants,as,mark_variant_as_processed'access);
+	-- 							end if;
+	-- 						end loop;
+	-- 					else -- first variant not active
+	-- 						for as in ap+1..l loop -- serach for further occurences
+	-- 							vs := element(list_of_assembly_variants,as);
+	-- 							if vp.name = vs.name then -- on name match
+	-- 								p := p + 1; -- increment position on match
+	-- 								if vs.active then -- if variant active, set position as proposed by p
+	-- 									update_element(list_of_assembly_variants,as,set_position'access);
+	-- 									--write_assembly_variant(vs);
+	-- 								end if;
+	-- 								-- mark this variant and all others as processed
+	-- 								update_element(list_of_assembly_variants,as,mark_variant_as_processed'access);
+	-- 							end if;
+	-- 						end loop;
+	-- 					end if;
+
 						for as in ap+1..l loop -- serach for further occurences and mark them as processed
 							vs := element(list_of_assembly_variants,as);
 							if vp.name = vs.name then -- on name match
-								-- mark this variant as processed
-								update_element(list_of_assembly_variants,as,mark_variant_as_processed'access);
-							end if;
-						end loop;
-					else -- first variant not active
-						for as in ap+1..l loop -- serach for further occurences
-							vs := element(list_of_assembly_variants,as);
-							if vp.name = vs.name then -- on name match
 								p := p + 1; -- increment position on match
-								if vs.active then -- if variant active, set position as proposed by p
-									update_element(list_of_assembly_variants,as,set_position'access);
-									--write_assembly_variant(vs);
-								end if;
-								-- mark this variant and all others as processed
 								update_element(list_of_assembly_variants,as,mark_variant_as_processed'access);
+								if vs.active then
+
+									write_message(
+										file_handle => file_import_cad_messages,
+										text => "position" & positive'image(p),
+										identation => 2,
+										console => false);
+									
+									update_element(list_of_assembly_variants,as,set_position'access);
+									--exit;
+								end if;
 							end if;
 						end loop;
+						
 					end if;
-				end if;
+				end if; -- if not vp.processed
 			end loop;
+
+			
 		end get_position_of_active_variants;
 
 		procedure apply_assembly_variants_on_device_list is
@@ -306,14 +351,32 @@ procedure impprotel is
 			device_scratch : type_device;
 			
 		begin -- apply_assembly_variants_on_device_list
+			write_message(
+				file_handle => file_import_cad_messages,
+				text => "applying assembly variants on device list ...",
+				identation => 1,
+				console => false);
+			
 			for d in 1..l loop -- loop in device list
 				device_scratch := element(list_of_devices,d); -- save element temporarly in device_scratch
 				if device_scratch.has_variants then -- if device has variants, search in variants list for that device
 
+					write_message(
+						file_handle => file_import_cad_messages,
+						text => to_string(device_scratch.name),
+						identation => 2,
+						console => false);
+					
 					-- search current device in variant list
 					for a in 1..la loop
 						v := element(list_of_assembly_variants,a); -- save current variant temporarly in v
 
+						write_message(
+							file_handle => file_import_cad_messages,
+							text => to_string(v.name) & " pos." & positive'image(v.position),
+							identation => 3,
+							console => false);
+						
 						-- if variant matches in device name, package, value, id and if it is active, 
 						-- then the active assembly variant has been found -> the devive is to be mounted
 						if  to_string(device_scratch.name)   = to_string(v.name) and 
