@@ -356,44 +356,57 @@ procedure impprotel is
 		procedure apply_assembly_variants_on_netlist is
 		-- Sets the flag "mounted" of pins.
 			ln : positive := natural(length(list_of_nets));
-			variant_position : natural;
+			active_variant_position : natural;
 			pin_occurence : positive;
 			
 			net_scratch : type_net;
 			pin_scratch : type_pin;
 
-			function variant_position_of (name_device : in type_device_name.bounded_string) return natural is
-			-- Returns the position of the active variant of the given device. 
-			-- If device has no variants, return zero.
-				position	: natural := 0;
-				--device		: type_device;
+			function device_has_variants ( name : in type_device_name.bounded_string) return boolean is
+			-- Returns true if given device has assembly variants.
 			begin
--- 				loop_device_list:
--- 				for d in 1..l loop -- loop in device list
--- 					device := element(list_of_devices,d); -- load a device
--- 					if device.name = name_device then -- on name match
--- 						if device.has_variants then -- if variants defined
+-- 				for d in 1..l loop -- loop in device list -- CS: use length_of_device_list instead of l
+-- 					if element(list_of_devices,d).name = name then -- on name match
+-- 						if element(list_of_devices,d).has_variants then -- if variants defined
+-- 							return true;
+-- 						end if;
+-- 					end if;
+-- 				end loop;
 
 				for v in 1..length(list_of_assembly_variants) loop
-					if element(list_of_assembly_variants, positive(v)).name = name_device then
+					if element(list_of_assembly_variants, positive(v)).name = name then
+						return true;
+					end if;
+				end loop;
+			
+				return false;
+			end device_has_variants;
+			
+			function active_variant_position_of (name : in type_device_name.bounded_string) return natural is
+			-- Returns the position of the active variant of the given device. 
+			-- If device has no active variants, return zero.
+				position	: natural := 0;
+			begin
+				for v in 1..length(list_of_assembly_variants) loop
+					if element(list_of_assembly_variants, positive(v)).name = name then
 						if element(list_of_assembly_variants, positive(v)).active then
 							position := element(list_of_assembly_variants, positive(v)).position;
 							exit; -- no more search required
 						end if;
 					end if;
 				end loop;
--- 						end if;
--- 					end if;
--- 				end loop loop_device_list;
 				return position;
-			end variant_position_of;
+			end active_variant_position_of;
 
 
-			function pin_occurence_in_net ( net : in type_net; -- the net of interest
-											pin_id : in positive; -- the position of the given pin in the pin list
-											device_name_given : in type_device_name.bounded_string) -- the device of interest
-			-- Returns the occurence of a pin of an assembly variant of device_name_given within the given net.
-				return positive is
+			function pin_occurence_in_net (
+			-- Returns the occurence of a pin of an assembly variant of device_name_given 
+			-- within the given net.
+				net					: in type_net; -- the net of interest
+				pin_id				: in positive; -- the position of the given pin in the pin list
+				device_name_given	: in type_device_name.bounded_string -- the device of interest
+				) return positive is 
+				
 				occurence 				: natural := 0; -- counts the occurences of the given device
 				position 				: natural := 0; -- points to the pin being processed
 				lp 						: positive := positive(length(net.pins)); -- length of pin list
@@ -404,29 +417,15 @@ procedure impprotel is
 				-- further down the list. Count occurences of same device. 
 				-- Abort when given pin_id reached and return occurence.
 				loop_1:
-				for pp in 1..lp loop -- loop in pin list of given net
+				for pp in 1..lp loop -- loop in pinlist of given net
 					device_name_scratch := element(net.pins,pp).name_device; -- load device name of pin
 					position := position + 1;					
 					if device_name_scratch = device_name_given then -- first occurence of given device
---						occurence := 1;
-
-						-- If the device is the first occurence in the pin list, abort search:
--- 						if position = pin_id then -- given pin_id reached
--- 							active_variant_found := true;
--- 							exit loop_1;
--- 						end if;
-						
-						-- Search down the list for further occurences of the given device name
---						for ps in pp+1..lp loop 
-						for ps in pp..lp loop 						
-							if element(net.pins,ps).name_device = device_name_given then -- further occurence
-								occurence := occurence + 1; -- count occurences
-								if position = pin_id then -- given pin_id reached
-									active_variant_found := true;
-									exit loop_1;
-								end if;
-							end if;
-						end loop;
+						occurence := occurence + 1; -- count occurences
+						if position = pin_id then -- given pin_id reached
+							active_variant_found := true;
+							exit loop_1;
+						end if;
 					end if;
 				end loop loop_1;
 
@@ -442,6 +441,7 @@ procedure impprotel is
 					
 					raise constraint_error;
 				end if;
+
 				return occurence;
 			end pin_occurence_in_net;
 
@@ -456,34 +456,39 @@ procedure impprotel is
 			for n in 1..ln loop -- loop in netlist
 				net_scratch := element(list_of_nets,n); -- load a net
 
+				write_message(
+					file_handle => file_import_cad_messages,
+					text => "net " & to_string(net_scratch.name),
+					identation => 2,
+					console => false);
+				
 				-- In the current net: mark device/pins to be mounted (as specified by assembly variants)
 				for p in 1..length(net_scratch.pins) loop -- loop in pinlist of that net
 					pin_scratch := element(net_scratch.pins,positive(p)); -- load a pin
-					variant_position := variant_position_of(pin_scratch.name_device); -- get active variant position of device
-					if variant_position > 0 then -- device has variants
-						-- now we have: a net in net_scratch, a pin position in p, device name
-						-- get occurence of device with pin in that net. if it equals the variant position the pin is to be "mounted"
+					if device_has_variants(pin_scratch.name_device) then
+						active_variant_position := active_variant_position_of(pin_scratch.name_device); -- get active variant position of device
+						if active_variant_position > 0 then -- device has an active variant
+							-- Now we have: a net in net_scratch, a pin position in p and a device name.
+							-- Get occurence of device with pin in that net. 
+							-- If it equals the active_variant_position the pin is to be marked as "mounted".
 
--- 						put_line(standard_output,"net " & to_string(net_scratch.name) &
--- 								 " dev. " & to_string(pin_scratch.name_device) &
--- 								 " pos. " & positive'image(positive(p)) &
--- 								" var. " & positive'image(variant_position));
-						
-						pin_occurence := pin_occurence_in_net(
-											net_scratch,
-											positive(p),
-											pin_scratch.name_device); 
-
-						if pin_occurence = variant_position then -- pin is to be "mounted"
---							put_line(standard_output,"mount");
--- 							put_line(standard_output,"net " & to_string(net_scratch.name) &
--- 									 " dev. " & to_string(pin_scratch.name_device) &
--- 									" pos. " & positive'image(positive(p)));
-
+-- 							write_message(
+-- 								file_handle => file_import_cad_messages,
+-- 								text => "device " & to_string(pin_scratch.name_device) & row_separator_0
+-- 									& "pin " & to_string(pin_scratch.name_pin) & row_separator_0
+-- 									& "pos" & natural'image(active_variant_position),
+-- 								identation => 3,
+-- 								console => false);
 							
-							update_element(net_scratch.pins,positive(p),mark_pin_as_mounted'access);
+							pin_occurence := pin_occurence_in_net(
+												net_scratch,
+												positive(p),
+												pin_scratch.name_device); 
+
+							if pin_occurence = active_variant_position then -- pin is to be "mounted"
+								update_element(net_scratch.pins,positive(p),mark_pin_as_mounted'access);
+							end if;
 						end if;
-						
 					else -- no variants, pin is to be "mounted"
 						update_element(net_scratch.pins,positive(p),mark_pin_as_mounted'access);
 					end if;
