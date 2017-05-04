@@ -38,12 +38,11 @@ with ada.characters.latin_1;	use ada.characters.latin_1;
 
 with ada.strings;				use ada.strings;
 with ada.strings.bounded; 		use ada.strings.bounded;
-with ada.strings.unbounded;		use ada.strings.unbounded;
 with ada.strings.fixed; 		use ada.strings.fixed;
 with ada.containers;            use ada.containers;
 with ada.containers.vectors;
 with ada.exceptions; 			use ada.exceptions;
---  
+
 with ada.command_line;			use ada.command_line;
 with ada.directories;			use ada.directories;
 
@@ -59,7 +58,7 @@ procedure impprotel is
 	version			: constant string (1..3) := "003";
     prog_position	: natural := 0;
 
-    length_of_line_in_netlist : constant positive := 200;
+    length_of_line_in_netlist : constant positive := 200; -- CS: increase if neccesary
     package type_line is new generic_bounded_length(length_of_line_in_netlist);
     use type_line;
     line_counter : natural := 0;
@@ -68,6 +67,7 @@ procedure impprotel is
 	use type_extended_string;
 	use type_universal_string;
 	use type_name_file_netlist;
+	use type_name_file_list_of_assembly_variants;
 	
 	-- DEVICES
 	device_count_mounted : natural := 0; -- for statistics
@@ -104,7 +104,8 @@ procedure impprotel is
     device_attribute_next : type_device_attribute;
 
 	-- PINS
-	pin_count_mounted : natural := 0;
+	device_pin_separator : constant string (1..1) := "-";
+	pin_count_mounted : natural := 0; -- for statistics
     length_of_pin_name : constant positive := length_of_device_name + 10; -- something like R41-1
     package type_pin_name is new generic_bounded_length(length_of_pin_name);
 	use type_pin_name;
@@ -116,6 +117,15 @@ procedure impprotel is
 	pin_scratch : type_pin;
 	package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin);
 	use type_list_of_pins;
+
+	function split_device_pin (text_in : type_line.bounded_string) return type_pin is
+		pin : type_pin;
+		ifs_position : positive := index(text_in,device_pin_separator);
+	begin
+ 		pin.name_device := to_bounded_string(slice(text_in,1,ifs_position-1));
+		pin.name_pin    := to_bounded_string(slice(text_in,ifs_position+1,length(text_in)));
+		return pin;
+	end split_device_pin;
 	
     -- NETS
     length_of_net_name : constant positive := 100;
@@ -161,15 +171,78 @@ procedure impprotel is
 	-- If variants are set active in file_list_of_assembly_variants they are applied
 	-- to the list_of_nets and list_of_devices.
 		
-		-- Once an assembly variant has been detected in the netlist, this flag goes true.
-		variants_found : boolean := false; 
+		length_list_of_devices			: natural := natural(length(list_of_devices));
 
-		l 				: natural := natural(length(list_of_devices));
-		file_variants	: ada.text_io.file_type;
-		file_list_of_assembly_variants : unbounded_string;
-		package type_pin_name is new generic_bounded_length(length_of_pin_name);
-		use type_pin_name;
+		function detect_assembly_variants return boolean is
+		-- Returns true if design has assembly variants.
+			variants_found : boolean := false;
 
+			procedure mark_as_having_variants (device : in out type_device) is
+			begin device.has_variants := true; end mark_as_having_variants;
+			
+			procedure mark_as_processed (device : in out type_device) is
+			begin device.processed := true; end mark_as_processed;
+
+			variant_id : positive := 1;
+			procedure set_variant_id ( device : in out type_device) is
+			begin 
+				device.variant_id := variant_id;
+			end set_variant_id;
+
+		begin -- detect_assembly_variants
+			write_message (
+				file_handle => file_import_cad_messages,
+				text => "detecting assembly variants ...",
+				identation => 1,
+				console => true);
+
+			-- Search in list_of_devices for multiple occurences of devices.
+			-- If a device occurs more than once, it has variants.
+			-- Sets the flag variants_found once any device occurs more than once.
+			-- Sets the flag has_variants of a device if it occurs more than once.
+			-- Sets the variant_id of a device according to the occurence of the same device in the list_of_devices.
+			if length_list_of_devices > 0 then -- do that if there are devices at all
+				for dp in 1..length_list_of_devices loop
+					device_scratch := element(list_of_devices,dp); -- load an initial device
+					if not device_scratch.processed then -- skip already processed devices
+						variant_id := 1; -- reset variant id
+						-- incremented on each occurence of device_scratch
+
+						-- Search for same device further down the list_of_devices.
+						for ds in dp+1..length_list_of_devices loop 
+							if element(list_of_devices,ds).name = device_scratch.name then
+								variant_id := variant_id + 1;
+								update_element(list_of_devices,ds,set_variant_id'access);
+								update_element(list_of_devices,ds,mark_as_having_variants'access);
+								update_element(list_of_devices,ds,mark_as_processed'access);
+							end if;
+						end loop;
+
+						-- If initial device occured more than once, mark it as "having variants".
+						if variant_id > 1 then
+							update_element(list_of_devices,dp,mark_as_having_variants'access);
+							
+							write_message (
+								file_handle => file_import_cad_messages,
+								text => message_warning & "device " 
+									& to_string(device_scratch.name) 
+									& " has" & positive'image(variant_id) & " variants !",
+								identation => 2,
+								console => false);
+
+							variants_found := true;
+						end if;
+					end if;
+				end loop;
+			else
+				write_message (
+					file_handle => file_import_cad_messages,
+					text => message_warning & " no devices found !",
+					console => true);
+			end if;
+			return variants_found;
+		end detect_assembly_variants;
+		
 		procedure mark_device_as_mounted (device : in out type_device) is
 		begin 
 			device.mounted := true;
@@ -196,17 +269,17 @@ procedure impprotel is
 				identation => 1,
 				console => false);
 			
-			open (file_variants, in_file, to_string(file_list_of_assembly_variants));
+			open (file_variants, in_file, to_string(name_file_list_of_assembly_variants));
 			set_input(file_variants);
 			while not end_of_file loop
 				line := to_bounded_string(remove_comment_from_line(get_line));
 				if get_field_count(to_string(line)) > 0 then -- skip empty lines
 
-					-- read assembly variant from a line like "R3 RESC1005X40N 12K active"
+					-- read assembly variant from a line like "R3 12K RESC1005X40N active"
 					
 					assembly_variant_scratch.name := to_bounded_string(get_field_from_line(to_string(line),1));
-					assembly_variant_scratch.packge := to_bounded_string(get_field_from_line(to_string(line),2));
-					assembly_variant_scratch.value := to_bounded_string(get_field_from_line(to_string(line),3));
+					assembly_variant_scratch.value := to_bounded_string(get_field_from_line(to_string(line),2));
+					assembly_variant_scratch.packge := to_bounded_string(get_field_from_line(to_string(line),3));
 					if get_field_from_line(to_string(line),4) = keyword_assembly_variant_active then -- CS: output error when typing error ?
 						assembly_variant_scratch.active := true;
 					else
@@ -216,8 +289,8 @@ procedure impprotel is
 					write_message(
 						file_handle => file_import_cad_messages,
 						text => to_string(assembly_variant_scratch.name) & row_separator_0
-							& to_string(assembly_variant_scratch.packge) & row_separator_0
 							& to_string(assembly_variant_scratch.value) & row_separator_0
+							& to_string(assembly_variant_scratch.packge) & row_separator_0
 							& keyword_assembly_variant_active & row_separator_0 
 							& boolean'image(assembly_variant_scratch.active),
 						identation => 2,
@@ -228,8 +301,8 @@ procedure impprotel is
 
 					-- purge temporarly assembly variant
 					assembly_variant_scratch.name := to_bounded_string("");
-					assembly_variant_scratch.packge := to_bounded_string("");					
 					assembly_variant_scratch.value := to_bounded_string("");
+					assembly_variant_scratch.packge := to_bounded_string("");
 					assembly_variant_scratch.active := false; -- reset active flag for next spin
 				end if;
 			end loop;
@@ -245,9 +318,6 @@ procedure impprotel is
 			vp, vs : type_assembly_variant;
 			p : positive := 1; -- position of variant
 
--- 			procedure mark_variant_as_processed (variant : in out type_assembly_variant) is
--- 			begin variant.processed := true; end mark_variant_as_processed;
-
 			procedure set_position (variant : in out type_assembly_variant) is
 			-- Assigns the position currently held in p to the variant being processed.
 			-- Marks the current variant as processed.
@@ -255,12 +325,6 @@ procedure impprotel is
 				variant.position := p;
 				variant.processed := true;
 			end set_position;
-
--- 			procedure write_assembly_variant (variant : in type_assembly_variant) is
--- 			begin
--- 				put_line(file_skeleton, row_separator_0 & natural'image(p) & row_separator_0 & to_string(variant.name) &
--- 					row_separator_0 & to_string(variant.packge) & row_separator_0 & to_string(variant.value));
--- 			end write_assembly_variant;
 			
 		begin -- get_position_of_variants
 			write_message(
@@ -292,7 +356,6 @@ procedure impprotel is
 			v						: type_assembly_variant;			
 			active_variant_found	: boolean := false;
 			device_scratch			: type_device;
-			
 		begin -- apply_assembly_variants_on_device_list
 			write_message(
 				file_handle => file_import_cad_messages,
@@ -300,7 +363,7 @@ procedure impprotel is
 				identation => 1,
 				console => false);
 			
-			for d in 1..l loop -- loop in device list
+			for d in 1..length_list_of_devices loop -- loop in device list
 				device_scratch := element(list_of_devices,d); -- load a device
 				if device_scratch.has_variants then -- if device has variants, search in variants list for that device
 
@@ -355,6 +418,11 @@ procedure impprotel is
 
 		procedure apply_assembly_variants_on_netlist is
 		-- Sets the flag "mounted" of pins.
+		-- Loads net by net. If a device/pin has no assembly variants it gets marked as "mounted".
+			
+		-- If a device/pin has assembly variants, the position X of the active variant in list_of_assembly_variants
+		-- serves to mark the Xth occurence of the device/pin (in the net) as "mounted".
+		-- If device/pin has assembly variants but none is active, it will NOT be marked as "mounted".
 			ln : positive := natural(length(list_of_nets));
 			active_variant_position : natural;
 			pin_occurence : positive;
@@ -362,19 +430,13 @@ procedure impprotel is
 			net_scratch : type_net;
 			pin_scratch : type_pin;
 
-			function device_has_variants ( name : in type_device_name.bounded_string) return boolean is
+			function device_has_variants ( device : in type_device_name.bounded_string) return boolean is
 			-- Returns true if given device has assembly variants.
 			begin
--- 				for d in 1..l loop -- loop in device list -- CS: use length_of_device_list instead of l
--- 					if element(list_of_devices,d).name = name then -- on name match
--- 						if element(list_of_devices,d).has_variants then -- if variants defined
--- 							return true;
--- 						end if;
--- 					end if;
--- 				end loop;
-
+				-- It is sufficent to look in the list_of_assembly_variants whether the given device
+				-- is listed therein:
 				for v in 1..length(list_of_assembly_variants) loop
-					if element(list_of_assembly_variants, positive(v)).name = name then
+					if element(list_of_assembly_variants, positive(v)).name = device then
 						return true;
 					end if;
 				end loop;
@@ -400,45 +462,42 @@ procedure impprotel is
 
 
 			function pin_occurence_in_net (
-			-- Returns the occurence of a pin of an assembly variant of device_name_given 
-			-- within the given net.
-				net					: in type_net; -- the net of interest
-				pin_id				: in positive; -- the position of the given pin in the pin list
-				device_name_given	: in type_device_name.bounded_string -- the device of interest
+			-- Returns the occurence of a pin of an assembly variant of given
+			-- device name within the given net.
+				net		: in type_net; -- the net of interest
+				pin_id	: in positive; -- the position of the given pin in the pinlist
+				device	: in type_device_name.bounded_string -- the device of interest
 				) return positive is 
 				
-				occurence 				: natural := 0; -- counts the occurences of the given device
-				position 				: natural := 0; -- points to the pin being processed
-				lp 						: positive := positive(length(net.pins)); -- length of pin list
-				device_name_scratch		: type_device_name.bounded_string;
-				active_variant_found	: boolean := false; -- safety measure: used to verify that the variant has been found
-			begin -- pin_occurence_in_net
-				-- Loop in pin list. Advance position after fetching a pin. Search for a pin with same device
-				-- further down the list. Count occurences of same device. 
+				occurence 	: natural := 0; -- counts the occurences of the given device
+				lp 			: positive := positive(length(net.pins)); -- length of pinlist
+				scratch		: type_device_name.bounded_string;
+
+				-- safety measure: used to verify that the variant has been found
+				pin_found	: boolean := false;
+			begin
+				-- Loop in pinlist of the given net.
+				-- Count occurences of given device device. 
 				-- Abort when given pin_id reached and return occurence.
-				loop_1:
 				for pp in 1..lp loop -- loop in pinlist of given net
-					device_name_scratch := element(net.pins,pp).name_device; -- load device name of pin
-					position := position + 1;					
-					if device_name_scratch = device_name_given then -- first occurence of given device
+					scratch := element(net.pins,pp).name_device; -- load device name of pin
+					if scratch = device then -- first occurence of given device
 						occurence := occurence + 1; -- count occurences
-						if position = pin_id then -- given pin_id reached
-							active_variant_found := true;
-							exit loop_1;
+						if pp = pin_id then -- given pin_id reached
+							pin_found := true;
+							exit;
 						end if;
 					end if;
-				end loop loop_1;
+				end loop;
 
 				-- safety measure:
-				if not active_variant_found then
-	
+				if not pin_found then
 					write_message(
 						file_handle => file_import_cad_messages,
-						text => message_error & "No active variant for device " 
-							& to_string(device_name_given) 
+						text => message_error & "No variant for device " 
+							& to_string(device) 
 							& " found in net " & to_string(net.name) & " !",
 						console => true);
-					
 					raise constraint_error;
 				end if;
 
@@ -446,7 +505,6 @@ procedure impprotel is
 			end pin_occurence_in_net;
 
 		begin -- apply_assembly_variants_on_netlist
-
 			write_message(
 				file_handle => file_import_cad_messages,
 				text => "applying assembly variants on netlist ...",
@@ -466,19 +524,14 @@ procedure impprotel is
 				for p in 1..length(net_scratch.pins) loop -- loop in pinlist of that net
 					pin_scratch := element(net_scratch.pins,positive(p)); -- load a pin
 					if device_has_variants(pin_scratch.name_device) then
-						active_variant_position := active_variant_position_of(pin_scratch.name_device); -- get active variant position of device
-						if active_variant_position > 0 then -- device has an active variant
+						
+						-- get active variant position of device
+						active_variant_position := active_variant_position_of(pin_scratch.name_device); 
+						if active_variant_position > 0 then 
+							-- Device has an active variant.
 							-- Now we have: a net in net_scratch, a pin position in p and a device name.
 							-- Get occurence of device with pin in that net. 
 							-- If it equals the active_variant_position the pin is to be marked as "mounted".
-
--- 							write_message(
--- 								file_handle => file_import_cad_messages,
--- 								text => "device " & to_string(pin_scratch.name_device) & row_separator_0
--- 									& "pin " & to_string(pin_scratch.name_pin) & row_separator_0
--- 									& "pos" & natural'image(active_variant_position),
--- 								identation => 3,
--- 								console => false);
 							
 							pin_occurence := pin_occurence_in_net(
 												net_scratch,
@@ -488,7 +541,11 @@ procedure impprotel is
 							if pin_occurence = active_variant_position then -- pin is to be "mounted"
 								update_element(net_scratch.pins,positive(p),mark_pin_as_mounted'access);
 							end if;
+						else 
+							-- If no active variant DO NOT mount device.
+							null;
 						end if;
+						
 					else -- no variants, pin is to be "mounted"
 						update_element(net_scratch.pins,positive(p),mark_pin_as_mounted'access);
 					end if;
@@ -500,19 +557,6 @@ procedure impprotel is
 
 		end apply_assembly_variants_on_netlist;
 		
-		procedure mark_as_having_variants (device : in out type_device) is
-		begin device.has_variants := true; end mark_as_having_variants;
-		
-		procedure mark_as_processed (device : in out type_device) is
-		begin device.processed := true; end mark_as_processed;
-
-		variant_occurence : positive := 1;		
-		procedure set_variant_id ( device : in out type_device) is
-		begin 
-			device.variant_id := variant_occurence;
-		end set_variant_id;
-
-		device_scratch : type_device;
 
 		procedure mark_all_devices_as_mounted is
 		begin
@@ -545,108 +589,64 @@ procedure impprotel is
 		
 		
 	begin -- manage_assembly_variants
-		-- Search in list_of_devicest for multiple occurences. If a device occurs more than once, it has variants.
-		-- If there are variants: Write them in a file_list_of_assembly_variants. If file_list_of_assembly_variants already
-		-- exists, read its content.
+		-- If there are variants: Write them in a file_list_of_assembly_variants.
+		-- The operator has to mark active assembly variants in this file.
+		-- If file_list_of_assembly_variants already exists, read its content and
+		-- apply it to list_of_devices and list_of_nets.
 
 		new_line(file_import_cad_messages);
 		write_message (
 			file_handle => file_import_cad_messages,
-			--identation => 1,
 			text => "managing assembly variants ...",
 			console => true);
 
-		-- Search for multiple occurences of devices:
-		-- Sets the flag variants_found once any device occurs more than once.
-		-- Sets the flag has_variants of a device if it occurs more than once.
-		-- Sets the variant_id of a device according to the occurence of the same device in the list_of_devices.
-        if l > 0 then -- do that if there are devices at all
-			for dp in 1..l loop
-				device_scratch := element(list_of_devices,dp); -- load an initial device
-				if not device_scratch.processed then -- skip already processed devices
-					variant_occurence := 1; -- reset variant id
-					--update_element(list_of_devices,dp,set_variant_id'access);
-
-					-- Search for same device further down the list_of_devices.
-					for ds in dp+1..l loop 
-						if element(list_of_devices,ds).name = device_scratch.name then
-							variant_occurence := variant_occurence + 1;
-							update_element(list_of_devices,ds,set_variant_id'access);
-							update_element(list_of_devices,ds,mark_as_having_variants'access);
-							update_element(list_of_devices,ds,mark_as_processed'access);
-						end if;
-					end loop;
-
-					-- If initial device occured more than once, mark it as "having variants".
-					if variant_occurence > 1 then
-						update_element(list_of_devices,dp,mark_as_having_variants'access);
-						
-						write_message (
-							file_handle => file_import_cad_messages,
-							text => message_warning & "device " 
-								& to_string(device_scratch.name) 
-								& " has" & positive'image(variant_occurence) & " variants !",
-							console => false);
-
-						variants_found := true; -- notfies other procedures about variants in design
-					end if;
-				end if;
-            end loop;
-        else
-			write_message (
-				file_handle => file_import_cad_messages,
-				text => message_warning & " no devices found !",
-				console => true,
-				identation => 1);
-		end if;
-
-		if variants_found then
+		if detect_assembly_variants then
+			
 			write_message(
 				 file_handle => file_import_cad_messages,
 				 text => message_warning & "Design has assembly variants !",
 				 console => true);
 
 			-- build the name of file_list_of_assembly_variants from the given netlist file
-			file_list_of_assembly_variants := to_unbounded_string( compose(
+			name_file_list_of_assembly_variants := to_bounded_string( compose(
 							containing_directory => name_directory_cad, 
 							name => simple_name(to_string(name_file_cad_netlist)),
 							extension => file_extension_assembly_variants));
 
-			if not exists(to_string(file_list_of_assembly_variants)) then -- create file_list_of_assembly_variants anew
+			if not exists(to_string(name_file_list_of_assembly_variants)) then -- create file_list_of_assembly_variants anew
 
 				write_message(
 					file_handle => file_import_cad_messages,
-					text => "creating list of assembly variants in " & to_string(file_list_of_assembly_variants),
+					text => "creating list of assembly variants in " & to_string(name_file_list_of_assembly_variants),
 					console => false,
 					identation => 1);
 
-				create (file_variants, out_file, to_string(file_list_of_assembly_variants));
+				create (file_variants, out_file, to_string(name_file_list_of_assembly_variants));
 				
 				put_line(file_variants," -- assembly variants of netlist '" & simple_name(to_string(name_file_cad_netlist)) & "'");
 				put_line(file_variants," -- created by impprotel version " & version);
 				put_line(file_variants," -- date " & date_now);
 				put_line(file_variants,row_separator_0 & column_separator_0);
-				put_line(file_variants," -- device name | package | value | [" & keyword_assembly_variant_active & "]");
+				put_line(file_variants," -- Mark variants as active by writing the word '" 
+					& keyword_assembly_variant_active & "' in the last column !");
+				put_line(file_variants," -- NOTE: Only one variant of a device can be active !");
+				new_line(file_variants);
+				put_line(file_variants," -- device name | value | package | [" & keyword_assembly_variant_active & "]");
 
 				-- write assembly variants in file_list_of_assembly_variants 
-				for d in 1..l loop
+				for d in 1..length_list_of_devices loop
 					device_scratch := element(list_of_devices,d);
 					if device_scratch.has_variants then
--- 						write_message(file_handle => file_skeleton, -- CS: ?
--- 							text => "device: " & to_string(device_scratch.name) &
--- 									" package: " & to_string(device_scratch.packge) &
--- 									" value: " & to_string(device_scratch.value),
--- 							console => true, identation => 2);
 
 						put_line(file_variants, 2 * row_separator_0
 							& to_string(device_scratch.name) & row_separator_0 
-							& to_string(device_scratch.packge) & row_separator_0 
-							& to_string(device_scratch.value));
+							& to_string(device_scratch.value) & row_separator_0 
+							& to_string(device_scratch.packge));
 						
 						write_message(file_handle => file_import_cad_messages, 
 							text => to_string(device_scratch.name) & row_separator_0 &
-									to_string(device_scratch.packge) & row_separator_0 &
-									to_string(device_scratch.value),
+									to_string(device_scratch.value) & row_separator_0 &
+									to_string(device_scratch.packge),
 							console => false, 
 							identation => 3);
 
@@ -655,7 +655,8 @@ procedure impprotel is
 				put_line(file_variants," -- end of variants");
 				close(file_variants);
 
-				put_line("IMPORTANT: Mark active assembly variants in " & to_string(file_list_of_assembly_variants) & " !");
+				put_line("IMPORTANT: Mark active assembly variants in " 
+					& compose(name_directory_cad,to_string(name_file_list_of_assembly_variants)) & " !");
 				put_line("           Then run the import again !");
 
 				list_of_variants_created := true; -- This means to skip writing the skeleton and exit prematurely.
@@ -664,13 +665,10 @@ procedure impprotel is
 
 				write_message(
 					file_handle => file_import_cad_messages,
-					text => "applying active assembly variants from " & to_string(file_list_of_assembly_variants),
+					text => "applying active assembly variants from " & to_string(name_file_list_of_assembly_variants),
 					console => true,
 					identation => 1);
 				
--- 				write_message( -- CS: ?
--- 					file_handle => file_skeleton, text => "as specified in file " & to_string(file_list_of_assembly_variants), identation => 1);
-
 				read_assembly_variants; -- read them from file_list_of_assembly_variants in list_of_assembly_variants
 				-- CS: check assembly variants (make sure only one of them is active)
 				set_position_of_variants; -- set position of assembly variants (as found in list_of_assembly_variants)
@@ -690,17 +688,6 @@ procedure impprotel is
 			mark_all_pins_as_mounted;
 		end if;
     end manage_assembly_variants;
-
-	function split_device_pin (text_in : type_line.bounded_string) return type_pin is
-		pin : type_pin;
-		ifs_position : positive := index(text_in,"-");
-	begin
- 		pin.name_device := to_bounded_string(slice(text_in,1,ifs_position-1));
-		pin.name_pin    := to_bounded_string(slice(text_in,ifs_position+1,length(text_in)));
-		--put_line(standard_output,"device: " & to_string(pin.name_device) & " pin " & to_string(pin.name_pin));
-		return pin;
-	end split_device_pin;
-
 
 	procedure write_statistics is
 	begin
