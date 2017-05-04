@@ -88,15 +88,17 @@ procedure impprotel is
         name    : type_device_name.bounded_string;
         packge  : type_package_name.bounded_string;
 		value   : type_value.bounded_string;
-		has_variants	: boolean 	:= false; -- set by manage_assembly_variants as first action -- CS: should be a discriminant
-		variant_id		: positive := 1; 	-- the variant number
+		has_variants	: boolean 	:= false; 	-- set by manage_assembly_variants as first action
+		variant_id		: positive 	:= 1;		-- the variant number
 		mounted			: boolean	:= false;
 		processed		: boolean	:= false;
     end record;
-
+	-- Procedure detect_assembly_variants sets the flags "has_variants" and "variant_id".
+	
     package type_list_of_devices is new vectors ( index_type => positive, element_type => type_device);
     use type_list_of_devices;
-    list_of_devices : type_list_of_devices.vector; -- here we list all devices of the design
+	list_of_devices : type_list_of_devices.vector; -- here we list all devices of the design
+	-- Procedure read_netlist appends devices. 
                             
 	-- PINS
 	device_pin_separator : constant string (1..1) := "-";
@@ -262,6 +264,7 @@ procedure impprotel is
 			set_input(file_variants);
 			while not end_of_file loop
 				line := to_bounded_string(remove_comment_from_line(get_line));
+				line_counter := line_counter + 1;
 				if get_field_count(to_string(line)) > 0 then -- skip empty lines
 
 					-- read assembly variant from a line like "R3 12K RESC1005X40N active"
@@ -269,9 +272,23 @@ procedure impprotel is
 					assembly_variant_scratch.name := to_bounded_string(get_field_from_line(to_string(line),1));
 					assembly_variant_scratch.value := to_bounded_string(get_field_from_line(to_string(line),2));
 					assembly_variant_scratch.packge := to_bounded_string(get_field_from_line(to_string(line),3));
-					if get_field_from_line(to_string(line),4) = keyword_assembly_variant_active then -- CS: output error when typing error ?
-						assembly_variant_scratch.active := true;
-					else
+
+					-- If there is a 4rd field, it must read "active". Otherwise this variant is considered as not active.
+					if get_field_count(to_string(line)) > 3 then
+						-- Test if 4rd field contains "active". Throw error message on typing error.
+						if get_field_from_line(to_string(line),4) = keyword_assembly_variant_active then
+							assembly_variant_scratch.active := true;
+						else
+							write_message(
+								file_handle => file_import_cad_messages,
+								text => message_error & "in file " 
+									& to_string(name_file_list_of_assembly_variants)
+									& " line" & natural'image(line_counter)
+									& ": expected keyword '" & keyword_assembly_variant_active & "' !",
+								console => true);
+							raise constraint_error;
+						end if;
+					else -- no 4rd field found. variant is not active
 						assembly_variant_scratch.active := false;
 					end if;
 
@@ -660,6 +677,7 @@ procedure impprotel is
 				
 				read_assembly_variants; -- read them from file_list_of_assembly_variants in list_of_assembly_variants
 				-- CS: check assembly variants (make sure only one of them is active)
+				-- CS: check if assembly variants are valid (devices, packages, values exist in netlist)
 				set_position_of_variants; -- set position of assembly variants (as found in list_of_assembly_variants)
 				apply_assembly_variants_on_device_list; -- mark mounted devices
 				apply_assembly_variants_on_netlist; -- mark mounted pins 
@@ -813,7 +831,6 @@ procedure impprotel is
 				pin := element(net.pins, positive(p)); -- load a pin
 
 				if pin.mounted then -- address only active assembly variants
-					-- CS: write a procedure for this in m1_import:
 					put_line("  " & to_string(pin.name_device) 
 						& row_separator_0 & type_device_class'image(device_class_default) 
 						& row_separator_0 & get_value_and_package(pin.name_device) 
@@ -859,7 +876,6 @@ procedure impprotel is
 			line_counter := line_counter + 1;
 			line := to_bounded_string(get_line);
 			if get_field_count(to_string(line)) > 0 then -- skip empty lines
--- 				put_line("line:>" & to_string(line) & "<");
 				
 				-- READ DEVICES (NAME, PACKAGE, VALUE)
 -- 				write_message (
@@ -869,19 +885,13 @@ procedure impprotel is
 -- 					console => true);
 
 				if not device_entered then
-					prog_position	:= 70;
-					--put_line(to_string(line)); -- dbg
 					if get_field_from_line(text_in => to_string(line), position => 1) = "[" then
-						--put_line("entering device...");
 						device_entered := true;
 						device_attribute_next := name;
 					end if;
 				else -- we are inside a device section
-					--put_line(to_string(line));
 					if get_field_from_line(text_in => to_string(line), position => 1) = "]" then
-						prog_position	:= 50;
 						device_entered := false; -- we are leaving a device section
-						--put_line("device: " & to_string(device_scratch.name)); -- dbg
 
 						write_message (
 							file_handle => file_import_cad_messages,
@@ -898,7 +908,6 @@ procedure impprotel is
 						device_scratch.packge := to_bounded_string("");
 						device_scratch.value := to_bounded_string("");
 					else
-						prog_position	:= 60;
 						case device_attribute_next is
 							when name => 
 								device_scratch.name := to_bounded_string(
@@ -917,13 +926,11 @@ procedure impprotel is
 
 				-- READ NETS (NAME, PINS)
 				if not net_entered then
-					prog_position	:= 80;
 					if get_field_from_line(text_in => to_string(line), position => 1) = "(" then
 						net_entered := true;
 						net_item_next := name;
 					end if;
 				else -- we are inside a net section
-					prog_position	:= 90;				
 					if get_field_from_line(text_in => to_string(line), position => 1) = ")" then
 						net_entered := false; -- we are leaving a net section
 
@@ -959,16 +966,12 @@ procedure impprotel is
 						net_scratch.name := to_bounded_string(""); -- clear name
 						delete(net_scratch.pins,1,length(net_scratch.pins)); -- clear pin list
 					else
-						prog_position	:= 100;
-						--put_line("line:>" & to_string(line) & "<");
 						case net_item_next is
 							when name => -- read net name from a line like "motor_on"
 								net_scratch.name := to_bounded_string(
 									get_field_from_line(text_in => to_string(line), position => 1));                        
 								net_item_next := pin;
 							when pin => -- read pin nme from a line like "C37-2"
-								--put_line("line:>" & to_string(line) & "<"); -- dbg
-
 								pin_scratch := split_device_pin(line); --to_bounded_string(get_field(text_in => to_string(line), position => 1)));
 								append(net_scratch.pins, pin_scratch);
 						end case;
@@ -978,6 +981,12 @@ procedure impprotel is
 		end loop;
 		set_input(standard_input);
 		close(file_cad_netlist);
+
+-- 		write_message (
+-- 			file_handle => file_import_cad_messages,
+-- 			text => message_error & "in netlist line" & natural'image(line_counter),
+-- 			console => true);
+
 	end read_netlist;
 
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
@@ -1007,12 +1016,15 @@ begin
 
 -- 	write_info;
 
+	prog_position	:= 50;	
 	read_netlist;
 
+	prog_position	:= 60;	
     manage_assembly_variants;
 
 	-- If a list of assembly variants has been created, we remove the stale (and confusing) skeleton.
 	-- If there was a list already, we create a new skeleton.
+	prog_position	:= 70;	
 	if list_of_variants_created then
 		if exists(name_file_skeleton) then
 			
@@ -1021,13 +1033,15 @@ begin
 				text => "deleting stale skeleton ...",
 				console => false);
 
+			prog_position	:= 80;
 			delete_file(name_file_skeleton);
 		end if;
 	else
+		prog_position	:= 90;
 		write_skeleton;
 	end if;
 
-	
+	prog_position	:= 100;
 	write_log_footer;	
 	
 	exception when event: others =>
@@ -1036,12 +1050,7 @@ begin
 
 		write_message (
 			file_handle => file_import_cad_messages,
-			text => message_error & " at program position " & natural'image(prog_position),
-			console => true);
-
-		write_message (
-			file_handle => file_import_cad_messages,
-			text => message_error & "in netlist line" & natural'image(line_counter),
+			text => message_error & "at program position " & natural'image(prog_position),
 			console => true);
 	
 		if is_open(file_skeleton) then
