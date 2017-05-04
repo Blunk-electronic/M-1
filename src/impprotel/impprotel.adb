@@ -96,13 +96,8 @@ procedure impprotel is
 
     package type_list_of_devices is new vectors ( index_type => positive, element_type => type_device);
     use type_list_of_devices;
-    list_of_devices : type_list_of_devices.vector;
+    list_of_devices : type_list_of_devices.vector; -- here we list all devices of the design
                             
-    device_entered : boolean := false;
-    device_scratch : type_device;
-    type type_device_attribute is (name, packge, value);
-    device_attribute_next : type_device_attribute;
-
 	-- PINS
 	device_pin_separator : constant string (1..1) := "-";
 	pin_count_mounted : natural := 0; -- for statistics
@@ -114,7 +109,6 @@ procedure impprotel is
 		name_pin 	: type_pin_name.bounded_string;		
 		mounted 	: boolean := false;
 	end record;
-	pin_scratch : type_pin;
 	package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin);
 	use type_list_of_pins;
 
@@ -137,16 +131,10 @@ procedure impprotel is
         pins    : type_list_of_pins.vector;
     end record;
     package type_list_of_nets is new vectors ( index_type => positive, element_type => type_net);
-	list_of_nets : type_list_of_nets.vector;
+	list_of_nets : type_list_of_nets.vector; -- here we collect all nets of the design
 	use type_list_of_nets;
 
-    net_entered : boolean := false;
-    net_scratch : type_net;
-    type type_net_item is (name, pin);
-    net_item_next : type_net_item;
-
 	-- ASSEMBLY VARIANTS
-	
 	list_of_variants_created : boolean := false;
 	-- Goes true if new list of assembly variants has been created.
 	
@@ -171,8 +159,9 @@ procedure impprotel is
 	-- If variants are set active in file_list_of_assembly_variants they are applied
 	-- to the list_of_nets and list_of_devices.
 		
-		length_list_of_devices			: natural := natural(length(list_of_devices));
-
+		length_list_of_devices	: natural := natural(length(list_of_devices));
+		device_scratch 			: type_device;
+		
 		function detect_assembly_variants return boolean is
 		-- Returns true if design has assembly variants.
 			variants_found : boolean := false;
@@ -844,6 +833,19 @@ procedure impprotel is
 	procedure read_netlist is
 	-- Appends devices to list_of_devices.
 	-- Appends nets to list_of_nets. Each net has a list of pins.
+		pin_scratch		: type_pin;
+		device_entered	: boolean := false;
+		device_scratch	: type_device;
+
+	    type type_device_attribute is (name, packge, value);
+		device_attribute_next : type_device_attribute;
+
+		net_entered : boolean := false;
+		net_scratch : type_net;
+		
+		type type_net_item is (name, pin);
+		net_item_next : type_net_item;
+		
 	begin
 		write_message (
 			file_handle => file_import_cad_messages,
