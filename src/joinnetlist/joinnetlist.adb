@@ -76,22 +76,25 @@ procedure joinnetlist is
 		set_output(standard_output);
 	end write_skeleton_file_header;
 	
-
+	netlist_to_join : net_container.list;
+	
 begin
 	action := join_netlist;
 
 	new_line;
 	put_line(to_upper(name_module_join_netlist) & " version " & version);
 	put_line("===============================");
-	
+	prog_position	:= 10;	
 	name_file_skeleton_submodule := to_bounded_string(argument(1));
 	put_line("submodule      : " & to_string(name_file_skeleton_submodule));
 
 	
 	-- recreate an empty tmp directory
+	prog_position	:= 30;	
 	create_temp_directory;
 
 	-- create message/log file
+	prog_position	:= 40;	
  	write_log_header(version);
 	
 -- 	extract_section("skeleton.txt","tmp/skeleton_brutto.tmp","Section","EndSection","netlist_skeleton");
@@ -107,12 +110,31 @@ begin
 	--append_sub_name(to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4));
 	--(to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4));
 
+	prog_position	:= 50;	
+	if exists(to_string(name_file_skeleton_submodule)) then
+		write_message (
+			file_handle => file_join_netlist_messages,
+			text => "importing skeleton of submodule ...",
+			console => true);
+			  
+		read_skeleton(to_string(name_file_skeleton_submodule)); -- read skeleton to be merged with default skeleton
+	else
+		write_message (
+			file_handle => file_join_netlist_messages,
+			text => message_error & to_string(name_file_skeleton_submodule)
+				& " does not exist. Please import netlist first !",
+			console => true);
+	end if;
+
+
+	prog_position	:= 60;	
 	if exists(name_file_skeleton) then
-		open( -- this is the current skeleton
-			file => file_skeleton,
-			mode => in_file,
-			name => name_file_skeleton
-			);
+		write_message (
+			file_handle => file_join_netlist_messages,
+			text => "importing skeleton of main module ...",
+			console => true);
+	
+		read_skeleton; -- read default skeleton
 	else
 		write_message (
 			file_handle => file_join_netlist_messages,
@@ -120,20 +142,20 @@ begin
 				& " does not exist. Please import netlist first !",
 			console => true);
 	end if;
-	
+
+
+	prog_position	:= 100;	
 	create( -- this is going to be the new skeleton
 		file => file_skeleton_temp, 
 		mode => out_file,
 		name => compose(name_directory_temp, to_string(name_file_skeleton_submodule)));
-		
+
+	prog_position	:= 110;		
 	write_skeleton_file_header;
 
-
-
-	
-	close(file_skeleton);
+	prog_position	:= 120;		
 	close(file_skeleton_temp);
-	write_log_footer;
+
 	
 -- 	-- backup existing main module
 -- 	--extract_section( (to_string(data_base)) ,"tmp/spc_seed.tmp","Section","EndSection","scanpath_configuration");
@@ -168,7 +190,8 @@ begin
 			
 
 --	Copy_File( "tmp/skeleton.tmp" , "skeleton.txt" );
-
+	write_log_footer;
+	
 	exception when event: others =>
 		set_exit_status(failure);
 		set_output(standard_output);
