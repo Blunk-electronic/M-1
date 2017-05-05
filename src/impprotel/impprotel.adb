@@ -728,7 +728,7 @@ procedure impprotel is
 		new_line(file_import_cad_messages);
 		write_message (
 			file_handle => file_import_cad_messages,
-			text => "writing info section ...",
+			text => "writing section info ...",
 			identation => 1,
 			console => false);
 		
@@ -736,7 +736,7 @@ procedure impprotel is
 -- 		put_line(" netlist skeleton");
 		put_line(" created by " & name_module_cad_importer_protel & " version " & version);
 		put_line(" date " & date_now);
-
+		put_line(" prefix " & to_string(target_module_prefix));
 		write_statistics;
 		
 		put_line(file_skeleton,section_mark.endsection);
@@ -787,7 +787,7 @@ procedure impprotel is
 					console => false);
 
 				target_module_prefix := to_bounded_string(argument(3));
-				put_line("prefix        : " & to_string(target_module_prefix));
+				--put_line("prefix        : " & to_string(target_module_prefix));
 				create (file => file_skeleton, mode => out_file, name => compose( 
 							name => base_name(name_file_skeleton) & "_" & 
 									to_string(target_module_prefix),
@@ -806,7 +806,7 @@ procedure impprotel is
 
 		write_message (
 			file_handle => file_import_cad_messages,
-			text => "writing nets ...",
+			text => "writing section netlist ...",
 			identation => 1,
 			console => true);
 		
@@ -823,15 +823,16 @@ procedure impprotel is
 				console => false);
 			
 			-- write net header like "SubSection CORE_EXT_SRST class NA"
-			put_line(row_separator_0 & section_mark.subsection & row_separator_0 & to_string(net.name) & row_separator_0 &
-				netlist_keyword_header_class & row_separator_0 & type_net_class'image(net_class_default));
+			put_line(row_separator_0 & section_mark.subsection & row_separator_0 
+				& to_string(target_module_prefix) & "_" & to_string(net.name) & row_separator_0 
+				& netlist_keyword_header_class & row_separator_0 & type_net_class'image(net_class_default));
 
 			-- write pins in lines like "R3 ? 270K RESC1005X40N 1"
 			for p in 1..length(net.pins) loop
 				pin := element(net.pins, positive(p)); -- load a pin
 
 				if pin.mounted then -- address only active assembly variants
-					put_line("  " & to_string(pin.name_device) 
+					put_line("  " & to_string(target_module_prefix) & "_" & to_string(pin.name_device) 
 						& row_separator_0 & type_device_class'image(device_class_default) 
 						& row_separator_0 & get_value_and_package(pin.name_device) 
 						& row_separator_0 & to_string(pin.name_pin)
@@ -1004,17 +1005,9 @@ begin
 	put_line("netlist       : " & to_string(name_file_cad_netlist));
 	cad_import_target_module := type_cad_import_target_module'value(argument(2));
 	put_line("target module : " & type_cad_import_target_module'image(cad_import_target_module));
-	
--- 	prog_position	:= 30;
--- 	if argument_count = 3 then
--- 		debug_level := natural'value(argument(3));
--- 		put_line("debug level    :" & natural'image(debug_level));
--- 	end if;
 
 	prog_position	:= 40;
  	write_log_header(version);
-
--- 	write_info;
 
 	prog_position	:= 50;	
 	read_netlist;
