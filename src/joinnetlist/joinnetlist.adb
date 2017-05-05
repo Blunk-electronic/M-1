@@ -64,19 +64,181 @@ procedure joinnetlist is
 
 	use type_name_file_skeleton_submodule;
 
-	procedure write_skeleton_file_header is
-	begin
+-- 	procedure write_skeleton_file_header is
+-- 	begin
+-- 		set_output(file_skeleton_temp);
+-- 		put_line ("-- THIS IS A SKELETON FILE. DO NOT EDIT !");
+-- 		new_line;
+-- 		put_line ("-- merged with submodule skeleton " & to_string(name_file_skeleton_submodule));
+-- 		new_line;
+-- 
+-- 	end write_skeleton_file_header;
+
+	use type_module_name;	
+	skeleton_main	: type_skeleton;	
+	skeleton_sub	: type_skeleton;
+
+	procedure join_skeletons is
+		use type_skeleton_info;
+		use type_skeleton_netlist;
+		use type_universal_string;
+		use type_net_name;
+		
+		net_cursor 		: type_skeleton_netlist.cursor;
+		net_scratch		: type_skeleton_net;
+		net_counter		: positive := 1;
+
+		procedure write_net is
+			use type_skeleton_pinlist;
+			use type_device_name;
+			use type_device_value;
+			use type_package_name;
+			use type_pin_name;
+			
+			pin_cursor		: type_skeleton_pinlist.cursor;
+			pin_scratch		: type_skeleton_pin;
+			
+			procedure write_pin is
+			-- write the basic pin info like "R101 NA 2k7 0207/10 2"				
+			begin
+				put_line(2 * row_separator_0 & to_string(pin_scratch.device_name) & row_separator_0 &
+						 type_device_class'image(device_class_default) & row_separator_0 &
+						 to_string(pin_scratch.device_value) & row_separator_0 &
+						 to_string(pin_scratch.device_package) & row_separator_0 &
+						 to_string(pin_scratch.device_pin_name) & row_separator_0
+				   );
+			end write_pin;
+			
+		begin -- write_net
+			-- write net header like "SubSection ex_GPIO_2 class NA"
+			put_line(row_separator_0 & section_mark.subsection & row_separator_0 &
+					 to_string(net_scratch.name) & row_separator_0 &
+					 text_udb_class & row_separator_0 & type_net_class'image(net_class_default)
+					);
+
+			write_message (
+				file_handle => file_join_netlist_messages,
+				identation => 4,
+				text => "net " & to_string(net_scratch.name), 
+				console => false);
+			
+			pin_cursor 	:= first(net_scratch.pin_list);
+			pin_scratch	:= element(pin_cursor);
+            write_pin;
+			while pin_cursor /= last(net_scratch.pin_list) loop
+				pin_cursor 	:= next(pin_cursor);
+				pin_scratch := element(pin_cursor);
+				write_pin;
+			end loop;
+            put_line(row_separator_0 & section_mark.endsubsection);
+			new_line;
+		end write_net;
+
+		
+	begin -- join_skeletons
 		set_output(file_skeleton_temp);
-		put_line ("-- THIS IS A SKELETON FILE. DO NOT EDIT !");
-		put_line ("-- created by " & name_module_join_netlist & " version " & version);	
-		put_line ("-- date " & date_now);
+
+		write_message (
+			file_handle => file_join_netlist_messages,
+			text => "joining skeletons ...",
+			identation => 1,
+			console => true);
+		
+		put_line(section_mark.section & row_separator_0 & text_skeleton_section_info);
+		put_line (" created by " & name_module_join_netlist & " version " & version);	
+		put_line (" date " & date_now);
+		put_line (" --------------------------------------");
+-- 		put_line (" main module " & to_string(skeleton_sub.name));
+		if length(skeleton_main.info) > 0 then
+			for i in 1..length(skeleton_main.info) loop
+				put_line("  " & to_string(element(skeleton_main.info, positive(i))));
+			end loop;
+		end if;
+		put_line (" --------------------------------------");
+
+		put_line (" joined with module " & to_string(skeleton_sub.name));
+		if length(skeleton_sub.info) > 0 then
+			for i in 1..length(skeleton_sub.info) loop
+				put_line("  " & to_string(element(skeleton_sub.info, positive(i))));
+			end loop;
+		end if;
+		put_line(section_mark.endsection);
 		new_line;
-		put_line ("-- merged with submodule skeleton " & to_string(name_file_skeleton_submodule));
-		new_line;
-		set_output(standard_output);
-	end write_skeleton_file_header;
-	
-	netlist_to_join : net_container.list;
+
+		
+		write_message (
+			file_handle => file_join_netlist_messages,
+			text => "writing section netlist ...",
+			identation => 2,
+			console => false);
+
+		-- write section header
+		put_line(section_mark.section & row_separator_0 & text_skeleton_section_netlist); new_line;
+
+
+		
+		-- write main module
+		write_message (
+			file_handle => file_join_netlist_messages,
+			text => "main module ...",
+			identation => 3,
+			lf => false,			
+			console => true);
+
+		net_cursor 	:= first(skeleton_main.netlist);
+		net_scratch := element(net_cursor);
+		write_net;
+		while net_cursor /= last(skeleton_main.netlist) loop
+			net_cursor 	:= next(net_cursor);
+			net_scratch := element(net_cursor);
+
+			write_net;
+			net_counter := net_counter + 1;
+
+			-- progess bar
+			if (net_counter rem 100) = 0 then 
+				put(standard_output,".");
+			end if;
+		end loop;
+		new_line(standard_output);
+
+
+		
+		-- write submodule
+		net_counter := 1;		
+		write_message (
+			file_handle => file_join_netlist_messages,
+			text => "submodule ...",
+			identation => 3,
+			lf => false,
+			console => true);
+
+		net_cursor 	:= first(skeleton_sub.netlist);
+		net_scratch := element(net_cursor);
+		write_net;
+		while net_cursor /= last(skeleton_sub.netlist) loop
+			net_cursor 	:= next(net_cursor);
+			net_scratch := element(net_cursor);
+
+			write_net;
+			net_counter := net_counter + 1;
+
+			-- progess bar
+			if (net_counter rem 100) = 0 then 
+				put(standard_output,".");
+			end if;
+		end loop;
+		new_line(standard_output);
+
+
+
+		
+		-- write section footer
+		put_line(section_mark.endsection);
+
+		
+		set_output(standard_output);		
+	end join_skeletons;
 	
 begin
 	action := join_netlist;
@@ -97,19 +259,6 @@ begin
 	prog_position	:= 40;	
  	write_log_header(version);
 	
--- 	extract_section("skeleton.txt","tmp/skeleton_brutto.tmp","Section","EndSection","netlist_skeleton");
--- 	extract_netto_from_Section("tmp/skeleton_brutto.tmp","tmp/skeleton_netto.tmp");
--- 	
--- 	extract_section(to_string(skeleton_sub),"tmp/skeleton_brutto_sub.tmp","Section","EndSection","netlist_skeleton");
--- 	extract_netto_from_Section("tmp/skeleton_brutto_sub.tmp","tmp/skeleton_netto_sub.tmp");
-	
-	--scratch:= ( delete(skeleton_sub,1,9) );
-	--put(scratch(scratch'first .. scratch'last-1));
-	
-	--put (to_string(scratch)(to_string(scratch)'first+9 .. to_string(scratch)'last-4));
-	--append_sub_name(to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4));
-	--(to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4));
-
 	prog_position	:= 50;	
 	if exists(to_string(name_file_skeleton_submodule)) then
 		write_message (
@@ -117,7 +266,8 @@ begin
 			text => "importing skeleton of submodule ...",
 			console => true);
 			  
-		read_skeleton(to_string(name_file_skeleton_submodule)); -- read skeleton to be merged with default skeleton
+		skeleton_sub := read_skeleton(to_string(name_file_skeleton_submodule)); -- read skeleton to be merged with default skeleton
+		skeleton_sub.name := to_bounded_string(to_string(name_file_skeleton_submodule)); -- CS: extract the prefix instead of using the whole name
 	else
 		write_message (
 			file_handle => file_join_netlist_messages,
@@ -134,7 +284,8 @@ begin
 			text => "importing skeleton of main module ...",
 			console => true);
 	
-		read_skeleton; -- read default skeleton
+		skeleton_main := read_skeleton; -- read default skeleton
+
 	else
 		write_message (
 			file_handle => file_join_netlist_messages,
@@ -148,48 +299,23 @@ begin
 	create( -- this is going to be the new skeleton
 		file => file_skeleton_temp, 
 		mode => out_file,
-		name => compose(name_directory_temp, to_string(name_file_skeleton_submodule)));
+		name => compose(name_directory_temp, name_file_skeleton));
 
 	prog_position	:= 110;		
-	write_skeleton_file_header;
-
+	join_skeletons;
+	
 	prog_position	:= 120;		
 	close(file_skeleton_temp);
 
-	
--- 	-- backup existing main module
--- 	--extract_section( (to_string(data_base)) ,"tmp/spc_seed.tmp","Section","EndSection","scanpath_configuration");
--- 	Copy_File( "skeleton.txt", Compose("bak","skeleton.txt"));
--- 	Create( OutputFile, Name => Compose("tmp","skeleton.tmp")); Close(OutputFile);
--- 	put ("NOTE           : A backup of the mainmodule skeleton can be found in directory 'bak'."); new_line;
--- 
--- 	Open( 
--- 		File => OutputFile,
--- 		Mode => Append_File,
--- 		Name => Compose("tmp","skeleton.tmp")
--- 		);
--- 	Set_Output(OutputFile);
 
--- 	put ("Section info"); new_line;
--- 	put ("---------------------------------------------------------------"); new_line;
--- 	put ("-- created by Netlist Joiner version " & version); new_line;
--- 	put ("-- date           : " ); put (Image(clock)); new_line; 
--- 	put ("-- UTC_Offset     : " ); Put (Integer(UTC_Time_Offset/60),1); put(" hours"); new_line; new_line;
--- 	put ("-- joined netlist : " & skeleton_sub); new_line;
--- 	put ("-- prefix         : " & (to_string(skeleton_sub)(to_string(skeleton_sub)'first+9 .. to_string(skeleton_sub)'last-4))); new_line; -- ins V002
--- 	put ("EndSection "); new_line; new_line;
--- 	
--- 	put ("Section netlist_skeleton"); new_line; new_line;
--- 	put ("------MAINMODULE BEGIN-------------------------------------------"); new_line(2);	
--- 	append_file_open("tmp/skeleton_netto.tmp");
--- 	new_line(2);
--- 	put ("------SUBMODULE BEGIN--------------------------------------------"); new_line;
--- 	put ("-- origin         : " & skeleton_sub); new_line(2);
--- 	append_file_open("tmp/skeleton_netto_sub_ext.tmp");
--- 	put ("EndSection"); new_line; new_line;
-			
+	prog_position	:= 130;
+	write_message (
+		file_handle => file_join_netlist_messages,
+		text => "copying preliminary skeleton to " & name_file_skeleton,
+		console => false);
+	copy_file( compose(name_directory_temp, name_file_skeleton) , name_file_skeleton );
 
---	Copy_File( "tmp/skeleton.tmp" , "skeleton.txt" );
+	prog_position	:= 140;	
 	write_log_footer;
 	
 	exception when event: others =>
