@@ -152,7 +152,6 @@ procedure impprotel is
 	package type_list_of_assembly_variants is new vectors (positive, type_assembly_variant);
 	use type_list_of_assembly_variants;
 	list_of_assembly_variants : type_list_of_assembly_variants.vector;
-		
 
 	procedure manage_assembly_variants is
 	-- Detects assembly variants in netlist.
@@ -736,7 +735,9 @@ procedure impprotel is
 -- 		put_line(" netlist skeleton");
 		put_line(" created by " & name_module_cad_importer_protel & " version " & version);
 		put_line(" date " & date_now);
-		put_line(" prefix " & to_string(target_module_prefix));
+		if cad_import_target_module = m1_import.sub then
+			put_line(" prefix " & to_string(target_module_prefix));
+		end if;
 		write_statistics;
 		
 		put_line(file_skeleton,section_mark.endsection);
@@ -823,8 +824,11 @@ procedure impprotel is
 				console => false);
 			
 			-- write net header like "SubSection CORE_EXT_SRST class NA"
-			put_line(row_separator_0 & section_mark.subsection & row_separator_0 
-				& to_string(target_module_prefix) & "_" & to_string(net.name) & row_separator_0 
+			put(row_separator_0 & section_mark.subsection & row_separator_0);
+			if cad_import_target_module = m1_import.sub then -- insert module prefix if it is a submodule
+				put(to_string(target_module_prefix) & "_");
+			end if;
+			put_line(to_string(net.name) & row_separator_0 
 				& netlist_keyword_header_class & row_separator_0 & type_net_class'image(net_class_default));
 
 			-- write pins in lines like "R3 ? 270K RESC1005X40N 1"
@@ -832,7 +836,11 @@ procedure impprotel is
 				pin := element(net.pins, positive(p)); -- load a pin
 
 				if pin.mounted then -- address only active assembly variants
-					put_line("  " & to_string(target_module_prefix) & "_" & to_string(pin.name_device) 
+					put("  ");
+					if cad_import_target_module = m1_import.sub then -- insert module prefix if it is a submodule
+						put(to_string(target_module_prefix) & "_");
+					end if;
+					put_line(to_string(pin.name_device) 
 						& row_separator_0 & type_device_class'image(device_class_default) 
 						& row_separator_0 & get_value_and_package(pin.name_device) 
 						& row_separator_0 & to_string(pin.name_pin)
