@@ -84,7 +84,7 @@ echo "copying script files in" $dest_script_dir "..."
 #procedure_operator_confirmation
 	
 #procedure_copy_script impaltium
-procedure_copy_script impeagle6x
+procedure_copy_script impeagle
 procedure_copy_script imporcad
 procedure_copy_script open_report
 procedure_copy_script run_and_log_sequence

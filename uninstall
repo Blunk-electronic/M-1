@@ -65,8 +65,8 @@ conf_directory=$HOME/.M-1
 echo "delete script files in" $dest_script_dir "..."
 #procedure_operator_confirmation
 	
-procedure_remove_script impaltium
-procedure_remove_script impeagle6x
+#procedure_remove_script impaltium
+procedure_remove_script impeagle
 procedure_remove_script imporcad
 procedure_remove_script open_report
 procedure_remove_script run_and_log_sequence
@@ -96,6 +96,7 @@ procedure_make chkpsn
 procedure_make udbinfo
 procedure_make compseq
 procedure_make impbsdl
+procedure_make impprotel
 procedure_make impzuken
 procedure_make joinnetlist
 procedure_make mkinfra
