@@ -3,48 +3,6 @@
 version=033
 
 #reads EAGLE netlist and partlist
-#command is:	impeagle6x netlist.net partlist.part
-#written by MBL
-
-# 	overwrite_main_module=no
-# 	overwrite_sub_module=no
-# 	[ -e skeleton.txt ] &&
-# 		{
-# 		echo 'WARNING ! CAD data for main module already exists.'
-# 		echo -n '          Overwrite existing data set ? (y/n/c) '
-# 		read key
-# 		[ "$key" != "y" -a "$key" != "n" ] && 
-# 					{
-# 					echo 'CAD data import cancelled'
-# 					exit 1;
-# 					}
-# 
-# 		[ "$key" = "y" ] && 
-# 			{
-# 			overwrite_main_module=yes
-# 			break
-# 			}
-# 		[ "$key" = "n" ] && 
-# 			{
-# 			overwrite_sub_module=yes
-# 			#echo $overwrite_sub_module	
-# 			echo 'Importing CAD data as UUT submodule.'
-# 			echo -n 'Enter submodule name : '
-# 			read sub_name;
-# 			[ -e skeleton_$sub_name.txt ] &&
-# 				{ 
-# 				echo 'WARNING ! Cad data for submodule '$sub_name' already exists.'
-# 				echo -n '          Overwrite existing data set ? (y/n/c) '
-# 				read key2
-# 				[ "$key2" != "y" ] && 
-# 					{
-# 					echo 'CAD data import cancelled'
-# 					exit 1;
-# 					}
-# 				}
-# 			}
-# 		}
-
 
 
 # clean up tmp directory
@@ -57,40 +15,44 @@ version=033
 	target=$3
 	prefix=$4
 
+	prefix_with_underscore=""
+
 	echo
-	echo "net and partlist importer EAGLE V6 version" $version
+	echo "net and partlist importer EAGLE V6/7 version" $version
 	echo 'netlist        : '$netlist 
 	echo 'partlist       : '$partlist
 	echo 'target         : '$target
-	echo 'prefix         : '$prefix
+	#echo 'prefix         : '$prefix
 	echo
 
 	echo 'Section info' > tmp/np.tmp
 
-# 	[ "$overwrite_sub_module" = "yes" ] && echo ' -- netlist skeleton submodule' >> tmp/np.tmp
-# 	[ "$overwrite_sub_module" = "no" ] && echo ' -- netlist skeleton' >> tmp/np.tmp
-	[ "$target" = "main" ] && echo ' -- netlist skeleton' >> tmp/np.tmp
-	[ "$target" = "sub"  ] && echo ' -- netlist skeleton submodule' >> tmp/np.tmp
-	echo ' -- created by impeagle6x version' $version >> tmp/np.tmp
-	echo -n ' -- ' >> tmp/np.tmp
+# 	[ "$target" = "main" ] && echo ' -- netlist skeleton' >> tmp/np.tmp
+# 	[ "$target" = "sub"  ] && echo ' -- netlist skeleton submodule' >> tmp/np.tmp
+	echo ' created by impeagle version' $version >> tmp/np.tmp
+	[ "$target" = "sub"  ] && 
+		{
+		echo ' prefix' $prefix >> tmp/np.tmp
+		prefix_with_underscore=$prefix"_"
+		}
+	echo -n ' ' >> tmp/np.tmp
 	date >> tmp/np.tmp
 	echo "-----------------------------------------------------------------------------------" >> tmp/np.tmp
 
+	
 
 ##############################################
 
 #read netlist
 	echo '- processing nets'
 
-
 	#cut away header
 	lp=1
 	netlist_exported_from_sch="no"
 	while read -a line
 	do
-		#echo $lp ${#line[*]}
-		[ "$lp" -eq 1 ] && echo " --" ${line[*]} $1 >> tmp/np.tmp #tmp/nl.tmp
-		[ "$lp" -eq 3 ] && echo " --" ${line[*]} >> tmp/np.tmp #tmp/nl.tmp
+		[ "$lp" -eq 1 ] && echo " --" ${line[*]} $1 >> tmp/np.tmp
+		[ "$lp" -eq 3 ] && echo " --" ${line[*]} >> tmp/np.tmp
 		[ "$lp" -eq 5 ] && ( echo " --" ${line[*]} >> tmp/np.tmp ; echo >> tmp/np.tmp;)
 		[ "$lp" -eq 7 ] && [ ${#line[*]} -gt 3 ] && 
 			{
@@ -129,7 +91,7 @@ version=033
 		#check parameter count greater than 3 (e.g. net names containing space characters)
 		[ "$netlist_exported_from_sch" = "no" ] && [ ${#v[*]} -gt 3 ] &&
 			(
-			echo "WARNING ! Bad parameter count in net ${v[0]}, please check netlist" >> tmp/np.tmp #tmp/nl.tmp ;
+			echo "WARNING ! Bad parameter count in net ${v[0]}, please check netlist" >> tmp/np.tmp
 			echo "          Troubleshooting measures:" >> tmp/np.tmp
 			echo "          1. Make sure netname does not contain space characters !" >> tmp/np.tmp
 			);
@@ -138,7 +100,7 @@ version=033
 		#check parameter count greater than 5 (e.g. net names containing space characters)
 		[ "$netlist_exported_from_sch" = "yes" ] && [ ${#v[*]} -gt 5 ] &&
 			(
-			echo "WARNING ! Bad parameter count in net ${v[0]}, please check netlist" >> tmp/np.tmp #tmp/nl.tmp ;
+			echo "WARNING ! Bad parameter count in net ${v[0]}, please check netlist" >> tmp/np.tmp
 			echo "          Troubleshooting measures:" >> tmp/np.tmp
 			echo "          1. Make sure netname does not contain space characters !" >> tmp/np.tmp
 			);
@@ -159,7 +121,6 @@ version=033
 				#CS: check if netname contains a forbidden colon ":" and replace by "c_"
 				#CS: otherwise chkpsn will not work properly
 				echo :net ${v[0]} >> tmp/nets2.tmp ;
-				#	echo "reading net no." $netcount "name: "${v[0]} ;
 				#print out net number being processed
 				echo -n -e "\r$netcount"
 				echo ${v[1]} ${v[2]} >> tmp/nets2.tmp;
@@ -171,7 +132,6 @@ version=033
 				#CS: check if netname contains a forbidden colon ":" and replace by "c_"
 				#CS: otherwise chkpsn will not work properly
 				echo :net ${v[0]} >> tmp/nets2.tmp ;
-				#	echo "reading net no." $netcount "name: "${v[0]} ;
 				#print out net number being processed
 				echo -n -e "\r$netcount"
 				echo ${v[1]} ${v[2]} >> tmp/nets2.tmp;
@@ -197,9 +157,9 @@ version=033
 
 
 
-	echo ' --' $netcount nets imported >> tmp/np.tmp #tmp/nl.tmp
-	echo ' --' Please verify net count against CAD tool ! >> tmp/np.tmp #tmp/nl.tmp
-	echo "-----------------------------------------------------------------------------------" >> tmp/np.tmp #tmp/nl.tmp
+	echo ' --' $netcount nets imported >> tmp/np.tmp
+	echo ' --' Please verify net count against CAD tool ! >> tmp/np.tmp
+	echo "-----------------------------------------------------------------------------------" >> tmp/np.tmp
 	echo
 
 	#copy to result file
@@ -223,15 +183,14 @@ version=033
 	echo
 	echo '- processing parts'
 
-
 	#cut away header
 	lp=1
 	partlist_exported_from_sch="no"
 	while read -a line
 	do
 		#write header into log/import.log
-		[ "$lp" -eq 1 ] && echo " --" ${line[*]} $2 >> tmp/np.tmp #tmp/nl.tmp
-		[ "$lp" -eq 3 ] && echo " --" ${line[*]} >> tmp/np.tmp #tmp/nl.tmp
+		[ "$lp" -eq 1 ] && echo " --" ${line[*]} $2 >> tmp/np.tmp
+		[ "$lp" -eq 3 ] && echo " --" ${line[*]} >> tmp/np.tmp
 		[ "$lp" -eq 5 ] && (echo " --" ${line[*]} >> tmp/np.tmp ; echo >> tmp/np.tmp )
 		[ "$lp" -eq 7 ] &&
 			{
@@ -270,7 +229,7 @@ version=033
 
 
 		#write netto data in temp file
-		[ "$lp" -gt 10 ] && echo ${line[*]} >> tmp/parts.tmp  # ins V2.22
+		[ "$lp" -gt 10 ] && echo ${line[*]} >> tmp/parts.tmp
 
 		#advance line pointer
 		lp=$[lp+1]
@@ -285,8 +244,6 @@ version=033
 	while IFS=" " read -a v
 	do
 		#check array length
-		#[ ${#v[*]} -ne 6 ] && #rm V2.22
-		#echo ${v[*]} >> tmp/np.tmp
 		#write part, value, package into temp file
 		[ "$partlist_exported_from_sch" = "no" ] && 
 			{
@@ -296,9 +253,8 @@ version=033
 				};
 			[ ${#v[*]} -ne 7 ] &&
 				{
-				echo " -- WARNING : Bad parameter count in part "${v[0]}", please check partlist !" >> tmp/np.tmp #tmp/nl.tmp ;
-				echo " --           Missing parameter will be filled with keyword 'none'." >> tmp/np.tmp #tmp/nl.tmp ; # ins v031
-				#echo ${v[0]} "none" ${v[1]} ${v[2]} >> tmp/parts2.tmp
+				echo " -- WARNING : Bad parameter count in part "${v[0]}", please check partlist !" >> tmp/np.tmp
+				echo " --           Missing parameter will be filled with keyword 'none'." >> tmp/np.tmp
 				echo ${v[0]} "none" ${v[1]} >> tmp/parts2.tmp
 				};
 			};
@@ -310,20 +266,14 @@ version=033
 				};
 			[ ${#v[*]} -ne 6 ] &&
 				{
-				echo " -- WARNING : Bad parameter count in part "${v[0]}", please check partlist !" >> tmp/np.tmp #tmp/nl.tmp ;
-				echo " --           Missing parameter will be filled with keyword 'none'." >> tmp/np.tmp #tmp/nl.tmp ; # ins v031
-				#echo ${v[0]} "none" ${v[1]} ${v[3]} >> tmp/parts2.tmp
+				echo " -- WARNING : Bad parameter count in part "${v[0]}", please check partlist !" >> tmp/np.tmp
+				echo " --           Missing parameter will be filled with keyword 'none'." >> tmp/np.tmp
 				echo ${v[0]} "none" ${v[1]} >> tmp/parts2.tmp
 				};
 			};
 		partcount=$[partcount+1];
 	
-		#echo "reading part no." $partcount "name: "${v[0]};
 		echo -n -e "\r$partcount"
-
-		#write part, value, package into temp file
-#		[ "$partlist_exported_from_sch" = "no" ] && echo ${v[0]} ${v[1]} ${v[2]} >> tmp/parts2.tmp	# rm v031
-#		[ "$partlist_exported_from_sch" = "yes" ] && echo ${v[0]} ${v[1]} ${v[3]} >> tmp/parts2.tmp # rm v031
 
 	done < tmp/parts.tmp
 
@@ -334,8 +284,6 @@ version=033
 	echo 'EndSection' >> tmp/np.tmp
 	echo >> tmp/np.tmp
 	echo
-
-	#mv tmp/nl.tmp tmp/nl_cells.tmp
 
 	#copy to result file
 	mv tmp/parts2.tmp tmp/partlist.tmp
@@ -366,24 +314,17 @@ version=033
 				#find net name after string ":net", then write net name into np.tmp
 				[ "${n[0]}"  = ":net" ] &&
 				(
-					#echo
-					#echo -n -e "\r${n[1]}"
 					echo -n -e "\r$lp" # output progress
-					#echo ${n[1]}; 	#ver 1.0
-					echo >> tmp/np.tmp #tmp/np.tmp ;
+					echo >> tmp/np.tmp
 					#write net name into np.tmp
-					#echo " SubSection "${n[1]} "class ?" >> tmp/np.tmp #tmp/np.tmp ; # rm V2.3
-					echo " SubSection "${n[1]} "class NA" >> tmp/np.tmp #tmp/np.tmp ; # ins V2.3
+					echo " SubSection "$prefix_with_underscore${n[1]} "class NA" >> tmp/np.tmp
 					#write default class into np.tmp
-					#echo "NET_CLASS:=?" >> tmp/np.tmp #tmp/np.tmp ;
-					#echo "  --part class val pack pin port dir cell" >> tmp/np.tmp #tmp/np.tmp;
-					#echo "  ---------------------------------------------------------" >> tmp/np.tmp #tmp/np.tmp;
 				);
 
 				#find net name after string ":net", then write net name into np.tmp
 				[ "${n[0]}"  = ":end" ] &&
 				(
-					echo " EndSubSection" >> tmp/np.tmp #tmp/np.tmp ;
+					echo " EndSubSection" >> tmp/np.tmp
 				);
 		
 				#if first field is neither :net or :end, then read part from partlist
@@ -396,7 +337,7 @@ version=033
 						[ "${p[0]}" = "${n[0]}" ] &&  #on match
 							(
 							# write part name, part class, value, package, pin
-							echo "  "${n[0]}" NA "${p[1]}" "${p[2]}" "${n[1]}" " >> tmp/np.tmp;
+							echo "  "$prefix_with_underscore${n[0]}" NA "${p[1]}" "${p[2]}" "${n[1]}" " >> tmp/np.tmp;
 							break; #no need to further searching
 							);
 					done < tmp/partlist.tmp;
@@ -405,11 +346,7 @@ version=033
 			)
 	done < tmp/netlist.tmp
 
-	echo 'EndSection' >> tmp/np.tmp # tmp/nl.tmp
-
-	#copy to result file
-	#echo $overwrite_main_module
-	#echo $overwrite_sub_module
+	echo 'EndSection' >> tmp/np.tmp
 
 	echo
 	echo "----------------------------------------------------------------------"
@@ -418,23 +355,6 @@ version=033
 	echo "imported pins : " $pincount
 	echo
 
-
-# 	[ "$overwrite_main_module" = "no" -a "$overwrite_sub_module" = "no" ] && 
-# 		{
-# 		cp tmp/np.tmp skeleton.txt # ins V2.4
-# 		echo "NOTE: Please read "skeleton.txt" for warnings !" # ins V2.4
-# 		}
-# 
-# 	[ "$overwrite_main_module" = "yes" ] && 
-# 		{
-# 		mv tmp/np.tmp skeleton.txt
-# 		echo "NOTE: Please read "skeleton.txt" for warnings !"
-# 		}
-# 	[ "$overwrite_sub_module" = "yes" ] && 
-#         {
-# 		mv tmp/np.tmp skeleton_$sub_name.txt
-# 		echo "NOTE: Please read "skeleton_$sub_name.txt" for warnings !"
-#         }
 
 	[ "$target" = "main" ] &&
 		{
