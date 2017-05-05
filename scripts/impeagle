@@ -157,7 +157,7 @@ version=033
 
 
 
-	echo ' --' $netcount nets imported >> tmp/np.tmp
+	echo ' nets    :' $netcount >> tmp/np.tmp
 	echo ' --' Please verify net count against CAD tool ! >> tmp/np.tmp
 	echo "-----------------------------------------------------------------------------------" >> tmp/np.tmp
 	echo
@@ -278,8 +278,8 @@ version=033
 	done < tmp/parts.tmp
 
 
-	echo ' --' $partcount parts imported >> tmp/np.tmp
-	echo ' --' $pincount pins imported >> tmp/np.tmp
+	echo ' devices :' $partcount >> tmp/np.tmp
+	echo ' pins    :' $pincount >> tmp/np.tmp
 	echo ' --' please verify part count against CAD tool ! >> tmp/np.tmp
 	echo 'EndSection' >> tmp/np.tmp
 	echo >> tmp/np.tmp
