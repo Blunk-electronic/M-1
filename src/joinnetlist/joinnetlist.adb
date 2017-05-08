@@ -121,15 +121,22 @@ procedure joinnetlist is
 				identation => 4,
 				text => "net " & to_string(net_scratch.name), 
 				console => false);
-			
-			pin_cursor 	:= first(net_scratch.pin_list);
-			pin_scratch	:= element(pin_cursor);
-            write_pin;
-			while pin_cursor /= last(net_scratch.pin_list) loop
-				pin_cursor 	:= next(pin_cursor);
-				pin_scratch := element(pin_cursor);
+
+			if length(net_scratch.pin_list) > 0 then -- write pins if there are pins at all
+				pin_cursor 	:= first(net_scratch.pin_list);
+				pin_scratch	:= element(pin_cursor);
 				write_pin;
-			end loop;
+				while pin_cursor /= last(net_scratch.pin_list) loop
+					pin_cursor 	:= next(pin_cursor);
+					pin_scratch := element(pin_cursor);
+					write_pin;
+				end loop;
+			else
+				write_message (
+					file_handle => file_join_netlist_messages,
+					text => message_warning & "net " & to_string(net_scratch.name) & " has no pins !", 
+					console => false);
+			end if;
             put_line(row_separator_0 & section_mark.endsubsection);
 			new_line;
 		end write_net;
@@ -185,23 +192,31 @@ procedure joinnetlist is
 			lf => false,			
 			console => true);
 
-		net_cursor 	:= first(skeleton_main.netlist);
-		net_scratch := element(net_cursor);
-		write_net;
-		while net_cursor /= last(skeleton_main.netlist) loop
-			net_cursor 	:= next(net_cursor);
+		if length(skeleton_main.netlist) > 0 then -- write main module if it has nets at all
+			new_line(file_join_netlist_messages);
+			net_cursor 	:= first(skeleton_main.netlist);
 			net_scratch := element(net_cursor);
-
 			write_net;
-			net_counter := net_counter + 1;
+			while net_cursor /= last(skeleton_main.netlist) loop
+				net_cursor 	:= next(net_cursor);
+				net_scratch := element(net_cursor);
 
-			-- progess bar
-			if (net_counter rem 100) = 0 then 
-				put(standard_output,".");
-			end if;
-		end loop;
-		new_line(standard_output);
+				write_net;
+				net_counter := net_counter + 1;
 
+				-- progess bar
+				if (net_counter rem 100) = 0 then 
+					put(standard_output,".");
+				end if;
+			end loop;
+			new_line(standard_output);
+		else
+			new_line(file_join_netlist_messages);
+			write_message (
+				file_handle => file_join_netlist_messages,
+				text => message_warning & "main module has no nets !",
+				console => true);
+		end if;
 
 		
 		-- write submodule
@@ -213,23 +228,31 @@ procedure joinnetlist is
 			lf => false,
 			console => true);
 
-		net_cursor 	:= first(skeleton_sub.netlist);
-		net_scratch := element(net_cursor);
-		write_net;
-		while net_cursor /= last(skeleton_sub.netlist) loop
-			net_cursor 	:= next(net_cursor);
+		if length(skeleton_sub.netlist) > 0 then -- write submodule if it has nets at all		
+			new_line(file_join_netlist_messages);
+			net_cursor 	:= first(skeleton_sub.netlist);
 			net_scratch := element(net_cursor);
-
 			write_net;
-			net_counter := net_counter + 1;
+			while net_cursor /= last(skeleton_sub.netlist) loop
+				net_cursor 	:= next(net_cursor);
+				net_scratch := element(net_cursor);
 
-			-- progess bar
-			if (net_counter rem 100) = 0 then 
-				put(standard_output,".");
-			end if;
-		end loop;
-		new_line(standard_output);
+				write_net;
+				net_counter := net_counter + 1;
 
+				-- progess bar
+				if (net_counter rem 100) = 0 then 
+					put(standard_output,".");
+				end if;
+			end loop;
+			new_line(standard_output);
+		else
+			new_line(file_join_netlist_messages);
+			write_message (
+				file_handle => file_join_netlist_messages,
+				text => message_warning & "submodule has no nets !",
+				console => true);
+		end if;
 
 
 		
@@ -322,6 +345,8 @@ begin
 		set_exit_status(failure);
 		set_output(standard_output);
 
+		new_line;
+		new_line(file_join_netlist_messages);
 		write_message (
 			file_handle => file_join_netlist_messages,
 			text => message_error & " at program position " & natural'image(prog_position),
