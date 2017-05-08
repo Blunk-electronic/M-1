@@ -844,8 +844,8 @@ procedure impbsdl is
 						else -- end of port reached
 							write_message (
 								file_handle => file_import_bsdl_messages,
-								identation => 5,
-								text => trim(to_string(port),left));
+								identation => 6,
+								text => trim_space_in_string(trim(to_string(port),left)));
 
 							format_port(trim(to_string(port),left));
 							port := to_bounded_string(""); -- clean up for next port
@@ -1578,12 +1578,20 @@ begin
 
  	prog_position	:= 130;
 	close(file_database_preliminary);
+	set_output(standard_output);	
 
 	prog_position	:= 140;	
-	write_log_footer;
+	write_message (
+		file_handle => file_import_bsdl_messages,
+		text => "copying preliminary " & text_identifier_database & " to " & to_string(name_file_database),
+		console => false);
 
+	prog_position	:= 150;
 	copy_file(name_file_database_preliminary, to_string(name_file_database));
 
+	prog_position	:= 160;
+	write_log_footer;
+	
 	exception when event: others =>
 		set_exit_status(failure);
 		set_output(standard_output);
