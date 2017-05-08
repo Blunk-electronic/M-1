@@ -164,10 +164,23 @@ procedure mkoptions is
 		first	: positive := 1; -- CS: This does not allow pin name "0"
 		last	: positive; -- CS: limit pin number to something reasonable
 	end record;
+
+	keyword_pin_range	: constant string (1..9) := "pin_range";
+	keyword_to			: constant string (1..2) := "to";
+
+	procedure write_example_pin_range is
+	begin
+		write_message (
+			file_handle => file_mkoptions_messages,
+			text => message_error & "keyword " & keyword_pin_range & " expected !",
+			console => true);
+		raise constraint_error;
+	end write_example_pin_range;
 	
 	package type_list_of_pin_names is new vectors ( index_type => positive, element_type => type_pin_name.bounded_string);
 	use type_list_of_pin_names;
-	type type_connector_pair (with_range : boolean := false) is record
+
+	type type_connector_pair_base is tagged record
 		name_a			: type_device_name.bounded_string;
  		name_b			: type_device_name.bounded_string;
 		pin_ct_a		: natural := 0;
@@ -175,6 +188,17 @@ procedure mkoptions is
 		mapping			: type_connector_mapping := one_to_one;
 		processed_pins_a: type_list_of_pin_names.vector;
 		processed_pins_b: type_list_of_pin_names.vector;
+	end record;
+	
+-- 	type type_connector_pair (with_range : boolean := false) is new type_connector_pair_base with record
+	type type_connector_pair (with_range : boolean) is new type_connector_pair_base with record	
+-- 		name_a			: type_device_name.bounded_string;
+--  		name_b			: type_device_name.bounded_string;
+-- 		pin_ct_a		: natural := 0;
+-- 		pin_ct_b		: natural := 0;
+-- 		mapping			: type_connector_mapping := one_to_one;
+-- 		processed_pins_a: type_list_of_pin_names.vector;
+-- 		processed_pins_b: type_list_of_pin_names.vector;
 		case with_range is
 			when true => pin_range : type_connector_pin_range;
 			when false => null;
@@ -182,7 +206,7 @@ procedure mkoptions is
 -- 		exempted_pins_a	: type_list_of_pin_names.vector; -- CS: for pins used for special purposes like shielding
 -- 		exempted_pins_b	: type_list_of_pin_names.vector;
 	end record;
-	package type_list_of_connector_pairs is new vectors ( index_type => positive, element_type => type_connector_pair);
+	package type_list_of_connector_pairs is new indefinite_vectors ( index_type => positive, element_type => type_connector_pair);
 	use type_list_of_connector_pairs;
 	list_of_connector_pairs : type_list_of_connector_pairs.vector;
 	length_list_of_connector_pairs : count_type;
@@ -485,14 +509,15 @@ procedure mkoptions is
 		section_connectors_entered	: boolean := false;
 		section_bridges_entered 	: boolean := false;
 		
-		conpair_preliminary 		: type_connector_pair;
-		bridge_preliminary			: type_bridge_preliminary;
-		bridge_is_array				: boolean := false;
+		conpair_preliminary 			: type_connector_pair_base;
+		conpair_pin_range_preliminary	: type_connector_pin_range;
+		bridge_preliminary				: type_bridge_preliminary;
+		bridge_is_array					: boolean := false;
 
-		bridge_valid				: boolean := false; -- Set to false if mkoptions.conf contains a bridge device
-														-- that does exist in database netlist.
-														-- If bridge device is not valid, it will not be added
-														-- to list_of_bridges.
+		bridge_valid					: boolean := false; -- Set to false if mkoptions.conf contains a bridge device
+															-- that does exist in database netlist.
+															-- If bridge device is not valid, it will not be added
+															-- to list_of_bridges.
 
 		procedure append_bridge is
 		-- Depending on the flag bridge_is_array we either append a bridge device with a list of sub-bridges (like 1-8, 2-7)
@@ -672,10 +697,49 @@ procedure mkoptions is
 								file_handle => file_mkoptions_messages,
 								identation => 1, 
 								text => "mapping " & type_connector_mapping'image(conpair_preliminary.mapping),
+								lf => false,
 								console => false);
 
-							-- Connector pair data complete. Append to list_of_connector_pairs.
-							append(list_of_connector_pairs,conpair_preliminary);
+							-- If a pin range is provided in 4th field, read it and report in logfile.
+							-- example: carrier_X1 X1 cross_pairwise pin_range 1 to 150
+							if field_count > 3 then
+								if get_field_from_line(to_string(line),4) = keyword_pin_range then
+									if field_count = 7 then
+										if get_field_from_line(to_string(line),6) = keyword_to then
+											conpair_pin_range_preliminary.first := positive'value(get_field_from_line(to_string(line),5));
+											conpair_pin_range_preliminary.last  := positive'value(get_field_from_line(to_string(line),7));
+
+											write_message (
+												file_handle => file_mkoptions_messages,
+												identation => 1, 
+												text => keyword_pin_range & " first" 
+													& positive'image(conpair_pin_range_preliminary.first)
+													& " last" 
+													& positive'image(conpair_pin_range_preliminary.last),
+												--lf => false,
+												console => false);
+
+											-- Connector pair with pin range complete. Append to list_of_connector_pairs:
+											append(list_of_connector_pairs, ( conpair_preliminary with
+												with_range => true,
+												pin_range => conpair_pin_range_preliminary
+												));
+										else
+											write_example_pin_range;
+										end if;
+									else
+										write_example_pin_range;
+									end if;
+								else
+									write_example_pin_range;
+								end if;
+							else
+								new_line(file_mkoptions_messages);
+							
+								-- Connector pair without range complete. Append to list_of_connector_pairs:
+								append(list_of_connector_pairs, ( conpair_preliminary with with_range => false));
+							end if;
+							
 						else
 							-- put a final linebreak at end of line in logfile
 							new_line (file_mkoptions_messages);
@@ -1064,9 +1128,9 @@ procedure mkoptions is
 	function is_pin_of_connector (pin : in m1_database.type_pin_base) return type_result_of_connector_query is
 	-- Returns true if pin is part of a connector pair.
 	-- When true, the return contains the device and pin of the opposide connector of the pair.
-		cp : type_connector_pair;
+		--cp : type_connector_pair;
 
-		function in_range return boolean is
+		function in_range (cp : in type_connector_pair) return boolean is
 		-- Tests if pin.device_pin_name is withing range of pins of cp.
 		-- Returns false if outside range or if pin name is not a natural.
 		-- CS: This implies that pin ranging does not support pin names such as "A4" or "F1"
@@ -1099,51 +1163,51 @@ procedure mkoptions is
 	begin -- is_pin_of_connector
 		if length_list_of_connector_pairs > 0 then -- do this test if there are connector pairs at all
 			for i in 1..length_list_of_connector_pairs loop
-				cp := element(list_of_connector_pairs, positive(i));
+				--cp := element(list_of_connector_pairs, positive(i));
 
-				if pin.device_name = cp.name_a then -- if device name A matches
+				if pin.device_name = element(list_of_connector_pairs, positive(i)).name_a then -- if device name A matches
 
 					-- if connector pair uses pin range, check range
-					if cp.with_range then 
-						if in_range then
+					if element(list_of_connector_pairs, positive(i)).with_range then 
+						if in_range(element(list_of_connector_pairs, positive(i))) then
 							return (
 								is_connector_pin 	=> true,
 								side				=> B,
-								device_name			=> cp.name_b,
+								device_name			=> element(list_of_connector_pairs, positive(i)).name_b,
 		-- 						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
-								device_pin_name		=> connector_pin_by_mapping(pair => cp, pin => pin)
+								device_pin_name		=> connector_pin_by_mapping(pair => element(list_of_connector_pairs, positive(i)), pin => pin)
 								);
 						end if;
 					else					
 						return (
 							is_connector_pin 	=> true,
 							side				=> B,
-							device_name			=> cp.name_b,
+							device_name			=> element(list_of_connector_pairs, positive(i)).name_b,
 	-- 						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
-							device_pin_name		=> connector_pin_by_mapping(pair => cp, pin => pin)
+							device_pin_name		=> connector_pin_by_mapping(pair => element(list_of_connector_pairs, positive(i)), pin => pin)
 							);
 					end if;
 				
-				elsif pin.device_name = cp.name_b then -- if device name B matches
+				elsif pin.device_name = element(list_of_connector_pairs, positive(i)).name_b then -- if device name B matches
 
 					-- if connector pair uses pin range, check range
-					if cp.with_range then
-						if in_range then
+					if element(list_of_connector_pairs, positive(i)).with_range then
+						if in_range(element(list_of_connector_pairs, positive(i))) then
 							return (
 								is_connector_pin 	=> true,
 								side				=> A,
-								device_name			=> cp.name_a,
+								device_name			=> element(list_of_connector_pairs, positive(i)).name_a,
 		-- 						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
-								device_pin_name		=> connector_pin_by_mapping(pair => cp, pin => pin)
+								device_pin_name		=> connector_pin_by_mapping(pair => element(list_of_connector_pairs, positive(i)), pin => pin)
 								);
 						end if;
 					else
 						return (
 							is_connector_pin 	=> true,
 							side				=> A,
-							device_name			=> cp.name_a,
+							device_name			=> element(list_of_connector_pairs, positive(i)).name_a,
 	-- 						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
-							device_pin_name		=> connector_pin_by_mapping(pair => cp, pin => pin)
+							device_pin_name		=> connector_pin_by_mapping(pair => element(list_of_connector_pairs, positive(i)), pin => pin)
 							);
 					end if;
 					
@@ -2051,7 +2115,7 @@ begin
  	put_line(text_identifier_database & "       : " & to_string(name_file_database));
 
 	prog_position	:= 20;
-	name_file_options:= to_bounded_string(argument(2));
+	name_file_options := to_bounded_string(argument(2));
 	put_line ("options file   : " & to_string(name_file_options));
           
 	prog_position	:= 25;
