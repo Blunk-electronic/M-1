@@ -229,7 +229,9 @@ procedure impprotel is
 					file_handle => file_import_cad_messages,
 					text => message_warning & " no devices found !",
 					console => true);
+				write_advise_dos2unix;
 			end if;
+			
 			return variants_found;
 		end detect_assembly_variants;
 		
@@ -1037,6 +1039,8 @@ begin
 			prog_position	:= 80;
 			delete_file(name_file_skeleton);
 		end if;
+
+		set_exit_status(failure);
 	else
 		prog_position	:= 90;
 		write_skeleton;
