@@ -272,14 +272,14 @@ procedure bsmcl is
 				output_file_descriptor => standout,
 				return_code            => result
 				);
-
-			if result = 0 then
-				advise_next_step_cad_import;
-			else
-				put_message_on_failed_cad_import(format_cad);
-			end if;
+		end if;
+		
+		if result = 0 then
+			advise_next_step_cad_import;
+		else
+			put_message_on_failed_cad_import(format_cad);
+		end if;
 			
-		end if; -- if no partlist given
 	end launch_netlist_importer;	
 
 begin
