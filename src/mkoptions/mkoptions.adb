@@ -172,8 +172,16 @@ procedure mkoptions is
 	begin
 		write_message (
 			file_handle => file_mkoptions_messages,
-			text => message_error & "keyword " & keyword_pin_range & " expected !",
+			text => message_error & "Pin range specification invalid !",
 			console => true);
+
+		write_message (
+			file_handle => file_mkoptions_messages,
+			text => "Example: module_a_X1 module_b_X1 "
+				& to_lower(type_connector_mapping'image(cross_pairwise)) & row_separator_0 
+				& keyword_pin_range & " pin_range 1 " & keyword_to & " 40",
+			console => true);
+
 		raise constraint_error;
 	end write_example_pin_range;
 	
@@ -1131,7 +1139,7 @@ procedure mkoptions is
 		--cp : type_connector_pair;
 
 		function in_range (cp : in type_connector_pair) return boolean is
-		-- Tests if pin.device_pin_name is withing range of pins of cp.
+		-- Tests if pin.device_pin_name is within range of pins of given connector pair.
 		-- Returns false if outside range or if pin name is not a natural.
 		-- CS: This implies that pin ranging does not support pin names such as "A4" or "F1"
 		-- CS: Those pins result in a warning message and return of value FALSE.
