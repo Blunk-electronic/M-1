@@ -68,6 +68,7 @@ procedure impprotel is
 	use type_universal_string;
 	use type_name_file_netlist;
 	use type_name_file_list_of_assembly_variants;
+	use type_name_file_skeleton_submodule;
 	
 	-- DEVICES
 	device_count_mounted : natural := 0; -- for statistics
@@ -663,7 +664,7 @@ procedure impprotel is
 				close(file_variants);
 
 				put_line("IMPORTANT: Mark active assembly variants in " 
-					& compose(name_directory_cad,to_string(name_file_list_of_assembly_variants)) & " !");
+					& to_string(name_file_list_of_assembly_variants) & " !");
 				put_line("           Then run the import again !");
 
 				list_of_variants_created := true; -- This means to skip writing the skeleton and exit prematurely.
@@ -789,13 +790,14 @@ procedure impprotel is
 					text => "creating skeleton for submodule " & to_string(target_module_prefix) & " ...",
 					console => false);
 
-				target_module_prefix := to_bounded_string(argument(3));
-				--put_line("prefix        : " & to_string(target_module_prefix));
-				create (file => file_skeleton, mode => out_file, name => compose( 
-							name => base_name(name_file_skeleton) & "_" & 
-									to_string(target_module_prefix),
-							extension => file_extension_text)
-						);
+-- 				target_module_prefix := to_bounded_string(argument(3));
+-- 
+-- 				name_file_skeleton_submodule := to_bounded_string(compose( name => 
+-- 					base_name(name_file_skeleton) & "_" & 
+-- 					to_string(target_module_prefix),
+-- 					extension => file_extension_text));
+
+				create (file => file_skeleton, mode => out_file, name => to_string(name_file_skeleton_submodule));
 		end case;
 
 		write_message (
@@ -1015,10 +1017,20 @@ begin
 	put_line("netlist       : " & to_string(name_file_cad_netlist));
 	cad_import_target_module := type_cad_import_target_module'value(argument(2));
 	put_line("target module : " & type_cad_import_target_module'image(cad_import_target_module));
-
+	
 	prog_position	:= 40;
  	write_log_header(version);
 
+	if cad_import_target_module = m1_import.sub then
+		target_module_prefix := to_bounded_string(argument(3));
+		put_line("prefix        : " & to_string(target_module_prefix));
+		
+		name_file_skeleton_submodule := to_bounded_string(compose( name => 
+			base_name(name_file_skeleton) & "_" & 
+			to_string(target_module_prefix),
+			extension => file_extension_text));
+	end if;
+	
 	prog_position	:= 50;	
 	read_netlist;
 
@@ -1029,17 +1041,34 @@ begin
 	-- If there was a list already, we create a new skeleton.
 	prog_position	:= 70;	
 	if list_of_variants_created then
-		if exists(name_file_skeleton) then
-			
-			write_message (
-				file_handle => file_import_cad_messages,
-				text => "deleting stale skeleton ...",
-				console => false);
 
-			prog_position	:= 80;
-			delete_file(name_file_skeleton);
-		end if;
+		-- depending on the cad_import_target_module delete the skeleton of main or submodule
+		case cad_import_target_module is
+			when m1_import.main =>
+				prog_position	:= 80;
+				if exists(name_file_skeleton) then
 
+					write_message (
+						file_handle => file_import_cad_messages,
+						text => "deleting stale " & name_file_skeleton & " ...",
+						console => true);
+
+					delete_file(name_file_skeleton);
+				end if;
+
+			when m1_import.sub =>
+				prog_position	:= 85;
+				if exists(to_string(name_file_skeleton_submodule)) then
+
+					write_message (
+						file_handle => file_import_cad_messages,
+						text => "deleting stale " & to_string(name_file_skeleton_submodule) & " ...",
+						console => true);
+					
+					delete_file(to_string(name_file_skeleton_submodule));
+				end if;
+		end case;
+				
 		set_exit_status(failure);
 	else
 		prog_position	:= 90;
