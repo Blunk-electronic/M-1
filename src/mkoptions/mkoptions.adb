@@ -79,6 +79,11 @@ procedure mkoptions is
 	keyword_allowed		: constant string (1..7) := "allowed";
 	
 	-- A cluster is a group of nets with the same cluster id.
+	text_bs_cluster			: constant string (1..13) := "bscan cluster";
+	text_single_bs_net		: constant string (1..16) := "single bscan net";	
+	text_non_bs_cluster		: constant string (1..17) := "non-bscan cluster";	
+	text_single_non_bs_net	: constant string (1..20) := "single non-bscan net";
+	
  	type type_cluster is record
 		bs_capable		: boolean := false;
 		nets			: type_list_of_nets.vector;
@@ -1182,7 +1187,6 @@ procedure mkoptions is
 								is_connector_pin 	=> true,
 								side				=> B,
 								device_name			=> element(list_of_connector_pairs, positive(i)).name_b,
-		-- 						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
 								device_pin_name		=> connector_pin_by_mapping(pair => element(list_of_connector_pairs, positive(i)), pin => pin)
 								);
 						end if;
@@ -1191,7 +1195,6 @@ procedure mkoptions is
 							is_connector_pin 	=> true,
 							side				=> B,
 							device_name			=> element(list_of_connector_pairs, positive(i)).name_b,
-	-- 						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
 							device_pin_name		=> connector_pin_by_mapping(pair => element(list_of_connector_pairs, positive(i)), pin => pin)
 							);
 					end if;
@@ -1205,7 +1208,6 @@ procedure mkoptions is
 								is_connector_pin 	=> true,
 								side				=> A,
 								device_name			=> element(list_of_connector_pairs, positive(i)).name_a,
-		-- 						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
 								device_pin_name		=> connector_pin_by_mapping(pair => element(list_of_connector_pairs, positive(i)), pin => pin)
 								);
 						end if;
@@ -1214,7 +1216,6 @@ procedure mkoptions is
 							is_connector_pin 	=> true,
 							side				=> A,
 							device_name			=> element(list_of_connector_pairs, positive(i)).name_a,
-	-- 						device_pin_name		=> pin.device_pin_name -- CS: provide a function for other mappings
 							device_pin_name		=> connector_pin_by_mapping(pair => element(list_of_connector_pairs, positive(i)), pin => pin)
 							);
 					end if;
@@ -1650,7 +1651,6 @@ procedure mkoptions is
 
 		primary_net_found	: boolean := false;
 		name_of_primary_net	: type_net_name.bounded_string;
-		text_bs_cluster		: constant string (1..13) := "bscan cluster";
 	begin -- write_bs_clusters
 		new_line(file_mkoptions_messages);		
 		write_message (
@@ -1716,12 +1716,22 @@ procedure mkoptions is
 
 									-- Save name of primary net. Required for sorting secondary nets.
 									name_of_primary_net := net.name;
-									
-									put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+
+									-- write net header like "Section ADR23 class NA"
+									put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
 										& netlist_keyword_header_class & row_separator_0
 										& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
-										& row_separator_0 & comment_mark & row_separator_0 & text_bs_cluster
-										& row_separator_0 & keyword_allowed & row_separator_0
+										& row_separator_0 & comment_mark);
+									
+									-- write supplementary information like " -- bscan cluster"
+									if length(cluster.nets) > 1 then
+										put(text_bs_cluster);
+									else
+										put(text_single_bs_net);
+									end if;
+
+									-- write allowed class
+									put_line(row_separator_0 & keyword_allowed & row_separator_0
 										& type_net_class'image(DH) & row_separator_0
 										& type_net_class'image(DL) & row_separator_0
 										& type_net_class'image(NR));
@@ -1774,13 +1784,21 @@ procedure mkoptions is
 
 										-- Save name of primary net. Required for sorting secondary nets.
 										name_of_primary_net := net.name;
-										
-										put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+
+										-- write net header like "Section ADR23 class NA"
+										put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
 											& netlist_keyword_header_class & row_separator_0
 											& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
-											& row_separator_0 & comment_mark & text_bs_cluster
-											);
+											& row_separator_0 & comment_mark);
 
+										-- write supplementary information like " -- bscan cluster"
+										if length(cluster.nets) > 1 then
+											put(text_bs_cluster);
+										else
+											put(text_single_bs_net);
+										end if;
+										new_line;
+										
 										write_net_content(net);
 										primary_net_found := true;
 										exit loop_nets_disable_spec;
@@ -1831,11 +1849,21 @@ procedure mkoptions is
 										-- Save name of primary net. Required for sorting secondary nets.
 										name_of_primary_net := net.name;
 
-										put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+										-- write net header like "Section ADR23 class NA"
+										put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
 											& netlist_keyword_header_class & row_separator_0
 											& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
-											& comment_mark & text_bs_cluster
-											& row_separator_0 & keyword_allowed & row_separator_0
+											& row_separator_0 & comment_mark);
+
+										-- write supplementary information like " -- bscan cluster"
+										if length(cluster.nets) > 1 then
+											put(text_bs_cluster);
+										else
+											put(text_single_bs_net);
+										end if;
+
+										-- write allowed class
+										put_line(row_separator_0 & keyword_allowed & row_separator_0
 											& type_net_class'image(EH) & row_separator_0
 											& type_net_class'image(EL));
 
@@ -1859,7 +1887,7 @@ procedure mkoptions is
 					raise constraint_error;
 				end if;
 
-				-- If the cluster has more than one net, write remaining nets a secondary nets:
+				-- If the cluster has more than one net, write remaining nets as secondary nets:
 				if length(cluster.nets) > 1 then
 
 					write_message (
@@ -1870,7 +1898,7 @@ procedure mkoptions is
 					
 					-- write header of section secondary nets
 					put_line(row_separator_0 & section_mark.subsection 
-							& row_separator_0 & netlist_keyword_header_secondary_nets);
+							& row_separator_0 & options_keyword_secondary_nets);
 
 					for i in 1..length(cluster.nets) loop
 						net := element(cluster.nets, positive(i));
@@ -1903,8 +1931,7 @@ procedure mkoptions is
 	end write_bs_clusters;
 
 	procedure write_single_bs_nets is
-		net					: type_net;
-		text_single_bs_net	: constant string (1..16) := "single bscan net";
+		net : type_net;
 	begin -- write_single_bs_nets
 		new_line(file_mkoptions_messages);
 		write_message (
@@ -1966,7 +1993,6 @@ procedure mkoptions is
 		cluster				: type_cluster;
 		net 				: type_net;
 		name_of_primary_net	: type_net_name.bounded_string;
-		text_non_bs_cluster	: constant string (1..17) := "non-bscan cluster";
 	begin -- write_non_bs_clusters
 		new_line(file_mkoptions_messages);
 		write_message (
@@ -1991,12 +2017,20 @@ procedure mkoptions is
 				
 				-- Save name of primary net. Required for sorting secondary nets.
 				name_of_primary_net := net.name;
-				
-				put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+
+				-- write net header like "Section ADR23 class NA"
+				put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
 					& netlist_keyword_header_class & row_separator_0
 					& type_net_class'image(net_class_default)
-					& row_separator_0 & comment_mark & text_non_bs_cluster
-					);
+					& row_separator_0 & comment_mark);
+
+				-- write supplementary information like " -- non-bscan cluster"
+				if length(cluster.nets) > 1 then
+					put(text_non_bs_cluster);
+				else
+					put(text_single_non_bs_net);
+				end if;
+				new_line;
 				
 				write_net_content(net);
 
@@ -2009,9 +2043,9 @@ procedure mkoptions is
 						text => "secondary nets ...",
 						console => false);
 					
-					-- write header of section secondary nets
+					-- write header of section secondary nets like "SubSection secondary_nets"
 					put_line(row_separator_0 & section_mark.subsection 
-							& row_separator_0 & netlist_keyword_header_secondary_nets);
+							& row_separator_0 & options_keyword_secondary_nets);
 
 					for i in 1..length(cluster.nets) loop
 						net := element(cluster.nets, positive(i));
@@ -2023,6 +2057,7 @@ procedure mkoptions is
 								text => to_string(net.name),
 								console => false);
 							
+							-- write secondary net like "Net A12"
 							put_line(2*row_separator_0 & options_keyword_net & row_separator_0 & to_string(net.name));
 
 							write_net_content(net);
@@ -2045,8 +2080,7 @@ procedure mkoptions is
 
 	procedure write_single_non_bs_nets is
 	-- Writes single non bscan nets in options file.
-		net						: type_net;
-		text_single_non_bs_net	: constant string (1..20) := "single non-bscan net";
+		net : type_net;
 	begin
 		new_line(file_mkoptions_messages);		
 		write_message (
