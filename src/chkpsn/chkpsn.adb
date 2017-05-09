@@ -2198,7 +2198,9 @@ procedure chkpsn is
 				put_line(column_separator_0);
 				put_line(row_separator_0 & section_mark.subsection & row_separator_0 & to_string(o.name) & row_separator_0 
 					& text_udb_class & row_separator_0 & type_net_class'image(o.class));
-
+				
+				put_line(2 * row_separator_0 & comment_mark & m1_database.pin_legend);
+				
 				write_message (
 					file_handle => file_chkpsn_messages,
 					identation => 2,
@@ -2206,8 +2208,6 @@ procedure chkpsn is
 					console => false);
 
 				-- this is a primary net. it will be searched for in the netlist and its content dumped into the preliminary database
-				put_line("  -- name class value package pin"
-						 & " [ port | in_cell: id type func safe | out_cell: id type func safe [ ctrl_cell id disable result ]]");
 				
 -- 				dump_net_content( -- CS: send full type_net
 -- 					name => o.name, 
