@@ -269,6 +269,8 @@ procedure mknets is
 					 text_udb_class & row_separator_0 & type_net_class'image(net_class_default)
 					);
 
+			put_line(2 * row_separator_0 & comment_mark & m1_database.pin_legend);
+			
 			write_message (
 				file_handle => file_mknets_messages,
 				identation => 2,
