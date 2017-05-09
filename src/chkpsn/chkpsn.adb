@@ -101,7 +101,7 @@ procedure chkpsn is
 	end record;
 	package type_list_of_options_nets is new indefinite_vectors (index_type => positive, element_type => type_options_net);
 	use type_list_of_options_nets;
-	list_of_options_nets : type_list_of_options_nets.vector;
+	list_of_options_nets : type_list_of_options_nets.vector; -- all nets of options file go into this list
 
 	function control_cell_in_enable_state_by_any_cell_list(
 	-- searches cell lists for given control cell and returns false if cell is not in enable state
@@ -2730,8 +2730,8 @@ procedure chkpsn is
 									text => "changing net class ...",
 									console => false);
 
-								-- ask if the primary net (incl. secondary nets) may become member of class specified in options file
-								-- if class request can be fulfilled, add net to options net list
+								-- Ask if the primary net (incl. secondary nets) may become member of class specified in options file.
+								-- If class request can be fulfilled, add net to options net list.
 								if query_render_net_class ( -- CS: skip query if class is not to be changed ?
 									primary_net_name => name_of_current_primary_net,
 									primary_net_class => class_of_current_primary_net,
@@ -2987,16 +2987,17 @@ begin
 	set_output(file_database_preliminary);
 	write_new_statistics;
 	close(file_database_preliminary);
-
+	set_output(standard_output);
+	
 	-- overwrite now useless old data base with temporarily data base
 	prog_position := 200;
+	write_message (
+		file_handle => file_chkpsn_messages,
+		text => "copying preliminary " & text_identifier_database & " to " & to_string(name_file_database),
+		console => false);
  	copy_file(name_file_database_preliminary, to_string(name_file_database_backup));
 	
-	-- clean up tmp directory
--- 	prog_position := 210;	
--- 	delete_file(to_string(name_file_database));
-
-	prog_position	:= 220;	
+	prog_position	:= 210;
 	write_log_footer;
 	
 	exception when event: others =>
@@ -3005,7 +3006,7 @@ begin
 
 		write_message (
 			file_handle => file_chkpsn_messages,
-			text => message_error & " at program position " & natural'image(prog_position),
+			text => message_error & "at program position " & natural'image(prog_position),
 			console => true);
 	
 		if is_open(file_database_preliminary) then
