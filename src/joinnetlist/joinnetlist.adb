@@ -266,22 +266,25 @@ procedure joinnetlist is
 begin
 	action := join_netlist;
 
-	new_line;
+	-- create message/log file
+ 	write_log_header(version);
+
 	put_line(to_upper(name_module_join_netlist) & " version " & version);
 	put_line("===============================");
+
+	direct_messages; -- directs messages to logfile. required for procedures and functions in external packages
+
 	prog_position	:= 10;	
 	name_file_skeleton_submodule := to_bounded_string(argument(1));
-	put_line("submodule      : " & to_string(name_file_skeleton_submodule));
 
-	
-	-- recreate an empty tmp directory
+	write_message (
+		file_handle => file_join_netlist_messages,
+		text => "submodule " & to_string(name_file_skeleton_submodule),
+		console => true);
+
 	prog_position	:= 30;	
 	create_temp_directory;
 
-	-- create message/log file
-	prog_position	:= 40;	
- 	write_log_header(version);
-	
 	prog_position	:= 50;	
 	if exists(to_string(name_file_skeleton_submodule)) then
 		write_message (
@@ -343,13 +346,12 @@ begin
 	
 	exception when event: others =>
 		set_exit_status(failure);
-		set_output(standard_output);
 
-		new_line;
-		new_line(file_join_netlist_messages);
+-- 		new_line;
+-- 		new_line(file_join_netlist_messages);
 		write_message (
 			file_handle => file_join_netlist_messages,
-			text => message_error & " at program position " & natural'image(prog_position),
+			text => message_error & "at program position " & natural'image(prog_position),
 			console => true);
 
 		if is_open(file_skeleton) then
