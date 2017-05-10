@@ -1517,28 +1517,29 @@ procedure impbsdl is
 
 begin
 	action := import_bsdl; -- this causes the database parser to stop after section "scanpath_configuration"
-	
-	new_line;
-	put_line(to_upper(name_module_importer_bsdl) & " version " & version);
-	put_line("===============================");
-	prog_position	:= 10;
- 	name_file_database := to_bounded_string(argument(1));
- 	put_line(text_identifier_database & "       : " & to_string(name_file_database));
-
-	prog_position	:= 30;
-	create_temp_directory;
 
 	-- create message/log file
 	prog_position	:= 35;	
 	write_log_header(version);
 	
-	-- write name of database in logfile
-	put_line(file_import_bsdl_messages, text_identifier_database 
-		 & row_separator_0
-		 & to_string(name_file_database));
+	new_line;
+	put_line(to_upper(name_module_importer_bsdl) & " version " & version);
+	put_line("===============================");
+
+	direct_messages; -- directs messages to logfile. required for procedures and functions in external packages
+
+	prog_position	:= 10;
+ 	name_file_database := to_bounded_string(argument(1));
+
+	write_message (
+		file_handle => file_import_bsdl_messages,
+		text => text_identifier_database & row_separator_0 & to_string(name_file_database),
+		console => true);
+
+	prog_position	:= 30;
+	create_temp_directory;
 	
  	prog_position	:= 40;
-
 	-- CS: set integrity check level
 	read_uut_database;
 	
@@ -1553,15 +1554,25 @@ begin
 -- 		);
 
 	-- create premilinary database (containing scanpath_configuration only)
+	prog_position	:= 60;
+	write_message (
+		file_handle => file_import_bsdl_messages,
+		text => "creating preliminary " & text_identifier_database 
+			& row_separator_0 & name_file_database_preliminary & " ...",
+		console => false);
+
 	prog_position	:= 70;
 	create( 
 		file => file_database_preliminary,
 		mode => out_file,
 		name => name_file_database_preliminary
 		);
+
 	prog_position	:= 80;	
-	--open(file_database_preliminary,out_file,name_file_database_preliminary);
+	-- From now on, all messages go into file_import_bsdl_messages. 
+	-- Regular puts go into file_database_preliminary.
 	set_output(file_database_preliminary);
+
 	prog_position	:= 90;		
 	copy_scanpath_configuration;
 
@@ -1572,33 +1583,32 @@ begin
 	read_bsld_models;
 
 	prog_position	:= 120;
-
 	-- write section registers footer
  	put_line(section_mark.endsection); new_line;
 
  	prog_position	:= 130;
+	write_message (
+		file_handle => file_import_bsdl_messages,
+		text => "closing preliminary " & text_identifier_database & " ...",
+		console => false);
 	close(file_database_preliminary);
-	set_output(standard_output);	
 
 	prog_position	:= 140;	
 	write_message (
 		file_handle => file_import_bsdl_messages,
 		text => "copying preliminary " & text_identifier_database & " to " & to_string(name_file_database),
 		console => false);
-
-	prog_position	:= 150;
 	copy_file(name_file_database_preliminary, to_string(name_file_database));
 
-	prog_position	:= 160;
+	prog_position	:= 150;
 	write_log_footer;
 	
 	exception when event: others =>
 		set_exit_status(failure);
-		set_output(standard_output);
 
 		write_message (
 			file_handle => file_import_bsdl_messages,
-			text => message_error & " at program position " & natural'image(prog_position),
+			text => message_error & "at program position " & natural'image(prog_position),
 			console => true);
 	
 		if is_open(file_database_preliminary) then
@@ -1629,5 +1639,5 @@ begin
 					console => true);
 		end case;
 
-			write_log_footer;
+		write_log_footer;
 end impbsdl;
