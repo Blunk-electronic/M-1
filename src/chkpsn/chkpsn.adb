@@ -31,7 +31,9 @@
 --		
 
 with ada.text_io;				use ada.text_io;
+with ada.characters;			use ada.characters;
 with ada.characters.handling; 	use ada.characters.handling;
+with ada.characters.latin_1;	use ada.characters.latin_1;
 with ada.strings.bounded; 		use ada.strings.bounded;
 with ada.strings.fixed; 		use ada.strings.fixed;
 with ada.strings; 				use ada.strings;
@@ -2808,12 +2810,12 @@ procedure chkpsn is
 		line_counter : natural := 0;
 	begin	
 		write_message (
-			file_handle => file_chkpsn_messages,
+			file_handle => current_output,
 			text => "rebuilding preliminary " & text_identifier_database & " ...", 
 			console => true);
 
 		write_message (
-			file_handle => file_chkpsn_messages,
+			file_handle => current_output,
 			identation => 1,
 			text => "copying scanpath configuration and registers ...", 
 			console => false);
@@ -2832,7 +2834,7 @@ procedure chkpsn is
 			end if;
 		end loop;
 
-		close(file_database);
+		close(file_database); -- we no longer need the old database file
 	end copy_scanpath_configuration_and_registers;
 
 	procedure write_section_netlist_header is
@@ -2857,38 +2859,36 @@ procedure chkpsn is
 
 begin
 	action := chkpsn;
+
+	-- create message/log file
+ 	write_log_header(version);
 	
-	new_line;
 	put_line(to_upper(name_module_chkpsn) & " version " & version);
 	put_line("=======================================");
+
+	direct_messages; -- directs messages to logfile. required for procedures and functions in external packages
+	
 	prog_position := 10;
 	name_file_database := to_bounded_string(argument(1));
-	put_line (text_identifier_database & "     : " & to_string(name_file_database));
+
+	write_message (
+		file_handle => file_chkpsn_messages,
+		text => text_identifier_database & row_separator_0 & to_string(name_file_database),
+		console => true);
 	
 	name_file_database_backup := name_file_database; -- backup name of database. 
 	-- used for overwriting database with preliminary database
 
 	prog_position := 20;
 	name_file_options := to_bounded_string(argument(2));
-	put_line ("options file : " & to_string(name_file_options));
-
+	write_message (
+		file_handle => file_chkpsn_messages,
+		text => "options file " & to_string(name_file_options),
+		console => true);
+	
 	prog_position := 30;
 	create_temp_directory;
-
-	-- create message/log file
-	prog_position	:= 40;
- 	write_log_header(version);
-
-	-- write name of database in logfile
-	put_line(file_chkpsn_messages, text_identifier_database 
-		 & row_separator_0
-		 & to_string(name_file_database));
-
-	-- write name of options file in logfile
-	put_line(file_chkpsn_messages, "options file"
-		 & row_separator_0
-		 & to_string(name_file_options));
-
+	
 	prog_position := 50;
 	-- CS: set integrity check level	
 	read_uut_database;
@@ -2917,8 +2917,8 @@ begin
 	prog_position := 70;
 	write_message (
 		file_handle => file_chkpsn_messages,
--- 		identation => 1,
-		text => "creating preliminary " & text_identifier_database & row_separator_0 & name_file_database_preliminary & " ...",
+		text => "creating preliminary " & text_identifier_database 
+			& row_separator_0 & name_file_database_preliminary & " ...",
 		console => false);
 
 	create( 
@@ -2926,11 +2926,15 @@ begin
 		mode => out_file,
 		name => name_file_database_preliminary
 		);
+
+	prog_position := 80;
+	-- From now on, all messages go into file_chkpsn_messages. 
+	-- Regular puts go into file_database_preliminary.
 	set_output(file_database_preliminary); -- set data sink
 
 	prog_position := 120;
 	copy_scanpath_configuration_and_registers;
-
+	
 	prog_position := 130;	
 	write_section_netlist_header;
 
@@ -2948,33 +2952,37 @@ begin
 	write_new_cell_lists;
 
 	prog_position := 160;		
-	set_output(standard_output);
-
 	write_message (
 		file_handle => file_chkpsn_messages,
--- 		identation => 1,
 		text => "closing preliminary " & text_identifier_database & " ...",
 		console => false);
 	close(file_database_preliminary);
+	direct_messages; -- restore output channel for external procedures and functions
+
+
+	
 
 	-- check preliminary database and obtain summary
 	prog_position := 170;	
 	write_message (
 		file_handle => file_chkpsn_messages,
--- 		identation => 1,
 		text => "parsing preliminary " & text_identifier_database & " ...",
 		console => false);
 
-	-- assume preliminary database as default for reading and parsing
+	-- set preliminary database as default
 	name_file_database := to_bounded_string(name_file_database_preliminary);
 	read_uut_database;
 	-- summary now available
 
+
+
+	
 	-- reopen preliminary database in append mode
+	prog_position := 175;		
 	write_message (
 		file_handle => file_chkpsn_messages,
--- 		identation => 1,
-		text => "reopening preliminary " & text_identifier_database & row_separator_0 & to_string(name_file_database) & " ...",
+		text => "reopening preliminary " & text_identifier_database 
+			& row_separator_0 & to_string(name_file_database) & " ...",
 		console => false);
 
 	prog_position := 180;	
@@ -2987,7 +2995,6 @@ begin
 	set_output(file_database_preliminary);
 	write_new_statistics;
 	close(file_database_preliminary);
-	set_output(standard_output);
 	
 	-- overwrite now useless old data base with temporarily data base
 	prog_position := 200;
@@ -2997,12 +3004,11 @@ begin
 		console => false);
  	copy_file(name_file_database_preliminary, to_string(name_file_database_backup));
 	
-	prog_position	:= 210;
+	prog_position := 210;
 	write_log_footer;
 	
 	exception when event: others =>
 		set_exit_status(failure);
-		set_output(standard_output);
 
 		write_message (
 			file_handle => file_chkpsn_messages,
@@ -3049,5 +3055,4 @@ begin
 		end case;
 
 		write_log_footer;
-
 end chkpsn;

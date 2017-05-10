@@ -376,29 +376,35 @@ begin
 	-- this causes the database parser to stop after section "registers"
 	action := mknets;
 
-	new_line;
+	-- create message/log file
+ 	write_log_header(version);
+
 	put_line(to_upper(name_module_mknets) & " version " & version);
-	put_line("===============================");
+	put_line("=======================================");
+
+	direct_messages; -- directs messages to logfile. required for procedures and functions in external packages
+	
 	prog_position	:= 10;
  	name_file_database := to_bounded_string(argument(1));
- 	put_line(text_identifier_database & "       : " & to_string(name_file_database));
+
+	write_message (
+		file_handle => file_mknets_messages,
+		text => text_identifier_database & row_separator_0 & to_string(name_file_database),
+		console => true);
 
 	prog_position	:= 30;
 	create_temp_directory;
 
-	-- create message/log file
-	prog_position	:= 40;
- 	write_log_header(version);
-
-	-- write name of database in logfile
-	put_line(file_mknets_messages, text_identifier_database 
-		 & row_separator_0
-		 & to_string(name_file_database));
-	
 	prog_position	:= 50;
 	read_uut_database;
 	
-	-- create premilinary data base (contining scanpath_configuration and registers)
+	-- create premilinary database (containing scanpath_configuration and registers)
+	write_message (
+		file_handle => file_mknets_messages,
+		text => "creating preliminary " & text_identifier_database 
+			& row_separator_0 & name_file_database_preliminary & " ...",
+		console => false);
+	
 	prog_position	:= 70;
 	create( 
 		file => file_database_preliminary,
@@ -407,11 +413,13 @@ begin
 		);
 
 	prog_position	:= 80;	
+	-- From now on, all messages go into file_mknets_messages. 
+	-- Regular puts go into file_database_preliminary.
 	set_output(file_database_preliminary);
 	
 	prog_position	:= 90;		
 	copy_scanpath_configuration_and_registers;
-
+	
 	prog_position	:= 100;
 	skeleton := read_skeleton;
 
@@ -425,8 +433,11 @@ begin
 	put_line (section_mark.endsection); new_line;
 	
 	prog_position 	:= 130;
+	write_message (
+		file_handle => file_mknets_messages,
+		text => "closing preliminary " & text_identifier_database & " ...",
+		console => false);
 	close(file_database_preliminary);
-	set_output(standard_output);
 	
 	prog_position	:= 140;	
 	write_message (
@@ -440,11 +451,10 @@ begin
 	
 	exception when event: others =>
 		set_exit_status(failure);
-		set_output(standard_output);
 
 		write_message (
 			file_handle => file_mknets_messages,
-			text => message_error & " at program position " & natural'image(prog_position),
+			text => message_error & "at program position " & natural'image(prog_position),
 			console => true);
 
 		if is_open(file_database_preliminary) then
