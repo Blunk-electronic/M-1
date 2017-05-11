@@ -32,9 +32,9 @@
 --	 todo: apply dos2unix on protel netlist
 
 with ada.text_io;				use ada.text_io;
--- with ada.characters;			use ada.characters;
+with ada.characters;			use ada.characters;
 with ada.characters.latin_1;	use ada.characters.latin_1;
--- with ada.characters.handling;	use ada.characters.handling;
+with ada.characters.handling;	use ada.characters.handling;
 
 with ada.strings;				use ada.strings;
 with ada.strings.bounded; 		use ada.strings.bounded;
@@ -1006,24 +1006,39 @@ procedure impprotel is
 
 begin
 	action := import_cad;
-	format_cad := protel;
 
-	new_line;
-	put_line("PROTEL CAD IMPORTER VERSION "& version);
+	-- create message/log file	
+	format_cad := protel;
+	write_log_header(version);
+	
+	put_line(to_upper(name_module_cad_importer_protel) & " version " & version);
 	put_line("======================================");
 
-	prog_position	:= 10;
- 	name_file_cad_netlist:= to_bounded_string(argument(1));
-	put_line("netlist       : " & to_string(name_file_cad_netlist));
-	cad_import_target_module := type_cad_import_target_module'value(argument(2));
-	put_line("target module : " & type_cad_import_target_module'image(cad_import_target_module));
+	direct_messages; -- directs messages to logfile. required for procedures and functions in external packages
 	
-	prog_position	:= 40;
- 	write_log_header(version);
+	prog_position	:= 10;
+	name_file_cad_netlist:= to_bounded_string(argument(1));
+	
+	write_message (
+		file_handle => file_import_cad_messages,
+		text => "netlist " & to_string(name_file_cad_netlist),
+		console => true);
 
+	prog_position	:= 20;		
+	cad_import_target_module := type_cad_import_target_module'value(argument(2));
+	write_message (
+		file_handle => file_import_cad_messages,
+		text => "target module " & type_cad_import_target_module'image(cad_import_target_module),
+		console => true);
+	
+	prog_position	:= 30;
 	if cad_import_target_module = m1_import.sub then
 		target_module_prefix := to_bounded_string(argument(3));
-		put_line("prefix        : " & to_string(target_module_prefix));
+
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => "prefix " & to_string(target_module_prefix),
+			console => true);
 		
 		name_file_skeleton_submodule := to_bounded_string(compose( name => 
 			base_name(name_file_skeleton) & "_" & 
@@ -1080,7 +1095,6 @@ begin
 	
 	exception when event: others =>
 		set_exit_status(failure);
-		set_output(standard_output);
 
 		write_message (
 			file_handle => file_import_cad_messages,

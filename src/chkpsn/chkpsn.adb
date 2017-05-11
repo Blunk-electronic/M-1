@@ -2810,12 +2810,12 @@ procedure chkpsn is
 		line_counter : natural := 0;
 	begin	
 		write_message (
-			file_handle => current_output,
+			file_handle => file_chkpsn_messages,
 			text => "rebuilding preliminary " & text_identifier_database & " ...", 
 			console => true);
 
 		write_message (
-			file_handle => current_output,
+			file_handle => file_chkpsn_messages,
 			identation => 1,
 			text => "copying scanpath configuration and registers ...", 
 			console => false);
@@ -2890,7 +2890,7 @@ begin
 	create_temp_directory;
 	
 	prog_position := 50;
-	-- CS: set integrity check level	
+	degree_of_database_integrity_check := light;
 	read_uut_database;
 
 	-- read options file
@@ -2971,6 +2971,7 @@ begin
 
 	-- set preliminary database as default
 	name_file_database := to_bounded_string(name_file_database_preliminary);
+	degree_of_database_integrity_check := light;
 	read_uut_database;
 	-- summary now available
 
