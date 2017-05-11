@@ -93,16 +93,22 @@ procedure mkoptions is
 	list_of_clusters : type_list_of_clusters.vector; -- after creating clusters, they go here to be globally available
 
 	procedure write_routing_file_header is
+		-- backup current output channel
+		previous_output	: file_type renames current_output;
 	begin
 		set_output(file_routing);
 		csv.put_field(text => "-- NET/CLUSTER ROUTING TABLE"); csv.put_lf;
 		csv.put_field(text => "-- created by mkoptions version: "); csv.put_field(text => version); csv.put_lf;
 		csv.put_field(text => "-- date:"); csv.put_field(text => date_now);
 		csv.put_lf(count => 2);
-		set_output(standard_output);
+
+		-- restore previous output channel
+		set_output(previous_output);
 	end write_routing_file_header;
 
 	procedure write_options_file_header is
+		-- backup current output channel
+		previous_output	: file_type renames current_output;
 	begin
 		set_output(file_options);
 		put_line ("-- THIS IS AN OPTIONS FILE FOR " & to_upper(text_identifier_database) & row_separator_0 & to_string(name_file_database));
@@ -116,7 +122,9 @@ procedure mkoptions is
 		put_line ("-- NOTE: Non-bscan nets are commented and shown as supplementary information only."); 
 		put_line ("--       Don't waste your time editing their net classes !");
 		new_line;
-		set_output(standard_output);
+
+		-- restore previous output channel
+		set_output(previous_output);
 	end write_options_file_header;
 
 	type type_side is ( A, B ); -- defines the side of a connector pair or a bridge
@@ -932,7 +940,6 @@ procedure mkoptions is
 		
 	procedure write_statistics is
 	begin
-		set_output(file_options);
 		new_line;		
 		put_line("-- STATISTICS BEGIN --------------------------------------------------");
 		new_line;
@@ -948,7 +955,6 @@ procedure mkoptions is
 		
 		new_line;		
 		put_line("-- STATISTICS END ----------------------------------------------------");
-		set_output(standard_output);
 	end write_statistics;
 
 	type type_result_of_bridge_query (is_bridge_pin : boolean := false) is record
@@ -1574,6 +1580,7 @@ procedure mkoptions is
 
 	procedure write_net_content( net : in type_net) is
 	-- Writes the pins of the given net in options file.
+		
 		procedure write_pin ( pin : in m1_database.type_pin) is
 		-- writes something like 
 		-- "-- XC2C384-10TQG144C S_TQFP144 45 IO_91 | 416 BC_1 INPUT X | 415 BC_1 OUTPUT3 X 414 0 Z"
@@ -2121,7 +2128,6 @@ procedure mkoptions is
 			text => "writing netlist ...",
 			console => true);
 		
-		set_output(file_options);
 		put_line("-- NETLIST BEGIN -----------------------------------------------------");
 		new_line;
 		
@@ -2140,55 +2146,48 @@ procedure mkoptions is
 		write_single_non_bs_nets;
 		
 		put_line("-- NETLIST END -------------------------------------------------------");
-		set_output(standard_output);
 	end write_netlist;
 	
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
 	action := mkoptions;
+
+	-- create message/log file
+ 	write_log_header(version);
+
 	degree_of_database_integrity_check := light;
 	
-	new_line;
 	put_line(to_upper(name_module_mkoptions) & " version " & version);
 	put_line("===============================");
+
+	direct_messages; -- directs messages to logfile. required for procedures and functions in external packages
+	
 	prog_position	:= 10;
- 	name_file_database := to_bounded_string(argument(1));
- 	put_line(text_identifier_database & "       : " & to_string(name_file_database));
+	name_file_database := to_bounded_string(argument(1));
+	
+	write_message (
+		file_handle => file_mkoptions_messages,
+		text => text_identifier_database & row_separator_0 & to_string(name_file_database),
+		console => true);
 
 	prog_position	:= 20;
 	name_file_options := to_bounded_string(argument(2));
-	put_line ("options file   : " & to_string(name_file_options));
-          
-	prog_position	:= 25;
-	read_uut_database;
-	length_of_netlist := length(list_of_nets); -- CS: should be in read_uut_database
-	
-	-- recreate an empty tmp directory
-	prog_position	:= 30;
-	create_temp_directory;
--- 	prog_position	:= 40;
--- 	create_bak_directory;
-
-	-- create message/log file
-	prog_position	:= 40;
- 	write_log_header(version);
-
-	-- write name of database in logfile
-	put_line(file_mkoptions_messages, text_identifier_database 
-		 & row_separator_0
-		 & to_string(name_file_database));
-
 	write_message (
 		file_handle => file_mkoptions_messages,
-		text => "number of nets in " & text_identifier_database & row_separator_0 
-			& count_type'image(length_of_netlist),
-		console => false);
+		text => "options file " & to_string(name_file_options),
+		console => true);
+
+	prog_position	:= 30;
+	create_temp_directory;
+
+	prog_position	:= 40;
+	--degree_of_database_integrity_check := light;	
+	read_uut_database;
+	length_of_netlist := length(list_of_nets); -- CS: should be in read_uut_database or taken from summary ?
 	
-	-- write name of options file in logfile
-	put_line(file_mkoptions_messages, "options file"
-		 & row_separator_0
-		 & to_string(name_file_options));
+	put_line ("number of nets in " & text_identifier_database 
+		& row_separator_0 & count_type'image(length_of_netlist));
 	
 	-- if opt file already exists, backup old opt file
 -- 	if exists(universal_string_type.to_string(name_file_options)) then
@@ -2207,11 +2206,7 @@ begin
 
 	-- create options file
 	prog_position	:= 50;
-	write_message (
-		file_handle => file_mkoptions_messages,
--- 		identation => 1,
-		text => "creating options file " & to_string(name_file_options) & "...",
-		console => false);
+	put_line ("creating options file " & to_string(name_file_options) & "...");
 	create( file => file_options, mode => out_file, name => type_name_file_options.to_string(name_file_options));
 
 	-- create routing file
@@ -2219,11 +2214,8 @@ begin
     name_file_routing := to_bounded_string (compose ( 
 						name => base_name(type_name_database.to_string(name_file_database)),
 						extension => file_extension_routing));
-	write_message (
-		file_handle => file_mkoptions_messages,
--- 		identation => 1,
-		text => "creating routing table " & to_string(name_file_routing) & "...",
-		console => false);
+	
+	put_line("creating routing table " & to_string(name_file_routing) & "...");
 	create( file => file_routing, mode => out_file, name => to_string(name_file_routing));
 
 	prog_position	:= 70;
@@ -2236,37 +2228,46 @@ begin
 	-- check if mkoptions.conf exists
 	prog_position	:= 90;	
 	if not exists (name_file_mkoptions_conf) then
-
 		write_message (
 			file_handle => file_mkoptions_messages,
-	-- 		identation => 1,
 			text => message_error & "No configuration file '" & name_file_mkoptions_conf & "' found !",
 			console => true);
 		raise constraint_error;
 	end if;
-	
+
+	prog_position	:= 100;
 	read_mkoptions_configuration;
 
+	prog_position	:= 110;	
 	make_netlist;
 
+	set_output(file_options);
+	-- From now on all regular puts go into file_options.
+	-- Messages go into file_mkoptions_messages.
+
+	prog_position	:= 120;	
 	write_netlist;
 
+	prog_position	:= 130;	
 	write_statistics;
-	
-	close(file_options);
 
+	prog_position	:= 140;	
+	close(file_options);
+	direct_messages; -- restore output channel for external procedures and functions	
+
+	prog_position	:= 150;	
 	csv.put_field(file_routing,"-- END OF TABLE");
 	close(file_routing);
 
+	prog_position	:= 160;
 	write_log_footer;
 
 	exception when event: others =>
 		set_exit_status(failure);
-		set_output(standard_output);
 
 		write_message (
 			file_handle => file_mkoptions_messages,
-			text => message_error & " at program position " & natural'image(prog_position),
+			text => message_error & "at program position " & natural'image(prog_position),
 			console => true);
 	
 		if is_open(file_options) then
@@ -2313,6 +2314,5 @@ begin
 		end case;
 
 		write_log_footer;
-
 			
 end mkoptions;
