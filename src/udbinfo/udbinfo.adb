@@ -27,6 +27,7 @@
 with ada.text_io;				use ada.text_io;
 with ada.characters;			use ada.characters;
 with ada.characters.handling;	use ada.characters.handling;
+with ada.characters.latin_1;	use ada.characters.latin_1;
 with ada.exceptions; 			use ada.exceptions;
 with ada.command_line;			use ada.command_line;
 
@@ -53,79 +54,150 @@ procedure udbinfo is
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
-	new_line;
-	put_line("UUT " & to_upper(text_identifier_database) & "INFO version "& version);
+	action := udbinfo;
+
+	-- create message/log file
+ 	write_log_header(version);
+
+	put_line(to_upper(name_module_database_query) & " version "& version);
 	put_line("====================================");
+
+	direct_messages; -- directs messages to logfile. required for procedures and functions in external packages
 
 	prog_position	:= 10;
  	name_file_database := type_name_database.to_bounded_string(argument(1));
- 	put_line("database        : " & to_string(name_file_database));
+
+	write_message (
+		file_handle => file_udbinfo_messages,
+		text => text_identifier_database & row_separator_0 & to_string(name_file_database),
+		console => true);
 
 	prog_position	:= 20;
 	object_type_in_database := type_object_type_in_database'value(argument(2));
-	put_line("item            : " & type_object_type_in_database'image(object_type_in_database));
+
+	write_message (
+		file_handle => file_udbinfo_messages,
+		text => "item " & type_object_type_in_database'image(object_type_in_database),
+		console => true);
 
 	prog_position	:= 30;
 	object_name_in_database := to_bounded_string(argument(3));
-	put_line("name            : " & to_string(object_name_in_database));
+
+	write_message (
+		file_handle => file_udbinfo_messages,
+		text => "name " & to_string(object_name_in_database),
+		console => true);
 
 	prog_position	:= 40;
 	if argument_count = 4 then
 		degree_of_database_integrity_check := type_degree_of_database_integrity_check'value(argument(4));
-		put_line("integrity check:" & type_degree_of_database_integrity_check'image(degree_of_database_integrity_check));
+
+		write_message (
+			file_handle => file_udbinfo_messages,
+			text => "degree of integrity check " & type_degree_of_database_integrity_check'image(degree_of_database_integrity_check),
+			console => true);
 	end if;
 
 	prog_position	:= 50;
-	read_database;
+	read_uut_database;
+
+	prog_position	:= 60;
+	case object_type_in_database is
+		when net => print_net_info(to_string(object_name_in_database));
+		when bic => print_bic_info(to_string(object_name_in_database));
+		when scc => 
+			separator_position := index(object_name_in_database,separator);
+			length_of_inquired_target := length(object_name_in_database);
+			inquired_target_sub_1 := to_bounded_string(slice(object_name_in_database,1,separator_position-1));
+			inquired_target_sub_2 := to_bounded_string(slice(object_name_in_database,separator_position+1, length_of_inquired_target));
+
+			print_scc_info(
+				bic_name 			=> to_string(inquired_target_sub_1),
+				control_cell_id		=> natural'value(to_string(inquired_target_sub_2))
+				);
+		when others => null;
+	end case;
+
+	prog_position	:= 60;
+	write_log_footer;
+
+	exception when event: others =>
+		set_exit_status(failure);
+
+		write_message (
+			file_handle => file_udbinfo_messages,
+			text => message_error & "at program position " & natural'image(prog_position),
+			console => true);
+
+		case prog_position is
+			when 10 =>
+				write_message (
+					file_handle => file_udbinfo_messages,
+					text => message_error & "name of " & text_identifier_database & " required !"
+						& latin_1.lf 
+						& "Provide data base name as argument. Example: udbinfo my_uut.udb",
+					console => true);
+
+			when 20 =>
+				write_message (
+					file_handle => file_udbinfo_messages,
+					text => message_error & "Inquired item invalid or missing. Valid items are:",
+					console => true);
+
+				for i in 0..type_object_type_in_database'pos(type_object_type_in_database'last) loop
+					write_message (
+						file_handle => file_udbinfo_messages,
+						text => row_separator_0 
+							& type_object_type_in_database'image(type_object_type_in_database'val(i)),
+						lf => false,
+						console => true);
+				end loop;
+
+				write_message (
+					file_handle => file_udbinfo_messages,
+					text => latin_1.lf
+						& "Provide item as argument ! Example: udbinfo my_uut.udb net",
+					console => true);
+
+			when 30 =>
+				write_message (
+					file_handle => file_udbinfo_messages,
+					text => message_error & "Name of item missing. Provide name as argument !"
+						& latin_1.lf
+						& "Example 1: udbinfo my_uut.udb net cpu_clk"
+						& latin_1.lf
+						& "Example 2: udbinfo my_uut.udb bic IC303"
+						& latin_1.lf
+						& "Example 3: udbinfo my_uut.udb scc IC303#16",
+					console => true);
+
+			when 40 =>
+				write_message (
+					file_handle => file_udbinfo_messages,
+					text => message_error & "Invalid degree of integrity check ! Provide degree as",
+					console => true);
+
+				for i in 0..type_degree_of_database_integrity_check'pos(type_degree_of_database_integrity_check'last) loop
+					write_message (
+						file_handle => file_udbinfo_messages,
+						text => row_separator_0 
+							& type_degree_of_database_integrity_check'image(type_degree_of_database_integrity_check'val(i)),
+						lf => false,
+						console => true);
+				end loop;
 
 
-		case object_type_in_database is
-			when net => print_net_info(to_string(object_name_in_database));
-			when bic => print_bic_info(to_string(object_name_in_database));
-			when scc => 
-				separator_position := index(object_name_in_database,separator);
-				length_of_inquired_target := length(object_name_in_database);
-				inquired_target_sub_1 := to_bounded_string(slice(object_name_in_database,1,separator_position-1));
-				inquired_target_sub_2 := to_bounded_string(slice(object_name_in_database,separator_position+1, length_of_inquired_target));
+			when others =>
+				write_message (
+					file_handle => file_udbinfo_messages,
+					text => "exception name: " & exception_name(event),
+					console => true);
 
-				print_scc_info(
-					bic_name 			=> to_string(inquired_target_sub_1),
-					control_cell_id		=> natural'value(to_string(inquired_target_sub_2))
-					);
-			when others => null;
+				write_message (
+					file_handle => file_udbinfo_messages,
+					text => "exception message: " & exception_message(event),
+					console => true);
 		end case;
 
-	exception
--- 		when constraint_error => 
-
-		when event: others =>
-			case prog_position is
-				when 10 =>
-					put_line(message_error & "Database file missing or insufficient access rights !");
-					put_line("       Provide data base name as argument. Example: udbinfo my_uut.udb");
-				when 20 =>
-					put(message_error & "Inquired item invalid or missing. Valid items are:");
-					for i in 0..type_object_type_in_database'pos(type_object_type_in_database'last) loop
-						put(row_separator_0 & type_object_type_in_database'image(type_object_type_in_database'val(i)));
-					end loop;
-					new_line;
-					put_line("       Provide item as argument ! Example: udbinfo my_uut.udb net");
-				when 30 =>
-					put_line(message_error & "Name of item missing. Provide name as argument !");
-					put_line("       Example 1: udbinfo my_uut.udb net cpu_clk");
-					put_line("       Example 2: udbinfo my_uut.udb bic IC303");
-					put_line("       Example 3: udbinfo my_uut.udb scc IC303#16");
-				when 40 =>
-					put_line(message_error & "Invalid argument for debug level. Debug level must be provided as natural number !");
-
-
-				when others =>
--- 					put("unexpected exception: ");
-					put_line(exception_name(event));
-					put(exception_message(event)); new_line;
-					put_line("program error at position " & natural'image(prog_position));
-			end case;
-			--clean_up;
-			--raise;
-
+		write_log_footer;
 end udbinfo;
