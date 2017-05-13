@@ -24,30 +24,32 @@
 
 --   Please send your questions and comments to:
 --
---   Mario.Blunk@blunk-electronic.de
+--   info@blunk-electronic.de
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
 --
 
 
-with Ada.Text_IO;				use Ada.Text_IO;
-with Ada.Integer_Text_IO;		use Ada.Integer_Text_IO;
-with Ada.Characters.Handling; 	use Ada.Characters.Handling;
+with ada.text_io;				use ada.text_io;
+with ada.integer_text_io;		use ada.integer_text_io;
+with ada.characters.handling; 	use ada.characters.handling;
 
-with Ada.Strings.Bounded; 		use Ada.Strings.Bounded;
-with Ada.Strings.fixed; 		use Ada.Strings.fixed;
+with ada.strings.bounded; 		use ada.strings.bounded;
+with ada.strings.fixed; 		use ada.strings.fixed;
 -- with ada.containers;            use ada.containers;
 -- with ada.containers.indefinite_vectors;
-with Ada.Exceptions; 			use Ada.Exceptions;
+with ada.exceptions; 			use ada.exceptions;
  
-with Ada.Command_Line;			use Ada.Command_Line;
-with Ada.Directories;			use Ada.Directories;
+with ada.command_line;			use ada.command_line;
+with ada.directories;			use ada.directories;
 
-with m1;
-with m1_internal; use m1_internal;
-with m1_numbers; use m1_numbers;
-with m1_files_and_directories; use m1_files_and_directories;
+with m1_base;					use m1_base;
+with m1_database; 				use m1_database;
+with m1_numbers; 				use m1_numbers;
+with m1_files_and_directories;	use m1_files_and_directories;
+with m1_test_gen_and_exec;		use m1_test_gen_and_exec;
+with m1_string_processing;		use m1_string_processing;
 
 procedure mkinfra is
 
@@ -72,14 +74,14 @@ procedure mkinfra is
 	begin
 		-- create sequence file
 		create( file_sequence, 
-			name => (compose (universal_string_type.to_string(name_test), universal_string_type.to_string(name_test), "seq")));
+			name => (compose (to_string(name_test), to_string(name_test), "seq")));
 
 			set_output(file_sequence); -- set data sink
 
 			--put_line ("Section info");
 			put_line(section_mark.section & row_separator_0 & test_section.info);
 			put_line (" created by infra structure test generator version "& version);
-			put_line(row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & m1.date_now);
+			put_line(row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & date_now);
 			put_line(row_separator_0 & section_info_item.data_base & (colon_position-(2+section_info_item.data_base'last)) * row_separator_0 & ": " & universal_string_type.to_string(name_file_data_base));
 			put_line(row_separator_0 & section_info_item.test_name & (colon_position-(2+section_info_item.test_name'last)) * row_separator_0 & ": " & universal_string_type.to_string(name_test));
 			put_line(row_separator_0 & section_info_item.test_profile & (colon_position-(2+section_info_item.test_profile'last)) * row_separator_0 & ": " & type_test_profile'image(test_profile));
@@ -419,54 +421,81 @@ procedure mkinfra is
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
-	new_line;
-	put_line("INFRA STRUCTURE TEST GENERATOR VERSION "& version);
+	action := generate;
+
+	-- create message/log file
+ 	write_log_header(version);
+
+	put_line(to_upper(name_module_mkinfra) & " version " & version);
 	put_line("===========================================");
 
+	direct_messages; -- directs messages to logfile. required for procedures and functions in external packages
+
 	prog_position	:= 10;
- 	name_file_data_base:= universal_string_type.to_bounded_string(argument(1));
- 	put_line("data base      : " & universal_string_type.to_string(name_file_data_base));
+ 	name_file_database := to_bounded_string(argument(1));
+
+	write_message (
+		file_handle => file_chkpsn_messages,
+		text => text_identifier_database & row_separator_0 & to_string(name_file_database),
+		console => true);
 
 	prog_position	:= 20;
-	name_test := universal_string_type.to_bounded_string(argument(2));
-	put_line("test name      : " & universal_string_type.to_string(name_test));
+	name_test := to_bounded_string(argument(2));
+	write_message (
+		file_handle => file_chkpsn_messages,
+		text => text_test_name & to_string(name_test),
+		console => true);
 
 	prog_position	:= 30;
-	if argument_count = 3 then
-		debug_level := natural'value(argument(3));
-		put_line("debug level    :" & natural'image(debug_level));
-	end if;
+	create_temp_directory;
 
 	-- CS: get algorithm as argument
 	-- for the time being it is fixed
 	algorithm := standard;
 
 	prog_position	:= 40;
-	read_data_base;
+	degree_of_database_integrity_check := light;
+	read_uut_database;
 
-	create_temp_directory;
+	prog_position	:= 50;
 	create_test_directory(
-		test_name			=> universal_string_type.to_string(name_test),
+		test_name			=> to_string(name_test),
 		warnings_enabled 	=> false
 		);
 
+	prog_position	:= 60;
 	write_info_section;
+
+	prog_position	:= 70;
 	write_test_section_options;
 
+	prog_position	:= 80;
 	write_test_init;
+
+	prog_position	:= 90;
 	write_sequences;
 
+	prog_position	:= 100;
 	set_output(standard_output);
 	close(file_sequence);
 
+	prog_position := 210;
+	write_log_footer;
 
-	exception
--- 		when constraint_error => 
+	exception when event: others =>
+		set_exit_status(failure);
 
-		when event: others =>
-			set_exit_status(failure);
+		write_message (
+			file_handle => file_mkinfra_messages,
+			text => message_error & "at program position " & natural'image(prog_position),
+			console => true);
+
+			if is_open(file_sequence) then
+				close(file_sequence);
+			end if;
+
 			case prog_position is
-				when 10 =>
+				when 10 => -- CS: rework messages
 					put_line("ERROR: Data base file missing or insufficient access rights !");
 					put_line("       Provide data base name as argument. Example: mkinfra my_uut.udb");
 				when 20 =>
@@ -477,12 +506,16 @@ begin
 
 
 				when others =>
-					put("unexpected exception: ");
-					put_line(exception_name(event));
-					put(exception_message(event)); new_line;
-					put_line("program error at position " & natural'image(prog_position));
-			end case;
-			--clean_up;
-			--raise;
+					write_message (
+						file_handle => file_mkinfra_messages,
+						text => "exception name: " & exception_name(event),
+						console => true);
 
+					write_message (
+						file_handle => file_mkinfra_messages,
+						text => "exception message: " & exception_message(event),
+						console => true);
+			end case;
+
+		write_log_footer;
 end mkinfra;
