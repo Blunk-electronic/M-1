@@ -1593,7 +1593,7 @@ procedure mkoptions is
 		begin
 			-- write the basic pin info as like "-- XC2C384-10TQG144C S_TQFP144 45 IO_91"
 			put(2 * row_separator_0 & comment_mark & to_string(pin.device_name) & row_separator_0 &
-				type_device_class'image(device_class_default)(2) & row_separator_0 &
+				type_device_class'image(device_class_default) & row_separator_0 &
 				to_string(pin.device_value) & row_separator_0 &
 				to_string(pin.device_package) & row_separator_0 &
 				to_string(pin.device_pin_name) & row_separator_0

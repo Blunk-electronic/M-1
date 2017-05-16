@@ -99,6 +99,7 @@ begin
 	end if;
 
 	prog_position	:= 50;
+	degree_of_database_integrity_check := light;
 	read_uut_database;
 
 	prog_position	:= 60;
