@@ -6,7 +6,7 @@
 --                                                                          --
 --                               B o d y                                    --
 --                                                                          --
---         Copyright (C) 2016 Mario Blunk, Blunk electronic                 --
+--         Copyright (C) 2017 Mario Blunk, Blunk electronic                 --
 --                                                                          --
 --    This program is free software: you can redistribute it and/or modify  --
 --    it under the terms of the GNU General Public License as published by  --
@@ -24,7 +24,7 @@
 
 --   Please send your questions and comments to:
 --
---   Mario.Blunk@blunk-electronic.de
+--   info@blunk-electronic.de
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
@@ -33,6 +33,9 @@
 
 with ada.text_io;				use ada.text_io;
 with ada.integer_text_io;		use ada.integer_text_io;
+with ada.characters.handling; 	use ada.characters.handling;
+with ada.characters;			use ada.characters;
+with ada.characters.latin_1;	use ada.characters.latin_1;
 with ada.characters.handling; 	use ada.characters.handling;
 
 with ada.strings; 				use ada.strings;
@@ -44,51 +47,58 @@ with ada.numerics.elementary_functions; use ada.numerics.elementary_functions;
 with ada.command_line;			use ada.command_line;
 with ada.directories;			use ada.directories;
 
-with m1;
-with m1_files_and_directories; use m1_files_and_directories;
-with m1_internal; use m1_internal;
-with m1_numbers; use m1_numbers;
+with m1_base;					use m1_base;
+with m1_database; 				use m1_database;
+with m1_numbers; 				use m1_numbers;
+with m1_files_and_directories;	use m1_files_and_directories;
+with m1_test_gen_and_exec;		use m1_test_gen_and_exec;
+with m1_string_processing;		use m1_string_processing;
+
 with csv;
 
 
 procedure mkintercon is
 
-	version			: string (1..3) := "037";
+	version			: string (1..3) := "001";
 	prog_position	: natural := 0;
-	test_profile	: type_test_profile := interconnect;
+
+	use type_name_database;
+	use type_device_name;
+	use type_name_test;
+	use type_list_of_bics;
+	use type_list_of_atg_drive_cells;
+	use type_list_of_atg_expect_cells;
+	use type_net_name;
+	
 	type type_algorithm is ( true_complement ); -- CS: others: count_up, count_down, count_complement, walking_one, walking_zero, ...
 												-- mind number of sxrs !
 	algorithm 		: type_algorithm;
 	end_sdr			: type_end_sdr := PDR;
 	end_sir			: type_end_sir := RTI;
-	line_counter 	: natural := 0; -- counts lines in model file
-
 
 
 	procedure write_info_section is
-	-- creates the sequence file,
-	-- directs subsequent puts into the sequence file
 	-- writes the info section into the sequence file
 
 		colon_position : positive := 19;
 
 	begin -- write_info_section
-		-- create sequence file
-		create( file_sequence, 
-			name => (compose (universal_string_type.to_string(name_test), universal_string_type.to_string(name_test), file_extension_sequence)));
-		set_output(file_sequence); -- set data sink
+		write_message (
+			file_handle => file_mkintercon_messages,
+			text => "writing test info ...",
+			console => false);
 
-		put_line(section_mark.section & row_separator_0 & test_section.info);
-		put_line(" created by interconnect test generator version "& version);
-		put_line(row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & m1.date_now);
-		put_line(row_separator_0 & section_info_item.data_base & (colon_position-(2+section_info_item.data_base'last)) * row_separator_0 & ": " & universal_string_type.to_string(name_file_data_base));
-		put_line(row_separator_0 & section_info_item.test_name & (colon_position-(2+section_info_item.test_name'last)) * row_separator_0 & ": " & universal_string_type.to_string(name_test));
-		put_line(row_separator_0 & section_info_item.test_profile & (colon_position-(2+section_info_item.test_profile'last)) * row_separator_0 & ": " & type_test_profile'image(test_profile));
-		put_line(row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(end_sdr));
-		put_line(row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(end_sir));
+		put_line(file_sequence, section_mark.section & row_separator_0 & test_section.info);
+		put_line(file_sequence, " created by interconnect test generator version "& version);
+		put_line(file_sequence, row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & date_now);
+		put_line(file_sequence, row_separator_0 & section_info_item.database & (colon_position-(2+section_info_item.database'last)) * row_separator_0 & ": " & to_string(name_file_database));
+		put_line(file_sequence, row_separator_0 & section_info_item.name_test & (colon_position-(2+section_info_item.name_test'last)) * row_separator_0 & ": " & to_string(name_test));
+		put_line(file_sequence, row_separator_0 & section_info_item.test_profile & (colon_position-(2+section_info_item.test_profile'last)) * row_separator_0 & ": " & type_test_profile'image(test_profile));
+		put_line(file_sequence, row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(end_sdr));
+		put_line(file_sequence, row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(end_sir));
 
-		put_line(section_mark.endsection); 
-		new_line;
+		put_line(file_sequence, section_mark.endsection); 
+		new_line(file_sequence);
 	end write_info_section;
 
 
@@ -116,7 +126,7 @@ procedure mkintercon is
 			matrix_csv		: ada.text_io.file_type;
 		begin
 			-- PREPARE CSV FILE TO DUMP DRIVER MATRIX AT
-			create( matrix_csv, name => (compose (universal_string_type.to_string(name_test), "interconnect_matrix","csv"))); 
+			create( matrix_csv, name => (compose (to_string(name_test), "interconnect_matrix", file_extension_csv))); 
 			-- The first line contains the driver id (even if not all drivers used):
 			csv.put_field(matrix_csv,"-");
 			for n in 1..dyn_ct loop
@@ -244,9 +254,9 @@ procedure mkintercon is
 			dyn_ct		: natural := interconnect_matrix'last(1); -- get dynamic net count from interconnect_matrix dimension x (see NOTE 1)
 			step_ct		: type_vector_id := interconnect_matrix'last(2); -- get step count from interconnect_matrix dimension y
 			driver_id	: natural := 0;
-			atg_drive	: type_ptr_cell_list_atg_drive;	-- pointer to cell entries in list atg_drive
-			atg_expect	: type_ptr_cell_list_atg_expect;-- pointer to cell entries in list atg_expect
-			device		: type_ptr_bscan_ic; 			-- pointer to BIC list
+-- 			atg_drive	: type_ptr_cell_list_atg_drive;	-- pointer to cell entries in list atg_drive
+-- 			atg_expect	: type_ptr_cell_list_atg_expect;-- pointer to cell entries in list atg_expect
+-- 			device		: type_ptr_bscan_ic; 			-- pointer to BIC list
 
 			-- Every driver has (should have) one or more receivers. For every test step, after writing the driver in the sequence file,
 			-- its receivers are collected in a list of objects type_receiver_list. The list is accessed by a pointer type_ptr_receiver_list.
@@ -256,7 +266,7 @@ procedure mkintercon is
 			type type_receiver_list is
 				record
 					next		: type_ptr_receiver_list;				-- points to next object in list
-					device		: universal_string_type.bounded_string;	-- name of BIC (boundary scan IC)
+					device		: type_device_name.bounded_string;		-- name of BIC (boundary scan IC)
 					cell		: type_cell_id;							-- receiver (or input) cell
 					expect		: type_bit_char_class_0;				-- expect value of cell
 				end record;
@@ -274,7 +284,7 @@ procedure mkintercon is
 			-- This procedure is called each time a receiver is added to a receiver list.
 			procedure add_to_receiver_list(
 				list			: in out type_ptr_receiver_list;
-				device_given	: universal_string_type.bounded_string;
+				device_given	: type_device_name.bounded_string;
 				cell_given		: type_cell_id;
 				expect_given	: type_bit_char_class_0
 				) is
@@ -305,21 +315,24 @@ procedure mkintercon is
 					receivers_of_test_step := receivers_of_test_step_init;
 
 					-- Write ATG step in sequence file.
-					put_line(" -- ATG step #" & trim(type_vector_id'image(step_ptr),left));
+					put_line(file_sequence, " -- ATG step #" & trim(type_vector_id'image(step_ptr),left));
 
 					-- WRITE DRIVERS
 					-- NOTE 2: For every driver found in atg_drive list, variable driver_id increments. The following loop
 					--         ends once atg_drive list has been read. So there might be less drivers than proposed by the x-axis
 					--         of the interconnect_matrix. See Note 1 above.
 					driver_id := 0;
-					device := ptr_bic; -- Set BIC pointer at end of list.
-					while device /= null loop
+					--device := ptr_bic; -- Set BIC pointer at end of list.
+					--while device /= null loop
+					for b in 1..length(list_of_bics) loop
 						-- If device (BIC) has at least one dynamic drive cell, write sdr drive header (like "set IC301 drv boundary")
 						-- In this case it appears in cell list atg_drive.
-						if device.has_dynamic_drive_cell then
-							put(
+
+						-- NOTE: element(list_of_bics, positive(b)) means the current bic
+						if element(list_of_bics, positive(b)).has_dynamic_drive_cell then
+							put(file_sequence,
 								row_separator_0 & sequence_instruction_set.set & row_separator_0 &
-								universal_string_type.to_string(device.name) & row_separator_0 &
+								to_string( element(list_of_bics, positive(b)).name ) & row_separator_0 &
 								sxr_io_identifier.drive & row_separator_0 &
 								sdr_target_register.boundary
 								);
@@ -327,83 +340,86 @@ procedure mkintercon is
 							-- COLLECT CELL ID AND INVERTED-STATUS OF ALL DRIVERS OF THE DEVICE (BIC).
 							-- The list "atg_drive" is searched for the current BIC. On match the driver cell and value are written in
 							-- sequence file.
-							atg_drive := ptr_cell_list_atg_drive; -- Set pointer of atg_drive list at end of list.
-							while atg_drive /= null loop -- loop in list atg_drive
+							
+							--atg_drive := ptr_cell_list_atg_drive; -- Set pointer of atg_drive list at end of list.
+							--while atg_drive /= null loop -- loop in list atg_drive
+							for d in 1..length(list_of_atg_drive_cells) loop
 								-- On BIC name match, advance driver_id.
-								if universal_string_type.to_string(atg_drive.device) = universal_string_type.to_string(device.name) then
+
+								-- NOTE: element(list_of_atg_drive_cells, positive(c)) means the current atg drive cell
+								if to_string( element(list_of_atg_drive_cells, positive(d)).device ) = to_string(element(list_of_bics, positive(b)).name) then
 									driver_id := driver_id + 1; -- advance driver_id for each driver cell
-									put(type_cell_id'image(atg_drive.cell) & sxr_assignment_operator.assign); -- write cell id and assigment operator (like "45=")
+									put(file_sequence, type_cell_id'image(element(list_of_atg_drive_cells, positive(d)).id) 
+										& sxr_assignment_operator.assign); -- write cell id and assigment operator (like "45=")
 
 									-- Check driver/control cell / inverted-status:
 									-- If the driver is a control cell, it might be inverted. This requires negation of the value taken from the interconnect_matrix.
 									-- If the driver is the output cell itself, the value from the matrix remains untouched.
-									if atg_drive.controlled_by_control_cell then
-										if atg_drive.inverted then
-											put_character_class_0(negate_bit_character_class_0(interconnect_matrix(driver_id,step_ptr)));
+									if element(list_of_atg_drive_cells, positive(d)).controlled_by_control_cell then
+										if element(list_of_atg_drive_cells, positive(d)).inverted then
+											put_character_class_0(file => file_sequence, char_in => negate_bit_character_class_0(interconnect_matrix(driver_id,step_ptr)));
 										else
-											put_character_class_0(interconnect_matrix(driver_id,step_ptr));
+											put_character_class_0(file => file_sequence, char_in => interconnect_matrix(driver_id,step_ptr));
 										end if;
 									else -- controlled by output cell itself
-										put_character_class_0(interconnect_matrix(driver_id,step_ptr));
+										put_character_class_0(file => file_sequence, char_in => interconnect_matrix(driver_id,step_ptr));
 									end if;
 
 									-- COLLECT RECEIVERS
 									-- Note: Receivers may be inside the driver net or may be in secondary nets.
-									atg_expect := ptr_cell_list_atg_expect; -- Set pointer of atg_expect list at end of list.
-									while atg_expect /= null loop -- loop in list atg_expect
-
+									--atg_expect := ptr_cell_list_atg_expect; -- Set pointer of atg_expect list at end of list.
+									--while atg_expect /= null loop -- loop in list atg_expect
+									for r in 1..length(list_of_atg_expect_cells) loop
+										-- NOTE: element(list_of_atg_expect_cells, positive(r)) means the current atg expect cell
 										-- ADD RECEIVERS IN PRIMARY NETS
 										-- In atg_expect list, receivers are in the same net as the driver. So on net name match:
-										if universal_string_type.to_string(atg_expect.net) = universal_string_type.to_string(atg_drive.net) then
+										if to_string( element(list_of_atg_expect_cells, positive(r)).net ) = to_string( element(list_of_atg_drive_cells, positive(d)).net) then
 											-- add receivers to list
 											add_to_receiver_list(
 												list			=> receivers_of_test_step(driver_id),
-												device_given	=> atg_expect.device,
-												cell_given		=> atg_expect.cell,
+												device_given	=> element(list_of_atg_expect_cells, positive(r)).device,
+												cell_given		=> element(list_of_atg_expect_cells, positive(r)).id,
 												expect_given	=> interconnect_matrix(driver_id,step_ptr)
 												);
 										end if;
 
 										-- ADD RECEIVERS IN SECONDARY NETS:
 										-- Secondary nets in list atg_expect have the selector "primary_net_is".
-										if atg_expect.level = secondary then
+										if element(list_of_atg_expect_cells, positive(r)).level = secondary then
 											-- On match of the primary net name, add the receiver found in the secondary net to the list of receivers.
-											if universal_string_type.to_string(atg_expect.primary_net_is) = universal_string_type.to_string(atg_drive.net) then
+											if to_string(element(list_of_atg_expect_cells, positive(r)).primary_net_is) = to_string(element(list_of_atg_drive_cells, positive(d)).net) then
 												-- add receivers to list
 												add_to_receiver_list(
 													list			=> receivers_of_test_step(driver_id),
-													device_given	=> atg_expect.device,
-													cell_given		=> atg_expect.cell,
+													device_given	=> element(list_of_atg_expect_cells, positive(r)).device,
+													cell_given		=> element(list_of_atg_expect_cells, positive(r)).id,
 													expect_given	=> interconnect_matrix(driver_id,step_ptr)
 													);
 											end if;
 										end if;
 
-										atg_expect := atg_expect.next; -- advance pointer to next cell entry in atg_expect
 									end loop;
 								end if;
 
-								atg_drive := atg_drive.next; -- advance pointer to next cell entry in atg_drive
 							end loop;
-							new_line;
+							new_line(file_sequence);
 
 						end if;
-						device := device.next; -- advance pointer to BIC in bic list
 					end loop;
 
 
 					-- WRITE RECEIVERS
 					-- The receivers collected in the receiver list are now written in the sequence file.
 					-- The receiver cells are written for one BIC after another. For every BIC the driver id starts at position #1.
-					device := ptr_bic;  -- Set BIC pointer at end of list.
-					while device /= null loop
-
+					for b in 1..length(list_of_bics) loop
+						-- NOTE: element(list_of_bics, positive(b)) means the current bic
+						
 						--If device (BIC) has a dynamic expect cell, write sdr expect header. Something like "set IC301 exp boundary"
-						if device.has_dynamic_expect_cell then
+						if element(list_of_bics, positive(b)).has_dynamic_expect_cell then
 							-- WRITING RECEIVERS OF A SINGLE BIC BEGIN
-							put(
+							put(file_sequence, 
 								row_separator_0 & sequence_instruction_set.set & row_separator_0 &
-								universal_string_type.to_string(device.name) & row_separator_0 &
+								to_string(element(list_of_bics, positive(b)).name) & row_separator_0 &
 								sxr_io_identifier.expect & row_separator_0 &
 								sdr_target_register.boundary
 								);
@@ -423,11 +439,11 @@ procedure mkintercon is
 								-- Read the receiver list and filter the receiver cells of the current BIC.
 								while receivers_of_test_step(driver_id) /= null loop
 									-- On match of BIC name: write the receiver cells of the current BIC in the sequence file (like "44=0 46=1 ..."
-									if universal_string_type.to_string(receivers_of_test_step(driver_id).device) = universal_string_type.to_string(device.name) then
-										put(
+									if to_string(receivers_of_test_step(driver_id).device) = to_string( element(list_of_bics, positive(b)).name ) then
+										put(file_sequence, 
 											type_cell_id'image(receivers_of_test_step(driver_id).cell) &
 											sxr_assignment_operator.assign);
-										put_character_class_0(receivers_of_test_step(driver_id).expect);
+										put_character_class_0(file => file_sequence, char_in => receivers_of_test_step(driver_id).expect);
 									end if;
 									receivers_of_test_step(driver_id) := receivers_of_test_step(driver_id).next;
 								end loop;
@@ -438,14 +454,14 @@ procedure mkintercon is
 
 								driver_id := driver_id + 1; -- advance driver_id
 							end loop;
-							new_line;
+							new_line(file_sequence);
 							-- WRITING RECEIVERS OF A SINGLE BIC FINISHED
 						end if;
-						device := device.next; -- advance BIC pointer
 					end loop;
 					-- WRITING RECEVIERS OF ATG STEP FINISHED
 
-					write_sdr; new_line; -- writes something like " sdr id 4"
+					write_sdr; -- writes something like " sdr id 4" 
+					new_line(file_sequence); 
 
 					-- Advance step_ptr.
 					step_ptr := step_ptr + 1; 
@@ -457,12 +473,11 @@ procedure mkintercon is
 
 			-- Take number of dynamic nets from udb summary.
 			dyn_ct := summary.net_count_statistics.bs_dynamic;
-			put_line (" -- generating test pattern for" & natural'image(dyn_ct) & " dynamic nets (secondary nets included) ...");
+			put_line (" generating test pattern for" & natural'image(dyn_ct) & " dynamic nets (secondary nets included) ...");
 
 			-- If there are dynamic nets to generate a pattern for, calculate required step count.
 			-- Then write drive and expect values in sequence file.
 			if dyn_ct > 0 then
-				put(" -- steps required for algorithm ");
 				case algorithm is
 					when TRUE_COMPLEMENT =>
 
@@ -479,7 +494,8 @@ procedure mkintercon is
 						step_ct := 2 * natural(float'ceiling( log (base => 2.0, X => float(dyn_ct) ) ) ); -- logarithmic compression
 						-- Step count is to be doubled because the algorithm is "true_complement".
 
-						put_line(type_algorithm'image(algorithm) & ":" & type_vector_id'image(step_ct)); new_line;
+						put_line(" with algorithm " & type_algorithm'image(algorithm) & type_vector_id'image(step_ct) & " steps are required"); 
+-- 						new_line(file_sequence);
 						write_dynamic_drive_and_expect_values (build_interconnect_matrix);
 				end case;
 			end if;
@@ -490,28 +506,40 @@ procedure mkintercon is
 
 
 	procedure write_sequences is
-		--lut_step_id		: positive;
-		--lut_step 		: type_get_step_from_lut_result;
 	begin -- write_sequences
-		new_line(2);
+		new_line(file_sequence,2);
 
+		put_line(" setting all BICs in " & type_bic_instruction'image(sample) & " mode ...");
 		all_in(sample);
+
+		put_line(" setting ir capture values ...");
 		write_ir_capture;
-		write_sir; new_line;
+		write_sir; 
+		new_line(file_sequence);
 
+		put_line(" setting safe values ...");
 		load_safe_values;
-		write_sdr; new_line;
+		write_sdr;
+		new_line(file_sequence);
 
+		put_line(" setting all BICs in " & type_bic_instruction'image(extest) & " mode ...");
 		all_in(extest);
-		write_sir; new_line;
+		write_sir;
+		new_line(file_sequence);
 
+		put_line(" setting safe values ...");		
 		load_safe_values;
-		write_sdr; new_line;
+		write_sdr;
+		new_line(file_sequence);
 
+		put_line(" setting static drive values ...");		
 		load_static_drive_values;
+		put_line(" setting static expect values ...");
 		load_static_expect_values;
-		write_sdr; new_line;
+		write_sdr;
+		new_line(file_sequence);
 
+		put_line(" generating interconnect test pattern ...");
 		atg_mkintercon;
 
 		write_end_of_test;
@@ -526,88 +554,118 @@ procedure mkintercon is
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
-
-	put_line("interconnect test generator version "& version);
+	action := generate;
+	test_profile := interconnect;
+	
+	-- create message/log file
+ 	write_log_header(version);
+	
+	put_line(to_upper(name_module_mkintercon) & " version " & version);
 	put_line("=====================================================");
 
-	-- COMMAND LINE ARGUMENTS COLLECTING BEGIN
+	direct_messages; -- directs messages to logfile. required for procedures and functions in external packages
+
 	prog_position	:= 10;
- 	name_file_data_base:= universal_string_type.to_bounded_string(Argument(1));
- 	put_line ("data base      : " & universal_string_type.to_string(name_file_data_base));
- 
+ 	name_file_database := to_bounded_string(argument(1));
+	write_message (
+		file_handle => file_mkintercon_messages,
+		text => text_identifier_database & row_separator_0 & to_string(name_file_database),
+		console => true);
+
 	prog_position	:= 20;
- 	name_test:= universal_string_type.to_bounded_string(Argument(2));
- 	put_line ("test name      : " & universal_string_type.to_string(name_test));
+	name_test := to_bounded_string(argument(2));
+	write_message (
+		file_handle => file_mkintercon_messages,
+		text => text_test_name & row_separator_0 & to_string(name_test),
+		console => true);
 
 	prog_position	:= 30;
-	-- CS: algorithm by Argument(3)
-	algorithm := true_complement;
-	put_line ("algorithm      : " & type_algorithm'image(algorithm));
-	
+	create_temp_directory;
 
 	prog_position	:= 40;
-	if argument_count = 3 then
-		debug_level := natural'value(argument(3));
-		put_line("debug level    :" & natural'image(debug_level));
-	end if;
-	-- COMMAND LINE ARGUMENTS COLLECTING DONE
-	
-	read_data_base;
+	-- CS: algorithm by Argument(3)
+	algorithm := true_complement;
+	write_message (
+		file_handle => file_mkintercon_messages,
+		text => "algorithm " & type_algorithm'image(algorithm),
+		console => true);
 
+	prog_position	:= 50;
+	degree_of_database_integrity_check := light;
+	read_uut_database;
+	
+	prog_position	:= 60;
+	create_test_directory(name_test);
+
+	-- create sequence file
 	prog_position	:= 70;
- 	create_temp_directory;
+	create( file_sequence, 
+		name => (compose (to_string(name_test), to_string(name_test), file_extension_sequence)));
 	
-	prog_position	:= 80;
-	create_test_directory(
-		test_name 			=> universal_string_type.to_string(name_test),
-		warnings_enabled 	=> false
-		);
-
-	prog_position	:= 90; 
+	prog_position	:= 80; 
 	write_info_section;
-	prog_position	:= 100;
+	
+	prog_position	:= 90;
 	write_test_section_options;
 
-	prog_position	:= 110;
+	prog_position	:= 100;
 	write_test_init;
 
-	prog_position	:= 120;
+	prog_position	:= 110;
 	write_sequences;
 
 	prog_position	:= 130;
 	set_output(standard_output);
-
-	prog_position	:= 140;
 	close(file_sequence);
 
-	prog_position	:= 150;
+	prog_position	:= 140;
 	write_diagnosis_netlist(
-		data_base	=>	universal_string_type.to_string(name_file_data_base),
-		test_name	=>	universal_string_type.to_string(name_test)
+		database	=>	name_file_database,
+		test		=>	name_test
 		);
 
+	prog_position 	:= 150;
+	write_log_footer;
 
-	exception
-		when event: others =>
-			set_output(standard_output);
-			set_exit_status(failure);
+	exception when event: others =>
+		set_exit_status(failure);
+
+		write_message (
+			file_handle => file_mkintercon_messages,
+			text => message_error & "at program position" & natural'image(prog_position),
+			console => true);
+
+			if is_open(file_sequence) then
+				close(file_sequence);
+			end if;
+	
 			case prog_position is
 				when 10 =>
-					put_line("ERROR: Data base file missing or insufficient access rights !");
-					put_line("       Provide data base name as argument. Example: mkintercon my_uut.udb");
+					write_message (
+						file_handle => file_mkintercon_messages,
+						text => message_error & text_identifier_database & " file missing !" & latin_1.lf
+							& "Provide " & text_identifier_database & " name as argument. Example: "
+							& name_module_mkinfra & row_separator_0 & example_database,
+						console => true);
 				when 20 =>
-					put_line("ERROR: Test name missing !");
-					put_line("       Provide test name as argument ! Example: mkintercon my_uut.udb my_interconnect_test");
-
-				when 40 =>
-					put_line("ERROR: Invalid argument for debug level. Debug level must be provided as natural number !");
-
+					write_message (
+						file_handle => file_mkintercon_messages,
+						text => message_error & "test name missing !" & latin_1.lf
+							& "Provide test name as argument ! Example: " 
+							& name_module_mkinfra & row_separator_0 & example_database 
+							& " my_infrastructure_test",
+						console => true);
 
 				when others =>
-					put("unexpected exception: ");
-					put_line(exception_name(event));
-					put(exception_message(event)); new_line;
-					put_line("program error at position " & natural'image(prog_position));
+					write_message (
+						file_handle => file_mkintercon_messages,
+						text => "exception name: " & exception_name(event),
+						console => true);
+
+					write_message (
+						file_handle => file_mkintercon_messages,
+						text => "exception message: " & exception_message(event),
+						console => true);
 			end case;
 
 			
