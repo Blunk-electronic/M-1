@@ -29,7 +29,8 @@
 --
 --   history of changes:
 --
-
+--   todo: - alorithm that switches bics back to bypass once a particular register
+--           has been tested.
 
 with ada.text_io;				use ada.text_io;
 with ada.integer_text_io;		use ada.integer_text_io;
@@ -53,7 +54,7 @@ with m1_string_processing;		use m1_string_processing;
 
 procedure mkinfra is
 
-	version			: String (1..3) := "040";
+	version			: string (1..3) := "001";
 	prog_position	: natural := 0;
 
 	use type_name_database;
@@ -61,7 +62,7 @@ procedure mkinfra is
 	use type_name_test;
 	
 	type type_algorithm is ( standard , intrusive);
-	algorithm : type_algorithm;
+	algorithm : constant type_algorithm := standard;
 	--type type_option is ( none, intrusive ); -- CS
 
 	end_sir			: type_end_sir		:= RTI;
@@ -366,7 +367,6 @@ procedure mkinfra is
 
 		write_sdr;
 
-
 		-- IDCODE CHECK ---------------------
 		put_line(" idcodes ...");
 		new_line(file_sequence,2);
@@ -451,8 +451,8 @@ begin
 	create_temp_directory;
 
 	-- CS: get algorithm as argument
-	-- for the time being it is fixed
-	algorithm := standard;
+	-- for the time being it is constant
+	--algorithm := standard;
 
 	prog_position	:= 40;
 	degree_of_database_integrity_check := light;
