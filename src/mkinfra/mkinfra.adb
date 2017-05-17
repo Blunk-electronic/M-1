@@ -497,39 +497,39 @@ begin
 			text => message_error & "at program position" & natural'image(prog_position),
 			console => true);
 
-			if is_open(file_sequence) then
-				close(file_sequence);
-			end if;
+		if is_open(file_sequence) then
+			close(file_sequence);
+		end if;
 
-			case prog_position is
-				when 10 =>
-					write_message (
-						file_handle => file_mkinfra_messages,
-						text => message_error & text_identifier_database & " file missing !" & latin_1.lf
-							& "Provide " & text_identifier_database & " name as argument. Example: "
-							& name_module_mkinfra & row_separator_0 & example_database,
-						console => true);
+		case prog_position is
+			when 10 =>
+				write_message (
+					file_handle => file_mkinfra_messages,
+					text => message_error & text_identifier_database & " file missing !" & latin_1.lf
+						& "Provide " & text_identifier_database & " name as argument. Example: "
+						& name_module_mkinfra & row_separator_0 & example_database,
+					console => true);
 
-				when 20 =>
-					write_message (
-						file_handle => file_mkinfra_messages,
-						text => message_error & "test name missing !" & latin_1.lf
-							& "Provide test name as argument ! Example: " 
-							& name_module_mkinfra & row_separator_0 & example_database 
-							& " my_infrastructure_test",
-						console => true);
+			when 20 =>
+				write_message (
+					file_handle => file_mkinfra_messages,
+					text => message_error & "test name missing !" & latin_1.lf
+						& "Provide test name as argument ! Example: " 
+						& name_module_mkinfra & row_separator_0 & example_database 
+						& " my_infrastructure_test",
+					console => true);
 
-				when others =>
-					write_message (
-						file_handle => file_mkinfra_messages,
-						text => "exception name: " & exception_name(event),
-						console => true);
+			when others =>
+				write_message (
+					file_handle => file_mkinfra_messages,
+					text => "exception name: " & exception_name(event),
+					console => true);
 
-					write_message (
-						file_handle => file_mkinfra_messages,
-						text => "exception message: " & exception_message(event),
-						console => true);
-			end case;
+				write_message (
+					file_handle => file_mkinfra_messages,
+					text => "exception message: " & exception_message(event),
+					console => true);
+		end case;
 
 		write_log_footer;
 end mkinfra;
