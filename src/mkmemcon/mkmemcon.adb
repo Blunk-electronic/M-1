@@ -75,7 +75,9 @@ procedure mkmemcon is
 	use type_long_string;	
 	use type_short_string;
 	use type_name_file_model_memory;
-	
+
+	target_device : type_device_name.bounded_string;
+
 	type type_algorithm is ( standard );
 	algorithm : constant type_algorithm := standard;
 	
@@ -1578,7 +1580,7 @@ procedure mkmemcon is
 									value			=> scratch_value,
 									compatibles		=> scratch_compatibles,
 									manufacturer	=> scratch_manufacturer,
-									data_base		=> name_file_data_base,  -- derived from cmd line argument
+									data_base		=> name_file_database,  -- derived from cmd line argument
 									test_name		=> name_test, --  derived from cmd line argument
 									model_file		=> name_file_model_memory,  -- derived from cmd line argument
 									device_name		=> target_device, -- derived from cmd line argument
@@ -1609,7 +1611,7 @@ procedure mkmemcon is
 									value			=> scratch_value,
 									compatibles		=> scratch_compatibles,
 									manufacturer	=> scratch_manufacturer,
-									data_base		=> name_file_data_base,  -- derived from cmd line argument
+									data_base		=> name_file_database,  -- derived from cmd line argument
 									test_name		=> name_test, --  derived from cmd line argument
 									model_file		=> name_file_model_memory,  -- derived from cmd line argument
 									device_name		=> target_device,  -- derived from cmd line argument
@@ -1637,7 +1639,7 @@ procedure mkmemcon is
 								prog_position := 1230;
 								ptr_target := new type_target'(
 									class_target	=> CLUSTER,
-									data_base		=> name_file_data_base,  -- derived from cmd line argument
+									data_base		=> name_file_database,  -- derived from cmd line argument
 									test_name		=> name_test, --  derived from cmd line argument
 									model_file		=> name_file_model_memory,  -- derived from cmd line argument
 									device_name		=> target_device,  -- derived from cmd line argument
@@ -1658,7 +1660,10 @@ procedure mkmemcon is
 									);
 							when others =>
 								prog_position := 1240;
-								put_line("ERROR: Target class not specified in section info !");
+								write_message (
+									file_handle => file_mkmemcon_messages,
+									text => message_error & "target class not specified in section '" & section_name.info & "' !",
+									console => true);
 								raise constraint_error;
 						end case;
 
@@ -1666,76 +1671,76 @@ procedure mkmemcon is
 						-- PROCESSING "INFO" SECTION BEGIN
 						-- collect all info items in scratch variables
 						-- scratch variables will be used to create an object of type type_targt pointed to by ptr_target
-						if debug_level >= 100 then
-							put_line("info : ->" & extended_string.to_string(line_of_file) & "<-");
-						end if;
+-- 						if debug_level >= 100 then
+-- 							put_line("info : ->" & extended_string.to_string(line_of_file) & "<-");
+-- 						end if;
 
 						prog_position := 1310;
-						if get_field_from_line(line_of_file,1) = info_item.value then
-							scratch_value := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
+						if get_field_from_line( to_string(line_of_file),1) = info_item.value then
+							scratch_value := to_bounded_string(get_field_from_line( to_string(line_of_file),2));
 						end if;
 
 						prog_position := 1320;
-						if get_field_from_line(line_of_file,1) = info_item.compatibles then
-							scratch_compatibles := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
+						if get_field_from_line( to_string(line_of_file),1) = info_item.compatibles then
+							scratch_compatibles := to_bounded_string(get_field_from_line( to_string(line_of_file),2));
 						end if;
 
 						prog_position := 1330;
-						if get_field_from_line(line_of_file,1) = info_item.date then
-							scratch_date := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
+						if get_field_from_line(to_string(line_of_file),1) = info_item.date then
+							scratch_date := to_bounded_string(get_field_from_line(to_string(line_of_file),2));
 						end if;
 
 						prog_position := 1340;
-						if get_field_from_line(line_of_file,1) = info_item.version then
-							scratch_version := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
+						if get_field_from_line(to_string(line_of_file),1) = info_item.version then
+							scratch_version := to_bounded_string(get_field_from_line(to_string(line_of_file),2));
 						end if;
 
 						prog_position := 1350;
-						if get_field_from_line(line_of_file,1) = info_item.status then
-							scratch_status := type_model_status'value(get_field_from_line(line_of_file,2));
+						if get_field_from_line(to_string(line_of_file),1) = info_item.status then
+							scratch_status := type_model_status'value(get_field_from_line(to_string(line_of_file),2));
 						end if;
 
 						prog_position := 1360;
-						if get_field_from_line(line_of_file,1) = info_item.author then
-							scratch_author := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
+						if get_field_from_line(to_string(line_of_file),1) = info_item.author then
+							scratch_author := to_bounded_string(get_field_from_line(to_string(line_of_file),2));
 						end if;
 
 						prog_position := 1370;
-						if get_field_from_line(line_of_file,1) = info_item.class then
-							scratch_target_class := type_target_class'value(get_field_from_line(line_of_file,2));
+						if get_field_from_line(to_string(line_of_file),1) = info_item.class then
+							scratch_target_class := type_target_class'value(get_field_from_line(to_string(line_of_file),2));
 						end if;
 
 						prog_position := 1380;
-						if get_field_from_line(line_of_file,1) = info_item.manufacturer then
-							scratch_manufacturer := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,2));
+						if get_field_from_line(to_string(line_of_file),1) = info_item.manufacturer then
+							scratch_manufacturer := to_bounded_string(get_field_from_line(to_string(line_of_file),2));
 						end if;
 
 						prog_position := 1390;
-						if get_field_from_line(line_of_file,1) = info_item.write_protect then
-							scratch_write_protect := type_write_protect'value(get_field_from_line(line_of_file,2));
+						if get_field_from_line(to_string(line_of_file),1) = info_item.write_protect then
+							scratch_write_protect := type_write_protect'value(get_field_from_line(to_string(line_of_file),2));
 						end if;
 
 						prog_position := 1400;
-						if get_field_from_line(line_of_file,1) = info_item.protocol then
-							scratch_protocol :=type_protocol'value(get_field_from_line(line_of_file,2));
+						if get_field_from_line(to_string(line_of_file),1) = info_item.protocol then
+							scratch_protocol := type_protocol'value(get_field_from_line(to_string(line_of_file),2));
 						end if;
 
 						prog_position := 1410;
-						if get_field_from_line(line_of_file,1) = info_item.ram_type then
-							scratch_ram_type := type_type_ram'value(get_field_from_line(line_of_file,2));
+						if get_field_from_line(to_string(line_of_file),1) = info_item.ram_type then
+							scratch_ram_type := type_type_ram'value(get_field_from_line(to_string(line_of_file),2));
 						end if;
 
 						prog_position := 1420;
-						if get_field_from_line(line_of_file,1) = info_item.rom_type then
-							scratch_rom_type := type_type_rom'value(get_field_from_line(line_of_file,2));
+						if get_field_from_line(to_string(line_of_file),1) = info_item.rom_type then
+							scratch_rom_type := type_type_rom'value(get_field_from_line(to_string(line_of_file),2));
 						end if;
 
 					end if;
 
 				else
 					-- wait for section "info" begin mark
-					if get_field_from_line(line_of_file,1) = section_mark.section then
-						if get_field_from_line(line_of_file,2) = section_name.info then
+					if get_field_from_line(to_string(line_of_file),1) = section_mark.section then
+						if get_field_from_line(to_string(line_of_file),2) = section_name.info then
 							model_section_entered.info := true; -- set section enterd "flag"
 						end if;
 					end if;
@@ -1748,7 +1753,7 @@ procedure mkmemcon is
 					prog_position := 2000;
 
 					-- once inside section "port_pin_map", wait for end of section mark
-					if get_field_from_line(line_of_file,1) = section_mark.endsection then
+					if get_field_from_line(to_string(line_of_file),1) = section_mark.endsection then
 						model_section_entered.port_pin_map := false; -- clear section entered flag
 						model_section_processed.port_pin_map := true; -- mark section as processed
 
@@ -1768,9 +1773,12 @@ procedure mkmemcon is
 						-- if options_address_min given (greater -1), make sure it fits into the given bus size
 						if ptr_target.option_address_min /= -1 then
 							if ptr_target.option_address_min > (2**ptr_target.width_address)-1 then
-								put_line("ERROR: Value specified by 'option address min' must be less than" 
-									& natural'image((2**ptr_target.width_address)-1) & " (" 
-									& natural_to_string((2**ptr_target.width_address)-1,16) & ")");
+								write_message (
+									file_handle => file_mkmemcon_messages,
+									text => message_error & "value specified by 'option address min' must be less than" -- CS: use text variables
+										& natural'image((2**ptr_target.width_address)-1) & " (" 
+										& natural_to_string((2**ptr_target.width_address)-1,16) & ")",
+									console => true);
 								raise constraint_error;
 							end if;
 						end if;
@@ -1780,20 +1788,22 @@ procedure mkmemcon is
 						-- if options_address_max given (greater -1), make sure it fits into the given bus size
 						if ptr_target.option_address_max /= -1 then
 							if ptr_target.option_address_max > (2**ptr_target.width_address)-1 then
-								put_line("ERROR: Value specified by 'option address max' must be less than" 
-									& natural'image((2**ptr_target.width_address)-1) & " (" 
-									& natural_to_string((2**ptr_target.width_address)-1,16) & ")");
+								write_message (
+									file_handle => file_mkmemcon_messages,
+									text => message_error & "value specified by 'option address max' must be less than" -- CS: use text variables
+										& natural'image((2**ptr_target.width_address)-1) & " (" 
+										& natural_to_string((2**ptr_target.width_address)-1,16) & ")",
+									console => true);
 								raise constraint_error;
 							end if;
 						end if;
 
-
 						-- section port_pin_map reading done.
 					else
 						-- PROCESSING SECTION "PORT_PIN_MAP" BEGIN
-						if debug_level >= 100 then
-							put_line("port_pin_map : ->" & extended_string.to_string(line_of_file) & "<-");
-						end if;
+-- 						if debug_level >= 100 then
+-- 							put_line("port_pin_map : ->" & extended_string.to_string(line_of_file) & "<-");
+-- 						end if;
 
 						-- read pin class or option identifier from field 1
 
@@ -1802,58 +1812,64 @@ procedure mkmemcon is
 						-- if identifier is data, address or control, set scratch_pin_class
 						-- example: data inout D[7:0] 19 18 17 16 15 13 12 11
 						prog_position := 2100;
-						if get_field_from_line(line_of_file,1) = port_pin_map_identifier.data or
-							get_field_from_line(line_of_file,1) = port_pin_map_identifier.address or
-							get_field_from_line(line_of_file,1) = port_pin_map_identifier.control then
+						if get_field_from_line( to_string(line_of_file),1) = port_pin_map_identifier.data or
+							get_field_from_line(to_string(line_of_file),1) = port_pin_map_identifier.address or
+							get_field_from_line(to_string(line_of_file),1) = port_pin_map_identifier.control then
 							prog_position := 2110;
-							scratch_pin_class := type_pin_class'value(get_field_from_line(line_of_file,1));
+							scratch_pin_class := type_pin_class'value(get_field_from_line(to_string(line_of_file),1));
 
 							-- read pin direction identifier from field 2
 							-- depending on the identifier (input, inout, output) set scratch_pin_direction
 							prog_position := 2120;
-							if get_field_from_line(line_of_file,2) = port_pin_map_identifier.input or
-								get_field_from_line(line_of_file,2) = port_pin_map_identifier.output or
-								get_field_from_line(line_of_file,2) = port_pin_map_identifier.inout then
+							if get_field_from_line(to_string(line_of_file),2) = port_pin_map_identifier.input or
+								get_field_from_line(to_string(line_of_file),2) = port_pin_map_identifier.output or
+								get_field_from_line(to_string(line_of_file),2) = port_pin_map_identifier.inout then
 								prog_position := 2130;
-								if get_field_from_line(line_of_file,2) = port_pin_map_identifier.input then
+								if get_field_from_line(to_string(line_of_file),2) = port_pin_map_identifier.input then
 									scratch_pin_direction := input;
-								elsif get_field_from_line(line_of_file,2) = port_pin_map_identifier.output then
+								elsif get_field_from_line(to_string(line_of_file),2) = port_pin_map_identifier.output then
 									scratch_pin_direction := output;
-								elsif get_field_from_line(line_of_file,2) = port_pin_map_identifier.inout then
+								elsif get_field_from_line(to_string(line_of_file),2) = port_pin_map_identifier.inout then
 									scratch_pin_direction := inout;
 								end if;
 
 								-- read port name (like A[14:0]) from field 3
 								-- break down port name into name, msb, lsb and length as defined by type type_port_vector
 								prog_position := 2140;
-								scratch_port_name := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3));
+								scratch_port_name := to_bounded_string(get_field_from_line(to_string(line_of_file),3));
 								prog_position := 2150;
-								scratch_port_name_frac := fraction_port_name(universal_string_type.to_string(scratch_port_name));
+								scratch_port_name_frac := fraction_port_name(to_string(scratch_port_name));
 
 								-- make sure address and data are vectored, control non-vectored 
 								case scratch_pin_class is
 									when address | data =>
 										if scratch_port_name_frac.msb = 0 and scratch_port_name_frac.lsb = 0 then
-											put_line("ERROR: Discrete address or data pins not allowed ! Use vectored form like D[7:0] !");
+											write_message (
+												file_handle => file_mkmemcon_messages,
+												text => message_error 
+													& "discrete address or data pins not allowed ! Use vectored form like D[7:0] !",
+												console => true);
 											raise constraint_error;
 										end if;
 									when control =>
 										if scratch_port_name_frac.msb > scratch_port_name_frac.lsb then
-											put_line("ERROR: Vectored control pins not allowed ! Control pins must be specified discretely !");
+											write_message (
+												file_handle => file_mkmemcon_messages,
+												text => message_error 
+													& "vectored control pins not allowed ! Control pins must be specified discretely !",
+												console => true);
 											raise constraint_error;
 										end if;
 								end case;
 
-								if debug_level >= 100 then
-									prog_position := 2160;
-									put("port: " & universal_string_type.to_string(scratch_port_name_frac.name));
-									if scratch_port_name_frac.length > 1 then
-										put(" msb" & positive'image(scratch_port_name_frac.msb));
-										put(" lsb" & natural'image(scratch_port_name_frac.lsb));
-										put(" length" & natural'image(scratch_port_name_frac.length));
-									end if;
-									new_line;
+								prog_position := 2160;
+								put("port: " & to_string(scratch_port_name_frac.name));
+								if scratch_port_name_frac.length > 1 then
+									put(" msb" & positive'image(scratch_port_name_frac.msb));
+									put(" lsb" & natural'image(scratch_port_name_frac.lsb));
+									put(" length" & natural'image(scratch_port_name_frac.length));
 								end if;
+								new_line;
 
 								-- vector length must match number of pins given after port name
 								-- example: data inout D[7:0] 19 18 17 16 15 13 12 20 -- 11 fields
@@ -1868,7 +1884,7 @@ procedure mkmemcon is
 												gather_pin_data(
 													list			=> ptr_memory_pin,
 													pin_class_given	=> scratch_pin_class,
-													name_pin_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,p)),
+													name_pin_given	=> to_bounded_string(get_field_from_line(to_string(line_of_file),p)),
 													name_port_given	=> scratch_port_name_frac.name,
 													direction_given	=> scratch_pin_direction,
 													-- calculate index: example: port D index 7 maps to pin 19. ,  port D index 0 maps to pin 20.
@@ -1881,8 +1897,8 @@ procedure mkmemcon is
 												gather_pin_data(
 													list			=> ptr_memory_pin,
 													pin_class_given	=> scratch_pin_class,
-													name_pin_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,4)),
-													name_port_given	=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3)),
+													name_pin_given	=> to_bounded_string(get_field_from_line(to_string(line_of_file),4)),
+													name_port_given	=> to_bounded_string(get_field_from_line(to_string(line_of_file),3)),
 													direction_given	=> scratch_pin_direction,
 													-- derive index from scratch_control_pin_ct
 													-- which is incremented on every control pin found
@@ -1893,7 +1909,11 @@ procedure mkmemcon is
 									end case;
 
 								else -- on mismatch of pin numbers and length of port:
-									put_line("ERROR: Expected" & positive'image(scratch_port_name_frac.length) & " pin name(s) after port name !");
+									write_message (
+										file_handle => file_mkmemcon_messages,
+										text => message_error 
+											& "Expected" & positive'image(scratch_port_name_frac.length) & " pin name(s) after port name !",
+										console => true);
 									raise constraint_error;
 								end if;
 
@@ -1905,29 +1925,37 @@ procedure mkmemcon is
 						-- example: option address min 8000h or 3465d
 						prog_position := 2300;
 						-- read option identifier
-						if get_field_from_line(line_of_file,1) = port_pin_map_identifier.option then
+						if get_field_from_line(to_string(line_of_file),1) = port_pin_map_identifier.option then
 							prog_position := 2310;
 							-- read address identifier
-							if get_field_from_line(line_of_file,2) = port_pin_map_identifier.address then
+							if get_field_from_line(to_string(line_of_file),2) = port_pin_map_identifier.address then
 								prog_position := 2320;
 								-- read min max identifier
-								if get_field_from_line(line_of_file,3) = port_pin_map_identifier.min then
+								if get_field_from_line(to_string(line_of_file),3) = port_pin_map_identifier.min then
 									prog_position := 2330;
-									scratch_option_address_min := string_to_natural(get_field_from_line(line_of_file,4));
+									scratch_option_address_min := string_to_natural(get_field_from_line(to_string(line_of_file),4));
 
-								elsif get_field_from_line(line_of_file,3) = port_pin_map_identifier.max then
+								elsif get_field_from_line(to_string(line_of_file),3) = port_pin_map_identifier.max then
 									prog_position := 2340;
-									scratch_option_address_max := string_to_natural(get_field_from_line(line_of_file,4));
+									scratch_option_address_max := string_to_natural(get_field_from_line(to_string(line_of_file),4));
 
 								else
-									put_line("ERROR: Expected keyword '" & port_pin_map_identifier.min
-										& "' or '" & port_pin_map_identifier.max & "' after option '"
-										& port_pin_map_identifier.address & "' !");
+									write_message (
+										file_handle => file_mkmemcon_messages,
+										text => message_error 
+											& "expected keyword '" & port_pin_map_identifier.min
+											& "' or '" & port_pin_map_identifier.max & "' after option '"
+											& port_pin_map_identifier.address & "' !",
+										console => true);
 									raise constraint_error;
 								end if;
 							else
-								put_line("ERROR: Unknown option ! Supported options are: "
-									& port_pin_map_identifier.address);
+								write_message (
+									file_handle => file_mkmemcon_messages,
+									text => message_error 
+										& "Unknown option ! Supported options are: "
+										& port_pin_map_identifier.address,
+									console => true);
 								raise constraint_error;
 							end if;
 						end if; -- read option identifier
@@ -1941,15 +1969,15 @@ procedure mkmemcon is
 					-- wait for section begin mark like "Section port_pin_map NDIP28"
 					-- this only makes sense if "info" section has been processed before
 					if model_section_processed.info then 
-						if get_field_from_line(line_of_file,1) = section_mark.section then -- on match of "Section"
-							if get_field_from_line(line_of_file,2) = section_name.port_pin_map then -- on match of "port_pin_map"
+						if get_field_from_line(to_string(line_of_file),1) = section_mark.section then -- on match of "Section"
+							if get_field_from_line(to_string(line_of_file),2) = section_name.port_pin_map then -- on match of "port_pin_map"
 
 								-- if target is a cluster, no need to check the package name
 								if ptr_target.class_target = cluster then
 									model_section_entered.port_pin_map := true;
 								else
 								-- if target is class RAM or ROM, check name of package in field 3
-									if get_field_from_line(line_of_file,3) = universal_string_type.to_string(ptr_target.device_package) then
+									if get_field_from_line(to_string(line_of_file),3) = to_string(ptr_target.device_package) then
 										model_section_entered.port_pin_map := true;
 									end if;
 								end if;
@@ -1963,22 +1991,22 @@ procedure mkmemcon is
 				-- SECTION "PROG" RELATED BEGIN
 				if model_section_entered.prog then
 					-- once inside section "prog", wait for end of section mark
-					if get_field_from_line(line_of_file,1) = section_mark.endsection then
+					if get_field_from_line(to_string(line_of_file),1) = section_mark.endsection then
 						model_section_entered.prog := false; -- clear section entered flag
 						model_section_processed.prog := true; -- mark section as processed
 
 						-- check for non-processed subsections
 						if not prog_subsection_processed.init then
-							put_line("WARNING: Section '" & prog_subsection_name.init & "' missing or incomplete !");
+							put_line(message_warning & "Section '" & prog_subsection_name.init & "' missing or incomplete !");
 						end if;
 						if not prog_subsection_processed.write then
-							put_line("WARNING: Section '" & prog_subsection_name.write & "' missing or incomplete !");
+							put_line(message_warning & "Section '" & prog_subsection_name.write & "' missing or incomplete !");
 						end if;
 						if not prog_subsection_processed.read then
-							put_line("WARNING: Section '" & prog_subsection_name.read & "' missing or incomplete !");
+							put_line(message_warning & "Section '" & prog_subsection_name.read & "' missing or incomplete !");
 						end if;
 						if not prog_subsection_processed.disable then
-							put_line("WARNING: Section '" & prog_subsection_name.disable & "' missing or incomplete !");
+							put_line(message_warning & "Section '" & prog_subsection_name.disable & "' missing or incomplete !");
 						end if;
 
 						-- CS: do what is required on finishing section prog
@@ -1986,13 +2014,13 @@ procedure mkmemcon is
 					else
 						-- PROCESSING SECTION "PROG" BEGIN
 -- 						if debug_level >= 100 then
--- 							put_line("prog : ->" & extended_string.to_string(line_of_file) & "<-");
+-- 							put_line("prog : ->" & extended_string.to_string(to_string(line_of_file)) & "<-");
 -- 						end if;
 
 						---SUBSECTION INIT RELATED BEGIN----------------------------------------------------------------------
 						if prog_subsection_entered.init then
 							-- once inside subsection "init", wait for end of subsection mark
-							if get_field_from_line(line_of_file,1) = section_mark.endsubsection then
+							if get_field_from_line(to_string(line_of_file),1) = section_mark.endsubsection then
 								prog_subsection_entered.init	:= false;
 								prog_subsection_processed.init	:= true;
 
@@ -2000,9 +2028,9 @@ procedure mkmemcon is
 								-- subsection init reading done.
 							else
 								-- PROCESSING SUBSECTION INIT BEGIN
-								if debug_level >= 100 then
-									put_line("init : ->" & extended_string.to_string(line_of_file) & "<-");
-								end if;
+-- 								if debug_level >= 100 then
+-- 									put_line("init : ->" & extended_string.to_string(to_string(line_of_file)) & "<-");
+-- 								end if;
 
 								get_groups_from_line(operation => init);
 
@@ -2011,8 +2039,8 @@ procedure mkmemcon is
 						else
 
 						-- wait for subsection begin mark like "subsection init"
-							if get_field_from_line(line_of_file,1) = section_mark.subsection then
-								if get_field_from_line(line_of_file,2) = prog_subsection_name.init then -- on match of "init"
+							if get_field_from_line(to_string(line_of_file),1) = section_mark.subsection then
+								if get_field_from_line(to_string(line_of_file),2) = prog_subsection_name.init then -- on match of "init"
 									prog_subsection_entered.init := true; -- set section entered flag
 								end if;
 							end if;
@@ -2022,7 +2050,7 @@ procedure mkmemcon is
 						---SUBSECTION WRITE RELATED BEGIN----------------------------------------------------------------------
 						if prog_subsection_entered.write then
 							-- once inside subsection "write", wait for end of subsection mark
-							if get_field_from_line(line_of_file,1) = section_mark.endsubsection then
+							if get_field_from_line(to_string(line_of_file),1) = section_mark.endsubsection then
 								prog_subsection_entered.write	:= false;
 								prog_subsection_processed.write	:= true;
 
@@ -2030,9 +2058,9 @@ procedure mkmemcon is
 								-- subsection write reading done.
 							else
 								-- PROCESSING SUBSECTION WRITE BEGIN
-								if debug_level >= 100 then
-									put_line("write : ->" & extended_string.to_string(line_of_file) & "<-");
-								end if;
+-- 								if debug_level >= 100 then
+-- 									put_line("write : ->" & extended_string.to_string(to_string(line_of_file)) & "<-");
+-- 								end if;
 
 								get_groups_from_line(operation => write);
 
@@ -2041,8 +2069,8 @@ procedure mkmemcon is
 						else
 
 						-- wait for subsection begin mark like "subsection write"
-							if get_field_from_line(line_of_file,1) = section_mark.subsection then
-								if get_field_from_line(line_of_file,2) = prog_subsection_name.write then -- on match of "write"
+							if get_field_from_line(to_string(line_of_file),1) = section_mark.subsection then
+								if get_field_from_line(to_string(line_of_file),2) = prog_subsection_name.write then -- on match of "write"
 									prog_subsection_entered.write := true; -- set section entered flag
 								end if;
 							end if;
@@ -2052,7 +2080,7 @@ procedure mkmemcon is
 						---SUBSECTION READ RELATED BEGIN----------------------------------------------------------------------
 						if prog_subsection_entered.read then
 							-- once inside subsection "read", wait for end of subsection mark
-							if get_field_from_line(line_of_file,1) = section_mark.endsubsection then
+							if get_field_from_line(to_string(line_of_file),1) = section_mark.endsubsection then
 								prog_subsection_entered.read	:= false;
 								prog_subsection_processed.read	:= true;
 
@@ -2060,9 +2088,9 @@ procedure mkmemcon is
 								-- subsection read reading done.
 							else
 								-- PROCESSING SUBSECTION READ BEGIN
-								if debug_level >= 100 then
-									put_line("read : ->" & extended_string.to_string(line_of_file) & "<-");
-								end if;
+-- 								if debug_level >= 100 then
+-- 									put_line("read : ->" & extended_string.to_string(to_string(line_of_file)) & "<-");
+-- 								end if;
 
 								get_groups_from_line(operation => read);
 
@@ -2071,8 +2099,8 @@ procedure mkmemcon is
 						else
 
 						-- wait for subsection begin mark like "subsection read"
-							if get_field_from_line(line_of_file,1) = section_mark.subsection then
-								if get_field_from_line(line_of_file,2) = prog_subsection_name.read then -- on match of "read"
+							if get_field_from_line(to_string(line_of_file),1) = section_mark.subsection then
+								if get_field_from_line(to_string(line_of_file),2) = prog_subsection_name.read then -- on match of "read"
 									prog_subsection_entered.read := true; -- set section entered flag
 								end if;
 							end if;
@@ -2082,7 +2110,7 @@ procedure mkmemcon is
 						---SUBSECTION DISABLE RELATED BEGIN----------------------------------------------------------------------
 						if prog_subsection_entered.disable then
 							-- once inside subsection "disable", wait for end of subsection mark
-							if get_field_from_line(line_of_file,1) = section_mark.endsubsection then
+							if get_field_from_line(to_string(line_of_file),1) = section_mark.endsubsection then
 								prog_subsection_entered.disable		:= false;
 								prog_subsection_processed.disable	:= true;
 
@@ -2090,9 +2118,9 @@ procedure mkmemcon is
 								-- subsection disable reading done.
 							else
 								-- PROCESSING SUBSECTION DISABLE BEGIN
-								if debug_level >= 100 then
-									put_line("disable : ->" & extended_string.to_string(line_of_file) & "<-");
-								end if;
+-- 								if debug_level >= 100 then
+-- 									put_line("disable : ->" & extended_string.to_string(to_string(line_of_file)) & "<-");
+-- 								end if;
 
 								get_groups_from_line(operation => disable);
 
@@ -2101,8 +2129,8 @@ procedure mkmemcon is
 						else
 
 						-- wait for subsection begin mark like "subsection disable"
-							if get_field_from_line(line_of_file,1) = section_mark.subsection then
-								if get_field_from_line(line_of_file,2) = prog_subsection_name.disable then -- on match of "disable"
+							if get_field_from_line(to_string(line_of_file),1) = section_mark.subsection then
+								if get_field_from_line(to_string(line_of_file),2) = prog_subsection_name.disable then -- on match of "disable"
 									prog_subsection_entered.disable := true; -- set section entered flag
 								end if;
 							end if;
@@ -2117,8 +2145,8 @@ procedure mkmemcon is
 					-- wait for section begin mark like "Section prog"
 					-- this only makes sense if "port_pin_map" section has been processed before
 					if model_section_processed.port_pin_map then 
-						if get_field_from_line(line_of_file,1) = section_mark.section then -- on match of "Section"
-							if get_field_from_line(line_of_file,2) = section_name.prog then -- on match of "prog"
+						if get_field_from_line(to_string(line_of_file),1) = section_mark.section then -- on match of "Section"
+							if get_field_from_line(to_string(line_of_file),2) = section_name.prog then -- on match of "prog"
 								model_section_entered.prog := true;
 							end if;
 						end if;
@@ -2132,16 +2160,28 @@ procedure mkmemcon is
 
 		-- CHECK FOR NON-PROCESSED SECTIONS
 		if not model_section_processed.info then
-			put_line("ERROR: Section 'info' not found or incomplete !");
+			write_message (
+				file_handle => file_mkmemcon_messages,
+				text => message_error 
+					& "Section 'info' not found or incomplete !", -- CS: use text variable
+				console => true);
 			raise constraint_error;
 		end if;
 		if not model_section_processed.port_pin_map then
-			put_line("ERROR: No port_pin_map for given package '" & universal_string_type.to_string(ptr_target.device_package) & "' found in device model !");
-			put_line("       Check spelling (case sensitive) and try again.");
+			write_message (
+				file_handle => file_mkmemcon_messages,
+				text => message_error 
+					& "no port_pin_map for package " & to_string(ptr_target.device_package) & " found in device model !"
+					& latin_1.lf & "Check spelling (case sensitive) and try again.",
+				console => true);
 			raise constraint_error;
 		end if;
 		if not model_section_processed.prog then
-			put_line("ERROR: Section 'prog' not found or incomplete !");
+			write_message (
+				file_handle => file_mkmemcon_messages,
+				text => message_error 
+					& "section 'prog' not found or incomplete !", -- CS: use text variable
+				console => true);
 			raise constraint_error;
 		end if;
 
