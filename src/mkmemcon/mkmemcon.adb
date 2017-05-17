@@ -74,6 +74,7 @@ procedure mkmemcon is
 	use type_universal_string;
 	use type_long_string;	
 	use type_short_string;
+	use type_name_file_model_memory;
 	
 	type type_algorithm is ( standard );
 	algorithm : constant type_algorithm := standard;
@@ -1316,59 +1317,80 @@ procedure mkmemcon is
 									end if;
 								else 
 									-- if group specified but no data port specified in port_pin_map abort
-									put_line("ERROR: Target has no data port as specified in section '" & section_name.port_pin_map & ".");
-									put_line("       Thus, no data group allowed in section '" & section_name.prog & "' !");
+									write_message (
+										file_handle => file_mkmemcon_messages,
+										text => message_error & "target has no data port specified in section " 
+											& section_name.port_pin_map & "." & latin_1.lf 
+											& "Thus, no data group allowed in section '" & section_name.prog & "' !",
+										console => true);
 									raise constraint_error;
 								end if;
 
 							-- READ CONTROL GROUP
 							elsif -- if identifier control found
-								to_lower(get_field_from_line(line_of_file,f)) = prog_identifier.ctrl then
+								to_lower(get_field_from_line( to_string(line_of_file),f)) = prog_identifier.ctrl then
 								if ptr_target.width_control /= 0 then -- if bus width greater zero (means if there are control pins)
 
 									-- get direction (expect, drive) from next field
-									group_control.direction := type_step_direction'value(get_field_from_line(line_of_file,f+1));
+									group_control.direction := type_step_direction'value(get_field_from_line( to_string(line_of_file),f+1));
 
 									-- ATG is not allowed in control group
-									if to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.atg then
-										put_line("ERROR: ATG not allowed in control group !");
+									if to_lower(get_field_from_line(to_string(line_of_file),f+2)) = prog_identifier.atg then
+										write_message (
+											file_handle => file_mkmemcon_messages,
+											text => message_error & to_upper(prog_identifier.atg) & " not allowed in control group !",
+											console => true);
 										raise constraint_error;
 									end if;
 
 									-- in case of a drive command, highz is allowed like
 									-- step 5  ADDR  drive highz  DATA drive 45h  CTRL drive highz -- all control drivers go highz
 									-- step 5  ADDR  drive 001z1b  DATA drive 45h  CTRL drive z1b -- one control driver goes highz
-									if group_control.direction = drive and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
+									if group_control.direction = drive and
+										to_lower(get_field_from_line( to_string(line_of_file),f+2)) = prog_identifier.highz then
 										group_control.all_highz := true;
 
 									-- expect highz is not allowed:
-									elsif group_control.direction = expect and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
-										put_line("ERROR: Expect 'highz' not allowed in control group !");
+									elsif group_control.direction = expect 
+										and to_lower(get_field_from_line(to_string(line_of_file),f+2)) = prog_identifier.highz then
+										write_message (
+											file_handle => file_mkmemcon_messages,
+											text => message_error & "expect " & to_upper(prog_identifier.highz) 
+												& " not allowed in control group !",
+											console => true);
 										raise constraint_error;
 									else
 										-- check if value is given bitwise (with x and z) like 001001x00zb
 										-- take the value field and test if format indicator is 'b' (bitwise assigment does work with binary format only)
 										-- then search for letters x and z in value. if x or z found, set group_control.value_format bit to "bitwise"
-										scratch_value_as_string := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,f+2));
-										if format_is(universal_string_type.to_string(scratch_value_as_string),'b') then
+										scratch_value_as_string := to_bounded_string(get_field_from_line(to_string(line_of_file),f+2));
+										if format_is(to_string(scratch_value_as_string),'b') then
 											-- if format is ok, ensure there is no 'z' within an expect value
 											if group_control.direction = expect then
-												if check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'z') then
-													put_line("ERROR: Expect 'z' not allowed in control group !");
+												if check_for_bit_character(to_string(scratch_value_as_string),'Z') then
+													write_message (
+														file_handle => file_mkmemcon_messages,
+														text => message_error & "expect " & type_bit_character'image('Z') 
+															& " not allowed in control group !",
+														console => true);
 													raise constraint_error;
 												end if;
 											end if;
 											-- if x or z occurs in value, it can be regareded as "bitwise" formated
 											-- the value is to be saved in group_control.value_string
-											if	check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'z') or
-												check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'x') then
+											if	check_for_bit_character(to_string(scratch_value_as_string),'z') or
+												check_for_bit_character(to_string(scratch_value_as_string),'x') then
 													--put_line("bitwise");
 													group_control.value_format := bitwise; -- overwrites default "number"
-													if strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))'last = ptr_target.width_control then
-														group_control.value_string := universal_string_type.to_bounded_string(strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))); 
+													if strip_format_indicator(to_string(scratch_value_as_string))'last = ptr_target.width_control then
+														group_control.value_string := to_bounded_string(strip_format_indicator(to_string(scratch_value_as_string))); 
 														-- CS: no need yet for range check or warning, as control has no upper or lower boundary
 													else
-														put_line("ERROR: Expected" & positive'image(ptr_target.width_control) & " characters for bitwise assigment !");
+														write_message (
+															file_handle => file_mkmemcon_messages,
+															text => message_error & "expect" & positive'image(ptr_target.width_control) 
+																& " characters for bitwise assigment !",
+															console => true);
 														raise constraint_error;
 													end if;
 											end if;
@@ -1379,26 +1401,33 @@ procedure mkmemcon is
 										if group_control.value_format = number then
 											--put_line("number");
 											-- the value might be given as hex, dec or binary number
-											scratch_value_as_natural := string_to_natural(get_field_from_line(line_of_file,f+2));
+											scratch_value_as_natural := string_to_natural(get_field_from_line(to_string(line_of_file),f+2));
 											if scratch_value_as_natural in type_value_control then
-												group_control.value_natural := string_to_natural(get_field_from_line(line_of_file,f+2));
+												group_control.value_natural := string_to_natural(get_field_from_line(to_string(line_of_file),f+2));
 											else
-												put_line("ERROR: Control value must not be greater than " 
-													& natural_to_string(control_max,2) & " !");
+												write_message (
+													file_handle => file_mkmemcon_messages,
+													text => message_error & "control value must not be greater than " 
+														 & natural_to_string(control_max,2) & " !",
+													console => true);
 												raise constraint_error;
 											end if;
 										end if;
 									end if;
 								else 
 									-- if group specified but no control port specified in port_pin_map abort
-									put_line("ERROR: Target has no control port as specified in section '" & section_name.port_pin_map & ".");
-									put_line("       Thus, no control group allowed in section '" & section_name.prog & "' !");
+									write_message (
+										file_handle => file_mkmemcon_messages,
+										text => message_error & "target has no control port specified in section " 
+											& section_name.port_pin_map & "." & latin_1.lf
+											& "Thus, no control group allowed in section '" & section_name.prog & "' !",
+										console => true);
 									raise constraint_error;
 								end if;
 
 							elsif -- if identifier delay found (example: step 5 delay 1.5)
-								to_lower(get_field_from_line(line_of_file,f)) = prog_identifier.dely then
-									delay_value := type_delay_value'value(get_field_from_line(line_of_file,f+1));
+								to_lower(get_field_from_line( to_string(line_of_file),f)) = prog_identifier.dely then
+									delay_value := type_delay_value'value(get_field_from_line( to_string(line_of_file),f+1) );
 									-- CS: refine error output via exception handler
 									exit; -- no more reading of fields required
 
@@ -1421,7 +1450,7 @@ procedure mkmemcon is
 				operation_given		=> operation,
 				--step_id_given		=> step_counter,
 				-- the step id found in the model is to be passed, even if it is invalid (a warning has been issued already)
-				step_id_given		=> positive'value(get_field_from_line(line_of_file,2)),
+				step_id_given		=> positive'value(get_field_from_line(to_string(line_of_file),2)),
 				group_address_given	=> group_address,
 				group_data_given	=> group_data,
 				group_control_given	=> group_control,
@@ -1458,7 +1487,7 @@ procedure mkmemcon is
 		-- open model file as given via command line argument
 		open(
 			file => file_model_memory, 
-			name => universal_string_type.to_string(name_file_model_memory),
+			name => to_string(name_file_model_memory),
 			mode => in_file
 			);
 		set_input(file_model_memory); -- all input comes from the model file from now on
@@ -1466,21 +1495,21 @@ procedure mkmemcon is
 
 		while not end_of_file loop -- read model file
 			line_counter := line_counter + 1; -- count lines in model file
-			line_of_file := extended_string.to_bounded_string(get_line); -- get a line from the model
-			line_of_file := remove_comment_from_line(line_of_file); -- remove comment from line
+-- 			line_of_file := to_bounded_string(get_line); -- get a line from the model
+			line_of_file := to_bounded_string(remove_comment_from_line(get_line)); -- remove comment from line
 
-			field_count := get_field_count(extended_string.to_string(line_of_file)); -- get number of fields (separated by space)
+			field_count := get_field_count(to_string(line_of_file)); -- get number of fields (separated by space)
 
 			if field_count > 0 then -- if line contains anything useful. empty lines are skipped
-				if debug_level >= 110 then
-					put_line("line read : ->" & extended_string.to_string(line_of_file) & "<-");
-				end if;
+-- 				if debug_level >= 110 then
+-- 					put_line("line read : ->" & extended_string.to_string(line_of_file) & "<-");
+-- 				end if;
 
 				-- SECTION "INFO" RELATED BEGIN
 				if model_section_entered.info then
 
 					-- once inside section "info", wait for end of section mark
-					if get_field_from_line(line_of_file,1) = section_mark.endsection then -- when endsection found
+					if get_field_from_line( to_string(line_of_file),1) = section_mark.endsection then -- when endsection found
 						model_section_entered.info := false; -- reset section entered flag
 						model_section_processed.info := true; -- mark section "info" as processed so that subsequent sections can be read
 
@@ -1490,7 +1519,10 @@ procedure mkmemcon is
 	
 						-- check if protocl not specified
 						if scratch_protocol = unknown then
-							put_line("ERROR: Protocol not specified in section info !");
+							write_message (
+								file_handle => file_mkmemcon_messages,
+								text => message_error & "protocol not specified in section '" & section_name.info & "' !",
+								console => true);
 							raise constraint_error;
 						end if;
 
@@ -1501,23 +1533,36 @@ procedure mkmemcon is
 							when ROM =>
 								if scratch_write_protect = false then -- by default this options is enabled (true)
 									prog_position := 1010; -- otherwise warn operator
-									put_line("WARNING: WRITE PROTECTION DISABLED !");
+									put_line(message_warning & "WRITE PROTECTION DISABLED !");
 								end if;
 								if scratch_rom_type = unknown then
 									prog_position := 1020;
-									put_line("ERROR: ROM type not specified in section info !");
+									write_message (
+										file_handle => file_mkmemcon_messages,
+										text => message_error & "ROM type not specified in section '" & section_name.info & "' !",
+										console => true);
 									raise constraint_error;
 								end if;
+
 							when RAM =>
 								if scratch_ram_type = unknown then
 									prog_position := 1030;
-									put_line("ERROR: RAM type not specified in section info !");
+									write_message (
+										file_handle => file_mkmemcon_messages,
+										text => message_error & "RAM type not specified in section '" & section_name.info & "' !",
+										console => true);
 									raise constraint_error;
 								end if;
+
 							when CLUSTER => null;
+
 							when UNKNOWN =>
 								prog_position := 1040;
-								put_line("ERROR: Target class not specified in section info !");
+								write_message (
+									file_handle => file_mkmemcon_messages,
+									text => message_error & "target class not specified in section '" & section_name.info & "' !",
+									console => true);
+								raise constraint_error;
 						end case;
 
 						-- create target object pointed to by ptr_target
