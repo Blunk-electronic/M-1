@@ -6,7 +6,7 @@
 --                                                                          --
 --                               B o d y                                    --
 --                                                                          --
---         Copyright (C) 2016 Mario Blunk, Blunk electronic                 --
+--         Copyright (C) 2017 Mario Blunk, Blunk electronic                 --
 --                                                                          --
 --    This program is free software: you can redistribute it and/or modify  --
 --    it under the terms of the GNU General Public License as published by  --
@@ -24,141 +24,150 @@
 
 --   Please send your questions and comments to:
 --
---   Mario.Blunk@blunk-electronic.de
+--   info@blunk-electronic.de
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
 --
 
-with Ada.Text_IO;				use Ada.Text_IO;
-with Ada.Integer_Text_IO;		use Ada.Integer_Text_IO;
-with Ada.Characters.Handling; 	use Ada.Characters.Handling;
+with ada.text_io;				use ada.text_io;
+with ada.integer_text_io;		use ada.integer_text_io;
+with ada.characters;			use ada.characters;
+with ada.characters.latin_1;	use ada.characters.latin_1;
+with ada.characters.handling; 	use ada.characters.handling;
 
-with Ada.Strings; 				use Ada.Strings;
-with Ada.Strings.Bounded; 		use Ada.Strings.Bounded;
-with Ada.Strings.fixed; 		use Ada.Strings.fixed;
-with Ada.Exceptions; 			use Ada.Exceptions;
+with ada.strings; 				use ada.strings;
+with ada.strings.bounded; 		use ada.strings.bounded;
+with ada.strings.fixed; 		use ada.strings.fixed;
+with ada.exceptions; 			use ada.exceptions;
  
-with Ada.Command_Line;			use Ada.Command_Line;
-with Ada.Directories;			use Ada.Directories;
+with ada.command_line;			use ada.command_line;
+with ada.directories;			use ada.directories;
 
-with m1;
-with m1_internal; use m1_internal;
-with m1_numbers; use m1_numbers;
-with m1_files_and_directories; use m1_files_and_directories;
+with m1_base;					use m1_base;
+with m1_database; 				use m1_database;
+with m1_numbers; 				use m1_numbers;
+with m1_files_and_directories;	use m1_files_and_directories;
+with m1_test_gen_and_exec;		use m1_test_gen_and_exec;
+with m1_string_processing;		use m1_string_processing;
 
 
 procedure mkmemcon is
 
-	version			: String (1..3) := "032";
+	version			: string (1..3) := "032";
 	prog_position	: natural := 0;
-	type type_algorithm is ( standard );
-	algorithm 		: type_algorithm;
-	line_counter 	: natural := 0; -- counts lines in model file
 
-	type type_section_name is
-		record
-			info			: string (1..4)  := "info";
-			port_pin_map	: string (1..12) := "port_pin_map";
-			prog			: string (1..4)  := "prog";
-		end record;
+	use type_name_database;
+	use type_device_name;
+	use type_device_manufacturer;
+	use type_device_value;	
+	use type_name_test;
+	use type_pin_name;
+	use type_port_name;
+	use type_package_name;
+	use type_net_name;
+	use type_list_of_nets;
+	use type_list_of_pins;
+	use type_list_of_atg_drive_cells;
+	use type_list_of_static_control_cells_class_DX_NR;
+	use type_list_of_atg_expect_cells;
+	use type_universal_string;
+	use type_long_string;	
+	use type_short_string;
+	
+	type type_algorithm is ( standard );
+	algorithm : constant type_algorithm := standard;
+	
+	type type_section_name is record
+		info			: string (1..4)  := "info";
+		port_pin_map	: string (1..12) := "port_pin_map";
+		prog			: string (1..4)  := "prog";
+	end record;
 	section_name : type_section_name;
 
-	type type_prog_subsection_name is
-		record
-			init		: string (1..4)		:= "init";
-			write		: string (1..5)		:= "write";
-			read		: string (1..4)		:= "read";
-			disable		: string (1..7)		:= "disable";
-		end record;
+	type type_prog_subsection_name is record
+		init		: string (1..4)		:= "init";
+		write		: string (1..5)		:= "write";
+		read		: string (1..4)		:= "read";
+		disable		: string (1..7)		:= "disable";
+	end record;
 	prog_subsection_name : type_prog_subsection_name;
 
-	type type_prog_identifier is
-		record
-			step		: string (1..4)		:= "step";
-			addr		: string (1..4)		:= "addr";
-			data		: string (1..4)		:= "data";
-			ctrl		: string (1..4)		:= "ctrl";
-			drive		: string (1..5)		:= "drive";
-			expect		: string (1..6)		:= "expect";
-			atg			: string (1..3)		:= "atg";
-			highz		: string (1..5)		:= "highz";
-			dely		: string (1..5)		:= "delay";
-		end record;
+	type type_prog_identifier is record
+		step		: string (1..4)		:= "step";
+		addr		: string (1..4)		:= "addr";
+		data		: string (1..4)		:= "data";
+		ctrl		: string (1..4)		:= "ctrl";
+		drive		: string (1..5)		:= "drive";
+		expect		: string (1..6)		:= "expect";
+		atg			: string (1..3)		:= "atg";
+		highz		: string (1..5)		:= "highz";
+		dely		: string (1..5)		:= "delay";
+	end record;
 	prog_identifier : type_prog_identifier;
 
-	type type_model_section_entered is
-		record
-			info			: boolean := false;
-			port_pin_map	: boolean := false;
-			prog		 	: boolean := false;
-		end record;
+	type type_model_section_entered is record
+		info			: boolean := false;
+		port_pin_map	: boolean := false;
+		prog		 	: boolean := false;
+	end record;
 	model_section_entered : type_model_section_entered;
 
-	type type_model_section_processed is
-		record
-			info			: boolean := false;
-			port_pin_map	: boolean := false;
-			prog		 	: boolean := false;
-		end record;
+	type type_model_section_processed is record
+		info			: boolean := false;
+		port_pin_map	: boolean := false;
+		prog		 	: boolean := false;
+	end record;
 	model_section_processed : type_model_section_processed;
 
-	type type_prog_subsection_entered is
-		record
-			init			: boolean := false;
-			write 			: boolean := false;
-			read  			: boolean := false;
-			disable			: boolean := false;
-		end record;
+	type type_prog_subsection_entered is record
+		init			: boolean := false;
+		write 			: boolean := false;
+		read  			: boolean := false;
+		disable			: boolean := false;
+	end record;
 	prog_subsection_entered : type_prog_subsection_entered;
 
-	type type_prog_subsection_processed is
-		record
-			init			: boolean := false;
-			write 			: boolean := false;
-			read  			: boolean := false;
-			disable			: boolean := false;
-		end record;
+	type type_prog_subsection_processed is record
+		init			: boolean := false;
+		write 			: boolean := false;
+		read  			: boolean := false;
+		disable			: boolean := false;
+	end record;
 	prog_subsection_processed : type_prog_subsection_processed;
 
-
-
-
-	type type_port_pin_map_identifier is
-		record
-			data		: string (1..4) := "data";
-			address		: string (1..7) := "address";
-			control		: string (1..7) := "control";
-			input		: string (1..2) := "in";
-			output		: string (1..3) := "out";
-			inout		: string (1..5) := "inout";
-			option		: string (1..6) := "option";
-			min			: string (1..3) := "min";
-			max			: string (1..3) := "max";
-		end record;
+	type type_port_pin_map_identifier is record
+		data		: string (1..4) := "data";
+		address		: string (1..7) := "address";
+		control		: string (1..7) := "control";
+		input		: string (1..2) := "in";
+		output		: string (1..3) := "out";
+		inout		: string (1..5) := "inout";
+		option		: string (1..6) := "option";
+		min			: string (1..3) := "min";
+		max			: string (1..3) := "max";
+	end record;
 	port_pin_map_identifier : type_port_pin_map_identifier;
 
 
-
 	-- items to be found in section "info" of memory model
-	type type_info_item is
-		record
-			test_profile	: type_test_profile	:= memconnect;
-			end_sdr			: type_end_sdr		:= PDR; -- pause dr  -- CS: wrong placed. this is not part of the model file !
-			end_sir			: type_end_sir		:= RTI; -- run-test/idle -- CS: wrong placed. this is not part of the model file !
-			value			: string (1..5) 	:= "value";
-			compatibles		: string (1..11) 	:= "compatibles";
-			date			: string (1..4) 	:= "date";
-			version			: string (1..7) 	:= "version";
-			status			: string (1..6) 	:= "status";
-			author			: string (1..6) 	:= "author";
-			manufacturer	: string (1..12)	:= "manufacturer";
-			class			: string (1..5)  	:= "class";
-			write_protect	: string (1..13) 	:= "write_protect";
-			protocol		: string (1..8)  	:= "protocol";
-			ram_type		: string (1..8)  	:= "ram_type";
-			rom_type		: string (1..8)  	:= "rom_type";
-		end record;
+	type type_info_item is record
+		test_profile	: type_test_profile	:= memconnect;
+		end_sdr			: type_end_sdr		:= PDR; -- pause dr  -- CS: wrong placed. this is not part of the model file !
+		end_sir			: type_end_sir		:= RTI; -- run-test/idle -- CS: wrong placed. this is not part of the model file !
+		value			: string (1..5) 	:= "value";
+		compatibles		: string (1..11) 	:= "compatibles";
+		date			: string (1..4) 	:= "date";
+		version			: string (1..7) 	:= "version";
+		status			: string (1..6) 	:= "status";
+		author			: string (1..6) 	:= "author";
+		manufacturer	: string (1..12)	:= "manufacturer";
+		class			: string (1..5)  	:= "class";
+		write_protect	: string (1..13) 	:= "write_protect";
+		protocol		: string (1..8)  	:= "protocol";
+		ram_type		: string (1..8)  	:= "ram_type";
+		rom_type		: string (1..8)  	:= "rom_type";
+	end record;
 	info_item : type_info_item;
 
 	type type_model_status is ( experimental, verified );
@@ -178,69 +187,71 @@ procedure mkmemcon is
 	scratch_width_data		: natural := 0;
 	scratch_width_control	: natural := 0;
 
+	model_author_length : constant natural := 100;
+	package type_model_author is new generic_bounded_length(model_author_length);
+	use type_model_author;
+	
 	type type_target;
 	type type_ptr_target is access all type_target;
-	type type_target (class_target : type_target_class := ram) is
-		record
-			date			: universal_string_type.bounded_string;
-			author			: universal_string_type.bounded_string;
-			status			: type_model_status;
-			version			: universal_string_type.bounded_string;
-			device_name		: universal_string_type.bounded_string; -- like IC202
-			data_base		: universal_string_type.bounded_string;
-			test_name		: universal_string_type.bounded_string; -- like my_sram_test
-			model_file		: universal_string_type.bounded_string; -- like models/U256D.txt
+	type type_target (class_target : type_target_class := ram) is record
+		date			: type_universal_string.bounded_string;
+		author			: type_model_author.bounded_string;
+		status			: type_model_status;
+		version			: type_short_string.bounded_string;
+		device_name		: type_device_name.bounded_string; -- like IC202
+		data_base		: type_name_database.bounded_string;
+		test_name		: type_name_test.bounded_string; -- like my_sram_test
+		model_file		: type_name_file_model_memory.bounded_string; -- like models/U256D.txt
 
-			-- values that hold the number of address, data, control pins
-			-- serves to indicate whether target has address, data or control pins
-			width_address	: natural;
-			width_data		: natural;
-			width_control	: natural;
+		-- values that hold the number of address, data, control pins
+		-- serves to indicate whether target has address, data or control pins
+		width_address	: natural;
+		width_data		: natural;
+		width_control	: natural;
 
-			-- values that hold the number of init, read, write, disable steps
-			-- will be set when reading section prog (by procedure add_to_step_list)
-			step_count_init		: natural;
-			step_count_write	: natural;
-			step_count_read		: natural;
-			step_count_disable	: natural;
-			step_count_total	: natural;
-		
-			option_address_min	: type_option_address_min;
-			option_address_max	: type_option_address_max;
+		-- values that hold the number of init, read, write, disable steps
+		-- will be set when reading section prog (by procedure add_to_step_list)
+		step_count_init		: natural;
+		step_count_write	: natural;
+		step_count_read		: natural;
+		step_count_disable	: natural;
+		step_count_total	: natural;
+	
+		option_address_min	: type_option_address_min;
+		option_address_max	: type_option_address_max;
 
-			case class_target is
-				when RAM | ROM =>
-					value			: universal_string_type.bounded_string;
-					compatibles		: universal_string_type.bounded_string;
-					manufacturer	: universal_string_type.bounded_string;
-					device_package	: universal_string_type.bounded_string;
-					protocol 		: type_protocol;
-					algorithm		: type_algorithm;
-					write_protect	: type_write_protect;
-					case class_target is
-						when RAM => 
-							ram_type		: type_type_ram;
-						when ROM =>
-							rom_type		: type_type_rom;
-						when others => null;
-					end case;
-				when CLUSTER =>
-					null;
-				when others =>
-					null;
-			end case;
-		end record;
+		case class_target is
+			when RAM | ROM =>
+				value			: type_device_value.bounded_string;
+				compatibles		: type_universal_string.bounded_string;
+				manufacturer	: type_device_manufacturer.bounded_string;
+				device_package	: type_package_name.bounded_string;
+				protocol 		: type_protocol;
+				algorithm		: type_algorithm;
+				write_protect	: type_write_protect;
+				case class_target is
+					when RAM => 
+						ram_type		: type_type_ram;
+					when ROM =>
+						rom_type		: type_type_rom;
+					when others => null;
+				end case;
+			when CLUSTER =>
+				null;
+			when others =>
+				null;
+		end case;
+	end record;
 	ptr_target : type_ptr_target;
 
 	-- definition of a list of receivers
 	type type_receiver;
 	type type_ptr_receiver is access all type_receiver;
-	type type_receiver is
-		record
-			next		: type_ptr_receiver;
-			name_bic	: universal_string_type.bounded_string;
-			id_cell		: natural;
-		end record;
+	type type_receiver is record
+		next		: type_ptr_receiver;
+		name_bic	: type_device_name.bounded_string;
+		id_cell		: natural;
+	end record;
 	ptr_receiver : type_ptr_receiver;
 
 	-- type definition of a single pin
@@ -250,28 +261,25 @@ procedure mkmemcon is
 	type type_ptr_memory_pin is access all type_memory_pin;
 	type type_pin_class is ( data, address, control);
 	type type_direction is ( input, output, inout);
-	type type_memory_pin (class_pin : type_pin_class; has_receivers : boolean) is
-		record
-			next			: type_ptr_memory_pin;
-			name_pin		: universal_string_type.bounded_string; -- like pin 75, 34, 4
-			name_port		: universal_string_type.bounded_string; -- like port A13, SDA, D15
-			name_net 		: universal_string_type.bounded_string; -- the net it is connected with (like CPU_WE)
-			name_bic_driver				: universal_string_type.bounded_string;
-			--name_pin_driver_scratch	: universal_string_type.bounded_string;
-			output_cell_id				: natural; -- the id of the output cell of the bic that drives this pin
-			--output_cell_value			: type_bit_char_class_0;
-			drive_cell_inverted			: boolean;
-			id_control_cell				: type_cell_info_cell_id; -- the id of the control cell cell of the bic that drives this pin -- if -1, no control cell available for that driver pin
-			control_cell_disable_value	: type_bit_char_class_0;
-			direction					: type_direction;
-			index						: natural; -- like address 0, data 7
-			case has_receivers is
-				when false => null;
-				when true =>
-					receiver_list_last			: type_ptr_receiver; -- saves the pointer position of the last receiver added (required when resetting the pointer
-					receiver_list				: type_ptr_receiver; -- receiver_last)
-			end case;
-		end record;
+	type type_memory_pin (class_pin : type_pin_class; has_receivers : boolean) is record
+		next			: type_ptr_memory_pin;
+		name_pin		: type_pin_name.bounded_string; -- like pin 75, 34, 4
+		name_port		: type_port_name.bounded_string; -- like port A13, SDA, D15
+		name_net 		: type_net_name.bounded_string; -- the net it is connected with (like CPU_WE)
+		name_bic_driver	: type_device_name.bounded_string;
+		output_cell_id				: type_cell_id; -- the id of the output cell of the bic that drives this pin
+		drive_cell_inverted			: boolean;
+		id_control_cell				: type_cell_info_cell_id; -- the id of the control cell cell of the bic that drives this pin -- if -1, no control cell available for that driver pin
+		control_cell_disable_value	: type_bit_char_class_0;
+		direction					: type_direction;
+		index						: natural; -- like address 0, data 7
+		case has_receivers is
+			when false => null;
+			when true =>
+				receiver_list_last			: type_ptr_receiver; -- saves the pointer position of the last receiver added (required when resetting the pointer
+				receiver_list				: type_ptr_receiver; -- receiver_last)
+		end case;
+	end record;
 	ptr_memory_pin	: type_ptr_memory_pin;
 
 	invalid_value	: boolean := false; -- used to warn operator about value given in model differing from value found in net list 
@@ -286,8 +294,8 @@ procedure mkmemcon is
 	-- example 2: port WE maps to pin 27 ( taken from -- control in WE 	27)
 		list				: in out type_ptr_memory_pin;
 		pin_class_given		: in type_pin_class;
-		name_pin_given		: in universal_string_type.bounded_string;
-		name_port_given		: in universal_string_type.bounded_string;
+		name_pin_given		: in type_pin_name.bounded_string;
+		name_port_given		: in type_port_name.bounded_string;
 		direction_given		: in type_direction;
 		index_given			: in natural
 		) is
@@ -301,29 +309,38 @@ procedure mkmemcon is
 
 				-- CHECK OCCURENCE OF PORT NAME
 				--  on port name match
-				if universal_string_type.to_string(p.name_port) = universal_string_type.to_string(name_port_given) then
+				if to_string(p.name_port) = to_string(name_port_given) then
 
 					-- if data or address port, check index
 					if p.class_pin = data or p.class_pin = address then
 						if p.index = index_given then -- on index match
-							put_line("ERROR: Port '" 
-								& universal_string_type.to_string(name_port_given)
-								& trim(natural'image(index_given),left)
-								& "' already used !");
+							write_message (
+								file_handle => file_mkmemcon_messages,
+								text => message_error & "port " 
+									& to_string(name_port_given)
+									& trim(natural'image(index_given),left)
+									& " already used !",
+								console => true);
 							raise constraint_error;
 						end if;
 					else -- other ports like "control" do not have any indexes, so it is sufficient to have the port name checked
-						put_line("ERROR: Port '" 
-							& universal_string_type.to_string(name_port_given)
-							& "' already used !");
+						write_message (
+							file_handle => file_mkmemcon_messages,
+							text => message_error & "port " 
+								& to_string(name_port_given)
+								& " already used !",
+							console => true);
 						raise constraint_error;
 					end if;
 				end if;
 
 				-- CHECK OCCURENCE OF PIN NAME
 				--  on pin name match
-				if universal_string_type.to_string(p.name_pin) = universal_string_type.to_string(name_pin_given) then
-					put_line("ERROR: Pin '" & universal_string_type.to_string(name_pin_given) & "' already used !");
+				if to_string(p.name_pin) = to_string(name_pin_given) then
+					write_message (
+						file_handle => file_mkmemcon_messages,
+						text => message_error & "pin " & to_string(name_pin_given) & " already used !",
+						console => true);					
 					raise constraint_error;
 				end if;
 
@@ -332,60 +349,74 @@ procedure mkmemcon is
 			-- if this point is reached, the pin is not used already -> fine
 		end check_if_pin_already_in_list;
 
-		function get_connected_net return universal_string_type.bounded_string is
+		function get_connected_net return type_net_name.bounded_string is
 		-- returns the name of the net connected to the pin
 		-- from object "target" (created after processing section "info"), accessed by ptr_target we
 		-- get the device name, value and package (ptr_target.device_name, ptr_target.device_value and ptr_target.device_package)
 		-- now the net list (from data base) is searched for a net that contains the target device with name_pin_given
-			n			: type_ptr_net := ptr_net;
-			net_name	: universal_string_type.bounded_string;
+			net_name	: type_net_name.bounded_string;
 			net_found	: boolean := false; -- indicates whether a net has been found
 		begin
 			loop_through_net_list:
-			while n /= null loop
-				for p in 1..n.part_ct loop -- loop through pins of net pointed to by n
-
+			for n in 1..length(list_of_nets) loop
+				-- NOTE: element(list_of_nets, positive(n)) means the current net
+				for p in 1..length( element(list_of_nets, positive(n)).pins ) loop -- loop through pins of net
+					-- NOTE: element(element(list_of_nets, positive(n)).pins, positive(p)) means the current pin
 					-- to speed up the process, only non-scan pins are adressed
-					if not n.pin(p).is_bscan_capable then
+					if not element(element(list_of_nets, positive(n)).pins, positive(p)).is_bscan_capable then
 
 						-- on device name match
-						if universal_string_type.to_string(n.pin(p).device_name) = universal_string_type.to_string(ptr_target.device_name) then
+						if to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_name) 
+							= to_string(ptr_target.device_name) then
 
 							-- on pin name match, the net connected to the given pin has been found
-							if universal_string_type.to_string(n.pin(p).device_pin_name) = universal_string_type.to_string(name_pin_given) then
-								net_name := n.name; -- save net name
-								if debug_level >= 100 then
-									put_line("net : " & universal_string_type.to_string(n.name));
-								end if;
+							if to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_pin_name) 
+								= to_string(name_pin_given) then
+								
+								net_name := element(list_of_nets, positive(n)).name; -- save net name
+								put_line("net " & to_string(net_name));
 
 								-- do a net class check in connection with pin direction
-								case n.class is
+								case element(list_of_nets, positive(n)).class is
 									-- class NA | EL | EH nets can not be used to drive data into the target
 									when NA | EL | EH =>
 										case direction_given is
 											when input =>
-												put("ERROR: Input pin '" & universal_string_type.to_string(name_pin_given)
-													& "' port '" & universal_string_type.to_string(name_port_given));
+												write_message (
+													file_handle => file_mkmemcon_messages,
+													text => message_error & "input pin " & to_string(name_pin_given)
+														& " port " & to_string(name_port_given),
+													console => true);
+												
 												if pin_class_given /= control then
-													put(trim(natural'image(index_given),left));
+													write_message (
+														file_handle => file_mkmemcon_messages,
+														text => trim(natural'image(index_given),left),
+														console => true);
 												end if;
-												put_line("' of '" & universal_string_type.to_string(ptr_target.device_name) 
-													& "' is connected to net '"
-													& universal_string_type.to_string(net_name) & "' which is in class '" 
-													& type_net_class'image(n.class) & "' !");
-												put_line("       In nets of this class, no drivers become active !");
+
+												write_message (
+													file_handle => file_mkmemcon_messages,
+													text => " of " & to_string(ptr_target.device_name) 
+														& " is connected to net " & to_string(net_name) 
+														& " which is in class " 
+														& type_net_class'image(element(list_of_nets, positive(n)).class) & " !"
+														& latin_1.lf
+														& "In nets of this class, no drivers become active !",
+													console => true);
 												raise constraint_error;
+													
 											when inout =>
-												put("WARNING: Bidir pin '" & universal_string_type.to_string(name_pin_given)
-													& "' port '" & universal_string_type.to_string(name_port_given));
+												put(message_warning & type_cell_function'image(bidir) & " pin " & to_string(name_pin_given)
+													& " port " & to_string(name_port_given));
 												if pin_class_given /= control then
 													put(trim(natural'image(index_given),left));
 												end if;
-												put_line("' of '" & universal_string_type.to_string(ptr_target.device_name) 
-													& "' is connected to net '"
-													& universal_string_type.to_string(net_name) & "' which is in class '" 
-													& type_net_class'image(n.class) & "' !");
-												put_line("         In nets of this class, no drivers become active !");
+												put_line(" of " & to_string(ptr_target.device_name) 
+													& " is connected to net "
+													& to_string(net_name) & " which is in class " 
+													& type_net_class'image( element(list_of_nets, positive(n)).class ) & " !"
+													& latin_1.lf & "In nets of this class, no drivers become active !");
 											when output =>
 												null; -- CS: put warning ?
 										end case; -- direction_given
@@ -397,22 +428,27 @@ procedure mkmemcon is
 								-- verify value of target, but do this only once
 								-- the global flag invalid_value is used to ensure this message comes up only once
 								if not invalid_value then
-									if universal_string_type.to_string(n.pin(p).device_value) /= universal_string_type.to_string(ptr_target.value) then
+									if to_string( element(element(list_of_nets, positive(n)).pins, positive(p)).device_value) 
+										/= to_string(ptr_target.value) then
 										invalid_value := true;
-										put_line("WARNING: Target value mismatch !");
-										put_line("         value given in model     : " & universal_string_type.to_string(ptr_target.value));
-										put_line("         value found in data base : " & universal_string_type.to_string(n.pin(p).device_value));
+										put_line(message_warning & "target value mismatch !");
+										put_line("value given in model     : " 
+											& to_string(ptr_target.value));
+										put_line("value found in " & text_identifier_database & " : " 
+											& to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_value));
 									end if;
 								end if;
 
 								-- verify package, but do this only once
 								-- the global flag invalid_package is used to ensure this message comes up only once
 								if not invalid_package then
-									if universal_string_type.to_string(n.pin(p).device_package) /= universal_string_type.to_string(ptr_target.device_package) then
+									if to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_package) 
+										/= to_string(ptr_target.device_package) then
 										invalid_package := true;
-										put_line("WARNING: Target package mismatch !");
-										put_line("         package given as parameter : " & universal_string_type.to_string(ptr_target.device_package));
-										put_line("         package found in data base : " & universal_string_type.to_string(n.pin(p).device_package));
+										put_line(message_warning & "target package mismatch !");
+										put_line("package given as parameter : " & to_string(ptr_target.device_package));
+										put_line("package found in " & text_identifier_database & " : " 
+											& to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_package));
 									end if;
 								end if;
 
@@ -426,29 +462,31 @@ procedure mkmemcon is
 						end if; -- on device name match
 					end if; -- pin must not be scan capable
 				end loop;
-				n := n.next; -- advance to next net
 			end loop loop_through_net_list;
 
 			-- if net not found after searching the uut net list, abort
 			if not net_found then
-				put_line("ERROR: Target device '" & universal_string_type.to_string(ptr_target.device_name) 
-					& "' pin '" & universal_string_type.to_string(name_pin_given) & "' not found in data base !");
-				put_line("       Make sure target and pin exists or check spelling (case sensitive) !");
+				write_message (
+					file_handle => file_mkmemcon_messages,
+					text => message_error & "target device " & to_string(ptr_target.device_name) 
+						& " pin " & to_string(name_pin_given) & " not found in " & text_identifier_database & " !"
+						& latin_1.lf & "Make sure target and pin exists or check spelling (case sensitive) !",
+					console => true);
 				raise constraint_error;
 			end if;
 			return net_name; -- send net name back
 		end get_connected_net;
 
- 		name_bic_driver_scratch		: universal_string_type.bounded_string;
- 		name_pin_driver_scratch		: universal_string_type.bounded_string;
-		id_cell_driver_scratch			: natural;
+ 		name_bic_driver_scratch			: type_device_name.bounded_string;
+ 		name_pin_driver_scratch			: type_pin_name.bounded_string;
+		id_cell_driver_scratch			: type_cell_id;
 		id_control_cell_driver_scratch	: type_cell_info_cell_id := -1; -- by default we assume there is no control cell
 		control_cell_disable_value_driver_scratch : type_bit_char_class_0;
 		drive_cell_inverted_scratch	: boolean := false;
- 		name_net_scratch 			: universal_string_type.bounded_string;
- 		name_net_primary 			: universal_string_type.bounded_string;
- 		name_net_secondary 			: universal_string_type.bounded_string;
-		list_of_secondary_nets		: type_list_of_secondary_net_names;
+ 		name_net_scratch 			: type_net_name.bounded_string;
+ 		name_net_primary 			: type_net_name.bounded_string;
+ 		name_net_secondary 			: type_net_name.bounded_string;
+		list_of_secondary_nets		: type_list_of_secondary_net_names.vector;
 		number_of_secondary_nets	: natural;
 		has_receivers				: boolean := false;
 
@@ -456,20 +494,20 @@ procedure mkmemcon is
 		-- searches in atg drive cell list for the driver of the net given in name_net_primary
 		-- if the driver is not in this list, it is in a static net which does not qualify for test generation
 		-- further-on: the disable value of the control cell is derived 
-			c	: type_ptr_cell_list_atg_drive := ptr_cell_list_atg_drive;
-			c1	: type_ptr_cell_list_static_control_cells_class_DX_NR := ptr_cell_list_static_control_cells_class_DX_NR;
+--			c1	: type_ptr_cell_list_static_control_cells_class_DX_NR := ptr_cell_list_static_control_cells_class_DX_NR;
 			driver_found	: boolean := false;
 		begin
-			while c /= null loop -- search atg drive list
-				if universal_string_type.to_string(c.net) = universal_string_type.to_string(name_net_primary) then
+			for d in 1..length(list_of_atg_drive_cells) loop -- search atg drive list
+				-- NOTE: element(list_of_atg_drive_cells, positive(d)) means the current drive cell
+				if to_string(element(list_of_atg_drive_cells, positive(d)).net) = to_string(name_net_primary) then
 					driver_found := true;
-					name_bic_driver_scratch := c.device; 	-- backup device name
-					name_pin_driver_scratch := c.pin;		-- backup driver pin
-					id_cell_driver_scratch	:= c.cell;		-- backup driver cell
+					name_bic_driver_scratch := element(list_of_atg_drive_cells, positive(d)).device; 	-- backup device name
+					name_pin_driver_scratch := element(list_of_atg_drive_cells, positive(d)).pin;		-- backup driver pin
+					id_cell_driver_scratch	:= element(list_of_atg_drive_cells, positive(d)).id;		-- backup driver cell
 
 					--put_line(standard_output,"test0");
 
-					case c.class is
+					case element(list_of_atg_drive_cells, positive(d)).class is
 
 						-- get further information if it is a PU/PD net
 						when PU | PD =>
@@ -477,11 +515,11 @@ procedure mkmemcon is
 							-- this implies that this net is controlled by a control cell
 							--if c.controlled_by_control_cell then
 							-- example: class PU primary_net /CPU_WR device IC300 pin 26 control_cell 6 inverted yes
-							drive_cell_inverted_scratch 	:= c.inverted; -- backup inverted status
-							id_control_cell_driver_scratch	:= c.cell; -- in this case the driver and control cell are the same
+							drive_cell_inverted_scratch 	:= element(list_of_atg_drive_cells, positive(d)).inverted; -- backup inverted status
+							id_control_cell_driver_scratch	:= element(list_of_atg_drive_cells, positive(d)).id; -- in this case the driver and control cell are the same
 							control_cell_disable_value_driver_scratch := disable_value_derived_from_class_and_inverted_status(
-																		class_given 	=> c.class,
-																		inverted_given 	=> c.inverted);
+																		class_given 	=> element(list_of_atg_drive_cells, positive(d)).class,
+																		inverted_given 	=> element(list_of_atg_drive_cells, positive(d)).inverted);
 
 						-- get further information if it is an NR net
 						when NR =>
@@ -491,45 +529,63 @@ procedure mkmemcon is
 							-- in order to obtain disable information
 							-- if list c1 does not provide any information on how to disable the driver, then there is no control 
 							-- cell, which leaves id_control_cell_driver_scratch at -1
-							while c1 /= null loop
-								if universal_string_type.to_string(c1.net) = universal_string_type.to_string(c.net) then
-									if universal_string_type.to_string(c1.device) = universal_string_type.to_string(c.device) then
-										if universal_string_type.to_string(c1.pin) = universal_string_type.to_string(c.pin) then
-											id_control_cell_driver_scratch := c1.cell;
-											case c1.locked_to_enable_state is
-												when true => control_cell_disable_value_driver_scratch := negate_bit_character_class_0(c1.enable_value);
-												when false => control_cell_disable_value_driver_scratch := c1.disable_value;
+							for c in 1..length(list_of_static_control_cells_class_DX_NR) loop
+								-- NOTE: element(list_of_static_control_cells_class_DX_NR, positive(c)) means the current control cell
+								if to_string(element(list_of_static_control_cells_class_DX_NR, positive(c)).net) 
+									= to_string(element(list_of_atg_drive_cells, positive(d)).net) then
+									
+									if to_string(element(list_of_static_control_cells_class_DX_NR, positive(c)).device) 
+										= to_string(element(list_of_atg_drive_cells, positive(d)).device) then
+										
+										if to_string(element(list_of_static_control_cells_class_DX_NR, positive(c)).pin) =
+											to_string(element(list_of_atg_drive_cells, positive(d)).pin) then
+											
+											id_control_cell_driver_scratch := element(list_of_static_control_cells_class_DX_NR, positive(c)).id;
+											
+											case element(list_of_static_control_cells_class_DX_NR, positive(c)).locked_to_enable_state is
+												when true => control_cell_disable_value_driver_scratch := 
+													negate_bit_character_class_0( element(list_of_static_control_cells_class_DX_NR, positive(c)).enable_value );
+												when false => control_cell_disable_value_driver_scratch := 
+													element(list_of_static_control_cells_class_DX_NR, positive(c)).disable_value;
 											end case;
+											
 											-- check for shared control cell and put warning CS: repeat this check but put error when assigning cell values
-											if is_shared(c1.device,c1.cell) then
-												put("WARNING: Shared control cell with ID" & natural'image(c1.cell) & " found: ");
-												put("primary net: " & universal_string_type.to_string(name_net_primary));
-												put(row_separator_1 & "driver: " & universal_string_type.to_string(c.device));
-												put(row_separator_1 & "pin: " & universal_string_type.to_string(c.pin));
-												put(row_separator_1 & "output cell:" & natural'image(c.cell));
-												new_line;
+											if is_shared(element(list_of_static_control_cells_class_DX_NR, positive(c)).device,
+														 element(list_of_static_control_cells_class_DX_NR, positive(c)).id) then
+												put_line(message_warning & "shared control cell with ID" 
+													& type_cell_id'image( element(list_of_static_control_cells_class_DX_NR, positive(c)).id ) 
+													& " found in primary net " & to_string(name_net_primary)
+													& " driver " & to_string( element(list_of_atg_drive_cells, positive(d)).device)
+													& " pin " & to_string(element(list_of_atg_drive_cells, positive(d)).pin)
+													& " output cell" & natural'image( element(list_of_atg_drive_cells, positive(d)).id));
 												-- CS: refine output: show affected drivers and nets
 											end if;
 										end if;
 									end if;
 								end if;
-								c1 := c1.next;
 							end loop;
 
 						-- other net classes are not allowed here and should not be here at all
 						when others =>
-							put_line("ERROR: Class of driver net '" & universal_string_type.to_string(name_net_primary) & "' invalid !");
+							write_message (
+								file_handle => file_mkmemcon_messages,
+								text => message_error & "class of driver net " & to_string(name_net_primary) & " invalid !",
+								console => true);
 							raise constraint_error;
 					end case;
 
 					exit; -- driver found, so no more searching required
 				end if;
-				c := c.next; -- advance to next entry in atg drive cell list
 			end loop;
+			
 			-- if net not found in atg drive list, it does not qualify for test generation, abort:
 			if not driver_found then
-				put_line("ERROR: Primary net '" & universal_string_type.to_string(name_net_primary) & "' does not qualify for test generation !");
-				put_line("       Check net class ! A customized data base for this test might be required.");
+				write_message (
+					file_handle => file_mkmemcon_messages,
+					text => message_error & "primary net " & to_string(name_net_primary) 
+						& " does not qualify for test generation !"
+						& " Check net class ! A customized " & text_identifier_database & " for this test might be required.",
+					console => true);
 				raise constraint_error;
 			end if;
 		end get_bic_driver;
@@ -538,8 +594,8 @@ procedure mkmemcon is
 		procedure add_to_receiver_list (
 		-- called by get_bic_receivers when a receiver is to be appended
 			list 			: in out type_ptr_receiver;
-			name_bic_given	: in universal_string_type.bounded_string;
-			id_cell_given	: in natural
+			name_bic_given	: in type_device_name.bounded_string;
+			id_cell_given	: in type_cell_id
 			) is
 		begin
 			list := new type_receiver'(
@@ -550,22 +606,26 @@ procedure mkmemcon is
 		end add_to_receiver_list;
 
 
-		procedure get_bic_receivers (name_net : universal_string_type.bounded_string) is
+		procedure get_bic_receivers (name_net : in type_net_name.bounded_string) is
 		-- searches in atg expect list for ALL receivers if the net given in name_net
 		-- and adds them one-by-one to the receiver list pointed to by ptr_receiver
 		-- it adds receivers every time it gets called
-			c	: type_ptr_cell_list_atg_expect 	:= ptr_cell_list_atg_expect;
+-- 			c	: type_ptr_cell_list_atg_expect 	:= ptr_cell_list_atg_expect;
 		begin
-			while c /= null loop
-				if universal_string_type.to_string(c.net) = universal_string_type.to_string(name_net) then
+			for e in 1..length(list_of_atg_expect_cells) loop
+				-- NOTE: element(list_of_atg_expect_cells, positive(e)) means the current expect cell
+				if to_string( element(list_of_atg_expect_cells, positive(e)).net ) = to_string(name_net) then
 					has_receivers := true;
-					add_to_receiver_list( list => ptr_receiver, name_bic_given => c.device, id_cell_given => c.cell);
+					add_to_receiver_list( 
+						list => ptr_receiver,
+						name_bic_given => element(list_of_atg_expect_cells, positive(e)).device,
+						id_cell_given => element(list_of_atg_expect_cells, positive(e)).id
+						);
 -- 					put_line(standard_output,universal_string_type.to_string(c.net) & row_separator_0
 -- 						& universal_string_type.to_string(c.device)
 -- 						& natural'image(c.cell));
 					--exit;
 				end if;
-				c := c.next;
 			end loop;
 		end get_bic_receivers;
 
@@ -758,7 +818,7 @@ procedure mkmemcon is
 					value_natural	: natural := 0; -- CS: limit value to (2**width) -1
 					atg				: boolean := false;
 					all_highz		: boolean := false; -- indicates if whole group is to drive highz
-					value_string	: universal_string_type.bounded_string;
+					value_string	: type_universal_string.bounded_string; -- CS: make a special type ?
 					value_format	: type_value_format := number;
 			end case;
 		end record;
@@ -821,17 +881,17 @@ procedure mkmemcon is
 	-- reads the given memory model file section by section
 	-- the sections are based on each other in the follwing order: info, port_pin_map, prog
 	-- if a section is missing, subsequent sections can not be processed
-		line_of_file	: extended_string.bounded_string;
+		line_of_file	: type_long_string.bounded_string;
 		field_count		: natural;
 
 		-- model properties specified in section "info". if a property is missing in sectin "info" a default is used
-		scratch_value			: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
-		scratch_compatibles		: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
-		scratch_manufacturer	: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
-		scratch_date			: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
-		scratch_version			: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
+		scratch_value			: type_device_value.bounded_string := to_bounded_string(text_unknown);
+		scratch_compatibles		: type_universal_string.bounded_string := to_bounded_string(text_unknown);
+		scratch_manufacturer	: type_device_manufacturer.bounded_string := to_bounded_string(text_unknown);
+		scratch_date			: type_universal_string.bounded_string := to_bounded_string(text_unknown);
+		scratch_version			: type_short_string.bounded_string := to_bounded_string(text_unknown);
 		scratch_status			: type_model_status := experimental;
-		scratch_author			: universal_string_type.bounded_string := universal_string_type.to_bounded_string("unknown");
+		scratch_author			: type_model_author.bounded_string := to_bounded_string(text_unknown);
 		scratch_protocol 		: type_protocol := unknown;
 		scratch_write_protect	: type_write_protect := true; -- safety measure
 		scratch_target_class	: type_target_class := unknown;
@@ -843,7 +903,7 @@ procedure mkmemcon is
 		-- example: control in OE 22
 		scratch_pin_class		: type_pin_class; -- like address, data, control
 		scratch_pin_direction	: type_direction; -- like input, output, inout 
-		scratch_port_name		: universal_string_type.bounded_string; -- like D or OE
+		scratch_port_name		: type_port_name.bounded_string; -- like D or OE
 		scratch_port_name_frac	: type_port_vector; -- like [7:0]
 		
 		scratch_control_pin_ct	: natural := 0; -- used for counting control pins and indexing them
@@ -852,8 +912,9 @@ procedure mkmemcon is
 		scratch_option_address_max	: type_option_address_max := -1;
 
 		step_counter	: natural := 0;
+		line_counter	: natural := 0;
 
-		procedure get_groups_from_line (operation : type_step_operation) is
+		procedure get_groups_from_line (operation : in type_step_operation) is
 		-- extracts address, data, control groups from a line like:
 		-- step 1  ADDR  drive ATG  DATA drive HIGHZ  CTRL drive 011
 		-- the address group would be: ADDR  drive ATG
@@ -869,7 +930,7 @@ procedure mkmemcon is
 			--atg_address		: boolean := false;
 			--atg_data		: boolean := false;
 			scratch_value_as_natural: natural; -- holds drive/expect value before being range checked
-			scratch_value_as_string	: universal_string_type.bounded_string;
+			scratch_value_as_string	: type_universal_string.bounded_string;
 
 			-- according to bus width taken from object "target", the range for the address/data/control value is set
 			-- and used to create a subtype that finally holds the value
@@ -893,7 +954,7 @@ procedure mkmemcon is
 			-- as long as no delay commmand found, the delay defaults to zero
 			delay_value		: type_delay_value := 0.0;
 
-			function check_for_bit_character (text_in : string ; search_item : type_bit_character) return boolean is
+			function check_for_bit_character (text_in : in string ; search_item : in type_bit_character) return boolean is
 			-- returns "true" if given string contains the search_item (0,1, x, X, Z, z).
 			-- CS: move to m1_internal.ads
 				length_to_check	: positive := text_in'last-1; -- to exclude the trailing format indicator (b)
@@ -977,24 +1038,29 @@ procedure mkmemcon is
 				return text_out;
 			end strip_format_indicator;
 
-		begin
+		begin -- get_groups_from_line
 			-- process line like: step 1  ADDR  drive ATG  DATA drive HIGHZ  CTRL drive 011
 			-- on match of "step"
-			if to_lower(get_field_from_line(line_of_file,1)) = prog_identifier.step then
+			if to_lower(get_field_from_line(to_string(line_of_file),1)) = prog_identifier.step then
 
 				-- count steps. the step id found must match step_counter
 				step_counter := step_counter + 1; 
 				--if step_counter = positive'value(get_field_from_line(line_of_file,2)) then
-				if step_counter /= positive'value(get_field_from_line(line_of_file,2)) then
+				if step_counter /= positive'value(get_field_from_line( to_string(line_of_file),2)) then
 					-- to loosen the constraints on step ids, it is sufficient to output a warning CS: test possible malicious implications !
-					put_line("WARNING: Line" & natural'image(line_counter) & ". Step ID invalid or already used !");
+					put_line(message_warning & "line" & natural'image(line_counter) 
+						& ": Step ID invalid or already used !");
 				end if;
 
 					-- make sure the maximim field count is not exceeded
-					field_ct := get_field_count(extended_string.to_string(line_of_file));
+					field_ct := get_field_count(to_string(line_of_file));
 					if field_ct > field_ct_max then
-						put_line("ERROR: Too many fields in line ! Line must have no more than" & positive'image(field_ct_max) & " fields !");
-						put_line("       Example: step 1  ADDR  drive ATG  DATA drive Z  CTRL drive 011");
+						write_message (
+							file_handle => file_mkmemcon_messages,
+							text => message_error & "too many fields in line ! Line must have no more than" 
+								& positive'image(field_ct_max) & " fields !"
+								& latin_1.lf & "Example: step 1  ADDR  drive ATG  DATA drive Z  CTRL drive 011",
+							console => true);
 						raise constraint_error;
 					else
 					-- if field count ok then
@@ -1005,63 +1071,86 @@ procedure mkmemcon is
 
 							-- READ ADDRESS GROUP
 							-- if identifier address found
-							if to_lower(get_field_from_line(line_of_file,f)) = prog_identifier.addr then
+							if to_lower(get_field_from_line( to_string(line_of_file),f )) = prog_identifier.addr then
 								if ptr_target.width_address /= 0 then -- if bus width greater zero (means if there are address pins)
 
 									-- get direction (expect, drive) from next field
-									group_address.direction := type_step_direction'value(get_field_from_line(line_of_file,f+1));
+									group_address.direction := type_step_direction'value(get_field_from_line(to_string(line_of_file),f+1));
 									if operation = read and group_address.direction = expect then
-										put_line("ERROR: '" & type_step_direction'image(group_address.direction) &
-											"' on address group not allowed for this kind of operation !");
+										write_message (
+											file_handle => file_mkmemcon_messages,
+											text => message_error & type_step_direction'image(group_address.direction) 
+												& " on address group not allowed for this kind of operation !",
+											console => true);
 										raise constraint_error;
 									end if;
 
-
 									-- get atg or value field from next field
-									if to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.atg then
+									if to_lower(get_field_from_line( to_string(line_of_file),f+2) ) = prog_identifier.atg then
 										case operation is
 											when write | read =>
 												group_address.atg := true;
 											when others =>
-												put_line("ERROR: '" & to_upper(prog_identifier.atg) & "' not allowed in " 
-													& type_step_operation'image(operation) & " step !");
+												write_message (
+													file_handle => file_mkmemcon_messages,
+													text => message_error & to_upper(prog_identifier.atg) 
+														& " not allowed in " 
+														& type_step_operation'image(operation) & " step !",
+													console => true);
 												raise constraint_error;
 										end case;
 
 									-- in case of a drive command, highz is allowed like
 									-- step 5  ADDR  drive highz  DATA drive 45h  CTRL drive 11b -- all address drivers go highz
 									-- step 5  ADDR  drive 001z1b  DATA drive 45h  CTRL drive 11b -- one address driver goes highz
-									elsif group_address.direction = drive and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
+									elsif group_address.direction = drive and
+										to_lower(get_field_from_line( to_string(line_of_file),f+2)) = prog_identifier.highz then
 										group_address.all_highz := true;
 
 									-- expect highz is not allowed:
-									elsif group_address.direction = expect and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
-										put_line("ERROR: Expect 'highz' not allowed in address group !");
+									elsif group_address.direction = expect and
+										to_lower(get_field_from_line( to_string(line_of_file),f+2)) = prog_identifier.highz then
+										write_message (
+											file_handle => file_mkmemcon_messages,
+											text => message_error & "expect " & to_upper(prog_identifier.highz) 
+												& " not allowed in address group !",
+											console => true);
 										raise constraint_error;
 									else
 										-- check if value is given bitwise (with x and z) like 001001x00zb
 										-- take the value field and test if format indicator is 'b' (bitwise assigment does work with binary format only)
 										-- then search for letters x and z in value. if x or z found, set group_address.value_format bit to "bitwise"
-										scratch_value_as_string := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,f+2));
-										if format_is(universal_string_type.to_string(scratch_value_as_string),'b') then
+										scratch_value_as_string := to_bounded_string(get_field_from_line( to_string(line_of_file),f+2));
+										if format_is(to_string(scratch_value_as_string),'b') then
 											-- if format is ok, ensure there is no 'z' within an expect value
 											if group_address.direction = expect then
-												if check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'z') then
-													put_line("ERROR: Expect 'z' not allowed in address group !");
+												if check_for_bit_character(to_string(scratch_value_as_string),'Z') then
+													write_message (
+														file_handle => file_mkmemcon_messages,
+														text => message_error & "expect " & type_bit_character'image('Z') 
+															& " not allowed in address group !",
+														console => true);
 													raise constraint_error;
 												end if;
 											end if;
 											-- if x or z occurs in value, it can be regareded as "bitwise" formated
 											-- the value is to be saved in group_address.value_string
-											if	check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'z') or
-												check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'x') then
+											if	check_for_bit_character(to_string(scratch_value_as_string),'z') or
+												check_for_bit_character(to_string(scratch_value_as_string),'x') then
 													group_address.value_format := bitwise; -- overwrites default "number"
-													if strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))'last = ptr_target.width_address then
-														group_address.value_string := universal_string_type.to_bounded_string(strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))); 
+													if strip_format_indicator(to_string(scratch_value_as_string))'last = ptr_target.width_address then
+														group_address.value_string := 
+															to_bounded_string(strip_format_indicator(to_string(scratch_value_as_string))); 
 														-- CS: range check
-														put_line("WARNING: Line" & natural'image(line_counter) & ": Address specified may be outside the allowed address range !");
+														put_line(message_warning & "line" & natural'image(line_counter) 
+															& ": Address specified may be outside the allowed address range !");
 													else
-														put_line("ERROR: Expected" & positive'image(ptr_target.width_address) & " characters for bitwise assigment !");
+														write_message (
+															file_handle => file_mkmemcon_messages,
+															text => message_error & "expected" 
+																& positive'image(ptr_target.width_address) 
+																& " characters for bitwise assigment !",
+															console => true);
 														raise constraint_error;
 													end if;
 											end if;
@@ -1070,18 +1159,21 @@ procedure mkmemcon is
 										-- if value not given bitwise, it is to be regarded as number
 										-- the value might be given as hex, dec or binary number
 										if group_address.value_format = number then
-											scratch_value_as_natural := string_to_natural(get_field_from_line(line_of_file,f+2));
+											scratch_value_as_natural := string_to_natural(get_field_from_line( to_string(line_of_file),f+2));
 											if scratch_value_as_natural in type_value_address then
 
 												-- if option_address_min is given (greater -1), check if scratch_value is less then option_address_min
 												-- and output error message
 												if ptr_target.option_address_min /= -1 then
 													if scratch_value_as_natural < ptr_target.option_address_min then
-														put_line("ERROR: Address must be greater than the value specified in model by '" 
-															& port_pin_map_identifier.option & row_separator_0 & port_pin_map_identifier.address 
-															& row_separator_0 & port_pin_map_identifier.min
-															& natural'image(ptr_target.option_address_min) & " ("
-															& natural_to_string(ptr_target.option_address_min,16) & ")' !");
+														write_message (
+															file_handle => file_mkmemcon_messages,
+															text => message_error & "address must be greater than the value specified in model by " 
+																& port_pin_map_identifier.option & row_separator_0 & port_pin_map_identifier.address 
+																& row_separator_0 & port_pin_map_identifier.min
+																& natural'image(ptr_target.option_address_min) & " ("
+																& natural_to_string(ptr_target.option_address_min,16) & ")' !",
+															console => true);
 														raise constraint_error;
 													end if;
 												end if;
@@ -1090,85 +1182,113 @@ procedure mkmemcon is
 												-- and output error message
 												if ptr_target.option_address_max /= -1 then
 													if scratch_value_as_natural > ptr_target.option_address_max then
-														put_line("ERROR: Address must be less than the value specified in model by '" 
-															& port_pin_map_identifier.option & row_separator_0 & port_pin_map_identifier.address 
-															& row_separator_0 & port_pin_map_identifier.max
-															& natural'image(ptr_target.option_address_max) & " ("
-															& natural_to_string(ptr_target.option_address_max,16) & ")' !");
+														write_message (
+															file_handle => file_mkmemcon_messages,
+															text => message_error & "address must be less than the value specified in model by " 
+																& port_pin_map_identifier.option & row_separator_0 & port_pin_map_identifier.address 
+																& row_separator_0 & port_pin_map_identifier.max
+																& natural'image(ptr_target.option_address_max) & " ("
+																& natural_to_string(ptr_target.option_address_max,16) & ")' !",
+															console => true);
 														raise constraint_error;
 													end if;
 												end if;
 
 												--and scratch_value <= ptr_target.option_address_max then
-												group_address.value_natural := string_to_natural(get_field_from_line(line_of_file,f+2));
+												group_address.value_natural := string_to_natural(get_field_from_line( to_string(line_of_file),f+2));
 											else
-												put_line("ERROR: Address must not be greater than" 
-													& natural'image(address_max) & " ("
-													& natural_to_string(address_max,16) & ") !");
+												write_message (
+													file_handle => file_mkmemcon_messages,
+													text => message_error & "address must not be greater than" 
+														& natural'image(address_max) & " ("
+														& natural_to_string(address_max,16) & ") !",
+													console => true);
 												raise constraint_error;
 											end if;
 										end if; -- if group_address.value_format = number
 									end if;
 								else 
 									-- if group specified but no address port specified in port_pin_map abort
-									put_line("ERROR: Target has no address port as specified in section '" & section_name.port_pin_map & ".");
-									put_line("       Thus, no address group allowed in section '" & section_name.prog & "' !");
+									write_message (
+										file_handle => file_mkmemcon_messages,
+										text => message_error & "target has no address port specified in section " 
+											& section_name.port_pin_map & "." & latin_1.lf
+											& "Thus, no address group allowed in section '" & section_name.prog & "' !",
+										console => true);
 									raise constraint_error;
 								end if;
 
 							-- READ DATA GROUP
 							elsif -- if identifier data found 
-								to_lower(get_field_from_line(line_of_file,f)) = prog_identifier.data then
+								to_lower(get_field_from_line( to_string(line_of_file),f )) = prog_identifier.data then
 								if ptr_target.width_data /= 0 then -- if bus width greater zero (means if there are data pins)
 
 									-- get direction (expect, drive) from next field
-									group_data.direction := type_step_direction'value(get_field_from_line(line_of_file,f+1));
+									group_data.direction := type_step_direction'value(get_field_from_line( to_string(line_of_file),f+1));
 
 									-- get atg or value field from next field
-									if to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.atg then
+									if to_lower(get_field_from_line( to_string(line_of_file),f+2)) = prog_identifier.atg then
 										case operation is
 											when write | read =>
 												group_data.atg := true;
 											when others =>
-												put_line("ERROR: '" & to_upper(prog_identifier.atg) & "' not allowed in " 
-													& type_step_operation'image(operation) & " step !");
+												write_message (
+													file_handle => file_mkmemcon_messages,
+													text => message_error & to_upper(prog_identifier.atg) & " not allowed in " 
+														 & type_step_operation'image(operation) & " step !",
+													console => true);
 												raise constraint_error;
 										end case;
 
 									-- in case of a drive command, highz is allowed like
 									-- step 5  ADDR  drive highz  DATA drive 45h  CTRL drive 11b -- all address drivers go highz
 									-- step 5  ADDR  drive 001z1b  DATA drive 45h  CTRL drive 11b -- one address driver goes highz
-									elsif group_data.direction = drive and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
+									elsif group_data.direction = drive and
+										to_lower(get_field_from_line( to_string(line_of_file),f+2)) = prog_identifier.highz then
 										group_data.all_highz := true;
 
 									-- expect highz is not allowed:
-									elsif group_data.direction = expect and to_lower(get_field_from_line(line_of_file,f+2)) = prog_identifier.highz then
-										put_line("ERROR: Expect 'highz' not allowed in data group !");
+									elsif group_data.direction = expect and
+										to_lower(get_field_from_line( to_string(line_of_file),f+2)) = prog_identifier.highz then
+										write_message (
+											file_handle => file_mkmemcon_messages,
+											text => message_error & "expect " & to_upper(prog_identifier.highz) 
+												& " not allowed in data group !",
+											console => true);
 										raise constraint_error;
 									else
 										-- check if value is given bitwise (with x and z) like 001001x00zb
 										-- take the value field and test if format indicator is 'b' (bitwise assigment does work with binary format only)
 										-- then search for letters x and z in value. if x or z found, set group_address.value_format bit to "bitwise"
-										scratch_value_as_string := universal_string_type.to_bounded_string(get_field_from_line(line_of_file,f+2));
-										if format_is(universal_string_type.to_string(scratch_value_as_string),'b') then
+										scratch_value_as_string := to_bounded_string(get_field_from_line( to_string(line_of_file),f+2));
+										if format_is(to_string(scratch_value_as_string),'b') then
 											-- if format is ok, ensure there is no 'z' within an expect value
 											if group_data.direction = expect then
-												if check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'z') then
-													put_line("ERROR: Expect 'z' not allowed in data group !");
+												if check_for_bit_character(to_string(scratch_value_as_string),'Z') then
+													write_message (
+														file_handle => file_mkmemcon_messages,
+														text => message_error & "Expect " & type_bit_character'image('z') 
+															& " not allowed in data group !",
+														console => true);
 													raise constraint_error;
 												end if;
 											end if;
 											-- if x or z occurs in value, it can be regareded as "bitwise" formated
 											-- the value is to be saved in group_data.value_string
-											if	check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'z') or
-												check_for_bit_character(universal_string_type.to_string(scratch_value_as_string),'x') then
+											if	check_for_bit_character(to_string(scratch_value_as_string),'z') or
+												check_for_bit_character(to_string(scratch_value_as_string),'x') then
 													group_data.value_format := bitwise; -- overwrites default "number"
-													if strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))'last = ptr_target.width_data then
-														group_data.value_string := universal_string_type.to_bounded_string(strip_format_indicator(universal_string_type.to_string(scratch_value_as_string))); 
+													if strip_format_indicator(to_string(scratch_value_as_string))'last = ptr_target.width_data then
+														group_data.value_string := to_bounded_string(strip_format_indicator(to_string(scratch_value_as_string))); 
 														-- CS: no need yet for range check or warning, as data has no upper or lower boundary
 														--put_line("WARNING: Line" & natural'image(line_counter) & ": Data specified may be outside the allowed address range !");
 													else
-														put_line("ERROR: Expected" & positive'image(ptr_target.width_data) & " characters for bitwise assigment !");
+														write_message (
+															file_handle => file_mkmemcon_messages,
+															text => message_error & "expected" 
+																& positive'image(ptr_target.width_data) 
+																& " characters for bitwise assigment !",
+															console => true);
 														raise constraint_error;
 													end if;
 											end if;
@@ -1179,13 +1299,16 @@ procedure mkmemcon is
 										if group_data.value_format = number then
 
 											-- the value might be given as hex, dec or binary number
-											scratch_value_as_natural := string_to_natural(get_field_from_line(line_of_file,f+2));
+											scratch_value_as_natural := string_to_natural(get_field_from_line( to_string(line_of_file),f+2));
 											if scratch_value_as_natural in type_value_data then
-												group_data.value_natural := string_to_natural(get_field_from_line(line_of_file,f+2));
+												group_data.value_natural := string_to_natural(get_field_from_line( to_string(line_of_file),f+2));
 											else
-												put_line("ERROR: Data value must not be greater than" 
-													& natural'image(data_max) & " or "
-													& natural_to_string(data_max,16) & " !");
+												write_message (
+													file_handle => file_mkmemcon_messages,
+													text => message_error & "data value must not be greater than" 
+														& natural'image(data_max) & " or "
+														& natural_to_string(data_max,16) & " !",
+													console => true);
 												raise constraint_error;
 											end if;
 
@@ -2206,53 +2329,47 @@ procedure mkmemcon is
 		end write_pin_list;
 
 	begin -- write_info_section
-		-- create sequence file
-		create( file_sequence, 
-			name => (compose (universal_string_type.to_string(name_test), universal_string_type.to_string(name_test), "seq")));
-		set_output(file_sequence); -- set data sink
+		write_message (
+			file_handle => file_mkmemcon_messages,
+			text => "writing test info ...",
+			console => false);
 
-		put_line(section_mark.section & row_separator_0 & test_section.info);
-		put_line(" created by memory/module connections test generator version "& version);
-		--put_line(" date             : " & m1.date_now);
-		put_line(row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & m1.date_now);
-		--put_line(" data_base        : " & universal_string_type.to_string(ptr_target.data_base));
-		put_line(row_separator_0 & section_info_item.data_base & (colon_position-(2+section_info_item.data_base'last)) * row_separator_0 & ": " & universal_string_type.to_string(ptr_target.data_base));
-		--put_line(" test_name        : " & universal_string_type.to_string(ptr_target.test_name));
-		put_line(row_separator_0 & section_info_item.test_name & (colon_position-(2+section_info_item.test_name'last)) * row_separator_0 & ": " & universal_string_type.to_string(ptr_target.test_name));
-		--put_line(" test_profile     : " & type_test_profile'image(info_item.test_profile));
-		put_line(row_separator_0 & section_info_item.test_profile & (colon_position-(2+section_info_item.test_profile'last)) * row_separator_0 & ": " & type_test_profile'image(info_item.test_profile));
-		--put_line(" end_sdr          : " & type_end_sdr'image(info_item.end_sdr));
-		put_line(row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(info_item.end_sdr));
-		--put_line(" end_sir          : " & type_end_sir'image(info_item.end_sir));
-		put_line(row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(info_item.end_sir));
-		put_line(" target_name      : " & universal_string_type.to_string(ptr_target.device_name));
-		put_line(" target_class     : " & type_target_class'image(ptr_target.class_target));
+		put_line(file_sequence, section_mark.section & row_separator_0 & test_section.info);
+		put_line(file_sequence, " created by " & name_module_mkmemcon & " version "& version);
+		put_line(file_sequence, row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & date_now);
+		put_line(file_sequence, row_separator_0 & section_info_item.data_base & (colon_position-(2+section_info_item.data_base'last)) * row_separator_0 & ": " & universal_string_type.to_string(ptr_target.data_base));
+		put_line(file_sequence, row_separator_0 & section_info_item.test_name & (colon_position-(2+section_info_item.test_name'last)) * row_separator_0 & ": " & universal_string_type.to_string(ptr_target.test_name));
+		put_line(file_sequence, row_separator_0 & section_info_item.test_profile & (colon_position-(2+section_info_item.test_profile'last)) * row_separator_0 & ": " & type_test_profile'image(info_item.test_profile));
+		put_line(file_sequence, row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(info_item.end_sdr));
+		put_line(file_sequence, row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(info_item.end_sir));
+		put_line(file_sequence, " target_name      : " & universal_string_type.to_string(ptr_target.device_name));
+		put_line(file_sequence, " target_class     : " & type_target_class'image(ptr_target.class_target));
 		case ptr_target.class_target is 
 			when RAM | ROM =>
-				put_line(" package          : " & universal_string_type.to_string(ptr_target.device_package));
-				put_line(" value            : " & universal_string_type.to_string(ptr_target.value));
-				put_line(" compatibles      : " & universal_string_type.to_string(ptr_target.compatibles));
-				put_line(" manufacturer     : " & universal_string_type.to_string(ptr_target.manufacturer));
-				put_line(" protocol         : " & type_protocol'image(ptr_target.protocol));
-				put_line(" algorithm        : " & type_algorithm'image(ptr_target.algorithm));
-				put_line(" write_protect    : " & type_write_protect'image(ptr_target.write_protect));
+				put_line(file_sequence, " package          : " & universal_string_type.to_string(ptr_target.device_package));
+				put_line(file_sequence, " value            : " & universal_string_type.to_string(ptr_target.value));
+				put_line(file_sequence, " compatibles      : " & universal_string_type.to_string(ptr_target.compatibles));
+				put_line(file_sequence, " manufacturer     : " & universal_string_type.to_string(ptr_target.manufacturer));
+				put_line(file_sequence, " protocol         : " & type_protocol'image(ptr_target.protocol));
+				put_line(file_sequence, " algorithm        : " & type_algorithm'image(ptr_target.algorithm));
+				put_line(file_sequence, " write_protect    : " & type_write_protect'image(ptr_target.write_protect));
 			when others => null;
 		end case;
-		put_line(" model_file       : " & universal_string_type.to_string(ptr_target.model_file));
-		put_line(" model_version    : " & universal_string_type.to_string(ptr_target.version));
-		put_line(" model_author     : " & universal_string_type.to_string(ptr_target.author));
-		put_line(" model_status     : " & type_model_status'image(ptr_target.status));
+		put_line(file_sequence, " model_file       : " & universal_string_type.to_string(ptr_target.model_file));
+		put_line(file_sequence, " model_version    : " & universal_string_type.to_string(ptr_target.version));
+		put_line(file_sequence, " model_author     : " & universal_string_type.to_string(ptr_target.author));
+		put_line(file_sequence, " model_status     : " & type_model_status'image(ptr_target.status));
 
-		put_line(" step_count_by_model");
-		put_line("  init            :" & natural'image(ptr_target.step_count_init));
-		put_line("  read            :" & natural'image(ptr_target.step_count_read));
-		put_line("  write           :" & natural'image(ptr_target.step_count_write));
-		put_line("  disable         :" & natural'image(ptr_target.step_count_disable));
-		put_line("  total           :" & natural'image(ptr_target.step_count_total));
+		put_line(file_sequence, " step_count_by_model");
+		put_line(file_sequence, "  init            :" & natural'image(ptr_target.step_count_init));
+		put_line(file_sequence, "  read            :" & natural'image(ptr_target.step_count_read));
+		put_line(file_sequence, "  write           :" & natural'image(ptr_target.step_count_write));
+		put_line(file_sequence, "  disable         :" & natural'image(ptr_target.step_count_disable));
+		put_line(file_sequence, "  total           :" & natural'image(ptr_target.step_count_total));
 		write_pin_list;
 
-		put_line(section_mark.endsection); 
-		new_line;
+		put_line(file_sequence, section_mark.endsection); 
+		new_line(file_sequence);
 	end write_info_section;
 
 
@@ -2340,11 +2457,13 @@ procedure mkmemcon is
 								if ci.value = co.value then -- if value is the same, mark cell to be skipped
 									co.skip := true;
 								else -- if values differ, we have a control cell conflict
-									put_line(standard_output,"ERROR:"
-										& "line" & positive'image(line_number) & ":"
-										& " Shared control cell conflict in" 
-										& row_separator_0 & type_pin_class'image(pin_class) 
-										& " group !");
+									write_message (
+										file_handle => file_mkmemcon_messages,
+										text => message_error & "in line" & positive'image(line_number) & ":"
+											& " Shared control cell conflict in" 
+											& row_separator_0 & type_pin_class'image(pin_class) 
+											& " group !",
+										console => true);
 									-- CS: refine output by line number
 									raise constraint_error;
 								end if;
@@ -2413,7 +2532,7 @@ procedure mkmemcon is
 								while p /= null loop
 									if p.class_pin = pin_class then
 										if universal_string_type.to_string(p.name_bic_driver) = universal_string_type.to_string(b.name) then
-											put("  set " & universal_string_type.to_string(b.name) & " drv boundary");
+											put(file_sequence, "  set " & universal_string_type.to_string(b.name) & " drv boundary");
 											bic_required_as_driver := true; -- mark bic as used for this group
 											exit; -- bic is used, so no more looking ahead requried
 										end if;
@@ -2503,7 +2622,7 @@ procedure mkmemcon is
 				
 					if self_monitoring then
 						-- ASSIGN EXPECT PATTERN FOR SELF MONITORING
-						put_line("  -- optional self monitoring:");
+						put_line(file_sequence, "  -- optional self monitoring:");
 						for bic_id in 1..summary.bic_ct loop -- loop in bic list pointed to by b
 							b := ptr_bic;
 							while b /= null loop
@@ -2524,7 +2643,7 @@ procedure mkmemcon is
 															-- on match of bic name
 															if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
 																bic_required_for_self_monitoring := true;
-																put("  set " & universal_string_type.to_string(b.name) & " exp boundary");
+																put(file_sequence, "  set " & universal_string_type.to_string(b.name) & " exp boundary");
 																exit l_1; -- no need to search for further occurences of bic in pin list
 															end if;
 															p.receiver_list := p.receiver_list.next;
@@ -2550,14 +2669,14 @@ procedure mkmemcon is
 																		when '0' | '1' =>
 																			-- expect 0/1 addresses input cells
 																			-- assign value to input cell
-																				put(natural'image(p.receiver_list.id_cell) 
+																				put(file_sequence, natural'image(p.receiver_list.id_cell) 
 																					& sxr_assignment_operator.assign
 																					& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
 																				);
 																		when 'x' | 'X' | 'z' | 'Z' =>
 																			-- expect 0/1 addresses input cells
 																			-- assign value to input cell
-																				put(natural'image(p.receiver_list.id_cell) 
+																				put(file_sequence, natural'image(p.receiver_list.id_cell) 
 																					& sxr_assignment_operator.assign
 																					& "x"
 																				);
@@ -2602,7 +2721,7 @@ procedure mkmemcon is
 														-- on match of bic name
 														if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
 															bic_required_as_receiver := true;
-															put("  set " & universal_string_type.to_string(b.name) & " exp boundary");
+															put(file_sequence, "  set " & universal_string_type.to_string(b.name) & " exp boundary");
 															exit l_2; -- no need to search for further occurences of bic in pin list
 														end if;
 														p.receiver_list := p.receiver_list.next;
@@ -2628,14 +2747,14 @@ procedure mkmemcon is
 																	when '0' | '1' =>
 																		-- expect 0/1 addresses input cells
 																		-- assign value to input cell
-																			put(natural'image(p.receiver_list.id_cell) 
+																			put(file_sequence, natural'image(p.receiver_list.id_cell) 
 																				& sxr_assignment_operator.assign
 																				& type_bit_char_class_2'image(v(i))(2) -- strip delimiters
 																			);
 																	when 'x' | 'X' | 'z' | 'Z' =>
 																		-- expect 0/1 addresses input cells
 																		-- assign value to input cell
-																			put(natural'image(p.receiver_list.id_cell) 
+																			put(file_sequence, natural'image(p.receiver_list.id_cell) 
 																				& sxr_assignment_operator.assign
 																				& "x"
 																			);
@@ -2697,7 +2816,7 @@ procedure mkmemcon is
 		s : type_ptr_step; -- the list of steps serves as data pool
 	begin
 		new_line;
-		put_line("-- operation: " & type_step_operation'image(operation_given));
+		put_line(file_sequence, "-- operation: " & type_step_operation'image(operation_given));
 		-- sorting by step id can be achieved by searching the step list from start to end (even if not all steps are init or disable types)
 		for i in 1..ptr_target.step_count_total loop
 			s := ptr_step; -- set step pointer at end of step list
@@ -2705,20 +2824,20 @@ procedure mkmemcon is
 				if s.operation = operation_given then
 					-- the first step id that matches i is to be output
 					if s.step_id = i then 
-						put(" -- model step" & positive'image(s.step_id));
+						put(file_sequence, " -- model step" & positive'image(s.step_id));
 						case operation_given is
 						-- since init and disable are straight forward blocks (no loops or branches) their steps must be sorted by id and put in the sequence file
 							when init | disable =>
-								put_line(":");
+								put_line(file_sequence, ":");
 							when write | read =>
-								put_line("." & trim(positive'image(lut_step_id_given),left) & ":"); -- model step 6.3
+								put_line(file_sequence, "." & trim(positive'image(lut_step_id_given),left) & ":"); -- model step 6.3
 						end case;
 
 						if s.delay_value = 0.0 then -- if delay value is zero it is a regular test step (otherwise it is a delay)
 							if s.group_address.width > 0 then
-								put("  -- ADDR " & type_step_direction'image(s.group_address.direction));
+								put(file_sequence, "  -- ADDR " & type_step_direction'image(s.group_address.direction));
 								if s.group_address.atg then
-									put_line(" ATG " & natural_to_string(atg_address_given,16));
+									put_line(file_sequence, " ATG " & natural_to_string(atg_address_given,16));
 									assign_cells(
 										pin_class 		=> address,
 										direction 		=> s.group_address.direction,
@@ -2727,7 +2846,7 @@ procedure mkmemcon is
 										line_number		=> s.line_number
 										);
 								elsif s.group_address.all_highz then
-									put_line(" ALL HIGHZ ");
+									put_line(file_sequence, " ALL HIGHZ ");
 									assign_cells(
 										pin_class 		=> address,
 										direction 		=> s.group_address.direction,
@@ -2738,7 +2857,7 @@ procedure mkmemcon is
 								else
 									case s.group_address.value_format is
 										when number =>
-											put_line(row_separator_0 & natural_to_string(s.group_address.value_natural,16));
+											put_line(file_sequence, row_separator_0 & natural_to_string(s.group_address.value_natural,16));
 											assign_cells(
 												pin_class 		=> address,
 												direction 		=> s.group_address.direction,
@@ -2760,13 +2879,13 @@ procedure mkmemcon is
 							end if;
 
 							if s.group_data.width > 0 then
-								put("  -- DATA " & type_step_direction'image(s.group_data.direction));
+								put(file_sequence, "  -- DATA " & type_step_direction'image(s.group_data.direction));
 								if s.group_data.atg then
-									put_line(" ATG " & natural_to_string(atg_data_given,16));
+									put_line(file_sequence, " ATG " & natural_to_string(atg_data_given,16));
 
 									-- if we are reading from the target, data drivers must be disabled:
 									if s.group_data.direction = expect then
-										put_line("  -- disable data drivers");
+										put_line(file_sequence, "  -- disable data drivers");
 										assign_cells(
 											pin_class 		=> data,
 											direction 		=> drive,
@@ -2778,7 +2897,7 @@ procedure mkmemcon is
 									end if;
 
 									-- assign data driver cells
-									put_line("  -- set data expect");
+									put_line(file_sequence, "  -- set data expect");
 									assign_cells(
 										pin_class 		=> data,
 										direction 		=> s.group_data.direction,
@@ -2788,7 +2907,7 @@ procedure mkmemcon is
 										);
 
 								elsif s.group_data.all_highz then
-									put_line(" ALL HIGHZ ");
+									put_line(file_sequence, " ALL HIGHZ ");
 									assign_cells(
 										pin_class 		=> data,
 										direction 		=> s.group_data.direction,
@@ -2799,7 +2918,7 @@ procedure mkmemcon is
 								else
 									case s.group_data.value_format is
 										when number =>
-											put_line(row_separator_0 & natural_to_string(s.group_data.value_natural,16));
+											put_line(file_sequence, row_separator_0 & natural_to_string(s.group_data.value_natural,16));
 											assign_cells(
 												pin_class 		=> data,
 												direction 		=> s.group_data.direction,
@@ -2808,7 +2927,7 @@ procedure mkmemcon is
 												line_number		=> s.line_number
 												);
 										when bitwise =>
-											put_line(row_separator_0 & universal_string_type.to_string(s.group_data.value_string));
+											put_line(file_sequence, row_separator_0 & universal_string_type.to_string(s.group_data.value_string));
 											assign_cells(
 												pin_class 		=> data,
 												direction 		=> s.group_data.direction,
@@ -2821,9 +2940,9 @@ procedure mkmemcon is
 							end if;
 
 							if s.group_control.width > 0 then
-								put("  -- CTRL " & type_step_direction'image(s.group_control.direction));
+								put(file_sequence, "  -- CTRL " & type_step_direction'image(s.group_control.direction));
 								if s.group_control.all_highz then
-									put_line(" ALL HIGHZ ");
+									put_line(file_sequence, " ALL HIGHZ ");
 									assign_cells(
 										pin_class 		=> control,
 										direction 		=> s.group_control.direction,
@@ -2834,7 +2953,7 @@ procedure mkmemcon is
 								else
 									case s.group_control.value_format is
 										when number =>
-											put_line(row_separator_0 & natural_to_string(
+											put_line(file_sequence, row_separator_0 & natural_to_string(
 												natural_in 	=> s.group_control.value_natural,
 												base		=> 2, -- output in binary format
 												length		=> ptr_target.width_control) -- fill leading zeroes
@@ -2847,7 +2966,7 @@ procedure mkmemcon is
 												line_number		=> s.line_number
 												);
 										when bitwise =>
-											put_line(row_separator_0 & universal_string_type.to_string(s.group_control.value_string));
+											put_line(file_sequence, row_separator_0 & universal_string_type.to_string(s.group_control.value_string));
 											assign_cells(
 												pin_class 		=> control,
 												direction 		=> s.group_control.direction,
@@ -2863,7 +2982,7 @@ procedure mkmemcon is
 							--new_line;
 						else
 							--new_line;
-							put_line("  " & prog_identifier.dely & type_delay_value'image(s.delay_value));
+							put_line(file_sequence, "  " & prog_identifier.dely & type_delay_value'image(s.delay_value));
 						end if;
 
 						exit;
@@ -2879,27 +2998,32 @@ procedure mkmemcon is
 		lut_step_id		: positive;
 		lut_step 		: type_get_step_from_lut_result;
 	begin -- write_sequences
-		new_line(2);
+		new_line(file_sequence, 2);
 
 		all_in(sample);
 		write_ir_capture;
-		write_sir; new_line;
+		write_sir; 
+		new_line(file_sequence);
 
 		load_safe_values;
-		write_sdr; new_line;
+		write_sdr;
+		new_line(file_sequence);		
 
 		all_in(extest);
-		write_sir; new_line;
+		write_sir;
+		new_line(file_sequence);
 
 		load_safe_values;
-		write_sdr; new_line;
+		write_sdr;
+		new_line(file_sequence);		
 
 -- 		all_in(extest);
 -- 		write_sir; new_line;
 
 		load_static_drive_values;
 		load_static_expect_values;
-		write_sdr; new_line;
+		write_sdr;
+		new_line(file_sequence);
 
 		write_operation(init);
 		--write_operation(write,1000,10);
@@ -2931,60 +3055,85 @@ procedure mkmemcon is
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
-	put_line("memory/module interconnect test generator version "& Version);
-	put_line("=====================================================");
+	action := generate;
+	test_profile := infrastructure;
+	
+	-- create message/log file
+ 	write_log_header(version);
 
-	-- ALL COMMAND LINE ARGUMENTS WILL BE PASSED WHEN CREATING OBJECT "TARGET" POINTED TO BY PTR_TARGET
+	put_line(to_upper(name_module_mkmemcon) & " version " & version);
+	put_line("===========================================");
+
+	direct_messages; -- directs messages to logfile. required for procedures and functions in external packages
+
 	prog_position	:= 10;
- 	name_file_data_base:= universal_string_type.to_bounded_string(Argument(1));
- 	put_line ("data base      : " & universal_string_type.to_string(name_file_data_base));
- 
+ 	name_file_database := to_bounded_string(argument(1));
+
+	write_message (
+		file_handle => file_mkmemcon_messages,
+		text => text_identifier_database & row_separator_0 & to_string(name_file_database),
+		console => true);
+
 	prog_position	:= 20;
- 	name_test:= universal_string_type.to_bounded_string(Argument(2));
- 	put_line ("test name      : " & universal_string_type.to_string(name_test));
- 
+	name_test := to_bounded_string(argument(2));
+	write_message (
+		file_handle => file_mkmemcon_messages,
+		text => text_test_name & row_separator_0 & to_string(name_test),
+		console => true);
+
+	
+	-- ALL COMMAND LINE ARGUMENTS WILL BE PASSED WHEN CREATING OBJECT "TARGET" POINTED TO BY PTR_TARGET
 	prog_position	:= 30;
- 	target_device := universal_string_type.to_bounded_string(Argument(3));
- 	put_line ("target device  : " & universal_string_type.to_string(target_device));
+ 	target_device := to_bounded_string(argument(3));
+	write_message (
+		file_handle => file_mkmemcon_messages,
+		text => "target device " & to_string(target_device),
+		console => true);
  
 	prog_position	:= 40;
- 	name_file_model_memory := universal_string_type.to_bounded_string(Argument(4));
- 	put_line ("model file     : " & universal_string_type.to_string(name_file_model_memory));
+ 	name_file_model_memory := to_bounded_string(argument(4));
+	write_message (
+		file_handle => file_mkmemcon_messages,
+		text => "model file " & to_string(name_file_model_memory),
+		console => true);
  
 	prog_position	:= 50;
- 	device_package := universal_string_type.to_bounded_string(Argument(5));
- 	put_line ("device package : " & universal_string_type.to_string(device_package));
-
-	prog_position	:= 55;
-	if argument_count = 6 then
-		debug_level := natural'value(argument(6));
-		put_line("debug level    :" & natural'image(debug_level));
-	end if;
+ 	device_package := to_bounded_string(argument(5));
+	write_message (
+		file_handle => file_mkmemcon_messages,
+		text => "device package " & to_string(device_package),
+		console => true);
 	-- COMMAND LINE ARGUMENTS COLLECTING DONE
 
+	prog_position	:= 60;
+	create_temp_directory;
+	
 	-- CS: get algorithm as argument
 	-- for the time being it is fixed
-	algorithm := standard;
-
-	prog_position	:= 60;
-	read_data_base;
-	prog_position	:= 65;
-	read_memory_model;
-
-	make_lut;
+	--algorithm := standard;
 
 	prog_position	:= 70;
- 	create_temp_directory;
+	degree_of_database_integrity_check := light;
+	read_uut_database;
+
+	prog_position	:= 80;
+	read_memory_model;
+
+	prog_position	:= 90;	
+	make_lut;
 
 	-- create test directory
 	prog_position	:= 80;
-	create_test_directory(
-		test_name 			=> universal_string_type.to_string(name_test),
-		warnings_enabled 	=> false
-		);
+	create_test_directory(name_test);
 
+	-- create sequence file
+	prog_position	:= 85;
+	create( file_sequence, 
+		name => (compose (to_string(name_test), to_string(name_test), file_extension_sequence)));
+	
 	prog_position	:= 90; 
 	write_info_section;
+	
 	prog_position	:= 100;
 	write_test_section_options;
 
@@ -2996,47 +3145,88 @@ begin
 
 	prog_position	:= 130;
 	set_output(standard_output);
-
-	prog_position	:= 140;
 	close(file_sequence);
-
-	prog_position	:= 150;
+	
+	prog_position	:= 140;
 	write_diagnosis_netlist(
-		data_base	=>	universal_string_type.to_string(name_file_data_base),
-		test_name	=>	universal_string_type.to_string(name_test)
+		database	=>	name_file_database,
+		test		=>	name_test
 		);
 
-	exception
-		when event: others =>
-			set_output(standard_output);
-			set_exit_status(failure);
-			case prog_position is
-				when 10 =>
-					put_line("ERROR: Data base file missing or insufficient access rights !");
-					put_line("       Provide data base name as argument. Example: mkmemcon my_uut.udb");
-				when 20 =>
-					put_line("ERROR: Test name missing !");
-					put_line("       Provide test name as argument ! Example: mkmemcon my_uut.udb my_memory_test");
-				when 30 =>
-					put_line("ERROR: Target device missing !");
-					put_line("       Provide target device as argument ! Example: mkmemcon my_uut.udb my_memory_test IC22");
-				when 40 =>
-					put_line("ERROR: Device model missing !");
-					put_line("       Provide device model as argument ! Example: mkmemcon my_uut.udb my_memory_test IC22 models/sdram.txt");
-				when 50 =>
-					put_line("ERROR: Device package missing !");
-					put_line("       Provide device package as argument ! Example: mkmemcon my_uut.udb my_memory_test IC22 models/sdram.txt SOP24");
-					put_line("       Use dummy package for cluster/module test. Example: mkmemcon my_uut.udb my_module_test X39 models/module.txt dummy");
-				when 55 =>
-					put_line("ERROR: Invalid argument for debug level. Debug level must be provided as natural number !");
+	prog_position	:= 150;
+	write_log_footer;
+	
+	exception when event: others =>
+		set_exit_status(failure);
 
+		write_message (
+			file_handle => file_mkintercon_messages,
+			text => message_error & "at program position" & natural'image(prog_position),
+			console => true);
 
-				when others =>
-					put("unexpected exception: ");
-					put_line(exception_name(event));
-					put(exception_message(event)); new_line;
-					put_line("error in model file in line :" & natural'image(line_counter));
-					put_line("program error at position " & natural'image(prog_position));
-			end case;
+		if is_open(file_sequence) then
+			close(file_sequence);
+		end if;
 
+		case prog_position is
+			when 10 =>
+				write_message (
+					file_handle => file_mkmemcon_messages,
+					text => message_error & text_identifier_database & " file missing !" & latin_1.lf
+						& "Provide " & text_identifier_database & " name as argument. Example: "
+						& name_module_mkmemcon & row_separator_0 & example_database,
+					console => true);
+			when 20 =>
+				write_message (
+					file_handle => file_mkmemcon_messages,
+					text => message_error & "test name missing !" & latin_1.lf
+						& "Provide test name as argument ! Example: " 
+						& name_module_mkmemcon & row_separator_0 & example_database 
+						& " my_memory_test",
+					console => true);
+			when 30 =>
+				write_message (
+					file_handle => file_mkmemcon_messages,
+					text => message_error & " target device missing !" & latin_1.lf
+						& "Provide target name as argument. Example: "
+						& name_module_mkmemcon & row_separator_0 & example_database
+						& " my_memory_test IC22",
+					console => true);
+			when 40 =>
+				write_message (
+					file_handle => file_mkmemcon_messages,
+					text => message_error & " target model missing !" & latin_1.lf
+						& "Provide target model as argument. Example: "
+						& name_module_mkmemcon & row_separator_0 & example_database
+						& " my_memory_test IC22 models/sdram.txt",
+					console => true);
+			when 50 =>
+				write_message (
+					file_handle => file_mkmemcon_messages,
+					text => message_error & " target package missing !" & latin_1.lf
+						& "Provide target package as argument. Example: "
+						& name_module_mkmemcon & row_separator_0 & example_database
+						& " my_memory_test IC22 models/sdram.txt SOP24" & latin_1.lf
+						& " Use a dummy package for cluster/module test.",
+					console => true);
+
+			when others =>
+				write_message (
+					file_handle => file_mkmemcon_messages,
+					text => message_error & "in model file. Line" & natural'image(line_counter),
+					console => true);
+
+				write_message (
+					file_handle => file_mkmemcon_messages,
+					text => "exception name: " & exception_name(event),
+					console => true);
+
+				write_message (
+					file_handle => file_mkmemcon_messages,
+					text => "exception message: " & exception_message(event),
+					console => true);
+				
+		end case;
+
+		write_log_footer;
 end mkmemcon;
