@@ -66,6 +66,7 @@ procedure mkmemcon is
 	use type_port_name;
 	use type_package_name;
 	use type_net_name;
+    use type_list_of_bics;	
 	use type_list_of_nets;
 	use type_list_of_pins;
 	use type_list_of_atg_drive_cells;
@@ -377,7 +378,7 @@ procedure mkmemcon is
 								= to_string(name_pin_given) then
 								
 								net_name := element(list_of_nets, positive(n)).name; -- save net name
-								put_line("net " & to_string(net_name));
+								--put_line("net " & to_string(net_name));
 
 								-- do a net class check in connection with pin direction
 								case element(list_of_nets, positive(n)).class is
@@ -435,9 +436,9 @@ procedure mkmemcon is
 										/= to_string(ptr_target.value) then
 										invalid_value := true;
 										put_line(message_warning & "target value mismatch !");
-										put_line("value given in model     : " 
+										put_line(" value given in model file is " 
 											& to_string(ptr_target.value));
-										put_line("value found in " & text_identifier_database & " : " 
+										put_line(" value found in " & text_identifier_database & " is "
 											& to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_value));
 									end if;
 								end if;
@@ -449,8 +450,8 @@ procedure mkmemcon is
 										/= to_string(ptr_target.device_package) then
 										invalid_package := true;
 										put_line(message_warning & "target package mismatch !");
-										put_line("package given as parameter : " & to_string(ptr_target.device_package));
-										put_line("package found in " & text_identifier_database & " : " 
+										put_line(" package given as parameter is " & to_string(ptr_target.device_package));
+										put_line(" package found in " & text_identifier_database & " is " 
 											& to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_package));
 									end if;
 								end if;
@@ -586,7 +587,7 @@ procedure mkmemcon is
 				write_message (
 					file_handle => file_mkmemcon_messages,
 					text => message_error & "primary net " & to_string(name_net_primary) 
-						& " does not qualify for test generation !"
+						& " does not qualify for test generation !" & latin_1.lf
 						& " Check net class ! A customized " & text_identifier_database & " for this test might be required.",
 					console => true);
 				raise constraint_error;
@@ -879,7 +880,8 @@ procedure mkmemcon is
 				ptr_target.step_count_read + ptr_target.step_count_disable;
 	end add_to_step_list;
 
-
+	line_counter	: natural := 0;
+	
 	procedure read_memory_model is
 	-- reads the given memory model file section by section
 	-- the sections are based on each other in the follwing order: info, port_pin_map, prog
@@ -915,7 +917,6 @@ procedure mkmemcon is
 		scratch_option_address_max	: type_option_address_max := -1;
 
 		step_counter	: natural := 0;
-		line_counter	: natural := 0;
 
 		procedure get_groups_from_line (operation : in type_step_operation) is
 		-- extracts address, data, control groups from a line like:
@@ -1484,7 +1485,10 @@ procedure mkmemcon is
 		end mirror_index_of_control_pins;
 
 	begin -- read memory model
-		put_line("reading memory/module model file ...");
+		write_message (
+			file_handle => file_mkmemcon_messages,
+			text => "reading memory/module model file ...",
+			console => true);
 
 		-- open model file as given via command line argument
 		open(
@@ -1503,13 +1507,12 @@ procedure mkmemcon is
 			field_count := get_field_count(to_string(line_of_file)); -- get number of fields (separated by space)
 
 			if field_count > 0 then -- if line contains anything useful. empty lines are skipped
--- 				if debug_level >= 110 then
--- 					put_line("line read : ->" & extended_string.to_string(line_of_file) & "<-");
--- 				end if;
+-- 				put_line("line read : " & to_string(line_of_file));
 
 				-- SECTION "INFO" RELATED BEGIN
 				if model_section_entered.info then
-
+					--put_line(" reading " & section_name.info & " ...");
+					
 					-- once inside section "info", wait for end of section mark
 					if get_field_from_line( to_string(line_of_file),1) = section_mark.endsection then -- when endsection found
 						model_section_entered.info := false; -- reset section entered flag
@@ -1673,11 +1676,13 @@ procedure mkmemcon is
 						-- scratch variables will be used to create an object of type type_targt pointed to by ptr_target
 -- 						if debug_level >= 100 then
 -- 							put_line("info : ->" & extended_string.to_string(line_of_file) & "<-");
--- 						end if;
+						-- 						end if;
+-- 						put_line("line read : " & to_string(line_of_file));
 
 						prog_position := 1310;
 						if get_field_from_line( to_string(line_of_file),1) = info_item.value then
 							scratch_value := to_bounded_string(get_field_from_line( to_string(line_of_file),2));
+-- 							put_line(row_separator_0 & info_item.value & row_separator_0 & to_string(scratch_value));
 						end if;
 
 						prog_position := 1320;
@@ -1713,6 +1718,7 @@ procedure mkmemcon is
 						prog_position := 1380;
 						if get_field_from_line(to_string(line_of_file),1) = info_item.manufacturer then
 							scratch_manufacturer := to_bounded_string(get_field_from_line(to_string(line_of_file),2));
+-- 							put_line(row_separator_0 & info_item.manufacturer & row_separator_0 & to_string(scratch_manufacturer));
 						end if;
 
 						prog_position := 1390;
@@ -1723,6 +1729,7 @@ procedure mkmemcon is
 						prog_position := 1400;
 						if get_field_from_line(to_string(line_of_file),1) = info_item.protocol then
 							scratch_protocol := type_protocol'value(get_field_from_line(to_string(line_of_file),2));
+-- 							put_line(row_separator_0 & info_item.protocol & row_separator_0 & type_protocol'image(scratch_protocol));
 						end if;
 
 						prog_position := 1410;
@@ -1863,13 +1870,13 @@ procedure mkmemcon is
 								end case;
 
 								prog_position := 2160;
-								put("port: " & to_string(scratch_port_name_frac.name));
-								if scratch_port_name_frac.length > 1 then
-									put(" msb" & positive'image(scratch_port_name_frac.msb));
-									put(" lsb" & natural'image(scratch_port_name_frac.lsb));
-									put(" length" & natural'image(scratch_port_name_frac.length));
-								end if;
-								new_line;
+-- 								put("port " & to_string(scratch_port_name_frac.name));
+-- 								if scratch_port_name_frac.length > 1 then
+-- 									put(" msb" & positive'image(scratch_port_name_frac.msb));
+-- 									put(" lsb" & natural'image(scratch_port_name_frac.lsb));
+-- 									put(" length" & natural'image(scratch_port_name_frac.length));
+-- 								end if;
+-- 								new_line;
 
 								-- vector length must match number of pins given after port name
 								-- example: data inout D[7:0] 19 18 17 16 15 13 12 20 -- 11 fields
@@ -2285,7 +2292,11 @@ procedure mkmemcon is
 						d_lut := 2**(ptr_target.width_data-1) + di;
 						if d_lut > data_max then
 							-- in a standard algorithm this situation rarely comes true
-							put_line(standard_output,"ERROR: Maximum of dummy data reached !");
+							write_message (
+								file_handle => file_mkmemcon_messages,
+								text => message_error 
+									& "maximum of dummy data reached !",
+								console => true);
 							raise constraint_error;
 						end if;
 					end if;
@@ -2346,26 +2357,26 @@ procedure mkmemcon is
 			-- writes optionally given min/max addresses
 			p 	: type_ptr_memory_pin;
 		begin
-			put_line(" bus_width");
-			put_line("  address         :" & natural'image(ptr_target.width_address));
-			put_line("  data            :" & natural'image(ptr_target.width_data));
-			put_line("  control         :" & natural'image(ptr_target.width_control));
+			put_line(file_sequence, " bus_width");
+			put_line(file_sequence, "  address         :" & natural'image(ptr_target.width_address));
+			put_line(file_sequence, "  data            :" & natural'image(ptr_target.width_data));
+			put_line(file_sequence, "  control         :" & natural'image(ptr_target.width_control));
 
 			if ptr_target.option_address_min /= -1 then
 				--put_line(" option addr min  :" & natural'image(ptr_target.option_address_min));
-				put_line(" option_addr_min  : " & natural_to_string(
+				put_line(file_sequence, " option_addr_min  : " & natural_to_string(
 					natural_in => ptr_target.option_address_min,
 					base => 16));
 			end if;
 			if ptr_target.option_address_max /= -1 then
-				put_line(" option_addr_max  : " & natural_to_string(
+				put_line(file_sequence, " option_addr_max  : " & natural_to_string(
 					natural_in => ptr_target.option_address_max,
 					base => 16));
 			end if;
 
 
-			put_line(" port_pin_net_map");
-			put_line("  -- legend: class direction port pin net | driver cell inverted | ctrl_cell disable_val | receiver cell [receiver cell]");
+			put_line(file_sequence, " port_pin_net_map");
+			put_line(file_sequence, "  -- legend: class direction port pin net | driver cell inverted | ctrl_cell disable_val | receiver cell [receiver cell]");
 			for c in 0..type_pin_class'pos( type_pin_class'last ) loop -- loop for each kind of pin class: address, data, control
 				p := ptr_memory_pin; -- reset pin pointer to end of list
 				while p /= null loop
@@ -2373,39 +2384,39 @@ procedure mkmemcon is
 					-- if pin class pointed to by c matches pin class in pin list
 					-- write pin class, direction, port name, [index], net name
 					if p.class_pin = type_pin_class'val(c) then
-						put(row_separator_0 & row_separator_0 & type_pin_class'image(p.class_pin) & row_separator_0 
+						put(file_sequence, row_separator_0 & row_separator_0 & type_pin_class'image(p.class_pin) & row_separator_0 
 							& type_direction'image(p.direction) & row_separator_0 
-							& universal_string_type.to_string(p.name_port));
+							& to_string(p.name_port));
 						-- write index for address and data pins only, control pins do not have indexes
 						case p.class_pin is
 							when address | data =>
-								put(trim(natural'image(p.index),left));
+								put(file_sequence, trim(natural'image(p.index),left));
 							when control =>
 								null;
 						end case;
 
 						-- put driver
-						put(row_separator_0 & universal_string_type.to_string(p.name_pin)
-							& row_separator_0 & universal_string_type.to_string(p.name_net)
-							& row_separator_1 & universal_string_type.to_string(p.name_bic_driver)
+						put(file_sequence, row_separator_0 & to_string(p.name_pin)
+							& row_separator_0 & to_string(p.name_net)
+							& row_separator_1 & to_string(p.name_bic_driver)
 							& natural'image(p.output_cell_id)
 							);
-						put(row_separator_0 & boolean'image(p.drive_cell_inverted) & row_separator_1);
-						put(type_cell_info_cell_id'image(p.id_control_cell) & row_separator_0
+						put(file_sequence, row_separator_0 & boolean'image(p.drive_cell_inverted) & row_separator_1);
+						put(file_sequence, type_cell_info_cell_id'image(p.id_control_cell) & row_separator_0
 							& type_bit_char_class_0'image(p.control_cell_disable_value)(2) & row_separator_1);
 
 						-- put receivers (if any)
 						if p.has_receivers then
 							p.receiver_list := p.receiver_list_last; -- reset pointer receiver_list to the end of the list
 							while p.receiver_list /= null loop
-								put(universal_string_type.to_string(p.receiver_list.name_bic)
+								put(file_sequence, to_string(p.receiver_list.name_bic)
 									& natural'image(p.receiver_list.id_cell)
 									& row_separator_0
 								);
 								p.receiver_list := p.receiver_list.next;
 							end loop;
 						end if;
-						new_line;
+						new_line(file_sequence);
 					end if;
 					p := p.next;
 				end loop;
@@ -2422,27 +2433,27 @@ procedure mkmemcon is
 		put_line(file_sequence, section_mark.section & row_separator_0 & test_section.info);
 		put_line(file_sequence, " created by " & name_module_mkmemcon & " version "& version);
 		put_line(file_sequence, row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & date_now);
-		put_line(file_sequence, row_separator_0 & section_info_item.data_base & (colon_position-(2+section_info_item.data_base'last)) * row_separator_0 & ": " & universal_string_type.to_string(ptr_target.data_base));
-		put_line(file_sequence, row_separator_0 & section_info_item.test_name & (colon_position-(2+section_info_item.test_name'last)) * row_separator_0 & ": " & universal_string_type.to_string(ptr_target.test_name));
+		put_line(file_sequence, row_separator_0 & section_info_item.database & (colon_position-(2+section_info_item.database'last)) * row_separator_0 & ": " & to_string(ptr_target.data_base));
+		put_line(file_sequence, row_separator_0 & section_info_item.name_test & (colon_position-(2+section_info_item.name_test'last)) * row_separator_0 & ": " & to_string(ptr_target.test_name));
 		put_line(file_sequence, row_separator_0 & section_info_item.test_profile & (colon_position-(2+section_info_item.test_profile'last)) * row_separator_0 & ": " & type_test_profile'image(info_item.test_profile));
 		put_line(file_sequence, row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(info_item.end_sdr));
 		put_line(file_sequence, row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(info_item.end_sir));
-		put_line(file_sequence, " target_name      : " & universal_string_type.to_string(ptr_target.device_name));
+		put_line(file_sequence, " target_name      : " & to_string(ptr_target.device_name));
 		put_line(file_sequence, " target_class     : " & type_target_class'image(ptr_target.class_target));
 		case ptr_target.class_target is 
 			when RAM | ROM =>
-				put_line(file_sequence, " package          : " & universal_string_type.to_string(ptr_target.device_package));
-				put_line(file_sequence, " value            : " & universal_string_type.to_string(ptr_target.value));
-				put_line(file_sequence, " compatibles      : " & universal_string_type.to_string(ptr_target.compatibles));
-				put_line(file_sequence, " manufacturer     : " & universal_string_type.to_string(ptr_target.manufacturer));
+				put_line(file_sequence, " package          : " & to_string(ptr_target.device_package));
+				put_line(file_sequence, " value            : " & to_string(ptr_target.value));
+				put_line(file_sequence, " compatibles      : " & to_string(ptr_target.compatibles));
+				put_line(file_sequence, " manufacturer     : " & to_string(ptr_target.manufacturer));
 				put_line(file_sequence, " protocol         : " & type_protocol'image(ptr_target.protocol));
 				put_line(file_sequence, " algorithm        : " & type_algorithm'image(ptr_target.algorithm));
 				put_line(file_sequence, " write_protect    : " & type_write_protect'image(ptr_target.write_protect));
 			when others => null;
 		end case;
-		put_line(file_sequence, " model_file       : " & universal_string_type.to_string(ptr_target.model_file));
-		put_line(file_sequence, " model_version    : " & universal_string_type.to_string(ptr_target.version));
-		put_line(file_sequence, " model_author     : " & universal_string_type.to_string(ptr_target.author));
+		put_line(file_sequence, " model_file       : " & to_string(ptr_target.model_file));
+		put_line(file_sequence, " model_version    : " & to_string(ptr_target.version));
+		put_line(file_sequence, " model_author     : " & to_string(ptr_target.author));
 		put_line(file_sequence, " model_status     : " & type_model_status'image(ptr_target.status));
 
 		put_line(file_sequence, " step_count_by_model");
@@ -2477,7 +2488,7 @@ procedure mkmemcon is
 		value_format	: type_value_format;
 		line_number		: positive
 		) is
-		b	: type_ptr_bscan_ic := ptr_bic;
+-- 		b	: type_ptr_bscan_ic := ptr_bic;
 		p	: type_ptr_memory_pin := ptr_memory_pin;
 		value_length	: positive;
 		value_natural	: natural;
@@ -2565,7 +2576,7 @@ procedure mkmemcon is
 				co := ptr_cc; -- reset co at end of list
 				while co /= null loop -- loop through control cell list
 					if not co.skip then
-						put(natural'image(co.id) -- write control cell id
+						put(file_sequence, natural'image(co.id) -- write control cell id
 							& sxr_assignment_operator.assign
 							& type_bit_char_class_0'image(co.value)(2) -- strip delimiters of value and write value
 						);
@@ -2604,10 +2615,12 @@ procedure mkmemcon is
 			case direction is
 				when drive =>
 					-- ASSIGN DRIVE PATTERN:
-					for bic_id in 1..summary.bic_ct loop -- loop in bic list pointed to by b
-						b := ptr_bic;
-						while b /= null loop
-							if b.id = bic_id then -- on bic id match
+-- 					for bic_id in 1..summary.bic_ct loop -- loop in bic list pointed to by b
+-- 						b := ptr_bic;
+-- 						while b /= null loop
+					for b in 1..length(list_of_bics) loop
+						-- NOTE: element(list_of_bics, positive(b)) means the current bic
+-- 							if b.id = bic_id then -- on bic id match
 								--put_line(standard_output,positive'image(bic_id) & " " & universal_string_type.to_string(b.name));
 
 								-- look ahead into pin list to figure out if the current bic is used as driver for this group at all
@@ -2616,8 +2629,8 @@ procedure mkmemcon is
 								p := ptr_memory_pin;
 								while p /= null loop
 									if p.class_pin = pin_class then
-										if universal_string_type.to_string(p.name_bic_driver) = universal_string_type.to_string(b.name) then
-											put(file_sequence, "  set " & universal_string_type.to_string(b.name) & " drv boundary");
+										if to_string(p.name_bic_driver) = to_string(element(list_of_bics, positive(b)).name) then
+											put(file_sequence, "  set " & to_string(element(list_of_bics, positive(b)).name) & " drv boundary"); -- CS: use text variables
 											bic_required_as_driver := true; -- mark bic as used for this group
 											exit; -- bic is used, so no more looking ahead requried
 										end if;
@@ -2634,7 +2647,7 @@ procedure mkmemcon is
 															-- bic (p.name_bic_driver and b.name) and the bit position (i)
 
 											if p.class_pin = pin_class then -- on pin_class match
-												if universal_string_type.to_string(p.name_bic_driver) = universal_string_type.to_string(b.name) then -- on bic match
+												if to_string(p.name_bic_driver) = to_string(element(list_of_bics, positive(b)).name) then -- on bic match
 													if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
 
 														-- the given direction of the group implies which cell it to be addressed
@@ -2658,12 +2671,12 @@ procedure mkmemcon is
 																end if;
 
 																-- assign value to output cell, negate v(i) if drive cell is to be inverted
-																put(natural'image(p.output_cell_id) & sxr_assignment_operator.assign);
+																put(file_sequence, natural'image(p.output_cell_id) & sxr_assignment_operator.assign);
 																if p.drive_cell_inverted then
-																	put(type_bit_char_class_2'image(negate_bit_character_class_0(v(i)))(2) -- strip delimiters
+																	put(file_sequence, type_bit_char_class_2'image(negate_bit_character_class_0(v(i)))(2) -- strip delimiters
 																	);
 																else
-																	put(type_bit_char_class_2'image(v(i))(2) -- strip delimiters
+																	put(file_sequence, type_bit_char_class_2'image(v(i))(2) -- strip delimiters
 																	);
 																end if;
 
@@ -2678,7 +2691,7 @@ procedure mkmemcon is
 																end if;
 
 																-- assign zero to output cell
-																put(natural'image(p.output_cell_id) 
+																put(file_sequence, natural'image(p.output_cell_id) 
 																	& sxr_assignment_operator.assign
 																	& "0"
 																);
@@ -2698,20 +2711,22 @@ procedure mkmemcon is
 									-- and to detect shared control cell conflicts
 									--put_line(standard_output,"bic: " & universal_string_type.to_string(b.name));
 									evaluate_record_of_control_cells;
-									new_line;
+									new_line(file_sequence);
 								end if;
-							end if;
-							b := b.next;
-						end loop;
+-- 							end if;
+-- 							b := b.next;
+-- 						end loop;
 					end loop;
 				
 					if self_monitoring then
 						-- ASSIGN EXPECT PATTERN FOR SELF MONITORING
 						put_line(file_sequence, "  -- optional self monitoring:");
-						for bic_id in 1..summary.bic_ct loop -- loop in bic list pointed to by b
-							b := ptr_bic;
-							while b /= null loop
-								if b.id = bic_id then -- on bic id match
+-- 						for bic_id in 1..summary.bic_ct loop -- loop in bic list pointed to by b
+-- 							b := ptr_bic;
+-- 							while b /= null loop
+-- 								if b.id = bic_id then -- on bic id match
+						for b in 1..length(list_of_bics) loop
+							-- NOTE: element(list_of_bics, positive(b)) means the current bic
 
 									-- look ahead into receiver list to figure out if the current bic is used as receiver for this group at all
 									-- and write line header like: "set IC301 exp boundary"
@@ -2726,9 +2741,9 @@ procedure mkmemcon is
 														p.receiver_list := p.receiver_list_last;
 														while p.receiver_list /= null loop -- loop though receiver list
 															-- on match of bic name
-															if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
+															if to_string(p.receiver_list.name_bic) = to_string(element(list_of_bics, positive(b)).name) then
 																bic_required_for_self_monitoring := true;
-																put(file_sequence, "  set " & universal_string_type.to_string(b.name) & " exp boundary");
+																put(file_sequence, "  set " & to_string(element(list_of_bics, positive(b)).name) & " exp boundary"); -- CS: use text variables
 																exit l_1; -- no need to search for further occurences of bic in pin list
 															end if;
 															p.receiver_list := p.receiver_list.next;
@@ -2749,7 +2764,7 @@ procedure mkmemcon is
 														if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
 															p.receiver_list := p.receiver_list_last;
 															while p.receiver_list /= null loop
-																if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
+																if to_string(p.receiver_list.name_bic) = to_string(element(list_of_bics, positive(b)).name) then
 																	case v(i) is
 																		when '0' | '1' =>
 																			-- expect 0/1 addresses input cells
@@ -2775,21 +2790,23 @@ procedure mkmemcon is
 												p := p.next;
 											end loop;	
 										end loop;
-										new_line;
+										new_line(file_sequence);
 									end if; -- if bic_required_for_self_monitoring
 
-								end if; -- on bic id match
-								b := b.next;
-							end loop;
+-- 								end if; -- on bic id match
+-- 								b := b.next;
+-- 							end loop;
 						end loop;
 					end if;
 
 				when expect =>
 					-- ASSIGN EXPECT PATTERN
-					for bic_id in 1..summary.bic_ct loop -- loop in bic list pointed to by b
-						b := ptr_bic;
-						while b /= null loop
-							if b.id = bic_id then -- on bic id match
+-- 					for bic_id in 1..summary.bic_ct loop -- loop in bic list pointed to by b
+-- 						b := ptr_bic;
+-- 						while b /= null loop
+-- 							if b.id = bic_id then -- on bic id match
+						for b in 1..length(list_of_bics) loop
+							-- NOTE: element(list_of_bics, positive(b)) means the current bic
 
 								-- look ahead into receiver list to figure out if the current bic is used as receiver for this group at all
 								-- and write line header like: "set IC301 exp boundary"
@@ -2804,9 +2821,9 @@ procedure mkmemcon is
 													p.receiver_list := p.receiver_list_last;
 													while p.receiver_list /= null loop -- loop though receiver list
 														-- on match of bic name
-														if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
+														if to_string(p.receiver_list.name_bic) = to_string(element(list_of_bics, positive(b)).name) then
 															bic_required_as_receiver := true;
-															put(file_sequence, "  set " & universal_string_type.to_string(b.name) & " exp boundary");
+															put(file_sequence, "  set " & to_string(element(list_of_bics, positive(b)).name) & " exp boundary"); -- CS: use text variables
 															exit l_2; -- no need to search for further occurences of bic in pin list
 														end if;
 														p.receiver_list := p.receiver_list.next;
@@ -2827,7 +2844,7 @@ procedure mkmemcon is
 													if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
 														p.receiver_list := p.receiver_list_last;
 														while p.receiver_list /= null loop
-															if universal_string_type.to_string(p.receiver_list.name_bic) = universal_string_type.to_string(b.name) then
+															if to_string(p.receiver_list.name_bic) = to_string(element(list_of_bics, positive(b)).name) then
 																case v(i) is
 																	when '0' | '1' =>
 																		-- expect 0/1 addresses input cells
@@ -2853,20 +2870,20 @@ procedure mkmemcon is
 											p := p.next;
 										end loop;	
 									end loop;
-									new_line;
+									new_line(file_sequence);
 								end if; -- if bic_required_as_receiver
 
-							end if; -- on bic id match
-							b := b.next;
+-- 							end if; -- on bic id match
+-- 							b := b.next;
 						end loop;
-					end loop;
+-- 					end loop;
 			end case;
-			new_line;
+			new_line(file_sequence);
 		end read_value_bitwise;
 			
 		
 
-	begin
+	begin -- assign_cells
 		-- derive bit count of given group from the bus width of the target
 		-- example: if address group given and target bus with is 15bit, the bit count of the address group
 		-- is set to 15bit too.
@@ -2884,10 +2901,10 @@ procedure mkmemcon is
 	end assign_cells;
 
 	procedure write_operation(
-		operation_given		: type_step_operation;
-		atg_address_given	: natural := 0; -- if provided this will fill the ATG field (used by write and read operations only)
-		atg_data_given 		: natural := 0;  -- if provided this will fill the ATG field (used by write and read operations only)
-		lut_step_id_given	: positive := 1 -- if provided this will be the suffix to the model step (like model step 6.3) in order
+		operation_given		: in type_step_operation;
+		atg_address_given	: in natural := 0; -- if provided this will fill the ATG field (used by write and read operations only)
+		atg_data_given 		: in natural := 0;  -- if provided this will fill the ATG field (used by write and read operations only)
+		lut_step_id_given	: in positive := 1 -- if provided this will be the suffix to the model step (like model step 6.3) in order
 											-- to indicate the lut step id
 		) is
 	-- writes the operation (as specified by operation_given) in the sequence file
@@ -2900,8 +2917,12 @@ procedure mkmemcon is
 
 		s : type_ptr_step; -- the list of steps serves as data pool
 	begin
-		new_line;
+		new_line(file_sequence);
 		put_line(file_sequence, "-- operation: " & type_step_operation'image(operation_given));
+
+		-- for the logs:
+		--put_line(" writing operation " & type_step_operation'image(operation_given) & " ...");
+		
 		-- sorting by step id can be achieved by searching the step list from start to end (even if not all steps are init or disable types)
 		for i in 1..ptr_target.step_count_total loop
 			s := ptr_step; -- set step pointer at end of step list
@@ -2910,6 +2931,10 @@ procedure mkmemcon is
 					-- the first step id that matches i is to be output
 					if s.step_id = i then 
 						put(file_sequence, " -- model step" & positive'image(s.step_id));
+
+						-- for the logs;
+						--put(" model step" & positive'image(s.step_id));
+						
 						case operation_given is
 						-- since init and disable are straight forward blocks (no loops or branches) their steps must be sorted by id and put in the sequence file
 							when init | disable =>
@@ -2951,11 +2976,11 @@ procedure mkmemcon is
 												line_number		=> s.line_number
 												);
 										when bitwise =>
-											put_line(row_separator_0 & universal_string_type.to_string(s.group_address.value_string));
+											put_line(file_sequence, row_separator_0 & to_string(s.group_address.value_string));
 											assign_cells(
 												pin_class 		=> address,
 												direction 		=> s.group_address.direction,
-												value 			=> universal_string_type.to_string(s.group_address.value_string),
+												value 			=> to_string(s.group_address.value_string),
 												value_format	=> bitwise,
 												line_number		=> s.line_number
 												);
@@ -3012,11 +3037,11 @@ procedure mkmemcon is
 												line_number		=> s.line_number
 												);
 										when bitwise =>
-											put_line(file_sequence, row_separator_0 & universal_string_type.to_string(s.group_data.value_string));
+											put_line(file_sequence, row_separator_0 & to_string(s.group_data.value_string));
 											assign_cells(
 												pin_class 		=> data,
 												direction 		=> s.group_data.direction,
-												value 			=> universal_string_type.to_string(s.group_data.value_string),
+												value 			=> to_string(s.group_data.value_string),
 												value_format	=> bitwise,
 												line_number		=> s.line_number
 												);
@@ -3051,11 +3076,11 @@ procedure mkmemcon is
 												line_number		=> s.line_number
 												);
 										when bitwise =>
-											put_line(file_sequence, row_separator_0 & universal_string_type.to_string(s.group_control.value_string));
+											put_line(file_sequence, row_separator_0 & to_string(s.group_control.value_string));
 											assign_cells(
 												pin_class 		=> control,
 												direction 		=> s.group_control.direction,
-												value 			=> universal_string_type.to_string(s.group_control.value_string),
+												value 			=> to_string(s.group_control.value_string),
 												value_format	=> bitwise,
 												line_number		=> s.line_number
 												);
@@ -3083,6 +3108,11 @@ procedure mkmemcon is
 		lut_step_id		: positive;
 		lut_step 		: type_get_step_from_lut_result;
 	begin -- write_sequences
+		write_message (
+			file_handle => file_mkmemcon_messages,
+			text => "writing test steps ...",
+			console => true);
+		
 		new_line(file_sequence, 2);
 
 		all_in(sample);
@@ -3110,6 +3140,8 @@ procedure mkmemcon is
 		write_sdr;
 		new_line(file_sequence);
 
+		put_line(" writing target init/write/read/disable operations ...");
+		put_line("  See sequence file " & compose (to_string(name_test), to_string(name_test), file_extension_sequence) & " for details.");
 		write_operation(init);
 		--write_operation(write,1000,10);
 
@@ -3141,7 +3173,7 @@ procedure mkmemcon is
 
 begin
 	action := generate;
-	test_profile := infrastructure;
+	test_profile := memconnect;
 	
 	-- create message/log file
  	write_log_header(version);
@@ -3229,7 +3261,6 @@ begin
 	write_sequences;
 
 	prog_position	:= 130;
-	set_output(standard_output);
 	close(file_sequence);
 	
 	prog_position	:= 140;
@@ -3237,7 +3268,8 @@ begin
 		database	=>	name_file_database,
 		test		=>	name_test
 		);
-
+	set_output(standard_output);
+	
 	prog_position	:= 150;
 	write_log_footer;
 	
@@ -3245,7 +3277,7 @@ begin
 		set_exit_status(failure);
 
 		write_message (
-			file_handle => file_mkintercon_messages,
+			file_handle => file_mkmemcon_messages,
 			text => message_error & "at program position" & natural'image(prog_position),
 			console => true);
 
