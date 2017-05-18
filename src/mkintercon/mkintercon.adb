@@ -509,32 +509,25 @@ procedure mkintercon is
 	begin -- write_sequences
 		new_line(file_sequence,2);
 
-		put_line(" setting all BICs in " & type_bic_instruction'image(sample) & " mode ...");
 		all_in(sample);
 
-		put_line(" setting ir capture values ...");
 		write_ir_capture;
 		write_sir; 
 		new_line(file_sequence);
 
-		put_line(" setting safe values ...");
 		load_safe_values;
 		write_sdr;
 		new_line(file_sequence);
 
-		put_line(" setting all BICs in " & type_bic_instruction'image(extest) & " mode ...");
 		all_in(extest);
 		write_sir;
 		new_line(file_sequence);
 
-		put_line(" setting safe values ...");		
 		load_safe_values;
 		write_sdr;
 		new_line(file_sequence);
 
-		put_line(" setting static drive values ...");		
 		load_static_drive_values;
-		put_line(" setting static expect values ...");
 		load_static_expect_values;
 		write_sdr;
 		new_line(file_sequence);
@@ -615,7 +608,6 @@ begin
 	write_sequences;
 
 	prog_position	:= 130;
-	set_output(standard_output);
 	close(file_sequence);
 
 	prog_position	:= 140;
@@ -623,7 +615,8 @@ begin
 		database	=>	name_file_database,
 		test		=>	name_test
 		);
-
+	set_output(standard_output);
+	
 	prog_position 	:= 150;
 	write_log_footer;
 
