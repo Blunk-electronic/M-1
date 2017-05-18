@@ -39,8 +39,8 @@ procedure_make impprotel
 #procedure_make impzuken
 procedure_make joinnetlist
 procedure_make mkinfra
-#procedure_make mkintercon
-#procedure_make mkmemcon
+procedure_make mkintercon
+procedure_make mkmemcon
 procedure_make mknets
 procedure_make mkoptions
 #procedure_make mktoggle
