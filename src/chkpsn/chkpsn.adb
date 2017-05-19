@@ -2294,9 +2294,9 @@ procedure chkpsn is
 			end loop;
 		end if;
 
-		-- dump non-optimized nets 
-		-- they have the "optimized" flag cleared (false) and default to level primary with class NA
-		-- pointer n points to data base net list
+        -- Dump non-optimized nets. Non-optimized nets are nets that do not appear in the options file
+        -- and thus are regarded as non-optimized.
+		-- They have the "optimized" flag cleared (false) and default to level primary with class NA:
 
 		write_message (
 			file_handle => file_chkpsn_messages,
@@ -2305,8 +2305,8 @@ procedure chkpsn is
 			console => false);
 
 		new_line;
-		put_line(column_separator_0);
-		put_line("-- NON-OPTIMIZED NETS ---------------------------");
+-- 		put_line(column_separator_0);
+		put_line("-- NON-OPTIMIZED NETS");
 		put_line(column_separator_0);
 
 		for i in 1..length(list_of_nets) loop -- CS: use summary instead ?
