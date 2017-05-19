@@ -6,7 +6,7 @@
 --                                                                          --
 --                               B o d y                                    --
 --                                                                          --
---         Copyright (C) 2016 Mario Blunk, Blunk electronic                 --
+--         Copyright (C) 2017 Mario Blunk, Blunk electronic                 --
 --                                                                          --
 --    This program is free software: you can redistribute it and/or modify  --
 --    it under the terms of the GNU General Public License as published by  --
@@ -24,7 +24,7 @@
 
 --   Please send your questions and comments to:
 --
---   Mario.Blunk@blunk-electronic.de
+--   info@blunk-electronic.de
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
@@ -34,28 +34,50 @@
 
 
 with ada.text_io;				use ada.text_io;
+with ada.integer_text_io;		use ada.integer_text_io;
+with ada.characters;			use ada.characters;
+with ada.characters.latin_1;	use ada.characters.latin_1;
+with ada.characters.handling; 	use ada.characters.handling;
+
+with ada.strings; 				use ada.strings;
+with ada.strings.bounded; 		use ada.strings.bounded;
 with ada.strings.fixed; 		use ada.strings.fixed;
 with ada.exceptions; 			use ada.exceptions;
  
 with ada.command_line;			use ada.command_line;
 with ada.directories;			use ada.directories;
 
-with m1;
-with m1_files_and_directories; use m1_files_and_directories;
-with m1_internal; use m1_internal;
-with m1_numbers; use m1_numbers;
+with m1_base;					use m1_base;
+with m1_database; 				use m1_database;
+with m1_numbers; 				use m1_numbers;
+with m1_files_and_directories;	use m1_files_and_directories;
+with m1_test_gen_and_exec;		use m1_test_gen_and_exec;
+with m1_string_processing;		use m1_string_processing;
 
 
 procedure mktoggle is
 
-	version			: string (1..3) := "004";
-	test_profile	: type_test_profile := toggle;
+	version			: string (1..3) := "001";
+    prog_position	: natural := 0;
+
+	use type_name_database;
+	use type_device_name;
+	use type_name_test;
+	use type_pin_name;
+	use type_port_name;
+	use type_net_name;
+    use type_list_of_bics;	
+	use type_list_of_nets;
+	use type_list_of_pins;
+    use type_list_of_atg_expect_cells;
+    use type_list_of_input_cells_class_NA;
+    use type_list_of_static_expect_cells;
+
+    target_net		: type_net_name.bounded_string;
+
 	end_sdr			: type_end_sdr := PDR;
 	end_sir			: type_end_sir := RTI;
-
-
-	target_net		: universal_string_type.bounded_string;
-
+    
 	cycle_count_max	: constant positive := 20; -- CS: increase if neccessary. Greater values not reasonable.
 	subtype type_cycle_count is positive range 1..cycle_count_max;
 	cycle_count		: type_cycle_count;
@@ -63,7 +85,7 @@ procedure mktoggle is
 	high_time		: type_delay_value;
 	frequency		: float;
 	
-	prog_position	: natural := 0;
+
 
 
 
@@ -75,28 +97,28 @@ procedure mktoggle is
 		colon_position : positive := 19;
 
 	begin -- write_info_section
-		-- create sequence file
-		create( file_sequence, 
-			name => (compose (universal_string_type.to_string(name_test), universal_string_type.to_string(name_test), file_extension_sequence)));
-		set_output(file_sequence); -- set data sink
+-- 		-- create sequence file
+-- 		create( file_sequence, 
+-- 			name => (compose (to_string(name_test), to_string(name_test), file_extension_sequence)));
+-- 		set_output(file_sequence); -- set data sink
 
-		put_line(section_mark.section & row_separator_0 & test_section.info);
-		put_line(" created by pin toggle generator version "& version);
-		put_line(row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & m1.date_now);
-		put_line(row_separator_0 & section_info_item.data_base & (colon_position-(2+section_info_item.data_base'last)) * row_separator_0 & ": " & universal_string_type.to_string(name_file_data_base));
-		put_line(row_separator_0 & section_info_item.test_name & (colon_position-(2+section_info_item.test_name'last)) * row_separator_0 & ": " & universal_string_type.to_string(name_test));
-		put_line(row_separator_0 & section_info_item.test_profile & (colon_position-(2+section_info_item.test_profile'last)) * row_separator_0 & ": " & type_test_profile'image(test_profile));
-		put_line(row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(end_sdr));
-		put_line(row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(end_sir));
+		put_line(file_sequence, section_mark.section & row_separator_0 & test_section.info);
+		put_line(file_sequence, " created by " & name_module_mktoggle & " version "& version);
+		put_line(file_sequence, row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & date_now);
+		put_line(file_sequence, row_separator_0 & section_info_item.database & (colon_position-(2+section_info_item.database'last)) * row_separator_0 & ": " & to_string(name_file_database));
+		put_line(file_sequence, row_separator_0 & section_info_item.name_test & (colon_position-(2+section_info_item.name_test'last)) * row_separator_0 & ": " & to_string(name_test));
+		put_line(file_sequence, row_separator_0 & section_info_item.test_profile & (colon_position-(2+section_info_item.test_profile'last)) * row_separator_0 & ": " & type_test_profile'image(test_profile));
+		put_line(file_sequence, row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(end_sdr));
+		put_line(file_sequence, row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(end_sir));
 
-		put_line(row_separator_0 & section_info_item.target_net & (colon_position-(2+section_info_item.target_net'last)) * row_separator_0 & ": " & universal_string_type.to_string(target_net));
-		put_line(row_separator_0 & section_info_item.cycle_count & (colon_position-(2+section_info_item.cycle_count'last)) * row_separator_0 & ":" & type_cycle_count'image(cycle_count));
-		put_line(row_separator_0 & section_info_item.low_time & (colon_position-(2+section_info_item.low_time'last)) * row_separator_0 & ":" & type_delay_value'image(low_time) & " sec");
-		put_line(row_separator_0 & section_info_item.high_time & (colon_position-(2+section_info_item.high_time'last)) * row_separator_0 & ":" & type_delay_value'image(high_time) & " sec");
-		put_line(row_separator_0 & section_info_item.frequency & (colon_position-(2+section_info_item.frequency'last)) * row_separator_0 & ":" & float'image(frequency) & " Hz");
+		put_line(file_sequence, row_separator_0 & section_info_item.target_net & (colon_position-(2+section_info_item.target_net'last)) * row_separator_0 & ": " & to_string(target_net));
+		put_line(file_sequence, row_separator_0 & section_info_item.cycle_count & (colon_position-(2+section_info_item.cycle_count'last)) * row_separator_0 & ":" & type_cycle_count'image(cycle_count));
+		put_line(file_sequence, row_separator_0 & section_info_item.low_time & (colon_position-(2+section_info_item.low_time'last)) * row_separator_0 & ":" & type_delay_value'image(low_time) & " sec");
+		put_line(file_sequence, row_separator_0 & section_info_item.high_time & (colon_position-(2+section_info_item.high_time'last)) * row_separator_0 & ":" & type_delay_value'image(high_time) & " sec");
+		put_line(file_sequence, row_separator_0 & section_info_item.frequency & (colon_position-(2+section_info_item.frequency'last)) * row_separator_0 & ":" & float'image(frequency) & " Hz");
 
-		put_line(section_mark.endsection); 
-		new_line;
+		put_line(file_sequence, section_mark.endsection); 
+		new_line(file_sequence);
 	end write_info_section;
 
 
@@ -113,50 +135,53 @@ procedure mktoggle is
 
 		procedure write_driver_cell(
 			--cycle	: type_cycle_count;
-			device 		: string;
-			cell 		: type_cell_id;
-			value 		: type_bit_char_class_0;
-			inverted	: boolean := false;
-			dely		: type_delay_value
+			device 		: in type_device_name.bounded_string;
+			cell 		: in type_cell_id;
+			value 		: in type_bit_char_class_0;
+			inverted	: in boolean := false;
+			dely		: in type_delay_value
 			) is
 		begin
 			if not inverted then
-				put(row_separator_0 & comment & " drive "); put_character_class_0(value); new_line;
+                put(file_sequence, row_separator_0 & comment & " drive "); 
 			else
-				put(row_separator_0 & comment & " drive (inverted) "); put_character_class_0(value); new_line;
+                put(file_sequence, row_separator_0 & comment & " drive (inverted) ");
 			end if;
-
-			put( -- write sdr drive header (like "set IC301 drv boundary")
-				row_separator_0 & sequence_instruction_set.set & row_separator_0 &
-				device & row_separator_0 &
-				sxr_io_identifier.drive & row_separator_0 &
-				sdr_target_register.boundary &
-				type_cell_id'image(atg_drive.cell) & sxr_assignment_operator.assign -- write cell id and assigment operator (like "45=")
+            put_character_class_0(file => file_sequence, char_in => value); 
+            new_line(file_sequence);
+            
+			put(file_sequence, -- write sdr drive header (like "set IC301 drv boundary")
+                row_separator_0 & sequence_instruction_set.set & row_separator_0 
+                & to_string(device) & row_separator_0 & sxr_io_identifier.drive & row_separator_0 
+                & sdr_target_register.boundary & type_cell_id'image(atg_drive.cell) 
+                & sxr_assignment_operator.assign -- write cell id and assigment operator (like "45=")
 				);
 
 			-- write drive value
 			if not inverted then
-				put_character_class_0(value);
+                put_character_class_0(file => file_sequence, char_in => value); 
 			else
-				put_character_class_0(negate_bit_character_class_0(value));
+                put_character_class_0(file => file_sequence, char_in => negate_bit_character_class_0(value)); 
 			end if;
-			new_line;
+			new_line(file_sequence);
 
-			write_sdr; new_line;
-			put_line(row_separator_0 & sequence_instruction_set.dely & type_delay_value'image(dely)); new_line;
+            write_sdr; 
+            new_line(file_sequence);
+            put_line(file_sequence, row_separator_0 & sequence_instruction_set.dely & type_delay_value'image(dely)); 
+            new_line(file_sequence);
 		end write_driver_cell;
 
-		procedure write_cycle (cycle : type_cycle_count) is
+		procedure write_cycle (cycle : in type_cycle_count) is
 		begin
-			put_line(row_separator_0 & "----- cycle" & type_cycle_count'image(cycle) & " -----------------------" ); 
-			new_line;
+			put_line(file_sequence, row_separator_0 & "----- cycle" & type_cycle_count'image(cycle) & " -----------------------" ); 
+			new_line(file_sequence);
 		end write_cycle;
 
 	begin
 		-- search in atg_drive list for target_net
 		while atg_drive /= null
 			loop
-				if universal_string_type.to_string(atg_drive.net) = universal_string_type.to_string(target_net) then
+				if to_string(atg_drive.net) = to_string(target_net) then
 					target_net_found := true;
 					put_line(row_separator_0 & comment & type_cycle_count'image(cycle_count) & " cycles of LH follow ...");
 					new_line;
@@ -171,7 +196,7 @@ procedure mktoggle is
 									write_cycle(n);
 									write_driver_cell(
 										--cycle => n,
-										device => universal_string_type.to_string(atg_drive.device),
+										device => to_string(atg_drive.device),
 										cell => atg_drive.cell,
 										value => drv_low,
 										dely => low_time
@@ -179,7 +204,7 @@ procedure mktoggle is
 
 									write_driver_cell(
 										--cycle => n,
-										device => universal_string_type.to_string(atg_drive.device),
+										device => to_string(atg_drive.device),
 										cell => atg_drive.cell,
 										value => drv_high,
 										dely => high_time
@@ -205,7 +230,7 @@ procedure mktoggle is
 								loop
 									write_cycle(n);
 									write_driver_cell(
-										device => universal_string_type.to_string(atg_drive.device),
+										device => to_string(atg_drive.device),
 										cell => atg_drive.cell,
 										value => drv_low,
 										inverted => driver_inverted,
@@ -213,7 +238,7 @@ procedure mktoggle is
 										);
 
 									write_driver_cell(
-										device => universal_string_type.to_string(atg_drive.device),
+										device => to_string(atg_drive.device),
 										cell => atg_drive.cell,
 										value => drv_high,
 										inverted => driver_inverted,
@@ -231,7 +256,7 @@ procedure mktoggle is
 		-- target net found ?
 		if target_net_found = false then
 			set_output(standard_output);
-			put("ERROR : Target net '" & universal_string_type.to_string(target_net) & "' search failed !"); new_line(2);
+			put("ERROR : Target net '" & to_string(target_net) & "' search failed !"); new_line(2);
 			put("        Troubleshooting: Please verify that"); new_line (2);
 			put("        1. target net is a primary net !"); new_line;
 			put("        2. target net is in class NR, PU or PD !"); new_line;
@@ -276,22 +301,23 @@ procedure mktoggle is
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
-
+    test_profile	: type_test_profile := toggle;
+    
 	put_line("pin toggle generator version "& version);
 	put_line("=====================================================");
 
 	-- COMMAND LINE ARGUMENTS COLLECTING BEGIN
 	prog_position	:= 10;
- 	name_file_data_base:= universal_string_type.to_bounded_string(Argument(1));
- 	put_line ("data base      : " & universal_string_type.to_string(name_file_data_base));
+ 	name_file_data_base:= to_bounded_string(Argument(1));
+ 	put_line ("data base      : " & to_string(name_file_data_base));
  
 	prog_position	:= 20;
- 	name_test:= universal_string_type.to_bounded_string(Argument(2));
- 	put_line ("test name      : " & universal_string_type.to_string(name_test));
+ 	name_test:= to_bounded_string(Argument(2));
+ 	put_line ("test name      : " & to_string(name_test));
 
 	prog_position	:= 30;
-	target_net:= universal_string_type.to_bounded_string(Argument(3));
-	put_line ("target net     : " & universal_string_type.to_string(target_net));
+	target_net:= to_bounded_string(Argument(3));
+	put_line ("target net     : " & to_string(target_net));
 	
 	prog_position	:= 40;
 	cycle_count:= type_cycle_count'value(Argument(4));
@@ -318,7 +344,7 @@ begin
 	
 	prog_position	:= 110;
 	create_test_directory(
-		test_name 			=> universal_string_type.to_string(name_test),
+		test_name 			=> to_string(name_test),
 		warnings_enabled 	=> false
 		);
 
@@ -341,8 +367,8 @@ begin
 
 	prog_position	:= 180;
 	write_diagnosis_netlist(
-		data_base	=>	universal_string_type.to_string(name_file_data_base),
-		test_name	=>	universal_string_type.to_string(name_test)
+		data_base	=>	to_string(name_file_data_base),
+		test_name	=>	to_string(name_test)
 		);
 
 
