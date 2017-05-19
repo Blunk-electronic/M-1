@@ -68,7 +68,7 @@ procedure mkoptions is
 	use type_list_of_nets;
 
 	
-	version				: constant string (1..3) := "030";
+	version				: constant string (1..3) := "001";
 	
 	prog_position		: natural := 0;
 	
@@ -1608,15 +1608,20 @@ procedure mkoptions is
 			if pin.is_bscan_capable then
 -- 				put(row_separator_0);
 				
-				-- write input cell if available
-				-- example " | 416 BC_1 INPUT X "
-				if pin.cell_info.input_cell_id /= cell_not_available then
-					put(row_separator_0 & cell_info_ifs
-						& type_cell_id'image(pin.cell_info.input_cell_id)
-						& row_separator_0 & type_boundary_register_cell'image(pin.cell_info.input_cell_type)
-						& row_separator_0 & type_cell_function'image(pin.cell_info.input_cell_function)
-						& row_separator_0 & strip_quotes(type_bit_char_class_1'image(pin.cell_info.input_cell_safe_value))
-					   );
+				-- Write input cell if available
+                -- example " | 416 BC_1 INPUT X "
+                -- If its function is bidir we do not 
+                -- write it because it is the same as the output cell. The output cell will be dealt with
+                -- later (see below):
+                if pin.cell_info.input_cell_id /= cell_not_available then
+                    if pin.cell_info.input_cell_function /= bidir then
+                        put(row_separator_0 & cell_info_ifs
+                            & type_cell_id'image(pin.cell_info.input_cell_id)
+                            & row_separator_0 & type_boundary_register_cell'image(pin.cell_info.input_cell_type)
+                            & row_separator_0 & type_cell_function'image(pin.cell_info.input_cell_function)
+                            & row_separator_0 & strip_quotes(type_bit_char_class_1'image(pin.cell_info.input_cell_safe_value))
+                           );
+                    end if;
 				end if;
 
 				-- write output cell if available

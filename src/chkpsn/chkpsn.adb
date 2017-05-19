@@ -80,7 +80,7 @@ procedure chkpsn is
 	use type_list_of_input_cells_class_NA;
 
 	
-	version			: constant string (1..3) := "044";
+	version			: constant string (1..3) := "001";
 
 	prog_position	: natural := 0;
 	
@@ -2078,13 +2078,19 @@ procedure chkpsn is
 					);
 					if element(n.pins, positive(i)).is_bscan_capable then
 						-- dump the input cell segment like "| 107 bc_1 input x "
-						put(row_separator_0 & to_string(element(n.pins, positive(i)).device_port_name));
-						if element(n.pins, positive(i)).cell_info.input_cell_id /= -1 then
-							put(row_separator_1 & trim(natural'image(element(n.pins, positive(i)).cell_info.input_cell_id),left)
-								& row_separator_0 & type_boundary_register_cell'image(element(n.pins, positive(i)).cell_info.input_cell_type)
-								& row_separator_0 & type_cell_function'image(element(n.pins, positive(i)).cell_info.input_cell_function)
-								& row_separator_0 & type_bit_char_class_1'image(element(n.pins, positive(i)).cell_info.input_cell_safe_value)(2)
-								);
+                        put(row_separator_0 & to_string(element(n.pins, positive(i)).device_port_name));
+
+                        -- If there is an input cell is must be written. If its function is bidir we do not 
+                        -- write it because it is the same as the output cell. The output cell will be dealt with
+                        -- later (see below):
+                        if element(n.pins, positive(i)).cell_info.input_cell_id /= -1 then
+                            if element(n.pins, positive(i)).cell_info.input_cell_function /= bidir then
+                                put(row_separator_1 & trim(natural'image(element(n.pins, positive(i)).cell_info.input_cell_id),left)
+                                    & row_separator_0 & type_boundary_register_cell'image(element(n.pins, positive(i)).cell_info.input_cell_type)
+                                    & row_separator_0 & type_cell_function'image(element(n.pins, positive(i)).cell_info.input_cell_function)
+                                    & row_separator_0 & type_bit_char_class_1'image(element(n.pins, positive(i)).cell_info.input_cell_safe_value)(2)
+                                   );
+                            end if;
 						end if;
 
 						if element(n.pins, positive(i)).cell_info.output_cell_id /= -1 then
@@ -2192,7 +2198,7 @@ procedure chkpsn is
 			text => "making new netlist ...", 
 			console => true);
 
-		if length(list_of_options_nets) > 0 then
+		if length(list_of_options_nets) > 0 then -- we make a new netlist if there are nets in the options file
 			for i in 1..length(list_of_options_nets) loop
 				o := element(list_of_options_nets, positive(i));
 				new_line;
