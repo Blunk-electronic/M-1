@@ -44,7 +44,7 @@ procedure_make mkmemcon
 procedure_make mknets
 procedure_make mkoptions
 #procedure_make mktoggle
-#procedure_make mkclock
+procedure_make mkclock
 #procedure_make mkvmod
 #procedure_gnatmake bsmgui
 
