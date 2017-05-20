@@ -83,7 +83,7 @@ procedure mktoggle is
 	cycle_count		: type_cycle_count;
 	low_time		: type_delay_value;
 	high_time		: type_delay_value;
-	frequency		: float;
+	frequency		: float; -- CS: limit accuracy to a reasonable value
 	
 
 
@@ -127,7 +127,7 @@ procedure mktoggle is
  	procedure atg_mktoggle is
 
 		-- search in cell list atg_drive
-		atg_drive			: type_ptr_cell_list_atg_drive := ptr_cell_list_atg_drive; -- Set pointer of atg_drive list at end of list.
+-- 		atg_drive			: type_ptr_cell_list_atg_drive := ptr_cell_list_atg_drive; -- Set pointer of atg_drive list at end of list.
 		target_net_found	: boolean := false;
 		drv_high			: type_bit_char_class_0 := '1';
 		drv_low				: type_bit_char_class_0 := '0';
@@ -255,11 +255,14 @@ procedure mktoggle is
 				
 		-- target net found ?
 		if target_net_found = false then
-			set_output(standard_output);
-			put("ERROR : Target net '" & to_string(target_net) & "' search failed !"); new_line(2);
-			put("        Troubleshooting: Please verify that"); new_line (2);
-			put("        1. target net is a primary net !"); new_line;
-			put("        2. target net is in class NR, PU or PD !"); new_line;
+			write_message (
+				file_handle => file_mkclock_messages,
+				text => message_error & "target net " & to_string(target_net) 
+					& " search failed !" & latin_1.lf 
+					& "make sure:" & latin_1.lf 
+					& " 1. target net is a primary net !" & latin_1.lf
+					& " 2. target net is in class NR, PU or PD !", -- CS: use images of type net class
+				console => true);
 			raise constraint_error;
 		end if;
 		
@@ -269,24 +272,29 @@ procedure mktoggle is
 
 	procedure write_sequences is
 	begin -- write_sequences
-		new_line(2);
+		new_lin(file_sequence,2);
 
 		all_in(sample);
 		write_ir_capture;
-		write_sir; new_line;
+		write_sir; 
+		new_line(file_sequence);
 
 		load_safe_values;
-		write_sdr; new_line;
+		write_sdr;
+		new_line(file_sequence);
 
 		all_in(extest);
-		write_sir; new_line;
+		write_sir;
+		new_line(file_sequence);
 
 		load_safe_values;
-		write_sdr; new_line;
+		write_sdr;
+		new_line(file_sequence);
 
 		load_static_drive_values;
 		load_static_expect_values;
-		write_sdr; new_line;
+		write_sdr;
+		new_line(file_sequence);
 
 		atg_mktoggle;
 
@@ -301,105 +309,195 @@ procedure mktoggle is
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
-    test_profile	: type_test_profile := toggle;
-    
-	put_line("pin toggle generator version "& version);
-	put_line("=====================================================");
+	action := generate;
+	test_profile := toggle;
+
+	-- create message/log file
+ 	write_log_header(version);
+
+	put_line(to_upper(name_module_mktoggle) & " version " & version);
+	put_line("===========================================");
+
+	direct_messages; -- directs messages to logfile. required for procedures and functions in external packages
 
 	-- COMMAND LINE ARGUMENTS COLLECTING BEGIN
 	prog_position	:= 10;
- 	name_file_data_base:= to_bounded_string(Argument(1));
- 	put_line ("data base      : " & to_string(name_file_data_base));
- 
+ 	name_file_database := to_bounded_string(argument(1));
+
+	write_message (
+		file_handle => file_mktoggle_messages,
+		text => text_identifier_database & row_separator_0 & to_string(name_file_database),
+		console => true);
+
 	prog_position	:= 20;
- 	name_test:= to_bounded_string(Argument(2));
- 	put_line ("test name      : " & to_string(name_test));
+	name_test := to_bounded_string(argument(2));
+	write_message (
+		file_handle => file_mktoggle_messages,
+		text => text_test_name & row_separator_0 & to_string(name_test),
+		console => true);
 
 	prog_position	:= 30;
-	target_net:= to_bounded_string(Argument(3));
-	put_line ("target net     : " & to_string(target_net));
-	
+	target_net:= to_bounded_string(argument(3));
+	write_message (
+		file_handle => file_mktoggle_messages,
+		text => "target net " & to_string(target_net),
+		console => true);
+
 	prog_position	:= 40;
-	cycle_count:= type_cycle_count'value(Argument(4));
-	put_line ("cycle count    :" & type_cycle_count'image(cycle_count));
+	cycle_count:= type_cycle_count'value(argument(4));
+	write_message (
+		file_handle => file_mktoggle_messages,
+		text => "cycles " & type_cycle_count'image(cycle_count),
+		console => true);
 	
 	prog_position	:= 50;
 	low_time:= type_delay_value'value(argument(5));
-	put_line ("low time       :" & type_delay_value'image(low_time) & " sec");
+	write_message (
+		file_handle => file_mktoggle_messages,
+		text => "low time " & type_delay_value'image(low_time) & " sec",
+		console => true);
 	
 	prog_position	:= 60;
-	high_time:= type_delay_value'value(Argument(6));
-	put_line ("high time      :" & type_delay_value'image(high_time) & " sec");
+	high_time:= type_delay_value'value(argument(6));
+	write_message (
+		file_handle => file_mktoggle_messages,
+		text => "high time " & type_delay_value'image(high_time) & " sec",
+		console => true);
 
 	prog_position	:= 70;	
 	frequency := 1.0/(high_time + low_time);
-	put_line ("frequency      :" & float'image(frequency) & " Hz");
+	write_message (
+		file_handle => file_mktoggle_messages,
+		text => "frequency " & float'image(frequency) & " Hz",
+		console => true);
 	-- COMMAND LINE ARGUMENTS COLLECTING DONE
 
-	prog_position	:= 90;	
-	read_data_base;
+	prog_position	:= 80;
+	create_temp_directory;
 
-	prog_position	:= 100;
- 	create_temp_directory;
+	prog_position	:= 90;
+	degree_of_database_integrity_check := light;
+	read_uut_database;
 	
 	prog_position	:= 110;
-	create_test_directory(
-		test_name 			=> to_string(name_test),
-		warnings_enabled 	=> false
-		);
+	create_test_directory(name_test);
 
-	prog_position	:= 120; 
+	-- create sequence file
+	prog_position	:= 120;
+	create( file_sequence, 
+		name => (compose (to_string(name_test), to_string(name_test), file_extension_sequence)));
+	
+	prog_position	:= 130; 
 	write_info_section;
-	prog_position	:= 130;
-	write_test_section_options;
 
 	prog_position	:= 140;
-	write_test_init;
+	write_test_section_options;
 
 	prog_position	:= 150;
-	write_sequences;
+	write_test_init;
 
 	prog_position	:= 160;
-	set_output(standard_output);
+	write_sequences;
 
 	prog_position	:= 170;
 	close(file_sequence);
 
 	prog_position	:= 180;
 	write_diagnosis_netlist(
-		data_base	=>	to_string(name_file_data_base),
-		test_name	=>	to_string(name_test)
+		database	=>	name_file_database,
+		test		=>	name_test
 		);
+	set_output(standard_output);
+	
+	prog_position	:= 150;
+	write_log_footer;
 
+	exception when event: others =>
+		set_exit_status(failure);
 
+		write_message (
+			file_handle => file_mktoggle_messages,
+			text => message_error & "at program position" & natural'image(prog_position),
+			console => true);
 
-	exception
-		when event: others =>
-			set_output(standard_output);
-			set_exit_status(failure);
-			case prog_position is
-				when 10 =>
-					put_line("ERROR: Data base file missing or insufficient access rights !");
-					put_line("       Provide data base name as argument. Example: mktoggle my_uut.udb");
-				when 20 =>
-					put_line("ERROR: Test name missing !");
-					put_line("       Provide test name as argument ! Example: mktoggle my_uut.udb my_toggle_test");
-				when 40 =>
-					put_line("ERROR: Invalid cycle count specified. Allowed range:" & type_cycle_count'image(type_cycle_count'first) &
-						".." & type_cycle_count'image(type_cycle_count'last) & " !");
-				when 50 =>
-					put_line("ERROR: Invalid low time specified. Allowed range:" & type_delay_value'image(type_delay_value'first) &
-						".." & type_delay_value'image(type_delay_value'last) & " !");
-				when 60 =>
-					put_line("ERROR: Invalid high time specified. Allowed range:" & type_delay_value'image(type_delay_value'first) &
-						".." & type_delay_value'image(type_delay_value'last) & " !");
+		if is_open(file_sequence) then
+			close(file_sequence);
+		end if;
 
+		case prog_position is
+			when 10 =>
+				write_message (
+					file_handle => file_mktoggle_messages,
+					text => message_error & text_identifier_database & " file missing !" & latin_1.lf
+						& "Provide " & text_identifier_database & " name as argument. Example: "
+						& name_module_mktoggle & row_separator_0 & example_database,
+					console => true);
+			when 20 =>
+				write_message (
+					file_handle => file_mktoggle_messages,
+					text => message_error & "test name missing !" & latin_1.lf
+						& "Provide test name as argument ! Example: " 
+						& name_module_mktoggle & row_separator_0 & example_database 
+						& " my_toggle_test",
+					console => true);
 
-				when others =>
-					put("unexpected exception: ");
-					put_line(exception_name(event));
-					put(exception_message(event)); new_line;
-					put_line("program error at position " & natural'image(prog_position));
-			end case;
-			
+			when 30 =>
+				write_message (
+					file_handle => file_mktoggle_messages,
+					text => message_error & " target net not specified !" & latin_1.lf
+						& "Provide target net as argument. Example: "
+						& name_module_mktoggle & row_separator_0 & example_database
+						& " my_toggle_test motor_on_off",
+					console => true);
+
+			when 40 =>
+				write_message (
+					file_handle => file_mktoggle_messages,
+					text => message_error & "invalid cycle count specified " & latin_1.lf
+						& "Provide number of cycles as argument. Example: "
+						& name_module_mktoggle & row_separator_0 & example_database
+						& " my_toggle_test motor_on_off 5" 
+						& latin_1.lf
+						& "Allowed range:" & type_cycle_count'image(type_cycle_count'first) 
+						& ".." & type_cycle_count'image(type_cycle_count'last) & " !",
+					console => true);
+
+			when 50 =>
+				write_message (
+					file_handle => file_mktoggle_messages,
+					text => message_error & "invalid low time specified " & latin_1.lf
+						& "Provide low time as argument. Example: "
+						& name_module_mktoggle & row_separator_0 & example_database
+						& " my_toggle_test motor_on_off 5 2" 
+						& latin_1.lf
+						& "Allowed range:" & type_delay_value'image(type_delay_value'first) 
+						& ".." & type_delay_value'image(type_delay_value'last) & " !",
+					console => true);
+
+			when 60 =>
+				write_message (
+					file_handle => file_mktoggle_messages,
+					text => message_error & "invalid high time specified " & latin_1.lf
+						& "Provide high time as argument. Example: "
+						& name_module_mktoggle & row_separator_0 & example_database
+						& " my_toggle_test motor_on_off 5 2 3" 
+						& latin_1.lf
+						& "Allowed range:" & type_delay_value'image(type_delay_value'first) 
+						& ".." & type_delay_value'image(type_delay_value'last) & " !",
+					console => true);
+
+			when others =>
+				write_message (
+					file_handle => file_mkclock_messages,
+					text => "exception name: " & exception_name(event),
+					console => true);
+
+				write_message (
+					file_handle => file_mkclock_messages,
+					text => "exception message: " & exception_message(event),
+					console => true);
+		end case;
+
+		write_log_footer;
+
 end mktoggle;
