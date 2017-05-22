@@ -69,9 +69,9 @@ procedure mktoggle is
     use type_list_of_bics;	
 	use type_list_of_nets;
 	use type_list_of_pins;
-    use type_list_of_atg_expect_cells;
-    use type_list_of_input_cells_class_NA;
-    use type_list_of_static_expect_cells;
+    use type_list_of_atg_drive_cells;
+--     use type_list_of_input_cells_class_NA;
+--     use type_list_of_static_expect_cells;
 
     target_net		: type_net_name.bounded_string;
 
@@ -97,11 +97,6 @@ procedure mktoggle is
 		colon_position : positive := 19;
 
 	begin -- write_info_section
--- 		-- create sequence file
--- 		create( file_sequence, 
--- 			name => (compose (to_string(name_test), to_string(name_test), file_extension_sequence)));
--- 		set_output(file_sequence); -- set data sink
-
 		put_line(file_sequence, section_mark.section & row_separator_0 & test_section.info);
 		put_line(file_sequence, " created by " & name_module_mktoggle & " version "& version);
 		put_line(file_sequence, row_separator_0 & section_info_item.date & (colon_position-(2+section_info_item.date'last)) * row_separator_0 & ": " & date_now);
@@ -125,16 +120,13 @@ procedure mktoggle is
 
 
  	procedure atg_mktoggle is
-
-		-- search in cell list atg_drive
--- 		atg_drive			: type_ptr_cell_list_atg_drive := ptr_cell_list_atg_drive; -- Set pointer of atg_drive list at end of list.
+	-- search in cell list atg_drive
 		target_net_found	: boolean := false;
 		drv_high			: type_bit_char_class_0 := '1';
 		drv_low				: type_bit_char_class_0 := '0';
 		driver_inverted		: boolean;
 
 		procedure write_driver_cell(
-			--cycle	: type_cycle_count;
 			device 		: in type_device_name.bounded_string;
 			cell 		: in type_cell_id;
 			value 		: in type_bit_char_class_0;
@@ -153,7 +145,7 @@ procedure mktoggle is
 			put(file_sequence, -- write sdr drive header (like "set IC301 drv boundary")
                 row_separator_0 & sequence_instruction_set.set & row_separator_0 
                 & to_string(device) & row_separator_0 & sxr_io_identifier.drive & row_separator_0 
-                & sdr_target_register.boundary & type_cell_id'image(atg_drive.cell) 
+                & sdr_target_register.boundary & type_cell_id'image(cell) 
                 & sxr_assignment_operator.assign -- write cell id and assigment operator (like "45=")
 				);
 
@@ -179,89 +171,87 @@ procedure mktoggle is
 
 	begin
 		-- search in atg_drive list for target_net
-		while atg_drive /= null
-			loop
-				if to_string(atg_drive.net) = to_string(target_net) then
-					target_net_found := true;
-					put_line(row_separator_0 & comment & type_cycle_count'image(cycle_count) & " cycles of LH follow ...");
-					new_line;
-					--put_line(column_separator_0);
+        for d in 1..length(list_of_atg_drive_cells) loop
+        -- NOTE: element(list_of_atg_drive_cells, positive(d)) means the current drive cell
+            if to_string(element(list_of_atg_drive_cells, positive(d)).net) = to_string(target_net) then
+                target_net_found := true;
+                put_line(file_sequence, row_separator_0 & comment & type_cycle_count'image(cycle_count) & " cycles of LH follow ...");
+                new_line(file_sequence);
+                --put_line(column_separator_0);
 
-					case atg_drive.class is
-						when NR =>
- 							-- CS: get init value from safebits
+                case element(list_of_atg_drive_cells, positive(d)).class is
+                    when NR =>
+                        -- CS: get init value from safebits
 
-							for n in 1..cycle_count
-								loop
-									write_cycle(n);
-									write_driver_cell(
-										--cycle => n,
-										device => to_string(atg_drive.device),
-										cell => atg_drive.cell,
-										value => drv_low,
-										dely => low_time
-										);
+                        for n in 1..cycle_count
+                            loop
+                                write_cycle(n);
+                                write_driver_cell(
+                                    --cycle => n,
+                                    device => element(list_of_atg_drive_cells, positive(d)).device,
+                                    cell => element(list_of_atg_drive_cells, positive(d)).id,
+                                    value => drv_low,
+                                    dely => low_time
+                                    );
 
-									write_driver_cell(
-										--cycle => n,
-										device => to_string(atg_drive.device),
-										cell => atg_drive.cell,
-										value => drv_high,
-										dely => high_time
-										);
-								end loop;
+                                write_driver_cell(
+                                    --cycle => n,
+                                    device => element(list_of_atg_drive_cells, positive(d)).device,
+                                    cell => element(list_of_atg_drive_cells, positive(d)).id,
+                                    value => drv_high,
+                                    dely => high_time
+                                    );
+                            end loop;
 
-						when PU | PD => null;
-							-- CS: get init value from safebits
+                    when PU | PD => null;
+                        -- CS: get init value from safebits
 
-							-- Pull-nets frequently are controlled by a control cell. If the cell is to be inverted
-							-- a flag is set. When assigning the drive value is is read.
-							if atg_drive.controlled_by_control_cell then
-								if atg_drive.inverted then
-									driver_inverted := true; -- control cell must be inverted
-								else 
-									driver_inverted := false; -- control cell must not be inverted
-								end if;
-							else -- net driven by output cell
-								driver_inverted := false; -- control cell must not be inverted
-							end if;
+                        -- Pull-nets frequently are controlled by a control cell. If the cell is to be inverted
+                        -- a flag is set. When assigning the drive value is is read.
+                        if element(list_of_atg_drive_cells, positive(d)).controlled_by_control_cell then
+                            if element(list_of_atg_drive_cells, positive(d)).inverted then
+                                driver_inverted := true; -- control cell must be inverted
+                            else 
+                                driver_inverted := false; -- control cell must not be inverted
+                            end if;
+                        else -- net driven by output cell
+                            driver_inverted := false; -- control cell must not be inverted
+                        end if;
 
-							for n in 1..cycle_count
-								loop
-									write_cycle(n);
-									write_driver_cell(
-										device => to_string(atg_drive.device),
-										cell => atg_drive.cell,
-										value => drv_low,
-										inverted => driver_inverted,
-										dely => low_time
-										);
+                        for n in 1..cycle_count
+                            loop
+                                write_cycle(n);
+                                write_driver_cell(
+                                    device => element(list_of_atg_drive_cells, positive(d)).device,
+                                    cell => element(list_of_atg_drive_cells, positive(d)).id,
+                                    value => drv_low,
+                                    inverted => driver_inverted,
+                                    dely => low_time
+                                    );
 
-									write_driver_cell(
-										device => to_string(atg_drive.device),
-										cell => atg_drive.cell,
-										value => drv_high,
-										inverted => driver_inverted,
-										dely => high_time
-										);
-								end loop;
+                                write_driver_cell(
+                                    device => element(list_of_atg_drive_cells, positive(d)).device,
+                                    cell => element(list_of_atg_drive_cells, positive(d)).id,
+                                    value => drv_high,
+                                    inverted => driver_inverted,
+                                    dely => high_time
+                                    );
+                            end loop;
 
-						when others => raise constraint_error; -- should never happen as nets in atg_drive are in class NR,PD or PU anyway
-					end case;
-				end if;
-
-				atg_drive := atg_drive.next; -- advance pointer in atg_drive list
-			end loop;
+                    when others => raise constraint_error; -- should never happen as nets in atg_drive are in class NR,PD or PU anyway
+                end case;
+            end if;
+        end loop;
 				
 		-- target net found ?
 		if target_net_found = false then
 			write_message (
-				file_handle => file_mkclock_messages,
+				file_handle => file_mktoggle_messages,
 				text => message_error & "target net " & to_string(target_net) 
 					& " search failed !" & latin_1.lf 
-					& "make sure:" & latin_1.lf 
-					& " 1. target net is a primary net !" & latin_1.lf
-					& " 2. target net is in class NR, PU or PD !", -- CS: use images of type net class
+					& "make sure target net is:" & latin_1.lf 
+					& " 1. a primary net !" & latin_1.lf
+					& " 2. in class NR, PU or PD !", -- CS: use images of type net class
 				console => true);
 			raise constraint_error;
 		end if;
@@ -272,14 +262,18 @@ procedure mktoggle is
 
 	procedure write_sequences is
 	begin -- write_sequences
-		new_lin(file_sequence,2);
+		new_line(file_sequence,2);
 
 		all_in(sample);
 		write_ir_capture;
 		write_sir; 
 		new_line(file_sequence);
 
-		load_safe_values;
+        load_safe_values;
+-- CS: instead for safe values, the values of the database should be used ?
+-- 		load_static_drive_values;
+-- 		load_static_expect_values;
+        
 		write_sdr;
 		new_line(file_sequence);
 
@@ -288,6 +282,8 @@ procedure mktoggle is
 		new_line(file_sequence);
 
 		load_safe_values;
+-- 		load_static_drive_values;
+-- 		load_static_expect_values;
 		write_sdr;
 		new_line(file_sequence);
 
@@ -347,28 +343,28 @@ begin
 	cycle_count:= type_cycle_count'value(argument(4));
 	write_message (
 		file_handle => file_mktoggle_messages,
-		text => "cycles " & type_cycle_count'image(cycle_count),
+		text => "cycles" & type_cycle_count'image(cycle_count),
 		console => true);
 	
 	prog_position	:= 50;
 	low_time:= type_delay_value'value(argument(5));
 	write_message (
 		file_handle => file_mktoggle_messages,
-		text => "low time " & type_delay_value'image(low_time) & " sec",
+		text => "low time" & type_delay_value'image(low_time) & " sec",
 		console => true);
 	
 	prog_position	:= 60;
 	high_time:= type_delay_value'value(argument(6));
 	write_message (
 		file_handle => file_mktoggle_messages,
-		text => "high time " & type_delay_value'image(high_time) & " sec",
+		text => "high time" & type_delay_value'image(high_time) & " sec",
 		console => true);
 
 	prog_position	:= 70;	
 	frequency := 1.0/(high_time + low_time);
 	write_message (
 		file_handle => file_mktoggle_messages,
-		text => "frequency " & float'image(frequency) & " Hz",
+		text => "frequency" & float'image(frequency) & " Hz",
 		console => true);
 	-- COMMAND LINE ARGUMENTS COLLECTING DONE
 
@@ -409,7 +405,7 @@ begin
 		);
 	set_output(standard_output);
 	
-	prog_position	:= 150;
+	prog_position	:= 190;
 	write_log_footer;
 
 	exception when event: others =>
@@ -488,12 +484,12 @@ begin
 
 			when others =>
 				write_message (
-					file_handle => file_mkclock_messages,
+					file_handle => file_mktoggle_messages,
 					text => "exception name: " & exception_name(event),
 					console => true);
 
 				write_message (
-					file_handle => file_mkclock_messages,
+					file_handle => file_mktoggle_messages,
 					text => "exception message: " & exception_message(event),
 					console => true);
 		end case;
