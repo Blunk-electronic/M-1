@@ -24,7 +24,7 @@
 
 --   Please send your questions and comments to:
 --
---   Mario.Blunk@blunk-electronic.de
+--   info@blunk-electronic.de
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
@@ -44,26 +44,34 @@
 --  todo:
 --	- write udb and project in compile listing
 
+
 with ada.text_io;				use ada.text_io;
 with ada.integer_text_io;		use ada.integer_text_io;
-with ada.float_text_io;			use ada.float_text_io;
+with ada.characters;			use ada.characters;
+with ada.characters.latin_1;	use ada.characters.latin_1;
 with ada.characters.handling; 	use ada.characters.handling;
 
-with m1; --use m1;
-with m1_internal; 				use m1_internal;
-with m1_firmware; 				use m1_firmware;
-with m1_numbers; 				use m1_numbers;
-with m1_files_and_directories; 	use m1_files_and_directories;
+with ada.float_text_io;			use ada.float_text_io;
 
+with ada.containers;            use ada.containers;
+
+with ada.strings; 				use ada.strings;
+with ada.strings.bounded; 		use ada.strings.bounded;
 with ada.strings.fixed; 		use ada.strings.fixed;
-with ada.strings;		 		use ada.strings;
-with interfaces;				use interfaces;
-
 with ada.exceptions; 			use ada.exceptions;
  
 with ada.command_line;			use ada.command_line;
 with ada.directories;			use ada.directories;
 
+with interfaces;				use interfaces;
+
+with m1_base;					use m1_base;
+with m1_database; 				use m1_database;
+with m1_numbers; 				use m1_numbers;
+with m1_files_and_directories;	use m1_files_and_directories;
+with m1_test_gen_and_exec;		use m1_test_gen_and_exec;
+with m1_string_processing;		use m1_string_processing;
+with m1_firmware; 				use m1_firmware;
 
 procedure compseq is
 
@@ -79,7 +87,64 @@ procedure compseq is
 
 	line_counter			: natural := 0; -- line counter in sequence file (global counter !)
 
-	test_info				: type_test_info;
+    test_info				: type_test_info;
+
+    use type_name_test;
+    use type_device_name;    
+    use type_list_of_bics;
+    use type_universal_string;
+    use type_extended_string;    
+    
+	type type_scanpath_options is record
+        on_fail							: type_on_fail_action := POWER_DOWN;
+        frequency						: type_tck_frequency := tck_frequency_default;
+
+        -- CS: depends on firmware executor -- eqals 2x500 delay ticks -> appr. 50khz @ 50Mhz master clock
+        -- high nibble is multiplier, low nibble is exponent (10^exponent)
+        frequency_prescaler_unsigned_8	: unsigned_8 := 16#52#; 
+        trailer_dr						: type_trailer_sxr := to_binary_class_0(
+                                                binary_in	=> to_binary(
+                                                        text_in		=> trailer_default,
+                                                        length		=> trailer_length,
+                                                        class		=> class_0
+                                                        )
+                                                );
+
+        trailer_ir						: type_trailer_sxr := to_binary_class_0(
+                                                binary_in	=> to_binary(
+                                                        text_in		=> trailer_default,
+                                                        length		=> trailer_length,
+                                                        class		=> class_0
+                                                        )
+                                                );
+
+        voltage_out_port_1				: type_voltage_out := type_voltage_out'first;
+        voltage_out_port_1_unsigned_8	: unsigned_8;
+        tck_driver_port_1				: type_driver_characteristic := push_pull;
+        tck_driver_port_1_unsigned_8	: unsigned_8;
+        tms_driver_port_1				: type_driver_characteristic := push_pull;
+        tms_driver_port_1_unsigned_8	: unsigned_8;
+        tdo_driver_port_1				: type_driver_characteristic := push_pull;
+        tdo_driver_port_1_unsigned_8	: unsigned_8;
+        trst_driver_port_1				: type_driver_characteristic := push_pull;
+        trst_driver_port_1_unsigned_8	: unsigned_8;
+        threshold_tdi_port_1			: type_threshold_tdi := threshold_tdi_default;
+        threshold_tdi_port_1_unsigned_8	: unsigned_8;
+
+        voltage_out_port_2				: type_voltage_out := type_voltage_out'first;
+        voltage_out_port_2_unsigned_8 	: unsigned_8;
+        tck_driver_port_2				: type_driver_characteristic := push_pull;
+        tck_driver_port_2_unsigned_8	: unsigned_8;
+        tms_driver_port_2				: type_driver_characteristic := push_pull;
+        tms_driver_port_2_unsigned_8	: unsigned_8;
+        tdo_driver_port_2				: type_driver_characteristic := push_pull;
+        tdo_driver_port_2_unsigned_8	: unsigned_8;
+        trst_driver_port_2				: type_driver_characteristic := push_pull;
+        trst_driver_port_2_unsigned_8	: unsigned_8;
+        threshold_tdi_port_2			: type_threshold_tdi := threshold_tdi_default;
+        threshold_tdi_port_2_unsigned_8	: unsigned_8;
+    end record;
+    
 	scanpath_options		: type_scanpath_options;
 
 	sxr_retries				: type_sxr_retries;
@@ -155,7 +220,7 @@ procedure compseq is
 	type type_step_class_b (byte_count : positive) is
 		record
 			binary	: type_step_class_b_binary_array(1..byte_count);
-			source	: universal_string_type.bounded_string;
+			source	: type_universal_string.bounded_string;
 		end record;
 			
 	type type_test_step_pre;
@@ -177,7 +242,7 @@ procedure compseq is
 					img_mask	: type_string_of_bit_characters_class_0(1..length_total);	-- LSB left (pos 1)
 					retry_count	: unsigned_8;
 					retry_delay	: unsigned_8;
-					source		: universal_string_type.bounded_string; -- the command in plain text like "sir 3"
+					source		: type_universal_string.bounded_string; -- the command in plain text like "sir 3"
 				when class_b => -- class b is a low level command
 					command		: type_step_class_b(length_total);
 			end case;
@@ -213,7 +278,7 @@ procedure compseq is
 		img_mask_given		: type_string_of_bit_characters_class_0;	-- LSB left (pos 1)
 		retry_count_given	: unsigned_8;
 		retry_delay_given	: unsigned_8;
-		source_given		: universal_string_type.bounded_string
+		source_given		: type_universal_string.bounded_string
 		) is
 	begin
 		test_step_id := test_step_id + 1; -- just a number that helps ordering test steps later when reading the list
@@ -246,11 +311,10 @@ procedure compseq is
 	listing_address	: positive;
 	procedure write_listing_header is
 	begin
-		put_line(compile_listing,"M-1 Compiler Compseq Version " & compseq_version & " listing/report");
-		put_line(compile_listing,"date: " & m1.date_now);
-		put_line(compile_listing,"source file: " 
-			& universal_string_type.to_string(name_test) 
-			& "/" & universal_string_type.to_string(name_test) & ".seq");
+		put_line(compile_listing,"Compiler " & name_module_compiler & " version " & compseq_version & " listing/report");
+		put_line(compile_listing,"date " & date_now);
+		put_line(compile_listing,"source file " 
+			& compose (to_string(name_test), to_string(name_test), file_extension_sequence));
 		new_line(compile_listing);
 		--put_line(compile_listing,"LOC(hex)       LINE    SOURCE CODE" );
 		put_line(compile_listing,"LOC(hex)       OBJ_CODE       SOURCE_CODE/MEANING" );
@@ -366,7 +430,7 @@ procedure compseq is
 		llc_scratch.binary(3) := head;
 		llc_scratch.binary(4) := arg1;
 		llc_scratch.binary(5) := arg2;
-		llc_scratch.source	:= universal_string_type.to_bounded_string(source);
+		llc_scratch.source	:= to_bounded_string(source);
 
 		add_class_b_cmd_to_step_list_pre(
 			list 				=> ptr_test_step_pre,
@@ -400,12 +464,11 @@ procedure compseq is
 	end write_llc;
 
 
-
- 	procedure compile_command (cmd : extended_string.bounded_string) is
+ 	procedure compile_command (cmd : in string) is
 		field_pt 				: positive := 1;
-		field_ct 				: positive := get_field_count(extended_string.to_string(cmd));
-		bic_name				: universal_string_type.bounded_string;
-		bic_coordinates			: type_ptr_bscan_ic;
+		field_ct 				: positive := get_field_count(cmd);
+		bic_name				: type_device_name.bounded_string;
+-- 		bic_coordinates			: type_ptr_bscan_ic;
 		set_direction		 	: type_set_direction;
 		target_register			: type_set_target_register;
 		set_assignment_method	: type_set_assigment_method;
@@ -443,7 +506,7 @@ procedure compseq is
 
 		function update_pattern(
 		-- if assigment is register_wise !
-		-- overwrites bit positions specified in range cell_pos_low..cell_pos_high with text_in
+		-- overwrites bit positions specified in range cell_pos_low..cell_pos_high with pattern_in
 			pattern_old 	: type_string_of_bit_characters_class_0;
 			length_total 	: positive;
 			cell_pos_high	: positive;
@@ -535,6 +598,19 @@ procedure compseq is
 		end update_pattern;
 
 
+        procedure update_ir_drive (bic : in out type_bscan_ic) is
+        begin
+            bic.pattern_last_ir_drive := update_pattern(
+                pattern_old 		=> bic.pattern_last_ir_drive, -- MSB left !
+                length_total 		=> cell_id_max + 1,
+                cell_pos_high		=> cell_id_upper_end + 1,
+                cell_pos_low		=> cell_id_lower_end + 1,
+                pattern_in			=> get_field_from_line(cmd,9),
+                orientation			=> set_vector_orientation
+                );
+
+        end update_ir_drive;
+        
 		procedure check_option_retry is
 		begin
 			-- check option "retry" -- example: sdr id 4 option retry 10 delay 1
@@ -579,322 +655,330 @@ procedure compseq is
 	end check_option_retry;
 
 
-	procedure concatenate_sir_images is
-	-- concatenates sir images starting with device closest to BSC TDO ! This device has position 1.
-	-- checks retry option
-	-- adds images to list of test steps (pointed to by ptr_test_step_pre)
-		length_total : positive := scanport(scanpath_being_compiled).irl_total;
-		subtype type_sir_image is type_string_of_bit_characters_class_0 (1..length_total);
-		sir_drive	: type_sir_image;
-		sir_expect	: type_sir_image;
-		sir_mask	: type_sir_image;
-		b 			: type_ptr_bscan_ic;
+        procedure concatenate_sir_images is
+        -- concatenates sir images starting with device closest to BSC TDO ! This device has position 1.
+        -- checks retry option
+        -- adds images to list of test steps (pointed to by ptr_test_step_pre)
+            length_total : positive := scanport(scanpath_being_compiled).irl_total;
+            subtype type_sir_image is type_string_of_bit_characters_class_0 (1..length_total);
+            sir_drive	: type_sir_image;
+            sir_expect	: type_sir_image;
+            sir_mask	: type_sir_image;
+    -- 		b 			: type_ptr_bscan_ic;
 
-		pos_start	: positive := 1;
-		pos_end		: positive;
+            pos_start	: positive := 1;
+            pos_end		: positive;
 
-	begin -- concatenate_sir_images
-		for p in reverse 1..summary.bic_ct loop -- p defines the position (start with the highest position, close to BSC TDI)
-			b := ptr_bic;
-			while b /= null loop -- loop in bic list
-				if b.position = p then -- on position match
-					if b.chain = scanpath_being_compiled then -- on scanpath match
+        begin -- concatenate_sir_images
+    -- 		for p in reverse 1..summary.bic_ct loop -- p defines the position (start with the highest position, close to BSC TDI)
+    -- 			b := ptr_bic;
+    -- 			while b /= null loop -- loop in bic list
+    -- 				if b.position = p then -- on position match
+            for b in 1..length(list_of_bics) loop
+            -- NOTE: element(list_of_bics, positive(b)) means the current bic
+                if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- on scanpath match
 
-						-- start pos initiated already
-						-- calculate end position to place bic-image
-						pos_end := (pos_start + b.len_ir) - 1;
+                    -- start pos initiated already
+                    -- calculate end position to place bic-image
+                    pos_end := (pos_start + element(list_of_bics, positive(b)).len_ir) - 1;
 
-						sir_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_ir_drive);
-						sir_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_ir_expect);
-						sir_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_ir_mask);
+                    sir_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_ir_drive);
+                    sir_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_ir_expect);
+                    sir_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_ir_mask);
 
-						put_line(scanport(scanpath_being_compiled).register_file, "step" 
-							& positive'image(vector_id) & " device" & positive'image(p) & " ir");
+                    put_line(scanport(scanpath_being_compiled).register_file, "step" 
+                        & positive'image(vector_id) & " device" & count_type'image(b) & " ir");
 
-						-- calculate start position to place next image
-						pos_start := pos_end + 1;
-					end if;
-				end if;
-				b := b.next;
-			end loop;
-		end loop;
+                    -- calculate start position to place next image
+                    pos_start := pos_end + 1;
+                end if;
+    -- 				end if;
+    -- 				b := b.next;
+    -- 			end loop;
+            end loop;
 
-		-- insert trailer at begin of drive image (so that the trailer gets sent into the target FIRST)
-		sir_drive := shift_class_0(sir_drive,right,trailer_length);
-		sir_drive(1..trailer_length) := mirror_class_0(scanpath_options.trailer_ir);
+            -- insert trailer at begin of drive image (so that the trailer gets sent into the target FIRST)
+            sir_drive := shift_class_0(sir_drive,right,trailer_length);
+            sir_drive(1..trailer_length) := mirror_class_0(scanpath_options.trailer_ir);
 
-		-- insert trailer at end of expect/mask image (BSC receives trailer AFTER the target-capture values !)
-		sir_expect(length_total-trailer_length+1..length_total) := mirror_class_0(scanpath_options.trailer_ir);
-		-- mask for trailer has same position with all bits set (means all bits are checked) -- CS: disabling checking option ?
-		-- CS: when manipulating the mask, it must be mirrored. for the time being no need since all bits are set
-		sir_mask(length_total-trailer_length+1..length_total) := to_binary_class_0
-																		(
-																		to_binary( 
-																			text_in => trailer_length * '1',
-																			length	=> trailer_length,
-																			class	=> class_0
-																			)
-																		);
+            -- insert trailer at end of expect/mask image (BSC receives trailer AFTER the target-capture values !)
+            sir_expect(length_total-trailer_length+1..length_total) := mirror_class_0(scanpath_options.trailer_ir);
+            -- mask for trailer has same position with all bits set (means all bits are checked) -- CS: disabling checking option ?
+            -- CS: when manipulating the mask, it must be mirrored. for the time being no need since all bits are set
+            sir_mask(length_total-trailer_length+1..length_total) := to_binary_class_0
+                                                                            (
+                                                                            to_binary( 
+                                                                                text_in => trailer_length * '1',
+                                                                                length	=> trailer_length,
+                                                                                class	=> class_0
+                                                                                )
+                                                                            );
 
-		check_option_retry;
+            check_option_retry;
 
-		add_class_a_cmd_to_step_list_pre(
-			list				=> ptr_test_step_pre,
-			--step_class_given	=> class_a,
-			scan_given			=> SIR,
-			vector_id_given		=> vector_id,
-			length_total_given	=> length_total,
-			img_drive_given		=> sir_drive, -- LSB left (pos 1)
-			img_expect_given	=> sir_expect, -- LSB left (pos 1)
-			img_mask_given		=> sir_mask, -- LSB left (pos 1)
-			retry_count_given	=> sxr_retries_unsigned_8,
-			retry_delay_given	=> sxr_retry_delay_unsigned_8,
-			source_given		=> universal_string_type.to_bounded_string(extended_string.to_string(cmd))
-			);
+            add_class_a_cmd_to_step_list_pre(
+                list				=> ptr_test_step_pre,
+                --step_class_given	=> class_a,
+                scan_given			=> SIR,
+                vector_id_given		=> vector_id,
+                length_total_given	=> length_total,
+                img_drive_given		=> sir_drive, -- LSB left (pos 1)
+                img_expect_given	=> sir_expect, -- LSB left (pos 1)
+                img_mask_given		=> sir_mask, -- LSB left (pos 1)
+                retry_count_given	=> sxr_retries_unsigned_8,
+                retry_delay_given	=> sxr_retry_delay_unsigned_8,
+    -- 			source_given		=> to_bounded_string(extended_string.to_string(cmd))
+                source_given		=> to_bounded_string(cmd)
+                );
 
-	end concatenate_sir_images;
-
-
-	procedure concatenate_sdr_images is
-	-- calculates total length of sdr image by the instructions loaded last
-	-- concatenates sir images starting with device closest to BSC TDO ! This device has position 1.
-	-- checks retry option
-	-- adds images to list of test steps (pointed to by ptr_test_step_pre)
-
-		length_total 	: natural := trailer_length; -- the trailer is always included
-		b 				: type_ptr_bscan_ic;
-
-		procedure build_sdr_image is
-		-- with the total length known, the overall sdr image can be created
-			subtype type_sdr_image is type_string_of_bit_characters_class_0 (1..length_total);
-			sdr_drive	: type_sdr_image;
-			sdr_expect	: type_sdr_image;
-			sdr_mask	: type_sdr_image;
-			b 			: type_ptr_bscan_ic;
-
-			pos_start	: positive := 1;
-			pos_end		: positive;
-
-		begin -- build_sdr_image
-			-- the last instruction loaded indicates the targeted data register
-			for p in reverse 1..summary.bic_ct loop -- p defines the position (start with the highest position, close to BSC TDI)
-				b := ptr_bic;
-				while b /= null loop -- loop in bic list
-					if b.position = p then -- on position match
-						if b.chain = scanpath_being_compiled then -- on scanpath match
-
-							-- b.pattern_last_xxx_xxxx has MSB on the left (pos 1)
-
-							-- if last instruction was BYPASS
-							if b.pattern_last_ir_drive = replace_dont_care(b.opc_bypass) then
-								-- calculate end position to place bic-image
-								pos_end := (pos_start + bic_bypass_register_length) - 1;
-
-								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_bypass_drive);
-								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_expect);
-								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_mask);
-
-								put_line(scanport(scanpath_being_compiled).register_file, "step" 
-									& natural'image(vector_id) 
-									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
-
-							-- if last instruction was EXTEST
-							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_extest) then
-								-- calculate end position to place bic-image
-								pos_end := (pos_start + b.len_bsr) - 1;
-
-								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_boundary_drive);
-								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_expect);
-								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_mask);
-
-								put_line(scanport(scanpath_being_compiled).register_file, "step" 
-									& natural'image(vector_id) 
-									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
-
-							-- if last instruction was SAMPLE
-							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_sample) then
-								-- calculate end position to place bic-image
-								pos_end := (pos_start + b.len_bsr) - 1;
-
-								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_boundary_drive);
-								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_expect);
-								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_mask);
-
-								put_line(scanport(scanpath_being_compiled).register_file, "step" 
-									& natural'image(vector_id) 
-									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
-
-							-- if last instruction was PRELOAD
-							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_preload) then
-								-- calculate end position to place bic-image
-								pos_end := (pos_start + b.len_bsr) - 1;
-
-								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_boundary_drive);
-								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_expect);
-								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_mask);
-
-								put_line(scanport(scanpath_being_compiled).register_file, "step" 
-									& natural'image(vector_id) 
-									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
-
-							-- if last instruction was HIGHZ
-							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_highz) then
-								-- calculate end position to place bic-image
-								pos_end := (pos_start + bic_bypass_register_length) - 1;
-
-								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_bypass_drive);
-								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_expect);
-								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_mask);
-
-								put_line(scanport(scanpath_being_compiled).register_file, "step" 
-									& natural'image(vector_id) 
-									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
-
-							-- if last instruction was CLAMP
-							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_clamp) then
-								-- calculate end position to place bic-image
-								pos_end := (pos_start + bic_bypass_register_length) - 1;
-
-								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_bypass_drive);
-								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_expect);
-								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_bypass_mask);
-
-								put_line(scanport(scanpath_being_compiled).register_file, "step" 
-									& natural'image(vector_id) 
-									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
-
-							-- if last instruction was IDCODE
-							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_idcode) then
-								-- calculate end position to place bic-image
-								pos_end := (pos_start + bic_idcode_register_length) - 1;
-
-								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_idcode_drive);
-								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_idcode_expect);
-								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_idcode_mask);
-
-								put_line(scanport(scanpath_being_compiled).register_file, "step" 
-									& natural'image(vector_id) 
-									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(IDCODE)));
-
-							-- if last instruction was USERCODE
-							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_usercode) then
-								-- calculate end position to place bic-image
-								pos_end := (pos_start + bic_usercode_register_length) - 1;
-
-								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_usercode_drive);
-								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_usercode_expect);
-								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_usercode_mask);
-
-								put_line(scanport(scanpath_being_compiled).register_file, "step" 
-									& natural'image(vector_id) 
-									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(USERCODE)));
-
-							-- if last instruction was INTEST
-							elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_intest) then
-								-- calculate end position to place bic-image
-								pos_end := (pos_start + b.len_bsr) - 1;
-
-								sdr_drive(pos_start..pos_end) 	:= mirror_class_0(b.pattern_last_boundary_drive);
-								sdr_expect(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_expect);
-								sdr_mask(pos_start..pos_end)	:= mirror_class_0(b.pattern_last_boundary_mask);
-
-								put_line(scanport(scanpath_being_compiled).register_file, "step" 
-									& natural'image(vector_id) 
-									& " device" & positive'image(p) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
-
-							end if;
+        end concatenate_sir_images;
 
 
-							-- calculate start position to place next image
-							pos_start := pos_end + 1;
-						end if;
-					end if;
-					b := b.next;
-				end loop;
-			end loop;
+        procedure concatenate_sdr_images is
+        -- calculates total length of sdr image by the instructions loaded last
+        -- concatenates sir images starting with device closest to BSC TDO ! This device has position 1.
+        -- checks retry option
+        -- adds images to list of test steps (pointed to by ptr_test_step_pre)
 
-			-- insert trailer at begin of drive image (so that the trailer gets sent into the target FIRST)
-			sdr_drive := shift_class_0(sdr_drive,right,trailer_length);
-			sdr_drive(1..trailer_length) := mirror_class_0(scanpath_options.trailer_dr);
+            length_total 	: natural := trailer_length; -- the trailer is always included
+    -- 		b 				: type_ptr_bscan_ic;
 
-			-- insert trailer at end of expect/mask image (BSC receives trailer AFTER the target-capture values !)
-			sdr_expect(length_total-trailer_length+1..length_total) := mirror_class_0(scanpath_options.trailer_dr);
-			-- mask for trailer has same position with all bits set (means all bits are checked) -- CS: disabling checking option ?
-			-- CS: when manipulating the mask, it must be mirrored. for the time being no need since all bits are set
-			sdr_mask(length_total-trailer_length+1..length_total) := to_binary_class_0
-																			(
-																			to_binary( 
-																				text_in => trailer_length * '1',
-																				length	=> trailer_length,
-																				class	=> class_0
-																				)
-																			);
+            procedure build_sdr_image is
+            -- with the total length known, the overall sdr image can be created
+                subtype type_sdr_image is type_string_of_bit_characters_class_0 (1..length_total);
+                sdr_drive	: type_sdr_image;
+                sdr_expect	: type_sdr_image;
+                sdr_mask	: type_sdr_image;
+    -- 			b 			: type_ptr_bscan_ic;
+
+                pos_start	: positive := 1;
+                pos_end		: positive;
+
+            begin -- build_sdr_image
+                -- the last instruction loaded indicates the targeted data register
+    -- 			for p in reverse 1..summary.bic_ct loop -- p defines the position (start with the highest position, close to BSC TDI)
+    -- 				b := ptr_bic;
+    -- 				while b /= null loop -- loop in bic list
+    -- 					if b.position = p then -- on position match
+                for b in 1..length(list_of_bics) loop
+                    -- NOTE: element(list_of_bics, positive(b)) means the current bic
+                            if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- on scanpath match
+
+                                -- element(list_of_bics, positive(b)).pattern_last_xxx_xxxx has MSB on the left (pos 1)
+
+                                -- if last instruction was BYPASS
+                                if element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_bypass) then
+                                    -- calculate end position to place bic-image
+                                    pos_end := (pos_start + bic_bypass_register_length) - 1;
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_mask);
+
+                                    put_line(scanport(scanpath_being_compiled).register_file, "step" 
+                                        & natural'image(vector_id) 
+                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+
+                                -- if last instruction was EXTEST
+                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_extest) then
+                                    -- calculate end position to place bic-image
+                                    pos_end := (pos_start + element(list_of_bics, positive(b)).len_bsr) - 1;
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_mask);
+
+                                    put_line(scanport(scanpath_being_compiled).register_file, "step" 
+                                        & natural'image(vector_id) 
+                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+
+                                -- if last instruction was SAMPLE
+                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_sample) then
+                                    -- calculate end position to place bic-image
+                                    pos_end := (pos_start + element(list_of_bics, positive(b)).len_bsr) - 1;
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_mask);
+
+                                    put_line(scanport(scanpath_being_compiled).register_file, "step" 
+                                        & natural'image(vector_id) 
+                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+
+                                -- if last instruction was PRELOAD
+                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_preload) then
+                                    -- calculate end position to place bic-image
+                                    pos_end := (pos_start + element(list_of_bics, positive(b)).len_bsr) - 1;
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_mask);
+
+                                    put_line(scanport(scanpath_being_compiled).register_file, "step" 
+                                        & natural'image(vector_id) 
+                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+
+                                -- if last instruction was HIGHZ
+                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_highz) then
+                                    -- calculate end position to place bic-image
+                                    pos_end := (pos_start + bic_bypass_register_length) - 1;
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_mask);
+
+                                    put_line(scanport(scanpath_being_compiled).register_file, "step" 
+                                        & natural'image(vector_id) 
+                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+
+                                -- if last instruction was CLAMP
+                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_clamp) then
+                                    -- calculate end position to place bic-image
+                                    pos_end := (pos_start + bic_bypass_register_length) - 1;
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_mask);
+
+                                    put_line(scanport(scanpath_being_compiled).register_file, "step" 
+                                        & natural'image(vector_id) 
+                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+
+                                -- if last instruction was IDCODE
+                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_idcode) then
+                                    -- calculate end position to place bic-image
+                                    pos_end := (pos_start + bic_idcode_register_length) - 1;
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_idcode_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_idcode_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_idcode_mask);
+
+                                    put_line(scanport(scanpath_being_compiled).register_file, "step" 
+                                        & natural'image(vector_id) 
+                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(IDCODE)));
+
+                                -- if last instruction was USERCODE
+                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_usercode) then
+                                    -- calculate end position to place bic-image
+                                    pos_end := (pos_start + bic_usercode_register_length) - 1;
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_usercode_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_usercode_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_usercode_mask);
+
+                                    put_line(scanport(scanpath_being_compiled).register_file, "step" 
+                                        & natural'image(vector_id) 
+                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(USERCODE)));
+
+                                -- if last instruction was INTEST
+                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_intest) then
+                                    -- calculate end position to place bic-image
+                                    pos_end := (pos_start + element(list_of_bics, positive(b)).len_bsr) - 1;
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_mask);
+
+                                    put_line(scanport(scanpath_being_compiled).register_file, "step" 
+                                        & natural'image(vector_id) 
+                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+
+                                end if;
 
 
-			check_option_retry;
+                                -- calculate start position to place next image
+                                pos_start := pos_end + 1;
+                            end if;
+    -- 					end if;
+    -- 					b := b.next;
+    -- 				end loop;
+                end loop;
 
-			add_class_a_cmd_to_step_list_pre(
-				list				=> ptr_test_step_pre,
-				--step_class_given	=> class_a,
-				scan_given			=> SDR,
-				vector_id_given		=> vector_id,
-				length_total_given	=> length_total,
-				img_drive_given		=> sdr_drive,	-- LSB left (pos 1)
-				img_expect_given	=> sdr_expect,	-- LSB left (pos 1)
-				img_mask_given		=> sdr_mask,	-- LSB left (pos 1)
-				retry_count_given	=> sxr_retries_unsigned_8,
-				retry_delay_given	=> sxr_retry_delay_unsigned_8,
-				source_given		=> universal_string_type.to_bounded_string(extended_string.to_string(cmd))
-				);
+                -- insert trailer at begin of drive image (so that the trailer gets sent into the target FIRST)
+                sdr_drive := shift_class_0(sdr_drive,right,trailer_length);
+                sdr_drive(1..trailer_length) := mirror_class_0(scanpath_options.trailer_dr);
 
-		end build_sdr_image;
+                -- insert trailer at end of expect/mask image (BSC receives trailer AFTER the target-capture values !)
+                sdr_expect(length_total-trailer_length+1..length_total) := mirror_class_0(scanpath_options.trailer_dr);
+                -- mask for trailer has same position with all bits set (means all bits are checked) -- CS: disabling checking option ?
+                -- CS: when manipulating the mask, it must be mirrored. for the time being no need since all bits are set
+                sdr_mask(length_total-trailer_length+1..length_total) := to_binary_class_0
+                                                                                (
+                                                                                to_binary( 
+                                                                                    text_in => trailer_length * '1',
+                                                                                    length	=> trailer_length,
+                                                                                    class	=> class_0
+                                                                                    )
+                                                                                );
 
-	begin -- concatenate_sdr_images
-		-- calculate total length of sdr image depending on latest loaded instructions
-		-- from the total sdr length, the overall sdr image can be created
-		for p in 1..summary.bic_ct loop -- p defines the position
-			b := ptr_bic;
-			while b /= null loop -- loop in bic list
-				if b.position = p then -- on position match
-					if b.chain = scanpath_being_compiled then -- on scanpath match
 
-						-- chaining sdr drv and exp patterns starting with device closest to BSC TDO !
-						-- use drv pattern depending on latest loaded instruction of particular device
+                check_option_retry;
 
-						if b.pattern_last_ir_drive = replace_dont_care(b.opc_bypass) then
-							length_total := length_total + bic_bypass_register_length;
-						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_extest) then
-							length_total := length_total + b.len_bsr;
-						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_sample) then
-							length_total := length_total + b.len_bsr;
-						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_preload) then
-							length_total := length_total + b.len_bsr;
-						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_highz) then
-							length_total := length_total + bic_bypass_register_length;
-						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_clamp) then
-							length_total := length_total + bic_bypass_register_length;
-						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_idcode) then
-							length_total := length_total + bic_idcode_register_length;
-						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_usercode) then
-							length_total := length_total + bic_usercode_register_length;
-						elsif b.pattern_last_ir_drive = replace_dont_care(b.opc_intest) then
-							length_total := length_total + b.len_bsr;
-						else
-							put_line("ERROR: Instruction opcode for device '" 
-								& universal_string_type.to_string(b.name) 
-								& "' does not match any instruction covered in Std. " & bscan_standard_1 );
-							raise constraint_error;
-						end if;
+                add_class_a_cmd_to_step_list_pre(
+                    list				=> ptr_test_step_pre,
+                    --step_class_given	=> class_a,
+                    scan_given			=> SDR,
+                    vector_id_given		=> vector_id,
+                    length_total_given	=> length_total,
+                    img_drive_given		=> sdr_drive,	-- LSB left (pos 1)
+                    img_expect_given	=> sdr_expect,	-- LSB left (pos 1)
+                    img_mask_given		=> sdr_mask,	-- LSB left (pos 1)
+                    retry_count_given	=> sxr_retries_unsigned_8,
+                    retry_delay_given	=> sxr_retry_delay_unsigned_8,
+                    --source_given		=> universal_string_type.to_bounded_string(extended_string.to_string(cmd))
+                    source_given		=> to_bounded_string(cmd)
+                    );
 
-					end if;
-				end if;
-				b := b.next;
-			end loop;
-		end loop;
+            end build_sdr_image;
 
-		-- length_total now contains the length of the overall sdr image
-		build_sdr_image;
-	end concatenate_sdr_images;
+        begin -- concatenate_sdr_images
+            -- calculate total length of sdr image depending on latest loaded instructions
+            -- from the total sdr length, the overall sdr image can be created
+    -- 		for p in 1..summary.bic_ct loop -- p defines the position
+    -- 			b := ptr_bic;
+    -- 			while b /= null loop -- loop in bic list
+    -- 				if b.position = p then -- on position match
+                for b in 1..length(list_of_bics) loop
+                    -- NOTE: element(list_of_bics, positive(b)) means the current bic
+                        if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- on scanpath match
+
+                            -- chaining sdr drv and exp patterns starting with device closest to BSC TDO !
+                            -- use drv pattern depending on latest loaded instruction of particular device
+
+                            if element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_bypass) then
+                                length_total := length_total + bic_bypass_register_length;
+                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_extest) then
+                                length_total := length_total + element(list_of_bics, positive(b)).len_bsr;
+                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_sample) then
+                                length_total := length_total + element(list_of_bics, positive(b)).len_bsr;
+                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_preload) then
+                                length_total := length_total + element(list_of_bics, positive(b)).len_bsr;
+                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_highz) then
+                                length_total := length_total + bic_bypass_register_length;
+                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_clamp) then
+                                length_total := length_total + bic_bypass_register_length;
+                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_idcode) then
+                                length_total := length_total + bic_idcode_register_length;
+                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_usercode) then
+                                length_total := length_total + bic_usercode_register_length;
+                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_intest) then
+                                length_total := length_total + element(list_of_bics, positive(b)).len_bsr;
+                            else
+                                put_line("ERROR: Instruction opcode for device " 
+                                    & to_string(element(list_of_bics, positive(b)).name) 
+                                    & " does not match any instruction covered in Std. " & bscan_standard_1 );
+                                raise constraint_error;
+                            end if;
+
+                        end if;
+    -- 				end if;
+    -- 				b := b.next;
+                end loop;
+    -- 		end loop;
+
+            -- length_total now contains the length of the overall sdr image
+            build_sdr_image;
+        end concatenate_sdr_images;
 
 
 
@@ -903,27 +987,27 @@ procedure compseq is
 
 		--hard+soft trst (default)
 		if get_field_from_line(cmd,1) = sequence_instruction_set.trst then
-			write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_trst, source => extended_string.to_string(cmd) ); 
+			write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_trst, source => cmd ); 
 
 		--only soft trst
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.strst then
-			write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_strst, source => extended_string.to_string(cmd) ); 
+			write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_strst, source => cmd ); 
 
 		--only hard trst
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.htrst then
-			write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_htrst, source => extended_string.to_string(cmd) ); 
+			write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_htrst, source => cmd ); 
 
 		prog_position	:= 420;
 		-- "tap_state" (example: tap_state test-logic-reset, tap_state pause-dr)
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.tap_state then
 			if get_field_from_line(cmd,2) = tap_state.test_logic_reset then
-				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_strst, source => extended_string.to_string(cmd) ); -- same as strst
+				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_strst, source => cmd ); -- same as strst
 			elsif get_field_from_line(cmd,2) = tap_state.run_test_idle then
-				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_state_rti, source => extended_string.to_string(cmd) ); 
+				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_state_rti, source => cmd ); 
 			elsif get_field_from_line(cmd,2) = tap_state.pause_dr then
-				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_state_pdr, source => extended_string.to_string(cmd) ); 
+				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_state_pdr, source => cmd ); 
 			elsif get_field_from_line(cmd,2) = tap_state.pause_ir then 
-				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_state_pir, source => extended_string.to_string(cmd) ); 
+				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_state_pir, source => cmd ); 
 			else
 				put_line("ERROR: TAP state not supported for low level operation !");
 				raise constraint_error;
@@ -933,9 +1017,9 @@ procedure compseq is
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.connect then
 			if get_field_from_line(cmd,2) = scanport_identifier.port then 
 				if get_field_from_line(cmd,3) = "1" then
-					write_llc(head => llc_head_connect_disconnect, arg1 => 16#01#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_connect_disconnect, arg1 => 16#01#, arg2 => 16#01#, source => cmd ); 
 				elsif get_field_from_line(cmd,3) = "2" then 
-					write_llc(head => llc_head_connect_disconnect, arg1 => 16#02#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_connect_disconnect, arg1 => 16#02#, arg2 => 16#01#, source => cmd ); 
 				else
 					put_line("ERROR: Expected a valid scanport id. Example: " 
 						& sequence_instruction_set.connect & row_separator_0
@@ -953,9 +1037,9 @@ procedure compseq is
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.disconnect then
 			if get_field_from_line(cmd,2) = scanport_identifier.port then 
 				if get_field_from_line(cmd,3) = "1" then
-					write_llc(head => llc_head_connect_disconnect, arg1 => 16#01#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_connect_disconnect, arg1 => 16#01#, arg2 => 16#00#, source => cmd ); 
 				elsif get_field_from_line(cmd,3) = "2" then 
-					write_llc(head => llc_head_connect_disconnect, arg1 => 16#02#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_connect_disconnect, arg1 => 16#02#, arg2 => 16#00#, source => cmd ); 
 				else
 					put_line("ERROR: Expected a valid scanport id. Example: " 
 						& sequence_instruction_set.disconnect & row_separator_0
@@ -976,20 +1060,20 @@ procedure compseq is
 
 				-- pwr relay 1 on
 				if get_field_from_line(cmd,3) = "1" then
-					write_llc(head => llc_head_power_on_off, arg1 => 16#01#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#01#, arg2 => 16#01#, source => cmd ); 
 				-- pwr relay 2 on
 				elsif get_field_from_line(cmd,3) = "2" then
-					write_llc(head => llc_head_power_on_off, arg1 => 16#02#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#02#, arg2 => 16#01#, source => cmd ); 
 				-- pwr relay 3 on
 				elsif get_field_from_line(cmd,3) = "3" then
-					write_llc(head => llc_head_power_on_off, arg1 => 16#03#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#03#, arg2 => 16#01#, source => cmd ); 
 
 				-- all pwr relays on
 				elsif get_field_from_line(cmd,3) = power_channel_name.all_channels then 
-					write_llc(head => llc_head_power_on_off, arg1 => 16#FF#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#FF#, arg2 => 16#01#, source => cmd ); 
 				-- gnd pwr relay on
 				elsif get_field_from_line(cmd,3) = power_channel_name.gnd then
-					write_llc(head => llc_head_power_on_off, arg1 => 16#00#, arg2 => 16#01#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#00#, arg2 => 16#01#, source => cmd ); 
 				else
 					put_line("ERROR: Expected power channel id as positive integer or keyword '" 
 						& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !");
@@ -1004,19 +1088,19 @@ procedure compseq is
 
 				-- pwr relay 1 off
 				if get_field_from_line(cmd,3) = "1" then
-					write_llc(head => llc_head_power_on_off, arg1 => 16#01#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#01#, arg2 => 16#00#, source => cmd ); 
 				-- pwr relay 2 off
 				elsif get_field_from_line(cmd,3) = "2" then
-					write_llc(head => llc_head_power_on_off, arg1 => 16#02#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#02#, arg2 => 16#00#, source => cmd ); 
 				-- pwr relay 3 off
 				elsif get_field_from_line(cmd,3) = "3" then
-					write_llc(head => llc_head_power_on_off, arg1 => 16#03#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#03#, arg2 => 16#00#, source => cmd ); 
 				-- all pwr relays off
 				elsif get_field_from_line(cmd,3) = power_channel_name.all_channels then 
-					write_llc(head => llc_head_power_on_off, arg1 => 16#FF#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#FF#, arg2 => 16#00#, source => cmd ); 
 				-- gnd pwr relay off
 				elsif get_field_from_line(cmd,3) = power_channel_name.gnd then
-					write_llc(head => llc_head_power_on_off, arg1 => 16#00#, arg2 => 16#00#, source => extended_string.to_string(cmd) ); 
+					write_llc(head => llc_head_power_on_off, arg1 => 16#00#, arg2 => 16#00#, source => cmd ); 
 				else
 					put_line("ERROR: Expected power channel id as positive integer or keyword '" 
 						& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !");
@@ -1106,7 +1190,7 @@ procedure compseq is
 				write_llc(
 					head => llc_head_delay, 
 					arg1 => unsigned_8(natural(delay_set_by_operator/delay_resolution)),
-					source => extended_string.to_string(cmd)
+					source => cmd
 					); 
 			else
 				put_line("ERROR: Delay value invalid !");
@@ -1126,10 +1210,11 @@ procedure compseq is
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.set then -- CS: check field count
 
 			-- check if given device is a bic and get its coordinates
-			bic_name := universal_string_type.to_bounded_string(get_field_from_line(cmd,2));
-			bic_coordinates := get_bic_coordinates(bic_name);
+			bic_name := to_bounded_string(get_field_from_line(cmd,2));
+-- 			bic_coordinates := get_bic_coordinates(bic_name);
 
-			if bic_coordinates /= null then
+-- 			if bic_coordinates /= null then
+            if is_bic(bic_name) then
 
 				-- set set_direction flag
 				if get_field_from_line(cmd,3) = sxr_io_identifier.drive then -- if "drv" found
@@ -1152,10 +1237,10 @@ procedure compseq is
 -- 						end case;
 				if get_field_from_line(cmd,4) = sir_target_register.ir then
 					target_register := ir;
-					cell_id_max := bic_coordinates.len_ir - 1;
+					cell_id_max := get_bic(bic_name).len_ir - 1;
 				elsif get_field_from_line(cmd,4) = sdr_target_register.boundary then
 					target_register := boundary;
-					cell_id_max := bic_coordinates.len_bsr - 1;
+					cell_id_max := get_bic(bic_name).len_bsr - 1;
 				elsif get_field_from_line(cmd,4) = sdr_target_register.bypass then
 					target_register := bypass;
 					cell_id_max := bic_bypass_register_length - 1;
@@ -1210,13 +1295,14 @@ procedure compseq is
 					set_assignment_method := bit_wise;
 				end if;
 
-				for p in 1..summary.bic_ct loop
-				-- p points to device in current chain. position 1 is closest to BSC TDO !
-
+-- 				for p in 1..summary.bic_ct loop
+-- p points to device in current chain. position 1 is closest to BSC TDO !                
+                for b in 1..length(list_of_bics) loop                
+                -- NOTE: element(list_of_bics, positive(b)) means the current bic
 					-- scanpath_being_compiled holds the id of the current scanpath.
 					-- we care for a device in that scanpath. if not in scanpath it is skipped.
 
-					if bic_coordinates.chain = scanpath_being_compiled then -- if the device is in scanpath being compiled
+					if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- if the device is in scanpath being compiled
 
 						case set_assignment_method is
 							when register_wise =>
@@ -1225,14 +1311,16 @@ procedure compseq is
 										-- update drive image
 										case target_register is
 											when ir =>
-												bic_coordinates.pattern_last_ir_drive := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_ir_drive, -- MSB left !
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation
-													);
+-- 												bic_coordinates.pattern_last_ir_drive := update_pattern(
+-- 													pattern_old 		=> bic_coordinates.pattern_last_ir_drive, -- MSB left !
+-- 													length_total 		=> cell_id_max + 1,
+-- 													cell_pos_high		=> cell_id_upper_end + 1,
+-- 													cell_pos_low		=> cell_id_lower_end + 1,
+-- 													pattern_in			=> get_field_from_line(cmd,9),
+-- 													orientation			=> set_vector_orientation
+--                                                     );
+
+                                                update_element(list_of_bics, positive(b), update_ir_drive'access );
 												-- CS: verify the update yielded a valid instruction !
 											when boundary =>
 												bic_coordinates.pattern_last_boundary_drive := update_pattern(
