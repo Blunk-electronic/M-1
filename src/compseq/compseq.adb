@@ -89,10 +89,12 @@ procedure compseq is
 
     test_info				: type_test_info;
 
+	use type_name_database;
     use type_name_test;
     use type_device_name;    
     use type_list_of_bics;
-    use type_universal_string;
+	use type_universal_string;
+    use type_long_string;	
     use type_extended_string;    
     
 	type type_scanpath_options is record
@@ -311,14 +313,14 @@ procedure compseq is
 	listing_address	: positive;
 	procedure write_listing_header is
 	begin
-		put_line(compile_listing,"Compiler " & name_module_compiler & " version " & compseq_version & " listing/report");
-		put_line(compile_listing,"date " & date_now);
-		put_line(compile_listing,"source file " 
+		put_line(file_compile_listing,"Compiler " & name_module_compiler & " version " & compseq_version & " listing/report");
+		put_line(file_compile_listing,"date " & date_now);
+		put_line(file_compile_listing,"source file " 
 			& compose (to_string(name_test), to_string(name_test), file_extension_sequence));
-		new_line(compile_listing);
-		--put_line(compile_listing,"LOC(hex)       LINE    SOURCE CODE" );
-		put_line(compile_listing,"LOC(hex)       OBJ_CODE       SOURCE_CODE/MEANING" );
-		put_line(compile_listing,column_separator_0);
+		new_line(file_compile_listing);
+		--put_line(file_compile_listing,"LOC(hex)       LINE    SOURCE CODE" );
+		put_line(file_compile_listing,"LOC(hex)       OBJ_CODE       SOURCE_CODE/MEANING" );
+		put_line(file_compile_listing,column_separator_0);
 	end write_listing_header;
 
 	type type_list_item is ( LOCATION, OBJECT_CODE, LINE_NUMBER, SOURCE_CODE, SEPARATOR);
@@ -332,23 +334,23 @@ procedure compseq is
 	begin
 		case item is
 			when LOCATION =>
-				put(compile_listing,natural_to_string(loc,16,8));
-				put(compile_listing,6 * row_separator_0);
+				put(file_compile_listing,natural_to_string(loc,16,8));
+				put(file_compile_listing,6 * row_separator_0);
 			when LINE_NUMBER =>
-				put(compile_listing,natural'image(line));
-				put(compile_listing,row_separator_0);
+				put(file_compile_listing,natural'image(line));
+				put(file_compile_listing,row_separator_0);
 			when OBJECT_CODE =>
-				put(compile_listing, natural_to_string( natural(obj_code), 16, 2)(1..2) );
-				--put(compile_listing,obj_code(obj_code'first..obj_code'last-1)); -- strip format indicator 
-				put(compile_listing,row_separator_0);
+				put(file_compile_listing, natural_to_string( natural(obj_code), 16, 2)(1..2) );
+				--put(file_compile_listing,obj_code(obj_code'first..obj_code'last-1)); -- strip format indicator 
+				put(file_compile_listing,row_separator_0);
 			when SOURCE_CODE => -- CS: improve formating !
-				put(compile_listing,9 * row_separator_0);
+				put(file_compile_listing,9 * row_separator_0);
 				--Set_Col(20);
-				--put(compile_listing,src_code);
+				--put(file_compile_listing,src_code);
 				--Set_Col(1);
-				put_line(compile_listing,src_code);
+				put_line(file_compile_listing,src_code);
 			when SEPARATOR =>
-				put(compile_listing,row_separator_1);
+				put(file_compile_listing,row_separator_1);
 			when others => null;
 		end case;
 	end write_listing;
@@ -494,14 +496,17 @@ procedure compseq is
 		sxr_retry_delay_unsigned_8	: unsigned_8 := 0; -- set by check_option_retry, otherwise this is default
 
 
-		procedure put_example(instruction : string) is
+		procedure put_example(instruction : in string) is
 		begin
-			put_line("       Example: " & sequence_instruction_set.imax & row_separator_0 
-				& positive'image(type_power_channel_id'first) & row_separator_0
-				& float'image(type_current_max'first) & row_separator_0
-				& timeout_identifier & row_separator_0 & float'image(type_overload_timeout'first)
-				);
-			put_line("       Currently" & positive'image(power_channel_ct) & " power channels for power supervising are supported !");
+			write_message (
+				file_handle => file_compiler_messages,
+				text => "example: " & sequence_instruction_set.imax & row_separator_0 
+					& positive'image(type_power_channel_id'first) & row_separator_0
+					& float'image(type_current_max'first) & row_separator_0
+					& timeout_identifier & row_separator_0 & float'image(type_overload_timeout'first)
+					& latin_1.lf
+					& "Currently" & positive'image(power_channel_ct) & " power channels for power supervising are supported !",
+				console => true);
 		end put_example;
 
 		function update_pattern(
@@ -546,7 +551,10 @@ procedure compseq is
 						-- fill pattern_in_class_1 with as much x as specified by cell_pos_high and cell_pos_low
 						pattern_in_class_1	:= to_binary_class_1(  to_binary( pattern_in_length * '1', pattern_in_length , class_1)  );
 					when others =>
-						put_line(standard_output,"ERROR: Invalid character for cell calue found !");
+						write_message (
+							file_handle => file_compiler_messages,
+							text => message_error & "Invalid character for cell value found !",
+							console => true);
 						raise constraint_error;
 				end case;
 			else
@@ -586,7 +594,10 @@ procedure compseq is
 			if pattern_in_length = length_total then
 				null;
 			else
-				put_line("ERROR: Assigning discrete ranges not supported yet !"); -- CS
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & "Assigning discrete ranges not supported !", -- CS
+					console => true);
 				raise constraint_error;
 -- 				for b in 1..length_total loop
 -- 					--if b >= cell_pos_low
@@ -598,19 +609,239 @@ procedure compseq is
 		end update_pattern;
 
 
-        procedure update_ir_drive (bic : in out type_bscan_ic) is
+        procedure update_whole_register (bic : in out type_bscan_ic) is
         begin
-            bic.pattern_last_ir_drive := update_pattern(
-                pattern_old 		=> bic.pattern_last_ir_drive, -- MSB left !
-                length_total 		=> cell_id_max + 1,
-                cell_pos_high		=> cell_id_upper_end + 1,
-                cell_pos_low		=> cell_id_lower_end + 1,
-                pattern_in			=> get_field_from_line(cmd,9),
-                orientation			=> set_vector_orientation
-                );
+			case set_direction is
+				when drv => -- update drive image
+					case target_register is
+						when ir =>
+							bic.pattern_last_ir_drive := update_pattern(
+								pattern_old 		=> bic.pattern_last_ir_drive, -- MSB left !
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation
+								);
+							-- CS: verify the update yielded a valid instruction !
+						when boundary =>
+							bic.pattern_last_boundary_drive := update_pattern(
+								pattern_old 		=> bic.pattern_last_boundary_drive,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation
+								);
+						when bypass =>
+							bic.pattern_last_bypass_drive := update_pattern(
+								pattern_old 		=> bic.pattern_last_bypass_drive,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation
+								);
+						when idcode =>
+							bic.pattern_last_idcode_drive := update_pattern(
+								pattern_old 		=> bic.pattern_last_idcode_drive,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation
+								);
+						when usercode =>
+							bic.pattern_last_usercode_drive := update_pattern(
+								pattern_old 		=> bic.pattern_last_usercode_drive,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation
+								);
+					end case;
 
-        end update_ir_drive;
-        
+
+				when exp =>
+					-- update expect and mask image
+					case target_register is
+						when ir =>
+							bic.pattern_last_ir_expect := update_pattern(
+								pattern_old 		=> bic.pattern_last_ir_expect,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation,
+								direction			=> set_direction
+								);
+							bic.pattern_last_ir_mask := update_pattern(
+								pattern_old 		=> bic.pattern_last_ir_mask,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation,
+								direction			=> set_direction,
+								mask				=> true
+								);
+
+						when boundary =>
+							bic.pattern_last_boundary_expect := update_pattern(
+								pattern_old 		=> bic.pattern_last_boundary_expect,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation,
+								direction			=> set_direction
+								);
+							bic.pattern_last_boundary_mask := update_pattern(
+								pattern_old 		=> bic.pattern_last_boundary_mask,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation,
+								direction			=> set_direction,
+								mask				=> true
+								);
+
+						when bypass =>
+							bic.pattern_last_bypass_expect := update_pattern(
+								pattern_old 		=> bic.pattern_last_bypass_expect,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation,
+								direction			=> set_direction
+								);
+							bic.pattern_last_bypass_mask := update_pattern(
+								pattern_old 		=> bic.pattern_last_bypass_mask,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation,
+								direction			=> set_direction,
+								mask				=> true
+								);
+
+						when idcode =>
+							bic.pattern_last_idcode_expect := update_pattern(
+								pattern_old 		=> bic.pattern_last_idcode_expect,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation,
+								direction			=> set_direction
+								);
+							bic.pattern_last_idcode_mask := update_pattern(
+								pattern_old 		=> bic.pattern_last_idcode_mask,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation,
+								direction			=> set_direction,
+								mask				=> true
+								);
+
+						when usercode =>
+							bic.pattern_last_usercode_expect := update_pattern(
+								pattern_old 		=> bic.pattern_last_usercode_expect,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation,
+								direction			=> set_direction
+								);
+							bic.pattern_last_usercode_mask := update_pattern(
+								pattern_old 		=> bic.pattern_last_usercode_mask,
+								length_total 		=> cell_id_max + 1,
+								cell_pos_high		=> cell_id_upper_end + 1,
+								cell_pos_low		=> cell_id_lower_end + 1,
+								pattern_in			=> get_field_from_line(cmd,9),
+								orientation			=> set_vector_orientation,
+								direction			=> set_direction,
+								mask				=> true
+								);
+
+					end case;
+
+			end case;
+        end update_whole_register;
+
+        procedure update_bit_of_register (bic : in out type_bscan_ic) is
+        begin
+			for c in 5..field_ct loop
+				cell_assignment := get_cell_assignment(get_field_from_line(cmd,c));
+				-- get cell id from assignment and check range
+				-- cell_id_max has been set earlier according to the targeted register
+				if cell_assignment.cell_id <= cell_id_max then
+					-- the cell id must be converted (mirrored) to the position in the targeted image (drive, expect or mask)
+					-- example: register length = 8, assignment 7=x: cell_position_in_image = 1
+					cell_position_in_image := cell_id_max + 1 - cell_assignment.cell_id;
+					case set_direction is
+						when drv => 
+							case target_register is
+								when ir =>
+									bic.pattern_last_ir_drive(cell_position_in_image) := cell_assignment.value;
+								when boundary =>
+									bic.pattern_last_boundary_drive(cell_position_in_image) := cell_assignment.value;
+								when bypass =>
+									bic.pattern_last_bypass_drive(cell_position_in_image) := cell_assignment.value;
+								when idcode =>
+									bic.pattern_last_idcode_drive(cell_position_in_image) := cell_assignment.value;
+								when usercode =>
+									bic.pattern_last_usercode_drive(cell_position_in_image) := cell_assignment.value;
+							end case;
+						when exp =>
+							-- if the value to be assigned is don't care (x), 
+							-- the value to be assigned is replaced by zero
+							-- further-on: the mask bit for this position is to be cleared
+							-- in order not disable the check here
+							cell_expect_mask := '1'; -- per default the check is enabled
+							if cell_assignment.value = 'x' or cell_assignment.value = 'X' then
+								cell_assignment.value := '0';
+								cell_expect_mask := '0';
+							end if;
+
+							-- update the targeted register at position cell_position_in_image
+							case target_register is
+								when ir =>
+									bic.pattern_last_ir_expect(cell_position_in_image) := cell_assignment.value;
+									bic.pattern_last_ir_mask(cell_position_in_image) := cell_expect_mask;
+									-- CS: verify the update yielded a valid instruction !
+								when boundary =>
+									bic.pattern_last_boundary_expect(cell_position_in_image) := cell_assignment.value;
+									bic.pattern_last_boundary_mask(cell_position_in_image) := cell_expect_mask;
+								when bypass =>
+									bic.pattern_last_bypass_expect(cell_position_in_image) := cell_assignment.value;
+									bic.pattern_last_bypass_mask(cell_position_in_image) := cell_expect_mask;
+								when idcode =>
+									bic.pattern_last_idcode_expect(cell_position_in_image) := cell_assignment.value;
+									bic.pattern_last_idcode_mask(cell_position_in_image) := cell_expect_mask;
+								when usercode =>
+									bic.pattern_last_usercode_expect(cell_position_in_image) := cell_assignment.value;
+									bic.pattern_last_usercode_mask(cell_position_in_image) := cell_expect_mask;
+							end case;
+					end case;
+				else
+					write_message (
+						file_handle => file_compiler_messages,
+						text => message_error & "Cell id must be below or equal" & natural'image(cell_id_max) & " for this register !",
+						console => true);
+					raise constraint_error;
+				end if;
+			end loop;
+		end update_bit_of_register;
+
+		
 		procedure check_option_retry is
 		begin
 			-- check option "retry" -- example: sdr id 4 option retry 10 delay 1
@@ -631,24 +862,40 @@ procedure compseq is
 										put_warning_on_too_many_parameters(line_counter);
 									end if;
 								else
-									put_line("ERROR: Maximum delay is" & float'image(delay_max) & " !");
+									write_message (
+										file_handle => file_compiler_messages,
+										text => message_error & "maximum delay is" & float'image(delay_max) & " sec !",
+										console => true);
 									raise constraint_error;
 								end if;
 							else
-								put_line("ERROR: Expected keyword '" & sxr_option.dely & "' !");
+								write_message (
+									file_handle => file_compiler_messages,
+									text => message_error & "expected keyword '" & sxr_option.dely & "' !",
+									console => true);
 								raise constraint_error;
 							end if;
 						else
-							put_line("ERROR: Retry count exceeded ! Max value is" & positive'image(sxr_retries_max) & " !");
+							write_message (
+								file_handle => file_compiler_messages,
+								text => message_error & "retry count exceeded ! Max value is" & positive'image(sxr_retries_max) & " !",
+								console => true);
 							raise constraint_error;
 						end if;
 					else
-						put_line("ERROR: Expected keyword '" & sxr_option.retry & "' !");
+						write_message (
+							file_handle => file_compiler_messages,
+							text => message_error & "expected keyword '" & sxr_option.retry & "' !",
+							console => true);
+					
 						-- CS: put other availabe options 
 						raise constraint_error;
 					end if;
 				else
-					put_line("ERROR: Expected keyword '" & sxr_option.option & "' after sxr id !");
+					write_message (
+						file_handle => file_compiler_messages,
+						text => message_error & "expected keyword '" & sxr_option.option & "' after sxr id !",
+						console => true);
 					raise constraint_error;
 				end if;
 			end if;
@@ -964,9 +1211,12 @@ procedure compseq is
                             elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_intest) then
                                 length_total := length_total + element(list_of_bics, positive(b)).len_bsr;
                             else
-                                put_line("ERROR: Instruction opcode for device " 
-                                    & to_string(element(list_of_bics, positive(b)).name) 
-                                    & " does not match any instruction covered in Std. " & bscan_standard_1 );
+								write_message (
+									file_handle => file_compiler_messages,
+									text => message_error & "instruction opcode for device " 
+										& to_string(element(list_of_bics, positive(b)).name) 
+										& " does not match any instruction covered in Std. " & bscan_standard_1,
+									console => true);
                                 raise constraint_error;
                             end if;
 
@@ -1009,7 +1259,10 @@ procedure compseq is
 			elsif get_field_from_line(cmd,2) = tap_state.pause_ir then 
 				write_llc(head => llc_head_tap, arg1 => llc_cmd_tap_state_pir, source => cmd ); 
 			else
-				put_line("ERROR: TAP state not supported for low level operation !");
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & "TAP state not supported for low level operation !",
+					console => true);
 				raise constraint_error;
 			end if;
 
@@ -1021,15 +1274,22 @@ procedure compseq is
 				elsif get_field_from_line(cmd,3) = "2" then 
 					write_llc(head => llc_head_connect_disconnect, arg1 => 16#02#, arg2 => 16#01#, source => cmd ); 
 				else
-					put_line("ERROR: Expected a valid scanport id. Example: " 
-						& sequence_instruction_set.connect & row_separator_0
-						& scanport_identifier.port & row_separator_0
-						& "1");
-					put_line("       Currently maximal" & positive'image(scanport_count_max) & " scanports are supported."); 
+					write_message (
+						file_handle => file_compiler_messages,
+						text => message_error & "expected a valid scanport id. Example: " 
+							& sequence_instruction_set.connect & row_separator_0
+							& scanport_identifier.port & row_separator_0 & "1"
+							& latin_1.lf
+							& "Currently maximal" & positive'image(scanport_count_max) & " scanports are supported.",
+						console => true);
 					raise constraint_error;
 				end if;
 			else
-				put_line("ERROR: Expected keyword '" & scanport_identifier.port & "' after command '" & sequence_instruction_set.connect & "' !");
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & "expected keyword '" & scanport_identifier.port & "' after command '" 
+						& sequence_instruction_set.connect & "' !",
+					console => true);
 				raise constraint_error;
 			end if;
  
@@ -1041,15 +1301,29 @@ procedure compseq is
 				elsif get_field_from_line(cmd,3) = "2" then 
 					write_llc(head => llc_head_connect_disconnect, arg1 => 16#02#, arg2 => 16#00#, source => cmd ); 
 				else
-					put_line("ERROR: Expected a valid scanport id. Example: " 
-						& sequence_instruction_set.disconnect & row_separator_0
-						& scanport_identifier.port & row_separator_0
-						& "1");
-					put_line("       Currently maximal" & positive'image(scanport_count_max) & " scanports are supported."); 
+-- 					put_line("ERROR: Expected a valid scanport id. Example: " 
+-- 						& sequence_instruction_set.disconnect & row_separator_0
+-- 						& scanport_identifier.port & row_separator_0
+-- 						& "1");
+-- 					put_line("       Currently maximal" & positive'image(scanport_count_max) & " scanports are supported."); 
+
+					write_message (
+						file_handle => file_compiler_messages,
+						text => message_error & "expected a valid scanport id. Example: " 
+							& sequence_instruction_set.disconnect & row_separator_0
+							& scanport_identifier.port & row_separator_0 & "1"
+							& latin_1.lf
+							& "Currently maximal" & positive'image(scanport_count_max) & " scanports are supported.",
+						console => true);
 					raise constraint_error;
 				end if;
 			else
-				put_line("ERROR: Expected keyword '" & scanport_identifier.port & "' after command '" & sequence_instruction_set.disconnect & "' !");
+--				put_line("ERROR: Expected keyword '" & scanport_identifier.port & "' after command '" & sequence_instruction_set.disconnect & "' !");
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & "expected keyword '" & scanport_identifier.port & "' after command '" 
+						& sequence_instruction_set.disconnect & "' !",
+					console => true);
 				raise constraint_error;
 			end if;
  
@@ -1075,12 +1349,18 @@ procedure compseq is
 				elsif get_field_from_line(cmd,3) = power_channel_name.gnd then
 					write_llc(head => llc_head_power_on_off, arg1 => 16#00#, arg2 => 16#01#, source => cmd ); 
 				else
-					put_line("ERROR: Expected power channel id as positive integer or keyword '" 
-						& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !");
-					put_line("       Example: " & sequence_instruction_set.power & row_separator_0 & power_cycle_identifier.up 
-						& row_separator_0 & power_channel_name.all_channels);
-					put_line("       Currently" & positive'image(power_channel_ct) & " power channels for power supervising are supported !");
-					put_line("       Additionally channel '" & power_channel_name.gnd & "' can be switched (without supervising feature) !");
+					write_message (
+						file_handle => file_compiler_messages,
+						text => message_error & "expected power channel id or keyword '" 
+							& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !"
+							& latin_1.lf
+							& "Example: " & sequence_instruction_set.power & row_separator_0 & power_cycle_identifier.up 
+							& row_separator_0 & power_channel_name.all_channels
+							& latin_1.lf
+							& "Currently" & positive'image(power_channel_ct) & " power channels for power supervising are supported !"
+							& latin_1.lf
+							& "Additionally channel '" & power_channel_name.gnd & "' can be used (without supervising feature) !",
+						console => true);
 					raise constraint_error;
 				end if;
 
@@ -1102,20 +1382,45 @@ procedure compseq is
 				elsif get_field_from_line(cmd,3) = power_channel_name.gnd then
 					write_llc(head => llc_head_power_on_off, arg1 => 16#00#, arg2 => 16#00#, source => cmd ); 
 				else
-					put_line("ERROR: Expected power channel id as positive integer or keyword '" 
-						& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !");
-					put_line("       Example: " & sequence_instruction_set.power & row_separator_0 & power_cycle_identifier.down
-						& row_separator_0 & power_channel_name.all_channels);
+-- 					put_line("ERROR: Expected power channel id as positive integer or keyword '" 
+-- 						& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !");
+-- 					put_line("       Example: " & sequence_instruction_set.power & row_separator_0 & power_cycle_identifier.down
+-- 						& row_separator_0 & power_channel_name.all_channels);
+					write_message (
+						file_handle => file_compiler_messages,
+						text => message_error & "expected power channel id or keyword '" 
+							& power_channel_name.gnd & "' or '" & power_channel_name.all_channels & "' !"
+							& latin_1.lf
+							& "Example: " & sequence_instruction_set.power & row_separator_0 & power_cycle_identifier.down
+							& row_separator_0 & power_channel_name.all_channels
+							& latin_1.lf
+							& "Currently" & positive'image(power_channel_ct) & " power channels for power supervising are supported !"
+							& latin_1.lf
+							& "Additionally channel '" & power_channel_name.gnd & "' can be used (without supervising feature) !",
+						console => true);
+
 					raise constraint_error;
 				end if;
 
 			else
-				put_line("ERROR: Expected keyword '" & power_cycle_identifier.up & "' or '" & power_cycle_identifier.down 
-					& "' after command '" & sequence_instruction_set.power & "' !");
-				put_line("       Example: " & sequence_instruction_set.power & row_separator_0 & power_cycle_identifier.up 
-					& row_separator_0 & power_channel_name.all_channels);
-				put_line("       Currently" & positive'image(power_channel_ct) & " power channels for power supervising are supported !");
-				put_line("       Additionally channel '" & power_channel_name.gnd & "' can be switched (without supervising feature) !");
+-- 				put_line("ERROR: Expected keyword '" & power_cycle_identifier.up & "' or '" & power_cycle_identifier.down 
+-- 					& "' after command '" & sequence_instruction_set.power & "' !");
+-- 				put_line("       Example: " & sequence_instruction_set.power & row_separator_0 & power_cycle_identifier.up 
+-- 					& row_separator_0 & power_channel_name.all_channels);
+-- 				put_line("       Currently" & positive'image(power_channel_ct) & " power channels for power supervising are supported !");
+-- 				put_line("       Additionally channel '" & power_channel_name.gnd & "' can be switched (without supervising feature) !");
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & "expected keyword '" & power_cycle_identifier.up & "' or '" & power_cycle_identifier.down 
+						& "' after command '" & sequence_instruction_set.power & "' !"
+						& latin_1.lf
+						& "Example: " & sequence_instruction_set.power & row_separator_0 & power_cycle_identifier.up 
+						& row_separator_0 & power_channel_name.all_channels
+						& latin_1.lf
+						& "Currently" & positive'image(power_channel_ct) & " power channels for power supervising are supported !"
+						& latin_1.lf
+						& "Additionally channel '" & power_channel_name.gnd & "' can be used (without supervising feature) !",
+					console => true);
 				raise constraint_error;
 			end if;
 
@@ -1125,7 +1430,10 @@ procedure compseq is
 			if positive'value(get_field_from_line(cmd,2)) in type_power_channel_id then
 				power_channel_name.id := positive'value(get_field_from_line(cmd,2)); -- get power channel
 			else
-				put_line("ERROR: Expected power channel id after command '" & sequence_instruction_set.imax & "' !");
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & "expected power channel after command '" & sequence_instruction_set.imax & "' !",
+					console => true);
 				put_example(sequence_instruction_set.imax);
 				raise constraint_error;
 			end if;
@@ -1306,231 +1614,10 @@ procedure compseq is
 
 						case set_assignment_method is
 							when register_wise =>
-								case set_direction is
-									when drv =>
-										-- update drive image
-										case target_register is
-											when ir =>
--- 												bic_coordinates.pattern_last_ir_drive := update_pattern(
--- 													pattern_old 		=> bic_coordinates.pattern_last_ir_drive, -- MSB left !
--- 													length_total 		=> cell_id_max + 1,
--- 													cell_pos_high		=> cell_id_upper_end + 1,
--- 													cell_pos_low		=> cell_id_lower_end + 1,
--- 													pattern_in			=> get_field_from_line(cmd,9),
--- 													orientation			=> set_vector_orientation
---                                                     );
-
-                                                update_element(list_of_bics, positive(b), update_ir_drive'access );
-												-- CS: verify the update yielded a valid instruction !
-											when boundary =>
-												bic_coordinates.pattern_last_boundary_drive := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_boundary_drive,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation
-													);
-											when bypass =>
-												bic_coordinates.pattern_last_bypass_drive := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_bypass_drive,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation
-													);
-											when idcode =>
-												bic_coordinates.pattern_last_idcode_drive := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_idcode_drive,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation
-													);
-											when usercode =>
-												bic_coordinates.pattern_last_usercode_drive := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_usercode_drive,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation
-													);
-										end case;
-
-
-									when exp =>
-										-- update expect and mask image
-										case target_register is
-											when ir =>
-												bic_coordinates.pattern_last_ir_expect := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_ir_expect,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation,
-													direction			=> set_direction
-													);
-												bic_coordinates.pattern_last_ir_mask := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_ir_mask,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation,
-													direction			=> set_direction,
-													mask				=> true
-													);
-
-											when boundary =>
-												bic_coordinates.pattern_last_boundary_expect := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_boundary_expect,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation,
-													direction			=> set_direction
-													);
-												bic_coordinates.pattern_last_boundary_mask := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_boundary_mask,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation,
-													direction			=> set_direction,
-													mask				=> true
-													);
-
-											when bypass =>
-												bic_coordinates.pattern_last_bypass_expect := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_bypass_expect,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation,
-													direction			=> set_direction
-													);
-												bic_coordinates.pattern_last_bypass_mask := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_bypass_mask,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation,
-													direction			=> set_direction,
-													mask				=> true
-													);
-
-											when idcode =>
-												bic_coordinates.pattern_last_idcode_expect := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_idcode_expect,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation,
-													direction			=> set_direction
-													);
-												bic_coordinates.pattern_last_idcode_mask := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_idcode_mask,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation,
-													direction			=> set_direction,
-													mask				=> true
-													);
-
-											when usercode =>
-												bic_coordinates.pattern_last_usercode_expect := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_usercode_expect,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation,
-													direction			=> set_direction
-													);
-												bic_coordinates.pattern_last_usercode_mask := update_pattern(
-													pattern_old 		=> bic_coordinates.pattern_last_usercode_mask,
-													length_total 		=> cell_id_max + 1,
-													cell_pos_high		=> cell_id_upper_end + 1,
-													cell_pos_low		=> cell_id_lower_end + 1,
-													pattern_in			=> get_field_from_line(cmd,9),
-													orientation			=> set_vector_orientation,
-													direction			=> set_direction,
-													mask				=> true
-													);
-
-										end case;
-
-								end case;
+								update_element(list_of_bics, positive(b), update_whole_register'access );
 
 							when bit_wise =>
-								for c in 5..field_ct loop
-									cell_assignment := get_cell_assignment(get_field_from_line(cmd,c));
-									-- get cell id from assignment and check range
-									-- cell_id_max has been set earlier according to the targeted register
-									if cell_assignment.cell_id <= cell_id_max then
-										-- the cell id must be converted (mirrored) to the position in the targeted image (drive, expect or mask)
-										-- example: register length = 8, assignment 7=x: cell_position_in_image = 1
-										cell_position_in_image := cell_id_max + 1 - cell_assignment.cell_id;
-										case set_direction is
-											when drv => 
-												case target_register is
-													when ir =>
-														bic_coordinates.pattern_last_ir_drive(cell_position_in_image) := cell_assignment.value;
-													when boundary =>
-														bic_coordinates.pattern_last_boundary_drive(cell_position_in_image) := cell_assignment.value;
-													when bypass =>
-														bic_coordinates.pattern_last_bypass_drive(cell_position_in_image) := cell_assignment.value;
-													when idcode =>
-														bic_coordinates.pattern_last_idcode_drive(cell_position_in_image) := cell_assignment.value;
-													when usercode =>
-														bic_coordinates.pattern_last_usercode_drive(cell_position_in_image) := cell_assignment.value;
-												end case;
-											when exp =>
-												-- if the value to be assigned is don't care (x), 
-												-- the value to be assigned is replaced by zero
-												-- further-on: the mask bit for this position is to be cleared
-												-- in order not disable the check here
-												cell_expect_mask := '1'; -- per default the check is enabled
-												if cell_assignment.value = 'x' or cell_assignment.value = 'X' then
-													cell_assignment.value := '0';
-													cell_expect_mask := '0';
-												end if;
-
-												-- update the targeted register at position cell_position_in_image
-												case target_register is
-													when ir =>
-														bic_coordinates.pattern_last_ir_expect(cell_position_in_image) := cell_assignment.value;
-														bic_coordinates.pattern_last_ir_mask(cell_position_in_image) := cell_expect_mask;
-													when boundary =>
-														bic_coordinates.pattern_last_boundary_expect(cell_position_in_image) := cell_assignment.value;
-														bic_coordinates.pattern_last_boundary_mask(cell_position_in_image) := cell_expect_mask;
-													when bypass =>
-														bic_coordinates.pattern_last_bypass_expect(cell_position_in_image) := cell_assignment.value;
-														bic_coordinates.pattern_last_bypass_mask(cell_position_in_image) := cell_expect_mask;
-													when idcode =>
-														bic_coordinates.pattern_last_idcode_expect(cell_position_in_image) := cell_assignment.value;
-														bic_coordinates.pattern_last_idcode_mask(cell_position_in_image) := cell_expect_mask;
-													when usercode =>
-														bic_coordinates.pattern_last_usercode_expect(cell_position_in_image) := cell_assignment.value;
-														bic_coordinates.pattern_last_usercode_mask(cell_position_in_image) := cell_expect_mask;
-												end case;
-										end case;
-									else
-										put_line("ERROR: Cell id must be below or equal" & natural'image(cell_id_max) & " for this register !");
-										raise constraint_error;
-									end if;
-								end loop;
+								update_element(list_of_bics, positive(b), update_bit_of_register'access );								
 								-- CS: verify the instruction is valid !
 						end case;
 					end if;
@@ -1541,7 +1628,7 @@ procedure compseq is
 
 
 			else -- if device is not a bic
-				put_line("ERROR: Device '" & universal_string_type.to_string(bic_name) & "' is not part of any scanpath ! Check name and capitalization !)");
+				put_line("ERROR: Device '" & to_string(bic_name) & "' is not part of any scanpath ! Check name and capitalization !)");
 				raise constraint_error;
 			end if; -- if device is a bic
 
@@ -1573,17 +1660,17 @@ procedure compseq is
 	function get_destination_address_from_journal return natural is
 	-- reads the latest entry of the journal and calculates the next available destination address
 		line_counter	: natural := 0;
-		line			: extended_string.bounded_string;
+		line			: type_long_string.bounded_string;
 		last_dest_addr	: natural :=0;
 		last_size		: natural :=0;
 		next_dest_addr	: natural;
 	begin
-		if exists (journal) then -- if there is a journal, find last entry
+		if exists (name_file_journal) then -- if there is a journal, find last entry
 			--prog_position := "JO1";
 			open( 
 				file => file_journal,
 				mode => in_file,
-				name => journal
+				name => name_file_journal
 				);
 			set_input(file_journal);
 
@@ -1607,12 +1694,12 @@ procedure compseq is
 			while not end_of_file
 				loop
 					line_counter := line_counter + 1; -- count lines
-					line		 := extended_string.to_bounded_string(get_line); -- get a line from the journal
+					line		 := to_bounded_string(get_line); -- get a line from the journal
 
 					if line_counter > 2 then -- header and separator must be skipped (see example above)
 						-- last_dest_addr is a hex number !!!
-						last_dest_addr := string_to_natural(get_field_from_line(line,2));
-						last_size := integer'value(get_field_from_line(line,3));  -- last_size is a dec number !!!
+						last_dest_addr := string_to_natural(get_field_from_line(to_string(line),2));
+						last_size := integer'value(get_field_from_line(to_string(line),3));  -- last_size is a dec number !!!
 					end if;
 				end loop;
 
@@ -1651,24 +1738,24 @@ procedure compseq is
 		procedure write_numbers is
 		-- writes something like: infra 00000000h 674 004.004 2016-04-13 14:25:46
 		begin
-			put(file_journal,universal_string_type.to_string(name_test) 
+			put(file_journal,to_string(name_test) 
 				& row_separator_0 & natural_to_string(destination_address,16,8) 
 				& natural'image(size_of_vector_file) 
 				& row_separator_0 & compseq_version
-				& row_separator_0 & m1.date_now);
+				& row_separator_0 & date_now);
 		end write_numbers;
 
 	begin
-		if exists(journal) then 
+		if exists(name_file_journal) then 
 			open( 
 				file => file_journal,
 				mode => append_file,
-				name => journal
+				name => name_file_journal
 				);
 			write_numbers;
 		else
 			put_line("No journal found. Creating a new one ...");
-			create(file_journal,out_file,journal);
+			create(file_journal,out_file,name_file_journal);
 			put_line(file_journal,"name_test   dest_addr(hex)  size(dec)  comp_version  date(yyyy:mm:dd)  time(hh:mm:ss)");
 			put_line(file_journal,"-------------------------------------------------------------------------------------");
 			write_numbers;
@@ -1679,22 +1766,21 @@ procedure compseq is
 	function get_test_info return type_test_info is
 		ti					: type_test_info; -- to be returned after reading the section
 		section_entered		: boolean := false;
-		line_of_file		: extended_string.bounded_string;
+		line_of_file		: type_long_string.bounded_string;
 	begin
 		reset(file_sequence);
 		line_counter := 0;
 		while not end_of_file
 			loop
 				line_counter := line_counter + 1; -- count lines in sequence file
-				line_of_file := extended_string.to_bounded_string(get_line);
-				line_of_file := remove_comment_from_line(line_of_file);
+				line_of_file := to_bounded_string(remove_comment_from_line(get_line));
 
-				if get_field_count(extended_string.to_string(line_of_file)) > 0 then -- if line contains anything
+				if get_field_count(to_string(line_of_file)) > 0 then -- if line contains anything
 					--put_line(line);
 					--Put( Integer'Image( Integer'Value("16#1A2B3C#") ) );  
 					if section_entered then
 						-- once inside section "info", wait for end of section mark
-						if get_field_from_line(line_of_file,1) = section_mark.endsection then -- when endsection found
+						if get_field_from_line(to_string(line_of_file),1) = section_mark.endsection then -- when endsection found
 							section_entered := false; -- reset section entered flag
 							-- SECTION "INFO" READING DONE.
 							exit;
@@ -1703,10 +1789,10 @@ procedure compseq is
 							-- PROCESSING SECTION INFO BEGIN
 							--put_line(extended_string.to_string(line_of_file));
 
-							-- search for data base name and verify against data base given as argument
-							if get_field_from_line(line_of_file,1) = section_info_item.data_base then
-								if get_field_from_line(line_of_file,3) = universal_string_type.to_string(name_file_data_base) then
-									ti.data_base_valid := true;
+							-- search for data base name and verify against database given as argument
+							if get_field_from_line(to_string(line_of_file),1) = section_info_item.database then
+								if get_field_from_line(to_string(line_of_file),3) = to_string(name_file_database) then
+									ti.database_valid := true;
 								else
 									--put_line(standard_output,"WARNING: Data base mismatch in section '" & test_section.info & "' !");
 									null;
@@ -1715,8 +1801,8 @@ procedure compseq is
 							end if;
 
 							-- search for test name and verify against test name given as argument
-							if get_field_from_line(line_of_file,1) = section_info_item.test_name then
-								if get_field_from_line(line_of_file,3) = universal_string_type.to_string(name_test) then
+							if get_field_from_line(to_string(line_of_file),1) = section_info_item.name_test then
+								if get_field_from_line(to_string(line_of_file),3) = to_string(name_test) then
 									ti.test_name_valid := true;
 								else
 									null;
@@ -1725,11 +1811,11 @@ procedure compseq is
 							end if;
 
 							-- search for end_sdr and end_sir. if no end_sdr/sir found default is uses (see m1_internal.ads)
-							if get_field_from_line(line_of_file,1) = section_info_item.end_sdr then
-								ti.end_sdr := type_end_sdr'value(get_field_from_line(line_of_file,3));
+							if get_field_from_line(to_string(line_of_file),1) = section_info_item.end_sdr then
+								ti.end_sdr := type_end_sdr'value(get_field_from_line(to_string(line_of_file),3));
 							end if;
-							if get_field_from_line(line_of_file,1) = section_info_item.end_sir then
-								ti.end_sir := type_end_sir'value(get_field_from_line(line_of_file,3));
+							if get_field_from_line(to_string(line_of_file),1) = section_info_item.end_sir then
+								ti.end_sir := type_end_sir'value(get_field_from_line(to_string(line_of_file),3));
 							end if;
 
 						end if;
@@ -1737,8 +1823,8 @@ procedure compseq is
 
 					else
 						-- wait for section "info" begin mark
-						if get_field_from_line(line_of_file,1) = section_mark.section then
-							if get_field_from_line(line_of_file,2) = test_section.info then
+						if get_field_from_line(to_string(line_of_file),1) = section_mark.section then
+							if get_field_from_line(to_string(line_of_file),2) = test_section.info then
 								section_entered := true; -- set section enterd "flag"
 							end if;
 						end if;
@@ -1747,7 +1833,7 @@ procedure compseq is
 				end if;
 			end loop;
 		
-		if not ti.data_base_valid then
+		if not ti.database_valid then
 			put_line("WARNING: Name of data base not found or invalid in section '" & test_section.info & "' !");
 		end if;
 
@@ -1764,10 +1850,10 @@ procedure compseq is
 	function get_scanpath_options return type_scanpath_options is
 		so					: type_scanpath_options; -- to be returned after reading section options
 		section_entered		: boolean := false;
-		line_of_file		: extended_string.bounded_string;
+		line_of_file		: type_long_string.bounded_string;
 		scratch_float		: float;
 
-		function frequency_float_to_unsigned_8 (frequency_float : type_tck_frequency) return unsigned_8 is
+		function frequency_float_to_unsigned_8 (frequency_float : in type_tck_frequency) return unsigned_8 is
 			-- frequency_float is given in unit MHz
 			frequency_unsigned_8: unsigned_8 := 16#52#;
 			scan_clock_timer_float		: float;
@@ -1820,15 +1906,14 @@ procedure compseq is
 		while not end_of_file
 			loop
 				line_counter := line_counter + 1; -- count lines in sequence file (global counter !)
-				line_of_file := extended_string.to_bounded_string(get_line);
-				line_of_file := remove_comment_from_line(line_of_file);
+				line_of_file := to_bounded_string(remove_comment_from_line(get_line));
 
-				if get_field_count(extended_string.to_string(line_of_file)) > 0 then -- if line contains anything
+				if get_field_count(to_string(line_of_file)) > 0 then -- if line contains anything
 					--put_line(line);
 					--Put( Integer'Image( Integer'Value("16#1A2B3C#") ) );  
 					if section_entered then
 						-- once inside section "options", wait for end of section mark
-						if get_field_from_line(line_of_file,1) = section_mark.endsection then -- when endsection found
+						if get_field_from_line(to_string(line_of_file),1) = section_mark.endsection then -- when endsection found
 							section_entered := false; -- reset section entered flag
 							-- SECTION "OPTIONS" READING DONE.
 							exit;
@@ -1837,23 +1922,23 @@ procedure compseq is
 							-- PROCESSING SECTION OPTIONS BEGIN
 
 							-- NOTE: if a particular option missing -> default to option as specified for type type_scanpath_options (see m1_internal.ads)
-							--put_line(extended_string.to_string(line_of_file));
+							--put_line(extended_string.to_string(to_string(line_of_file)));
 
 							-- search for option on_fail
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.on_fail then
-								so.on_fail := type_on_fail_action'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.on_fail then
+								so.on_fail := type_on_fail_action'value(get_field_from_line(to_string(line_of_file),2));
 							end if;
 
 							-- search for option frequency
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.frequency then
-								so.frequency := type_tck_frequency'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.frequency then
+								so.frequency := type_tck_frequency'value(get_field_from_line(to_string(line_of_file),2));
 							end if;
 
 							-- search for option trailer_ir. if not found, trailer_default is used (see m1_internal.ads)
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.trailer_ir then
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.trailer_ir then
 								so.trailer_ir := to_binary_class_0(
 													binary_in	=> to_binary(
-															text_in		=> get_field_from_line(line_of_file,2),
+															text_in		=> get_field_from_line(to_string(line_of_file),2),
 															length		=> trailer_length,
 															class		=> class_0
 															)
@@ -1861,10 +1946,10 @@ procedure compseq is
 							end if;
 
 							-- search for option trailer_dr. if not found, trailer_default is used (see m1_internal.ads)
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.trailer_dr then
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.trailer_dr then
 								so.trailer_dr := to_binary_class_0(
 													binary_in	=> to_binary(
-															text_in		=> get_field_from_line(line_of_file,2),
+															text_in		=> get_field_from_line(to_string(line_of_file),2),
 															length		=> trailer_length,
 															class		=> class_0
 															)
@@ -1875,8 +1960,8 @@ procedure compseq is
 							-- VOLTAGES AND DRIVER CHARACTERISTICS FOR PORT 1:
 
 							-- search for option voltage_out_port_1. if not found, default to lowest value
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.voltage_out_port_1 then
-								so.voltage_out_port_1 := type_voltage_out'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.voltage_out_port_1 then
+								so.voltage_out_port_1 := type_voltage_out'value(get_field_from_line(to_string(line_of_file),2));
 								-- check if voltage is supported by bsc
 								if not is_voltage_out_discrete(so.voltage_out_port_1) then
 									raise constraint_error;
@@ -1884,36 +1969,36 @@ procedure compseq is
 							end if;
 
 							-- search for option tck_driver_port_1. if not found, use default
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.tck_driver_port_1 then
-								so.tck_driver_port_1 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.tck_driver_port_1 then
+								so.tck_driver_port_1 := type_driver_characteristic'value(get_field_from_line(to_string(line_of_file),2));
 							end if;
 
 							-- search for option tms_driver_port_1. if not found, use default
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.tms_driver_port_1 then
-								so.tms_driver_port_1 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.tms_driver_port_1 then
+								so.tms_driver_port_1 := type_driver_characteristic'value(get_field_from_line(to_string(line_of_file),2));
 							end if;
 
 							-- search for option tdo_driver_port_1. if not found, use default
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.tdo_driver_port_1 then
-								so.tdo_driver_port_1 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.tdo_driver_port_1 then
+								so.tdo_driver_port_1 := type_driver_characteristic'value(get_field_from_line(to_string(line_of_file),2));
 							end if;
 
 							-- search for option trst_driver_port_1. if not found, use default
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.trst_driver_port_1 then
-								so.trst_driver_port_1 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.trst_driver_port_1 then
+								so.trst_driver_port_1 := type_driver_characteristic'value(get_field_from_line(to_string(line_of_file),2));
 							end if;
 
 							-- search for option threshold_tdi_port_1. if not found, use default
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.threshold_tdi_port_1 then
-								so.threshold_tdi_port_1 := type_threshold_tdi'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.threshold_tdi_port_1 then
+								so.threshold_tdi_port_1 := type_threshold_tdi'value(get_field_from_line(to_string(line_of_file),2));
 							end if;
 
 
 							-- VOLTAGES AND DRIVER CHARACTERISTICS FOR PORT 2:
 
 							-- search for option voltage_out_port_2. if not found, default to lowest value
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.voltage_out_port_2 then
-								so.voltage_out_port_2 := type_voltage_out'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.voltage_out_port_2 then
+								so.voltage_out_port_2 := type_voltage_out'value(get_field_from_line(to_string(line_of_file),2));
 								-- check if voltage is supported by bsc
 								if not is_voltage_out_discrete(so.voltage_out_port_2) then
 									raise constraint_error;
@@ -1921,33 +2006,33 @@ procedure compseq is
 							end if;
 
 							-- search for option voltage_out_port_2. if not found, default to lowest value
-							--if get_field_from_line(line_of_file,1) = section_scanpath_options_item.voltage_out_port_2 then
-							--	so.voltage_out_port_2 := type_voltage_out'value(get_field_from_line(line_of_file,2));
+							--if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.voltage_out_port_2 then
+							--	so.voltage_out_port_2 := type_voltage_out'value(get_field_from_line(to_string(line_of_file),2));
 							--end if;
 
 							-- search for option tck_driver_port_2. if not found, use default
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.tck_driver_port_2 then
-								so.tck_driver_port_2 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.tck_driver_port_2 then
+								so.tck_driver_port_2 := type_driver_characteristic'value(get_field_from_line(to_string(line_of_file),2));
 							end if;
 
 							-- search for option tms_driver_port_2. if not found, use default
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.tms_driver_port_2 then
-								so.tms_driver_port_2 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.tms_driver_port_2 then
+								so.tms_driver_port_2 := type_driver_characteristic'value(get_field_from_line(to_string(line_of_file),2));
 							end if;
 
 							-- search for option tdo_driver_port_2. if not found, use default
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.tdo_driver_port_2 then
-								so.tdo_driver_port_2 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.tdo_driver_port_2 then
+								so.tdo_driver_port_2 := type_driver_characteristic'value(get_field_from_line(to_string(line_of_file),2));
 							end if;
 
 							-- search for option trst_driver_port_2. if not found, use default
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.trst_driver_port_2 then
-								so.trst_driver_port_2 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.trst_driver_port_2 then
+								so.trst_driver_port_2 := type_driver_characteristic'value(get_field_from_line(to_string(line_of_file),2));
 							end if;
 
 							-- search for option threshold_tdi_port_2. if not found, use default
-							if get_field_from_line(line_of_file,1) = section_scanpath_options_item.threshold_tdi_port_2 then
-								so.threshold_tdi_port_2 := type_threshold_tdi'value(get_field_from_line(line_of_file,2));
+							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.threshold_tdi_port_2 then
+								so.threshold_tdi_port_2 := type_threshold_tdi'value(get_field_from_line(to_string(line_of_file),2));
 							end if;
 
 
@@ -1955,8 +2040,8 @@ procedure compseq is
 
 					else
 						-- wait for section "info" begin mark
-						if get_field_from_line(line_of_file,1) = section_mark.section then
-							if get_field_from_line(line_of_file,2) = test_section.options then
+						if get_field_from_line(to_string(line_of_file),1) = section_mark.section then
+							if get_field_from_line(to_string(line_of_file),2) = test_section.options then
 								section_entered := true; -- set section enterd "flag"
 							end if;
 						end if;
@@ -2069,22 +2154,21 @@ procedure compseq is
 	-- CS: sequence id check
 		sequence_count	: natural := 0;
 		section_entered	: boolean := false;
-		line_of_file	: extended_string.bounded_string;
+		line_of_file	: type_extended_string.bounded_string;
 	begin
 		reset(file_sequence);
 		line_counter := 0;
 		while not end_of_file
 			loop
 				line_counter := line_counter + 1; -- count lines in sequence file (global counter !)
-				line_of_file := extended_string.to_bounded_string(get_line);
-				line_of_file := remove_comment_from_line(line_of_file);
+				line_of_file := to_bounded_string(remove_comment_from_line(get_line));
 
-				if get_field_count(extended_string.to_string(line_of_file)) > 0 then -- if line contains anything
+				if get_field_count(to_string(line_of_file)) > 0 then -- if line contains anything
 
 					if section_entered then
 
 						-- once inside section "sequence", wait for end of section mark
-						if get_field_from_line(line_of_file,1) = section_mark.endsection then -- when endsection found
+						if get_field_from_line(to_string(line_of_file),1) = section_mark.endsection then -- when endsection found
 							section_entered := false; -- reset section entered flag
 							-- SECTION "SEQUENCE" READING DONE.
 
@@ -2095,13 +2179,13 @@ procedure compseq is
 						else
 							-- PROCESSING SECTION OPTIONS BEGIN
 							null;
-							--put_line(extended_string.to_string(line_of_file));
+							--put_line(extended_string.to_string(to_string(line_of_file)));
 						end if;
 
 					else
 						-- wait for section "sequence" begin mark
-						if get_field_from_line(line_of_file,1) = section_mark.section then
-							if get_field_from_line(line_of_file,2) = test_section.sequence then
+						if get_field_from_line(to_string(line_of_file),1) = section_mark.section then
+							if get_field_from_line(to_string(line_of_file),2) = test_section.sequence then
 								section_entered := true; -- set section enterd "flag"
 							end if;
 						end if;
@@ -2124,7 +2208,7 @@ procedure compseq is
 	procedure write_vector_file_header is
 		nat_scratch : natural;
 	begin
-		seq_io_unsigned_byte.create( file_vector_header, seq_io_unsigned_byte.out_file, name => name_directory_temp & '/' & vector_header_file_name);
+		seq_io_unsigned_byte.create( file_vector_header, seq_io_unsigned_byte.out_file, name => name_file_vector_header);
 
 		--separate major and minor compiler version and write them in header
 		nat_scratch := natural'value(compseq_version(1..3)); -- major number is the three digits before "."
@@ -2170,14 +2254,14 @@ procedure compseq is
 	
 
 	procedure unknown_yet is
-		b : type_ptr_bscan_ic;
+-- 		b : type_ptr_bscan_ic;
 
 		-- The first group of bytes of the vector file contains header_length bytes: 
 		-- compiler version major/minor  2 bytes, 
 		-- vector format major/minor 2 bytes,
 		-- scanpath count 1 byte,
 		-- summary.scanpath_ct * 32bit base address
-		header_length : natural := 5 + (summary.scanpath_ct * 4); 
+		header_length : natural := 5 + (summary.scanport_ct * 4); 
 
 	 	procedure write_base_address is
 		-- writes base address of current scanpath in vector_file_header
@@ -2186,7 +2270,7 @@ procedure compseq is
 			sp_base_address : natural  := 0;	-- CS: limit by dedicated type that respects the available ram size
 	 	begin
 			put_line("writing scanpath base address ...");
-			new_line(compile_listing);
+			new_line(file_compile_listing);
 
 			-- calcualate the base address.
 			-- it comprises of header_length + bytes already in vector file + dest. address
@@ -2230,7 +2314,7 @@ procedure compseq is
 				write_listing (item => object_code, obj_code => unsigned_8(ubyte_scratch));
 				write_listing (item => source_code, src_code => "base address scanpath" & positive'image(scanpath_being_compiled) 
 					& row_separator_0 & comment & " lowbyte left");
-				new_line(compile_listing);
+				new_line(file_compile_listing);
 			size_of_vector_header := size_of_vector_header + 1;
 
 		end write_base_address;
@@ -2240,7 +2324,7 @@ procedure compseq is
 		-- reads sequence specified by id
 			section_entered		: boolean := false;
 			section_processed	: boolean := false;  -- indicates if sequence has been found and processed successfully
-			line_of_file		: extended_string.bounded_string;
+			line_of_file		: type_extended_string.bounded_string;
 		begin
 			prog_position	:= 300;
 			put_line(standard_output," - sequence" & positive'image(id) & " ...");
@@ -2251,16 +2335,15 @@ procedure compseq is
 			while not end_of_file
 				loop
 					line_counter := line_counter + 1; -- count lines in sequence file (global counter !)
-					line_of_file := extended_string.to_bounded_string(get_line);
-					line_of_file := remove_comment_from_line(line_of_file);
+					line_of_file := to_bounded_string(remove_comment_from_line(get_line));
 
 					prog_position	:= 320;
-					if get_field_count(extended_string.to_string(line_of_file)) > 0 then -- if line contains anything
+					if get_field_count(to_string(line_of_file)) > 0 then -- if line contains anything
 						if section_entered then
 
 							-- once inside section "sequence", wait for end of section mark
 							prog_position	:= 330;
-							if get_field_from_line(line_of_file,1) = section_mark.endsection then -- when endsection found
+							if get_field_from_line(to_string(line_of_file),1) = section_mark.endsection then -- when endsection found
 								section_entered := false; -- reset section entered flag
 								section_processed := true;
 								-- SECTION "SEQUENCE" READING DONE.
@@ -2268,21 +2351,21 @@ procedure compseq is
 							else
 								-- PROCESSING SECTION SEQUENCE BEGIN
 								prog_position	:= 340;
-								compile_command(line_of_file);
-								--put_line(standard_output,extended_string.to_string(line_of_file));
+								compile_command(to_string(line_of_file));
+								--put_line(standard_output,extended_string.to_string(to_string(line_of_file)));
 								-- PROCESSING SECTION SEQUENCE DONE
 							end if;
 
 						else
 							-- wait for "section sequence id" begin mark
 							prog_position	:= 350;
-							if get_field_from_line(line_of_file,1) = section_mark.section then
-								if get_field_from_line(line_of_file,2) = test_section.sequence then
-									--put_line(standard_output,extended_string.to_string(line_of_file));
-									if get_field_count(extended_string.to_string(line_of_file)) = 3 then
-										--put_line(standard_output,extended_string.to_string(line_of_file));
-										--put_line(standard_output,"-" & get_field_from_line(line_of_file,3) & "-");
-										if get_field_from_line(line_of_file,3) = trim(positive'image(id),left) then
+							if get_field_from_line(to_string(line_of_file),1) = section_mark.section then
+								if get_field_from_line(to_string(line_of_file),2) = test_section.sequence then
+									--put_line(standard_output,extended_string.to_string(to_string(line_of_file)));
+									if get_field_count(to_string(line_of_file)) = 3 then
+										--put_line(standard_output,extended_string.to_string(to_string(line_of_file)));
+										--put_line(standard_output,"-" & get_field_from_line(to_string(line_of_file),3) & "-");
+										if get_field_from_line(to_string(line_of_file),3) = trim(positive'image(id),left) then
 											--put_line(standard_output,"test");
 											section_entered := true; -- set section enterd "flag"
 										end if;
@@ -2565,7 +2648,7 @@ procedure compseq is
 												write_image_in_vector_file(t.img_expect,	t.length_total);
 										end case;
 								end case;
-								write_listing(item => source_code, src_code => universal_string_type.to_string(t.source) 
+								write_listing(item => source_code, src_code => to_string(t.source) 
 									& row_separator_0 & comment & " lowbyte left: sxr_id | sxr_type | scanpath | length | drv | mask | exp");
 
 							when class_b =>
@@ -2576,7 +2659,7 @@ procedure compseq is
 									write_byte_in_vector_file(t.command.binary(b));	
 									write_listing(item => object_code, obj_code => t.command.binary(b));
 								end loop;
-								write_listing(item => source_code, src_code => universal_string_type.to_string(t.command.source));
+								write_listing(item => source_code, src_code => to_string(t.command.source));
 								listing_address := listing_address + t.length_total; -- prepare next location to be written in listing
 
 						end case;
@@ -2590,7 +2673,7 @@ procedure compseq is
 
 	begin -- unknown_yet
 		--	set_output(standard_output);
-		put_line("found" & natural'image(summary.scanpath_ct) & " scan paths(s) ...");
+		put_line("found" & natural'image(summary.scanport_ct) & " scan paths(s) ...");
 
 		prog_position	:= 210;
 		for sp in 1..scanport_count_max loop -- loop for every physical available scanport (regardless if it is active or not)
@@ -2598,10 +2681,14 @@ procedure compseq is
 
 			-- delete all stale register files
 			prog_position	:= 220;
-			if exists(universal_string_type.to_string(name_test) 
-				& "/" & universal_string_type.to_string(name_test) & "_" & trim(positive'image(sp),left) & ".reg") then 
-					delete_file(universal_string_type.to_string(name_test) & "/" 
-					& universal_string_type.to_string(name_test) & "_" & trim(positive'image(sp),left) & ".reg"); 
+			if exists(compose( 
+				to_string(name_test),
+				to_string(name_test) & "_" & trim(positive'image(sp),left),
+				file_extension_registers)) then 
+					delete_file(compose(
+						to_string(name_test),
+						to_string(name_test) & "_" & trim(positive'image(sp),left),
+						file_extension_registers)); 
 			end if;
 
 			-- process active scanpaths only
@@ -2617,32 +2704,37 @@ procedure compseq is
  				create( 
 					file => scanport(sp).register_file,
 					--name => (universal_string_type.to_string(name_test) & "/members_" & trim(natural'image(sp), side => left) & ".reg")
-					name => (universal_string_type.to_string(name_test) & "/" & register_file_prefix & trim(natural'image(sp), side => left) & register_file_suffix)
+					name => compose(
+								to_string(name_test),
+								to_string(name_test) & "_" & trim(positive'image(sp),left),
+								file_extension_registers)
 					);
  
 				-- search for bic in the scanpath being processed
 				prog_position	:= 250;
-				for p in 1..summary.bic_ct loop -- loop here for as much as bics are present. 
-				-- position search starts with position 1, that is the device closes to BSC TDO (first in subsection chain x)
-					b := ptr_bic; -- set bic pointer at end of bic list
-					while b /= null loop
-						if b.chain = sp then -- on match of scanpath id
-							if b.position = p then -- on match of position 
+-- 				for p in 1..summary.bic_ct loop -- loop here for as much as bics are present. 
+-- 				-- position search starts with position 1, that is the device closes to BSC TDO (first in subsection chain x)
+-- 					b := ptr_bic; -- set bic pointer at end of bic list
+-- 					while b /= null loop
+				for b in 1..length(list_of_bics) loop
+				-- NOTE: element(list_of_bics, positive(b)) means the current bic
+						if element(list_of_bics, positive(b)).chain = sp then -- on match of scanpath id
+-- 							if b.position = p then -- on match of position 
 								-- write in register file something like "device 1 IC301 irl 8 bsl 108" in the reg file"
-								put_line(scanport(sp).register_file,"device" & natural'image(p)
-									& row_separator_0 & universal_string_type.to_string(b.name)
-									& row_separator_0 & "irl" & positive'image(b.len_ir)
-									& row_separator_0 & "bsl" & positive'image(b.len_bsr)
+								put_line(scanport(sp).register_file,"device" & count_type'image(b)
+									& row_separator_0 & to_string(element(list_of_bics, positive(b)).name)
+									& row_separator_0 & "irl" & positive'image(element(list_of_bics, positive(b)).len_ir)
+									& row_separator_0 & "bsl" & positive'image(element(list_of_bics, positive(b)).len_bsr)
 									);
 
 								-- sum up irl of chain members of that scanpath
 								-- CS: assumption is that no device is bypassed or added/inserted in the chain later
 								--scanport(sp).irl_total := scanport(sp).irl_total + b.len_ir + trailer_length ;
-								scanport(sp).irl_total := scanport(sp).irl_total + b.len_ir;
-							end if;
+								scanport(sp).irl_total := scanport(sp).irl_total + element(list_of_bics, positive(b)).len_ir;
+-- 							end if;
 						end if;
-						b := b.next;
-					end loop;
+-- 						b := b.next;
+-- 					end loop;
 				end loop;
 				-- add trailer length to obtain the total sir length
 				scanport(sp).irl_total := scanport(sp).irl_total + trailer_length;
@@ -2676,71 +2768,99 @@ procedure compseq is
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
+	action := compile;
 
-	create_temp_directory;
+	-- create message/log file
+	write_log_header(compseq_version);
+	
+	put_line(to_upper(name_module_compiler) & " version " & compseq_version);
+	put_line("=======================================");
 
-	prog_position	:= 10;
- 	name_file_data_base:= universal_string_type.to_bounded_string(Argument(1));
- 	put_line ("data base      : " & universal_string_type.to_string(name_file_data_base));
+	direct_messages; -- directs messages to logfile. required for procedures and functions in external packages
+
+	prog_position := 10;
+	name_file_database := to_bounded_string(argument(1));
+
+	write_message (
+		file_handle => file_compiler_messages,
+		text => text_identifier_database & row_separator_0 & to_string(name_file_database),
+		console => true);
  
 	prog_position	:= 20;
- 	name_test:= universal_string_type.to_bounded_string(Argument(2));
- 	put_line ("test name      : " & universal_string_type.to_string(name_test));
+	name_test := to_bounded_string(argument(2));
+	write_message (
+		file_handle => file_compiler_messages,
+		text => text_test_name & row_separator_0 & to_string(name_test),
+		console => true);
+
+	prog_position	:= 30;
+	create_temp_directory;
 
 	-- create list file
-	prog_position	:= 25;
+	prog_position	:= 40;
 	create(
-		file	=> compile_listing,
+		file	=> file_compile_listing,
 		mode	=> out_file, 
-		name 	=> universal_string_type.to_string(name_test) & "/" & universal_string_type.to_string(name_test) & ".lis"
+		name 	=> compose(
+					to_string(name_test),
+					to_string(name_test),
+					file_extension_listing)
 		);
 	write_listing_header;
 
 	-- create vectorfile
-	prog_position	:= 30;
+	prog_position	:= 50;
 	seq_io_unsigned_byte.create(
 		file	=> file_vector, 
 		mode	=> seq_io_unsigned_byte.out_file, 
-		name 	=> universal_string_type.to_string(name_test) & "/" & universal_string_type.to_string(name_test) & ".vec"
-		);
+		name 	=> compose( 
+					to_string(name_test),
+					to_string(name_test),
+					file_extension_vector));
+	
 	--size_of_vec_file := natural'value(
 	--	file_size'image(size(universal_string_type.to_string(name_test) & "/" & universal_string_type.to_string(name_test) & ".vec"))
 	--	);
 	--put (size_of_vec_file);
 
-	prog_position	:= 40;
-	read_data_base;
+	prog_position	:= 60;
+	read_uut_database;
 
 	-- read journal
-	prog_position	:= 50;
+	prog_position	:= 70;
 	destination_address := get_destination_address_from_journal;
 	--put_line(natural'image(destination_address));
 
-	prog_position	:= 60;
+	prog_position	:= 80;
 	open(
 		file	=> file_sequence,
 		mode	=> in_file,
-		name	=> universal_string_type.to_string(name_test) & "/" & universal_string_type.to_string(name_test) & ".seq"
-		);
+		name	=> compose( 
+					to_string(name_test),
+					to_string(name_test),
+					file_extension_sequence));
 	set_input(file_sequence);
 
-	prog_position	:= 70;
+	prog_position	:= 90;
 	put_line("reading sequence file ...");
 	test_info := get_test_info;
-	prog_position	:= 80;
+	
+	prog_position	:= 100;
 	scanpath_options := get_scanpath_options;
-	prog_position	:= 90;
+	
+	prog_position	:= 110;
 	sequence_count := count_sequences;
 	if sequence_count > sequence_count_max then
 		put_line("ERROR: Currently maximal" & positive'image(sequence_count_max) & " sequences supported !");
 		raise constraint_error;
 	end if;
 
-	prog_position	:= 100;
+	prog_position	:= 120;
 	write_vector_file_header;
 
 	-- WRITE GLOBAL CONFIGURATION IN VEC FILE
-	listing_offset := size_of_vector_header + summary.scanpath_ct * 4;
+	prog_position	:= 130;	
+	listing_offset := size_of_vector_header + summary.scanport_ct * 4;
 
 	-- frequency
 	write_listing(item => location, loc => size_of_vector_file + listing_offset);
@@ -2849,7 +2969,7 @@ begin
 -- 	write_listing(item => source_code, src_code => "dummy");
 	
 	-- close list file
-	close(compile_listing);
+	close(file_compile_listing);
 
 
 	-- append vector file to header file byte per byte
@@ -2866,7 +2986,7 @@ begin
 	-- the total number of test steps (inc. low level commands) is test_step_id divided by scanpath_ct.
 	-- why ?: test_step_id is incremented on every test step per scanpath. since all scanpaths have equal test step counts
 	-- it must be divided by scanpath_ct to obtain the real number of steps.
-	put_line("test steps total:" & positive'image(test_step_id/summary.scanpath_ct) & " (incl. low level commands)");
+	put_line("test steps total:" & positive'image(test_step_id/summary.scanport_ct) & " (incl. low level commands)");
  	while not seq_io_unsigned_byte.end_of_file(file_vector) loop
 
 		-- read byte from vector file
@@ -2876,8 +2996,8 @@ begin
 		-- CAUTION: THIS IS A HACK AND NEEDS PROPER REWORK !!! -- CS
 		-- ct_tmp (starts with 1) serves as pointer to the byte position to be modified
 		case ct_tmp is
-			when 10 => ubyte_scratch := unsigned_8(test_step_id/summary.scanpath_ct); -- write lowbyte of step count
-			when 11 => ubyte_scratch := unsigned_8(shift_right(unsigned_16(test_step_id/summary.scanpath_ct),8)); -- write highbyte of step count
+			when 10 => ubyte_scratch := unsigned_8(test_step_id/summary.scanport_ct); -- write lowbyte of step count
+			when 11 => ubyte_scratch := unsigned_8(shift_right(unsigned_16(test_step_id/summary.scanport_ct),8)); -- write highbyte of step count
 			when others => null; -- other bytes untouched
 		end case;
 		ct_tmp := ct_tmp + 1;
@@ -2894,8 +3014,8 @@ begin
 	-- CAUTION: THIS IS A HACK AND NEEDS PROPER REWORK !!! -- CS
 	prog_position	:= 2040;
 	copy_file(
-		name_directory_temp & '/' & vector_header_file_name, -- from here
-		universal_string_type.to_string(name_test) & "/" & universal_string_type.to_string(name_test) & ".vec"); -- to here
+		name_file_vector_header, -- from here
+		compose( to_string(name_test), to_string(name_test), file_extension_vector)); -- to here
  
 
 	-- size_of_vector_header now contains the total size of the vector file 
@@ -2903,8 +3023,10 @@ begin
 	size_of_vector_file := size_of_vector_header;
 	-- do a cross checking of the file size: it must match the size returned by function "size"
 	if size_of_vector_file = natural(
-		size(universal_string_type.to_string(name_test) & "/" & universal_string_type.to_string(name_test) & ".vec")
-		) then null;
+		size( compose(
+			to_string(name_test), 
+			to_string(name_test), 
+			file_extension_vector))) then null;
 	else
 		put_line("ERROR: Vector file size error !");
 		raise constraint_error;
@@ -2914,20 +3036,62 @@ begin
 	prog_position := 2060;
 	write_journal;
 
+	prog_position := 3000;
+	write_log_footer;	
 
-	exception
-		when event: others =>
-			set_exit_status(failure);
+	exception when event: others =>
+		set_exit_status(failure);
 
-			set_output(standard_output);
-			case prog_position is
-				when 0 => null;
-				when others =>
-					put("unexpected exception: ");
-					put_line(exception_name(event));
-					put(exception_message(event)); new_line;
-					put_line("error in sequence file in line :" & natural'image(line_counter));
-					put_line("program error at position " & natural'image(prog_position));
-			end case;
+		write_message (
+			file_handle => file_compiler_messages,
+			text => message_error & "at program position " & natural'image(prog_position),
+			console => true);
 
+		if is_open(file_compile_listing) then
+			close(file_compile_listing);
+		end if;
+
+		if seq_io_unsigned_byte.is_open(file_vector) then
+			seq_io_unsigned_byte.close(file_vector);
+		end if;
+
+		-- CS: close register files
+		
+		case prog_position is
+			when 10 =>
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & text_identifier_database & " file missing !" & latin_1.lf
+						& "Provide " & text_identifier_database & " name as argument. Example: "
+						& name_module_mkmemcon & row_separator_0 & example_database,
+					console => true);
+			when 20 =>
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & "test name missing !" & latin_1.lf
+						& "Provide test name as argument ! Example: " 
+						& name_module_compiler & row_separator_0 & example_database 
+						& " my_test",
+					console => true);
+		
+			when others =>
+				write_message (
+					file_handle => file_compiler_messages,
+					text => "exception name: " & exception_name(event),
+					console => true);
+
+				write_message (
+					file_handle => file_compiler_messages,
+					text => "exception message: " & exception_message(event),
+					console => true);
+
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & "in sequence file in line :" & natural'image(line_counter),
+					console => true);
+
+		end case;
+
+		write_log_footer;
+		
 end compseq;
