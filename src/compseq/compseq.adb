@@ -1475,13 +1475,20 @@ procedure compseq is
 						source => " pwr channel" & natural'image(power_channel_name.id) & " timeout" & float'image(overload_timeout) & " sec"
 						); 
 				else
-					put_line("ERROR: Timeout value invalid !");
-					put_line("       Provide a number between" & type_overload_timeout'image(type_overload_timeout'first) 
-						& " and " & type_overload_timeout'image(type_overload_timeout'last) & ". Unit is 'seconds' !");
+					write_message (
+						file_handle => file_compiler_messages,
+						text => message_error & "timeout value invalid !" & latin_1.lf
+							& "Provide a value between" & type_overload_timeout'image(type_overload_timeout'first) 
+							& " and " & type_overload_timeout'image(type_overload_timeout'last) & ". Unit is 'seconds' !",
+						console => true);
 					put_example(sequence_instruction_set.imax);
+					raise constraint_error;
 				end if;
 			else
-				put_line("ERROR: Expected keyword '" & timeout_identifier & "' after current value !");
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & "expected keyword '" & timeout_identifier & "' after current value !",
+					console => true);
 				raise constraint_error;
 			end if;
 
@@ -1501,10 +1508,13 @@ procedure compseq is
 					source => cmd
 					); 
 			else
-				put_line("ERROR: Delay value invalid !");
-				put_line("       Provide a number between" & float'image(delay_resolution) 
-					& " and " & type_delay_value'image(type_delay_value'last) & ". Unit is 'seconds' !");
-				put_line("       Example: " & sequence_instruction_set.dely & row_separator_0 & type_delay_value'image(type_delay_value'last));
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & "delay value invalid !" & latin_1.lf
+						& "Provide a value between" & float'image(delay_resolution) 
+						& " and " & type_delay_value'image(type_delay_value'last) & ". Unit is 'seconds' !"
+						& "Example: " & sequence_instruction_set.dely & row_separator_0 & type_delay_value'image(type_delay_value'last),
+					console => true);
 			end if;
 
 
@@ -1530,7 +1540,11 @@ procedure compseq is
 				elsif get_field_from_line(cmd,3) = sxr_io_identifier.expect then -- if "drv" found
 					set_direction := exp;
 				else
-					put_line("ERROR: Expected keyword '" & sxr_io_identifier.drive & "' or '" & sxr_io_identifier.expect & "' after device name !");
+					write_message (
+						file_handle => file_compiler_messages,
+						text => message_error & "expected keyword '" & sxr_io_identifier.drive 
+							& "' or '" & sxr_io_identifier.expect & "' after device name !",
+						console => true);
 					raise constraint_error;
 				end if;
 
@@ -1559,9 +1573,16 @@ procedure compseq is
 					target_register := usercode;
 					cell_id_max := bic_usercode_register_length - 1;
 				else
-					put_line("ERROR: Invalid register name found ! Supported registers are:");
+					write_message (
+						file_handle => file_compiler_messages,
+						text => message_error & "invalid register name found ! Supported registers are:",
+						console => true);
+
 					for r in 0..type_set_target_register'pos(type_set_target_register'last) loop
-						put(row_separator_0 & to_lower(type_set_target_register'image(type_set_target_register'val(r))));
+						write_message (
+							file_handle => file_compiler_messages,
+							text => row_separator_0 & to_lower(type_set_target_register'image(type_set_target_register'val(r))),
+							console => true);
 					end loop;
 					raise constraint_error;
 				end if;
@@ -1578,7 +1599,10 @@ procedure compseq is
 					if natural'value(get_field_from_line(cmd,5)) <= cell_id_max then
 						cell_id_upper_end := natural'value(get_field_from_line(cmd,5));
 					else
-						put_line("ERROR: Upper end cell id must be below or equal" & natural'image(cell_id_max) & " for this register !");
+						write_message (
+							file_handle => file_compiler_messages,
+							text => "upper end cell id must be below or equal" & natural'image(cell_id_max) & " for this register !",
+							console => true);
 						raise constraint_error;
 					end if;
 
@@ -1587,7 +1611,10 @@ procedure compseq is
 					if natural'value(get_field_from_line(cmd,7)) <= cell_id_upper_end then
 						cell_id_lower_end := natural'value(get_field_from_line(cmd,7));
 					else
-						put_line("ERROR: Lower end cell id must be below or equal" & natural'image(cell_id_upper_end) & " for this register !");
+						write_message (
+							file_handle => file_compiler_messages,
+							text => "lower end cell id must be below or equal" & natural'image(cell_id_upper_end) & " for this register !",
+							console => true);
 						raise constraint_error;
 					end if;
 
@@ -1595,8 +1622,12 @@ procedure compseq is
 				elsif get_field_from_line(cmd,6) = sxr_vector_orientation.to then
 					set_assignment_method 	:= register_wise;
 					set_vector_orientation	:= to;
-					put_line("ERROR: Register-wise assignment not supported with identifier '" & sxr_vector_orientation.to & "' !");
-					put_line("       Check MSB, LSB and use '" & sxr_vector_orientation.downto & "' instead !");
+					
+					write_message (
+						file_handle => file_compiler_messages,
+						text => "register-wise assignment not supported with identifier '" & sxr_vector_orientation.to & "' !"
+							& latin_1.lf & "Check MSB, LSB and use '" & sxr_vector_orientation.downto & "' instead !",
+						console => true);
 					raise constraint_error;
 					-- CS: should be supported
 				else
@@ -1604,13 +1635,13 @@ procedure compseq is
 				end if;
 
 -- 				for p in 1..summary.bic_ct loop
--- p points to device in current chain. position 1 is closest to BSC TDO !                
+				-- p points to device in current chain. position 1 is closest to BSC TDO !                
                 for b in 1..length(list_of_bics) loop                
                 -- NOTE: element(list_of_bics, positive(b)) means the current bic
 					-- scanpath_being_compiled holds the id of the current scanpath.
 					-- we care for a device in that scanpath. if not in scanpath it is skipped.
 
-					if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- if the device is in scanpath being compiled
+					if get_bic(bic_name).chain = scanpath_being_compiled then -- if the device is in scanpath being compiled
 
 						case set_assignment_method is
 							when register_wise =>
@@ -1626,9 +1657,11 @@ procedure compseq is
 
 				-- CS: field 10 not read any more -> make it a comment
 
-
 			else -- if device is not a bic
-				put_line("ERROR: Device '" & to_string(bic_name) & "' is not part of any scanpath ! Check name and capitalization !)");
+				write_message (
+					file_handle => file_compiler_messages,
+					text => "device " & to_string(bic_name) & " is not part of any scanpath ! Check name and capitalization !",
+					console => true);
 				raise constraint_error;
 			end if; -- if device is a bic
 
@@ -1715,7 +1748,10 @@ procedure compseq is
 
 				-- check if there is space left for vector file in BSC RAM
 				if next_dest_addr >= mem_size then 
-					put_line("ERROR: available address range exceeded !");
+					write_message (
+						file_handle => file_compiler_messages,
+						text => message_error & "available address range exceeded !",
+						console => true);
 					raise constraint_error; 
 				end if;
 
@@ -1834,11 +1870,11 @@ procedure compseq is
 			end loop;
 		
 		if not ti.database_valid then
-			put_line("WARNING: Name of data base not found or invalid in section '" & test_section.info & "' !");
+			put_line(message_warning & "name of " & text_identifier_database & " invalid in section '" & test_section.info & "' !");
 		end if;
 
 		if not ti.test_name_valid then
-			put_line("WARNING: Name of test not found or invalid in section '" & test_section.info & "' !");
+			put_line(message_warning & "name of test invalid in section '" & test_section.info & "' !");
 		end if;
 
 		-- CS: write report
@@ -1865,9 +1901,9 @@ procedure compseq is
 			high_nibble	: type_high_nibble;
 			frequency_real : float;
 		begin
-			put_line(standard_output,"calculating available tck frequency...");
+			put_line("calculating available tck frequency ...");
 			-- display frequency requested by user 
-			put(standard_output," - requested:" & type_tck_frequency'image(frequency_float) & " MHz"); new_line(standard_output);
+			put_line(" - requested:" & type_tck_frequency'image(frequency_float) & " MHz");
 
 			-- calculate scan_clock_timer (N) required for half of a tck cycle (duty cycle of 50% applies)
 			-- since the result is a float number, it must be converted to a positive number
@@ -1892,7 +1928,7 @@ procedure compseq is
 			--put(standard_output," low nibble: " & type_low_nibble'image(low_nibble)); new_line(standard_output);
 			-- calculate and display real frequency availabe close to the requested
 			frequency_real := float(executor_master_clock) / float(2 * high_nibble * 10**low_nibble);
-			put(standard_output," - selected: " & float'image(frequency_real) & " MHz"); new_line(standard_output);
+			put_line(" - selected: " & float'image(frequency_real) & " MHz");
 
 			-- CS: if frequency given is zero (or option missing entirely) the hex value defaults (see m1_internal.ads)
 			-- put_line("WARNING: frequency option invalid or missing. Falling back to safest frequency of " & type_tck_frequency'image(tck_frequency_default) & " Mhz ...");
@@ -2195,10 +2231,13 @@ procedure compseq is
 			end loop;
 
 		if sequence_count = 0 then
-			put_line("ERROR: No valid sequence found !");
+			write_message (
+				file_handle => file_compiler_messages,
+				text => message_error & "no valid sequence found !",
+				console => true);
 			raise constraint_error;
 		else
-			put_line("found" & positive'image(sequence_count) & " sequence(s) ...");
+			put_line("found" & positive'image(sequence_count) & " sequence(s)");
 		end if;
 
 		return sequence_count;
@@ -2327,7 +2366,7 @@ procedure compseq is
 			line_of_file		: type_extended_string.bounded_string;
 		begin
 			prog_position	:= 300;
-			put_line(standard_output," - sequence" & positive'image(id) & " ...");
+			put_line(" - sequence" & positive'image(id) & " ...");
 			reset(file_sequence);
 
 			prog_position	:= 310;
@@ -2378,7 +2417,10 @@ procedure compseq is
 				end loop;
 
 			if not section_processed then 
-				put_line("ERROR: Sequence" & positive'image(id) & " not found !");
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & "sequence" & positive'image(id) & " not found !",
+					console => true);
 				raise constraint_error;
 			end if;
 
@@ -2475,10 +2517,11 @@ procedure compseq is
 									-- CS: check targeted registers
 									-- if the look-ahead window is greater 1, put a warning.
 									if t.scan = sdr and a > 1 then
-										put_line(standard_output,"WARNING: Look-ahead window for next " & type_scan'image(t.scan) & " drive image is" & positive'image(a) & " steps !");
-										put_line(standard_output,"         Vector id current:" & type_vector_id'image(cv.vector_id));
-										put_line(standard_output,"         Vector id next   :" & type_vector_id'image(t.vector_id));
-										put_line(standard_output,"         Make sure, the targeted registers are the same !");
+										put_line(message_warning & "Look-ahead window for next " & type_scan'image(t.scan) 
+											& " drive image is" & positive'image(a) & " steps !");
+										put_line("Vector id current:" & type_vector_id'image(cv.vector_id));
+										put_line("Vector id next   :" & type_vector_id'image(t.vector_id));
+										put_line("Make sure, the targeted registers are the same !");
 									end if;
 									return t; -- return pointer of next vector
 								end if;
@@ -2673,7 +2716,7 @@ procedure compseq is
 
 	begin -- unknown_yet
 		--	set_output(standard_output);
-		put_line("found" & natural'image(summary.scanport_ct) & " scan paths(s) ...");
+		put_line("found" & natural'image(summary.scanport_ct) & " scan paths(s)");
 
 		prog_position	:= 210;
 		for sp in 1..scanport_count_max loop -- loop for every physical available scanport (regardless if it is active or not)
@@ -2694,7 +2737,7 @@ procedure compseq is
 			-- process active scanpaths only
 			prog_position	:= 230;
  			if is_scanport_active(sp) then
-				put_line("compiling scanpath" & natural'image(sp));
+				put_line("compiling scanpath" & natural'image(sp) & " ...");
 				scanpath_being_compiled := sp; -- set global variable scanpath_being_compiled to active scanport (pointed to by sp)
 				--put_line("active" & natural'image(sp) );
 
