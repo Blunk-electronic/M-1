@@ -1527,143 +1527,141 @@ procedure compseq is
 		-- set IC303 drv boundary 16=0 16=0 16=0 16=0 17=0 17=0 17=0 17=0
 		elsif get_field_from_line(cmd,1) = sequence_instruction_set.set then -- CS: check field count
 
-			-- check if given device is a bic and get its coordinates
 			bic_name := to_bounded_string(get_field_from_line(cmd,2));
--- 			bic_coordinates := get_bic_coordinates(bic_name);
 
--- 			if bic_coordinates /= null then
-            if is_bic(bic_name) then
+			for b in 1..length(list_of_bics) loop
+				-- NOTE: element(list_of_bics, positive(b)) means the current bic
 
-				-- set set_direction flag
-				if get_field_from_line(cmd,3) = sxr_io_identifier.drive then -- if "drv" found
-					set_direction := drv;
-				elsif get_field_from_line(cmd,3) = sxr_io_identifier.expect then -- if "drv" found
-					set_direction := exp;
-				else
-					write_message (
-						file_handle => file_compiler_messages,
-						text => message_error & "expected keyword '" & sxr_io_identifier.drive 
-							& "' or '" & sxr_io_identifier.expect & "' after device name !",
-						console => true);
-					raise constraint_error;
-				end if;
+				-- scanpath_being_compiled holds the id of the current scanpath.
+				-- We care for a device in that scanpath. if not in scanpath_being_compiled it is skipped.
+				-- Ff the device is in scanpath being compiled.
+				if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then 
 
-				-- set target register and set cell_id_max for later checking the cell id
-				-- CS: do something more professional like
--- 						case set_register is
--- 							when ir 		=> 
--- 							when idcode 	=> 
--- 							when usercode	=> 
--- 							when boundary	=> 
--- 							when bypass 	=> 
--- 						end case;
-				if get_field_from_line(cmd,4) = sir_target_register.ir then
-					target_register := ir;
-					cell_id_max := get_bic(bic_name).len_ir - 1;
-				elsif get_field_from_line(cmd,4) = sdr_target_register.boundary then
-					target_register := boundary;
-					cell_id_max := get_bic(bic_name).len_bsr - 1;
-				elsif get_field_from_line(cmd,4) = sdr_target_register.bypass then
-					target_register := bypass;
-					cell_id_max := bic_bypass_register_length - 1;
-				elsif get_field_from_line(cmd,4) = sdr_target_register.idcode then
-					target_register := idcode;
-					cell_id_max := bic_idcode_register_length - 1;
-				elsif get_field_from_line(cmd,4) = sdr_target_register.usercode then
-					target_register := usercode;
-					cell_id_max := bic_usercode_register_length - 1;
-				else
-					write_message (
-						file_handle => file_compiler_messages,
-						text => message_error & "invalid register name found ! Supported registers are:",
-						console => true);
-
-					for r in 0..type_set_target_register'pos(type_set_target_register'last) loop
-						write_message (
-							file_handle => file_compiler_messages,
-							text => row_separator_0 & to_lower(type_set_target_register'image(type_set_target_register'val(r))),
-							console => true);
-					end loop;
-					raise constraint_error;
-				end if;
-
-				-- set assignment method (bit-wise or register-wise)
-				-- if "downto" found in field 6, the assignment method is assumed as "register-wise"
-				-- if no "downto" found in field 6, we assume "bit-wise" assignment
-				if get_field_from_line(cmd,6) = sxr_vector_orientation.downto then
-					set_assignment_method 	:= register_wise;
-					set_vector_orientation	:= downto;
-
-					-- check if upper cell id is within targeted register
-					-- and save cell id as cell_id_upper_end
-					if natural'value(get_field_from_line(cmd,5)) <= cell_id_max then
-						cell_id_upper_end := natural'value(get_field_from_line(cmd,5));
-					else
-						write_message (
-							file_handle => file_compiler_messages,
-							text => "upper end cell id must be below or equal" & natural'image(cell_id_max) & " for this register !",
-							console => true);
-						raise constraint_error;
-					end if;
-
-					-- check if lower cell id is below cell_id_upper_end
-					-- and save cell id as cell_id_lower_end
-					if natural'value(get_field_from_line(cmd,7)) <= cell_id_upper_end then
-						cell_id_lower_end := natural'value(get_field_from_line(cmd,7));
-					else
-						write_message (
-							file_handle => file_compiler_messages,
-							text => "lower end cell id must be below or equal" & natural'image(cell_id_upper_end) & " for this register !",
-							console => true);
-						raise constraint_error;
-					end if;
-
-
-				elsif get_field_from_line(cmd,6) = sxr_vector_orientation.to then
-					set_assignment_method 	:= register_wise;
-					set_vector_orientation	:= to;
+					-- If bic name is valid:
+					if element(list_of_bics, positive(b)).name = bic_name then
 					
-					write_message (
-						file_handle => file_compiler_messages,
-						text => "register-wise assignment not supported with identifier '" & sxr_vector_orientation.to & "' !"
-							& latin_1.lf & "Check MSB, LSB and use '" & sxr_vector_orientation.downto & "' instead !",
-						console => true);
-					raise constraint_error;
-					-- CS: should be supported
-				else
-					set_assignment_method := bit_wise;
-				end if;
+						-- set set_direction flag
+						if get_field_from_line(cmd,3) = sxr_io_identifier.drive then -- if "drv" found
+							set_direction := drv;
+						elsif get_field_from_line(cmd,3) = sxr_io_identifier.expect then -- if "drv" found
+							set_direction := exp;
+						else
+							write_message (
+								file_handle => file_compiler_messages,
+								text => message_error & "expected keyword '" & sxr_io_identifier.drive 
+									& "' or '" & sxr_io_identifier.expect & "' after device name !",
+								console => true);
+							raise constraint_error;
+						end if;
 
--- 				for p in 1..summary.bic_ct loop
-				-- p points to device in current chain. position 1 is closest to BSC TDO !                
-                for b in 1..length(list_of_bics) loop                
-                -- NOTE: element(list_of_bics, positive(b)) means the current bic
-					-- scanpath_being_compiled holds the id of the current scanpath.
-					-- we care for a device in that scanpath. if not in scanpath it is skipped.
+						-- set target register and set cell_id_max for later checking the cell id
+						-- CS: do something more professional like
+		-- 						case set_register is
+		-- 							when ir 		=> 
+		-- 							when idcode 	=> 
+		-- 							when usercode	=> 
+		-- 							when boundary	=> 
+		-- 							when bypass 	=> 
+		-- 						end case;
+						if get_field_from_line(cmd,4) = sir_target_register.ir then
+							target_register := ir;
+							cell_id_max := element(list_of_bics, positive(b)).len_ir - 1;
+						elsif get_field_from_line(cmd,4) = sdr_target_register.boundary then
+							target_register := boundary;
+							cell_id_max := element(list_of_bics, positive(b)).len_bsr - 1;
+						elsif get_field_from_line(cmd,4) = sdr_target_register.bypass then
+							target_register := bypass;
+							cell_id_max := bic_bypass_register_length - 1;
+						elsif get_field_from_line(cmd,4) = sdr_target_register.idcode then
+							target_register := idcode;
+							cell_id_max := bic_idcode_register_length - 1;
+						elsif get_field_from_line(cmd,4) = sdr_target_register.usercode then
+							target_register := usercode;
+							cell_id_max := bic_usercode_register_length - 1;
+						else
+							write_message (
+								file_handle => file_compiler_messages,
+								text => message_error & "invalid register name found ! Supported registers are:",
+								console => true);
 
-					if get_bic(bic_name).chain = scanpath_being_compiled then -- if the device is in scanpath being compiled
+							for r in 0..type_set_target_register'pos(type_set_target_register'last) loop
+								write_message (
+									file_handle => file_compiler_messages,
+									text => row_separator_0 & to_lower(type_set_target_register'image(type_set_target_register'val(r))),
+									console => true);
+							end loop;
+							raise constraint_error;
+						end if;
+
+						-- set assignment method (bit-wise or register-wise)
+						-- if "downto" found in field 6, the assignment method is assumed as "register-wise"
+						-- if no "downto" found in field 6, we assume "bit-wise" assignment
+						if get_field_from_line(cmd,6) = sxr_vector_orientation.downto then
+							set_assignment_method 	:= register_wise;
+							set_vector_orientation	:= downto;
+
+							-- check if upper cell id is within targeted register
+							-- and save cell id as cell_id_upper_end
+							if natural'value(get_field_from_line(cmd,5)) <= cell_id_max then
+								cell_id_upper_end := natural'value(get_field_from_line(cmd,5));
+							else
+								write_message (
+									file_handle => file_compiler_messages,
+									text => "upper end cell id must be below or equal" & natural'image(cell_id_max) & " for this register !",
+									console => true);
+								raise constraint_error;
+							end if;
+
+							-- check if lower cell id is below cell_id_upper_end
+							-- and save cell id as cell_id_lower_end
+							if natural'value(get_field_from_line(cmd,7)) <= cell_id_upper_end then
+								cell_id_lower_end := natural'value(get_field_from_line(cmd,7));
+							else
+								write_message (
+									file_handle => file_compiler_messages,
+									text => "lower end cell id must be below or equal" & natural'image(cell_id_upper_end) & " for this register !",
+									console => true);
+								raise constraint_error;
+							end if;
+
+
+						elsif get_field_from_line(cmd,6) = sxr_vector_orientation.to then
+							set_assignment_method 	:= register_wise;
+							set_vector_orientation	:= to;
+							
+							write_message (
+								file_handle => file_compiler_messages,
+								text => "register-wise assignment not supported with identifier '" & sxr_vector_orientation.to & "' !"
+									& latin_1.lf & "Check MSB, LSB and use '" & sxr_vector_orientation.downto & "' instead !",
+								console => true);
+							raise constraint_error;
+							-- CS: should be supported
+						else
+							set_assignment_method := bit_wise;
+						end if;
 
 						case set_assignment_method is
 							when register_wise =>
 								update_element(list_of_bics, positive(b), update_whole_register'access );
 
 							when bit_wise =>
-								update_element(list_of_bics, positive(b), update_bit_of_register'access );								
+								update_element(list_of_bics, positive(b), update_bit_of_register'access );
 								-- CS: verify the instruction is valid !
 						end case;
+						exit;
+						
+					else -- if device is not a bic
+						write_message (
+							file_handle => file_compiler_messages,
+							text => "device " & to_string(bic_name) & " is not part of any scanpath ! Check name and capitalization !",
+							console => true);
+						raise constraint_error;
 					end if;
-
-				end loop;
-
+						
+				end if; -- on scanpath match
 				-- CS: field 10 not read any more -> make it a comment
-
-			else -- if device is not a bic
-				write_message (
-					file_handle => file_compiler_messages,
-					text => "device " & to_string(bic_name) & " is not part of any scanpath ! Check name and capitalization !",
-					console => true);
-				raise constraint_error;
-			end if; -- if device is a bic
+			end loop;
+				
 
  
 		-- "sir"
