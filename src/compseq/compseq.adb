@@ -2325,9 +2325,11 @@ procedure compseq is
 		-- compiler version major/minor  2 bytes, 
 		-- vector format major/minor 2 bytes,
 		-- scanpath count 1 byte,
-		-- summary.scanpath_ct * 32bit base address
+		-- summary.scanpath_ct * 32bit base address -- wrong, no longer valid
+		-- number_of_active_scanports * 32bit base address	-- this is applies instead	
 -- 		header_length : natural := 5 + (summary.scanport_ct * 4);
- 		header_length : natural := 5 + positive(length(list_of_scanports) * 4);
+-- 		header_length : natural := 5 + positive(length(list_of_scanports) * 4);
+		header_length : natural := 5 + number_of_active_scanports * 4;
 
 	 	procedure write_base_address is
 		-- writes base address of current scanpath in vector_file_header
