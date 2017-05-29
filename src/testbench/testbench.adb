@@ -72,7 +72,8 @@ procedure testbench is
     use type_extended_string;    
 	use type_list_of_strings;
 
-	line : type_list_of_strings.vector;
+	-- 	line : type_list_of_strings.vector;
+	line : type_fields_of_line;
 
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
@@ -89,20 +90,24 @@ begin
 
 	prog_position := 10;
 	name_file_database := to_bounded_string(argument(1));
+	read_uut_database;
 
-	open (file_database, in_file, to_string(name_file_database));
-	set_input( file_database);
-
-	while not end_of_file loop
--- 		put_line(get_line);
-		line := read_line(get_line);
-		if length(line) > 0 then
--- 			for i in 1..length(line) loop
--- 				put(element(line, positive(i)) & latin_1.space);
--- 			end loop;
--- 			new_line;
-			put_line( element(line, positive(1)));
-		end if;
-	end loop;
+-- 	open (file_database, in_file, to_string(name_file_database));
+-- 	set_input( file_database);
+-- 
+-- 	while not end_of_file loop
+-- -- 		put_line(get_line);
+-- 		line := read_line(get_line);
+-- 		if line.field_count > 0 then
+-- -- 			for i in 1..length(line) loop
+-- -- 				put(element(line, positive(i)) & latin_1.space);
+-- -- 			end loop;
+-- -- 			new_line;
+-- 			put_line( element(line.fields, positive(1)));
+-- 		end if;
+-- 	end loop;
+-- 	exception
+-- 		when others => raise;
+			
 
 end testbench;
