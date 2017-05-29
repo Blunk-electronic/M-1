@@ -2897,6 +2897,7 @@ begin
 	--put (size_of_vec_file);
 
 	prog_position	:= 60;
+	degree_of_database_integrity_check := light;
 	read_uut_database;
 
 	-- read journal
