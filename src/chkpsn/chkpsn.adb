@@ -2899,6 +2899,8 @@ begin
 	degree_of_database_integrity_check := light;
 	read_uut_database;
 
+	put_line("start checking primary/secondary nets ...");
+
 	-- read options file
 	prog_position := 60;
 	read_options_file;
@@ -3007,7 +3009,7 @@ begin
 	prog_position := 200;
 	write_message (
 		file_handle => file_chkpsn_messages,
-		text => "copying preliminary " & text_identifier_database & " to " & to_string(name_file_database),
+		text => "copying preliminary " & text_identifier_database & " to " & to_string(name_file_database_backup),
 		console => false);
  	copy_file(name_file_database_preliminary, to_string(name_file_database_backup));
 	

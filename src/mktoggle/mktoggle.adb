@@ -374,6 +374,8 @@ begin
 	prog_position	:= 90;
 	degree_of_database_integrity_check := light;
 	read_uut_database;
+
+	put_line("start test generation ...");
 	
 	prog_position	:= 110;
 	create_test_directory(name_test);

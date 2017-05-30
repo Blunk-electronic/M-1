@@ -2189,6 +2189,8 @@ begin
 	prog_position	:= 40;
 	--degree_of_database_integrity_check := light;	
 	read_uut_database;
+	put_line("start making options ...");
+
 	length_of_netlist := length(list_of_nets); -- CS: should be in read_uut_database or taken from summary ?
 	
 	put_line ("number of nets in " & text_identifier_database 

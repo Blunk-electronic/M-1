@@ -396,6 +396,8 @@ begin
 
 	prog_position	:= 50;
 	read_uut_database;
+
+	put_line("start making nets ...");
 	
 	-- create premilinary database (containing scanpath_configuration and registers)
 	write_message (

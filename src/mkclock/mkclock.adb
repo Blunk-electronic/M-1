@@ -408,6 +408,8 @@ begin
 	degree_of_database_integrity_check := light;
 	read_uut_database;
 
+	put_line("start test generation ...");
+
 	prog_position	:= 100;
 	verify_target;
 
