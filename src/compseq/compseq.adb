@@ -1927,7 +1927,7 @@ procedure compseq is
 			high_nibble	: type_high_nibble;
 			frequency_real : float;
 		begin
-			put_line("calculating available tck frequency ...");
+			put_line(" calculating available tck frequency ...");
 			-- display frequency requested by user 
 			put_line(" - requested:" & type_tck_frequency'image(frequency_float) & " MHz");
 
@@ -2548,8 +2548,8 @@ procedure compseq is
 									if t.scan = sdr and a > 1 then
 										put_line(message_warning & "Look-ahead window for next " & type_scan'image(t.scan) 
 											& " drive image is" & positive'image(a) & " steps !");
-										put_line("Vector id current:" & type_vector_id'image(cv.vector_id));
-										put_line("Vector id next   :" & type_vector_id'image(t.vector_id));
+										put_line("vector id current:" & type_vector_id'image(cv.vector_id));
+										put_line("vector id next   :" & type_vector_id'image(t.vector_id));
 										put_line("Make sure, the targeted registers are the same !");
 									end if;
 									return t; -- return pointer of next vector
@@ -2900,6 +2900,8 @@ begin
 	degree_of_database_integrity_check := light;
 	read_uut_database;
 
+	put_line("start compiling ...");
+	
 	-- read journal
 	prog_position	:= 70;
 	destination_address := get_destination_address_from_journal;
@@ -2916,7 +2918,7 @@ begin
 	set_input(file_sequence);
 
 	prog_position	:= 90;
-	put_line("reading sequence file ...");
+	put_line(" reading sequence file ...");
 	test_info := get_test_info;
 	
 	prog_position	:= 100;
