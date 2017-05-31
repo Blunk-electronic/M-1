@@ -38,6 +38,10 @@ with ada.characters;			use ada.characters;
 with ada.characters.latin_1;	use ada.characters.latin_1;
 with ada.characters.handling; 	use ada.characters.handling;
 
+with ada.containers;            use ada.containers;
+--with ada.containers.vectors;
+with ada.containers.indefinite_vectors;
+
 with ada.strings.bounded; 		use ada.strings.bounded;
 with ada.strings.fixed; 		use ada.strings.fixed;
 with ada.exceptions; 			use ada.exceptions;
@@ -58,6 +62,7 @@ procedure mkinfra is
 	prog_position	: natural := 0;
 
 	use type_name_database;
+	use type_list_of_bics;
 	use type_device_name;
 	use type_name_test;
 	
@@ -89,7 +94,7 @@ procedure mkinfra is
 		put_line(file_sequence, row_separator_0 & section_info_item.end_sdr & (colon_position-(2+section_info_item.end_sdr'last)) * row_separator_0 & ": " & type_end_sdr'image(end_sdr));
 		put_line(file_sequence, row_separator_0 & section_info_item.end_sir & (colon_position-(2+section_info_item.end_sir'last)) * row_separator_0 & ": " & type_end_sir'image(end_sir));
 
-		put_line(file_sequence, " bic count        :" & positive'image(summary.bic_ct));
+		put_line(file_sequence, " bic count        :" & count_type'image(length(list_of_bics)));
 		--put_line (" bic count        :" & positive'image(natural(type_list_of_bics.length(list_of_bics))));
 		put_line(file_sequence, " algorithm        : " & type_algorithm'image(standard));
 		--put_line (" options       : " & type_option'image()); -- CS 
@@ -371,7 +376,7 @@ procedure mkinfra is
 		put_line(" idcodes ...");
 		new_line(file_sequence,2);
 		put_line(file_sequence, " -- IDCODE REGISTER TEST");
-		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+		for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
 			one_of_all(p,idcode);
 		end loop;
 
@@ -380,7 +385,7 @@ procedure mkinfra is
 		put_line(" usercodes ...");
 		new_line(file_sequence,2);
 		put_line(file_sequence," -- USERCODE REGISTER TEST");
-		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+		for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
 			one_of_all(p,usercode);
 		end loop;
 
@@ -390,17 +395,17 @@ procedure mkinfra is
 		put_line(file_sequence," -- BOUNDARY REGISTER TEST");
 
 		-- We test the boundary registers in both the sample and preload mode:
-		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+		for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
 			one_of_all(p,sample);
 		end loop;
 
-		for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+		for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
 			one_of_all(p,preload);
 		end loop;
 
 		-- CAUTION: USE FOR INTRUSIVE MODE ONLY
 		if algorithm = intrusive then
-			for p in 1..summary.bic_ct loop -- process as much as bics are in udb
+			for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
 				one_of_all(
 					position 	=> p,
 					instruction => extest,

@@ -468,11 +468,25 @@ procedure mkintercon is
 				end loop;
 		end write_dynamic_drive_and_expect_values;
 
-
+		function get_dynamic_bs_nets return natural is
+			n : natural := 0;
+			use type_list_of_nets;
+		begin
+			for i in 1..positive(length(list_of_nets)) loop
+				if element(list_of_nets, i).class = NR 
+					or element(list_of_nets, i).class = PU
+					or element(list_of_nets, i).class = PD then
+						n := n + 1;
+				end if;	
+			end loop;
+			return n;
+		end get_dynamic_bs_nets;
+			
 		begin -- atg_mkintercon
 
 			-- Take number of dynamic nets from udb summary.
-			dyn_ct := summary.net_count_statistics.bs_dynamic;
+			--dyn_ct := summary.net_count_statistics.bs_dynamic;
+			dyn_ct := get_dynamic_bs_nets;
 			put_line (" generating test pattern for" & natural'image(dyn_ct) & " dynamic nets (secondary nets included) ...");
 
 			-- If there are dynamic nets to generate a pattern for, calculate required step count.

@@ -30,7 +30,7 @@
 --   history of changes:
 --
 --   todo:
--- 		- direct all error messages to logfile
+-- 
 
 with ada.text_io;				use ada.text_io;
 with ada.characters.handling;   use ada.characters.handling;
@@ -58,7 +58,7 @@ with m1_files_and_directories; 	use m1_files_and_directories;
 
 procedure impbsdl is
 
-	version			: constant string (1..3) := "036";
+	version			: constant string (1..3) := "001";
 	prog_position	: natural := 0;
 
 	use type_universal_string;

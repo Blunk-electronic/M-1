@@ -89,6 +89,26 @@ procedure chkpsn is
 
 	total_options_net_count				: natural := 0; 
 	-- CS: currently assigned but not read. useful for addtional statistics
+
+	type type_net_count_statistics is record
+		pu				: natural := 0;
+		pd				: natural := 0;
+		dh				: natural := 0;
+		dl				: natural := 0;
+		eh				: natural := 0;
+		el				: natural := 0;
+		nr				: natural := 0;
+		na				: natural := 0;
+		total			: natural := 0;
+		bs_static		: natural := 0;
+		bs_static_l		: natural := 0;
+		bs_static_h		: natural := 0;
+		bs_dynamic		: natural := 0;
+		bs_testable		: natural := 0;
+		atg_drivers		: natural := 0;
+		atg_receivers	: natural := 0;
+	end record;
+	net_count_statistics : type_net_count_statistics;
 	
 	type type_options_net (has_secondaries : boolean := true) is record
 		name						: type_net_name.bounded_string;
@@ -670,319 +690,6 @@ procedure chkpsn is
 		driver_with_shared_control_cell_found		: boolean := false;
 
 		d : type_net := net;
--- 		p : type_pin; -- for temporarily storage of a pin
-
--- 		procedure add_to_locked_control_cells_in_class_EH_EL_NA_nets(
--- 			-- prepares writing a cell list entry like:
--- 			-- class NA primary_net OSC_OUT device IC300 pin 6 control_cell 93 locked_to disable_value 0
--- 			-- class NA secondary_net OSC_OUT device IC300 pin 6 control_cell 93 locked_to disable_value 0
--- 			list				: in out type_ptr_cell_list_static_control_cells_class_EX_NA;
--- 			class_given			: type_net_class;
--- 			level_given			: type_net_level;
--- 			net_given			: universal_string_type.bounded_string;
--- 			device_given		: universal_string_type.bounded_string;
--- 			pin_given			: universal_string_type.bounded_string;
--- 			cell_given			: natural;
--- 			disable_value_given	: type_bit_char_class_0
--- 			) is
--- 		begin
--- 			list := new type_cell_list_static_control_cells_class_EX_NA'(
--- 				next 			=> list,
--- 				class			=> class_given,
--- 				level			=> level_given,
--- 				net				=> net_given,
--- 				device			=> device_given,
--- 				pin				=> pin_given,
--- 				cell			=> cell_given,
--- 				disable_value	=> disable_value_given
--- 				);
--- 		end add_to_locked_control_cells_in_class_EH_EL_NA_nets;
-
--- 		procedure add_to_locked_control_cells_in_class_DH_DL_NR_nets(
--- 			-- prepares writing a cell list entry like:
--- 			-- class NR primary_net LED0 device IC303 pin 10 control_cell 16 locked_to enable_value 0
--- 			-- class NR primary_net LED1 device IC303 pin 9 control_cell 16 locked_to enable_value 0
--- 			-- class NR secondary_net LED7_R device IC301 pin 13 control_cell 75 locked_to disable_value 0
--- 			list				: in out type_ptr_cell_list_static_control_cells_class_DX_NR;
--- 			class_given			: type_net_class;
--- 			level_given			: type_net_level;
--- 			net_given			: universal_string_type.bounded_string;
--- 			device_given		: universal_string_type.bounded_string;
--- 			pin_given			: universal_string_type.bounded_string;
--- 			cell_given			: natural;
--- 			locked_to_enable_state_given	: boolean;
--- 			enable_value_given				: type_bit_char_class_0 := '0';
--- 			disable_value_given				: type_bit_char_class_0 := '0'
--- 			) is
--- 		begin
--- 			case locked_to_enable_state_given is
--- 				when true =>
--- 					list := new type_cell_list_static_control_cells_class_DX_NR'(
--- 						next 			=> list,
--- 						class			=> class_given,
--- 						level			=> level_given,
--- 						net				=> net_given,
--- 						device			=> device_given,
--- 						pin				=> pin_given,
--- 						cell			=> cell_given,
--- 						locked_to_enable_state	=> true,
--- 						enable_value			=> enable_value_given
--- 						);
--- 				when false =>
--- 					list := new type_cell_list_static_control_cells_class_DX_NR'(
--- 						next 			=> list,
--- 						class			=> class_given,
--- 						level			=> level_given,
--- 						net				=> net_given,
--- 						device			=> device_given,
--- 						pin				=> pin_given,
--- 						cell			=> cell_given,
--- 						locked_to_enable_state	=> false,
--- 						disable_value			=> disable_value_given
--- 						);
--- 			end case;
--- 		end add_to_locked_control_cells_in_class_DH_DL_NR_nets;
--- 
--- 		procedure add_to_locked_control_cells_in_class_PU_PD_nets(
--- 			-- prepares writing a cell list entry like:
--- 			-- class PD primary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
--- 			-- class PD secondary_net PD1 device IC301 pin 7 control_cell 87 locked_to disable_value 0
--- 			list				: in out type_ptr_cell_list_static_control_cells_class_PX;
--- 			class_given			: type_net_class;
--- 			level_given			: type_net_level;
--- 			net_given			: universal_string_type.bounded_string;
--- 			device_given		: universal_string_type.bounded_string;
--- 			pin_given			: universal_string_type.bounded_string;
--- 			cell_given			: natural;
--- 			disable_value_given				: type_bit_char_class_0
--- 			) is
--- 		begin
--- 			list := new type_cell_list_static_control_cells_class_PX'(
--- 				next 			=> list,
--- 				class			=> class_given,
--- 				level			=> level_given,
--- 				net				=> net_given,
--- 				device			=> device_given,
--- 				pin				=> pin_given,
--- 				cell			=> cell_given,
--- 				disable_value	=> disable_value_given
--- 				);
--- 		end add_to_locked_control_cells_in_class_PU_PD_nets;
--- 
--- 		procedure add_to_locked_output_cells_in_class_PU_PD_nets(
--- 			-- prepares writing a cell list entry like:
--- 			-- class PU primary_net /SYS_RESET device IC300 pin 39 output_cell 37 locked_to drive_value 0
--- 			list				: in out type_ptr_cell_list_static_output_cells_class_PX;
--- 			class_given			: type_net_class;
--- 			net_given			: universal_string_type.bounded_string;
--- 			device_given		: universal_string_type.bounded_string;
--- 			pin_given			: universal_string_type.bounded_string;
--- 			cell_given			: natural;
--- 			drive_value_given	: type_bit_char_class_0
--- 			) is
--- 		begin
--- 			list := new type_cell_list_static_output_cells_class_PX'(
--- 				next 			=> list,
--- 				class			=> class_given,
--- 				net				=> net_given,
--- 				device			=> device_given,
--- 				pin				=> pin_given,
--- 				cell			=> cell_given,
--- 				drive_value		=> drive_value_given
--- 				);
--- 		end add_to_locked_output_cells_in_class_PU_PD_nets;
--- 
--- 		procedure add_to_locked_output_cells_in_class_DH_DL_nets(
--- 			-- prepares writing a cell list entry like:
--- 			-- class DL primary_net /CPU_MREQ device IC300 pin 28 output_cell 13 locked_to drive_value 0
--- 			-- class DH primary_net /CPU_RD device IC300 pin 27 output_cell 10 locked_to drive_value 1
--- 			list				: in out type_ptr_cell_list_static_output_cells_class_DX_NR;
--- 			class_given			: type_net_class;
--- 			--level_given			: type_net_level := primary; -- because this is always a primary net
--- 			net_given			: universal_string_type.bounded_string;
--- 			device_given		: universal_string_type.bounded_string;
--- 			pin_given			: universal_string_type.bounded_string;
--- 			cell_given			: natural;
--- 			drive_value_given	: type_bit_char_class_0
--- 			) is
--- 		begin
--- 			list := new type_cell_list_static_output_cells_class_DX_NR'(
--- 				next 			=> list,
--- 				class			=> class_given,
--- 				--level			=> level_given,
--- 				net				=> net_given,
--- 				device			=> device_given,
--- 				pin				=> pin_given,
--- 				cell			=> cell_given,
--- 				drive_value		=> drive_value_given
--- 				);
--- 		end add_to_locked_output_cells_in_class_DH_DL_nets;
-
--- 		procedure add_to_static_expect(
--- 			-- prepares writing a cell list entry like:
--- 			-- class DL primary_net /CPU_MREQ device IC300 pin 28 input_cell 14 expect_value 0
--- 			-- class DL secondary_net /CPU_MREQ device IC300 pin 28 input_cell 14 expect_value 0
--- 			list				: in out type_ptr_cell_list_static_expect;
--- 			class_given			: type_net_class;
--- 			level_given			: type_net_level;
--- 			net_given			: universal_string_type.bounded_string;
--- 			device_given		: universal_string_type.bounded_string;
--- 			pin_given			: universal_string_type.bounded_string;
--- 			cell_given			: natural;
--- 			expect_value_given	: type_bit_char_class_0;
--- 			primary_net_is_given: universal_string_type.bounded_string
--- 			) is
--- 		begin
--- 			case level is
--- 				when primary =>
--- 					list := new type_cell_list_static_expect'(
--- 						next 			=> list,
--- 						class			=> class_given,
--- 						level			=> primary,
--- 						net				=> net_given,
--- 						device			=> device_given,
--- 						pin				=> pin_given,
--- 						cell			=> cell_given,
--- 						expect_value	=> expect_value_given
--- 						);
--- 
--- 				when secondary =>
--- 					list := new type_cell_list_static_expect'(
--- 						next 			=> list,
--- 						class			=> class_given,
--- 						level			=> secondary,
--- 						net				=> net_given,
--- 						device			=> device_given,
--- 						pin				=> pin_given,
--- 						cell			=> cell_given,
--- 						expect_value	=> expect_value_given,
--- 						primary_net_is	=> primary_net_is_given -- reference to primary net required here
--- 						);
--- 			end case; -- level
--- 		end add_to_static_expect;
-
--- 		procedure add_to_atg_expect(
--- 			-- prepares writing a cell list entry like:
--- 			-- class PU secondary_net CT_D3 device IC303 pin 19 input_cell 11 primary_net_is D3
--- 			-- class PU primary_net /CPU_WR device IC300 pin 26 input_cell 8
--- 			list				: in out type_ptr_cell_list_atg_expect;
--- 			class_given			: type_net_class;
--- 			level_given			: type_net_level;
--- 			net_given			: universal_string_type.bounded_string;
--- 			device_given		: universal_string_type.bounded_string;
--- 			pin_given			: universal_string_type.bounded_string;
--- 			cell_given			: natural;
--- 			primary_net_is_given: universal_string_type.bounded_string
--- 			) is
--- 		begin
--- 			case level_given is
--- 				when primary =>
--- 					list := new type_cell_list_atg_expect'(
--- 						next 			=> list,
--- 						class			=> class_given,
--- 						level			=> primary,
--- 						net				=> net_given,
--- 						device			=> device_given,
--- 						pin				=> pin_given,
--- 						cell			=> cell_given
--- 						);
--- 				when secondary =>
--- 					list := new type_cell_list_atg_expect'(
--- 						next 			=> list,
--- 						class			=> class_given,
--- 						level			=> secondary,
--- 						net				=> net_given,
--- 						device			=> device_given,
--- 						pin				=> pin_given,
--- 						cell			=> cell_given,
--- 						primary_net_is	=> primary_net_is_given -- reference to primary net required here
--- 						);
--- 			end case;
--- 		end add_to_atg_expect;
-
--- 		procedure add_to_atg_drive(
--- 			-- prepares writing a cell list entry like:
--- 			-- class NR primary_net LED7 device IC303 pin 2 output_cell 7
--- 			-- class PU primary_net /CPU_WR device IC300 pin 26 control_cell 6 inverted yes
--- 			-- class PD primary_net /DRV_EN device IC301 pin 27 control_cell 9 inverted no
--- 			list				: in out type_ptr_cell_list_atg_drive;
--- 			class_given			: type_net_class;
--- 			net_given			: universal_string_type.bounded_string;
--- 			device_given		: universal_string_type.bounded_string;
--- 			pin_given			: universal_string_type.bounded_string;
--- 			cell_given			: natural;
--- 			controlled_by_control_cell_given	: boolean; -- if controlled by output cell -> false
--- 			-- examples for controlled_by_control_cell_given = true:
--- 			-- class PU primary_net /CPU_WR device IC300 pin 26 control_cell 6 inverted yes
--- 			-- class PD primary_net /DRV_EN device IC301 pin 27 control_cell 9 inverted no
--- 			control_cell_inverted_given			: boolean := false -- default in case it is not required
--- 
--- 			-- example for controlled_by_control_cell_given = false:
--- 			-- class NR primary_net LED7 device IC303 pin 2 output_cell 7
--- 			) is
--- 		begin
--- 			case controlled_by_control_cell_given is
--- 				when true =>
--- 					list := new type_cell_list_atg_drive'(
--- 						next 			=> list,
--- 						class			=> class_given,
--- 						--level			=> secondary,
--- 						net				=> net_given,
--- 						device			=> device_given,
--- 						pin				=> pin_given,
--- 						cell			=> cell_given,
--- 						controlled_by_control_cell	=> true,
--- 						inverted					=> control_cell_inverted_given
--- 						);
--- 				when false =>
--- 					list := new type_cell_list_atg_drive'(
--- 						next 			=> list,
--- 						class			=> class_given,
--- 						--level			=> secondary,
--- 						net				=> net_given,
--- 						device			=> device_given,
--- 						pin				=> pin_given,
--- 						cell			=> cell_given,
--- 						controlled_by_control_cell	=> false
--- 						);
--- 			end case;
--- 		end add_to_atg_drive;
--- 
--- 		procedure add_to_input_cells_in_class_NA_nets(
--- 			-- prepares writing a cell list entry like:
--- 			-- class NA primary_net OSC_OUT device IC301 pin 6 input_cell 95
--- 			-- class NA secondary_net LED0_R device IC301 pin 2 input_cell 107 primary_net_is LED0
--- 			list				: in out type_ptr_cell_list_input_cells_class_NA;
--- 			level_given			: type_net_level;
--- 			net_given			: universal_string_type.bounded_string;
--- 			device_given		: universal_string_type.bounded_string;
--- 			pin_given			: universal_string_type.bounded_string;
--- 			cell_given			: natural;
--- 			primary_net_is_given: universal_string_type.bounded_string
--- 			) is
--- 		begin
--- 			case level_given is
--- 				when primary =>
--- 					list := new type_cell_list_input_cells_class_NA'(
--- 						next 			=> list,
--- 						level			=> primary,
--- 						net				=> net_given,
--- 						device			=> device_given,
--- 						pin				=> pin_given,
--- 						cell			=> cell_given
--- 						);
--- 				when secondary =>
--- 					list := new type_cell_list_input_cells_class_NA'(
--- 						next 			=> list,
--- 						level			=> secondary,
--- 						net				=> net_given,
--- 						device			=> device_given,
--- 						pin				=> pin_given,
--- 						cell			=> cell_given,
--- 						primary_net_is	=> primary_net_is_given -- reference to primary net required here
--- 						);
--- 			end case;
--- 		end add_to_input_cells_in_class_NA_nets;
 
 -- CS:		procedure write_message_is_shared is
 -- 		begin
@@ -2017,14 +1724,14 @@ procedure chkpsn is
 	-- preliminary database.
 	-- Updates cell lists.
 
-		options_net			: in type_options_net;
-		level 				: in type_net_level; 
+		net		: in type_options_net;
+		level 	: in type_net_level; 
 
 		-- For secondary nets, the superordinated primary net is taken here. otherwise the default is "".
 		-- This argument is required for writing cell lists, where reference to primary nets is required.
  		primary_net_is		: in type_net_name.bounded_string := type_net_name.to_bounded_string("");
 
-		spacing_from_left 	: in positive -- CS: should read "identation"
+		spacing_from_left 	: in positive -- CS: should read "indentation"
 		) is
 		n : type_net; -- for temporarily storage of a net taken from current database
 -- 		p : type_pin; -- for temporarily storage of a pin of net d
@@ -2042,21 +1749,15 @@ procedure chkpsn is
 		for i in 1..length(list_of_nets) loop
 			n := element(list_of_nets, positive(i));
 
-			-- on match of net name: means, the net given from make_new_net_list has been found in database net list pointed to by d
-			if n.name = options_net.name then
-
-				-- set net class of d as requested by given options_net
--- 				d.class := options_net.class;
-				-- set net level of d as requested by level
-
+			-- on match of net name: means, the net given from make_new_net_list has been found in database
+			if n.name = net.name then
 
 				write_message (
 					file_handle => file_chkpsn_messages,
 		  			identation => 2,
 					text => "writing " & type_net_level'image(level) 
-						& " class " & type_net_class'image(options_net.class) -- class requested by options_net !
+						& " class " & type_net_class'image(net.class) -- class requested by given net !
 						& " net " & to_string(n.name), 
--- 						& " in preliminary " & text_identifier_database, 
 					console => false);
 				
 				-- mark this net as optimized by chkpsn
@@ -2124,7 +1825,7 @@ procedure chkpsn is
 					case level is
 						when primary =>
 							update_cell_lists( net => (
-								class => options_net.class,
+								class => net.class,
 								level => primary,
 								name => n.name,
 								pins => n.pins,
@@ -2140,7 +1841,7 @@ procedure chkpsn is
 
 						when secondary =>
 							update_cell_lists( net => (
-								class => options_net.class,
+								class => net.class,
 								level => secondary,
 								name => n.name,
 								pins => n.pins,
@@ -2155,7 +1856,47 @@ procedure chkpsn is
 								));
 					end case;
 				end if;
-				
+
+
+				-- update net count statistics.
+				net_count_statistics.total := net_count_statistics.total + 1;
+				case net.class is
+					when PU => 
+						net_count_statistics.pu 			:= net_count_statistics.pu + 1;
+						net_count_statistics.bs_dynamic		:= net_count_statistics.bs_dynamic + 1;
+						net_count_statistics.bs_testable	:= net_count_statistics.bs_testable + 1;
+					when PD => 
+						net_count_statistics.pd 			:= net_count_statistics.pd + 1; 
+						net_count_statistics.bs_dynamic 	:= net_count_statistics.bs_dynamic + 1;
+						net_count_statistics.bs_testable 	:= net_count_statistics.bs_testable + 1;
+					when DH => 
+						net_count_statistics.dh 			:= net_count_statistics.dh + 1;
+						net_count_statistics.bs_static 		:= net_count_statistics.bs_static + 1;
+						net_count_statistics.bs_static_h 	:= net_count_statistics.bs_static_h + 1;
+						net_count_statistics.bs_testable 	:= net_count_statistics.bs_testable + 1;
+					when DL => 
+						net_count_statistics.dl 			:= net_count_statistics.dl + 1;
+						net_count_statistics.bs_static 		:= net_count_statistics.bs_static + 1;
+						net_count_statistics.bs_static_l 	:= net_count_statistics.bs_static_l + 1;
+						net_count_statistics.bs_testable 	:= net_count_statistics.bs_testable + 1;
+					when EH => 
+						net_count_statistics.eh 			:= net_count_statistics.eh + 1;
+						net_count_statistics.bs_static 		:= net_count_statistics.bs_static + 1;
+						net_count_statistics.bs_static_h 	:= net_count_statistics.bs_static_h + 1;
+						net_count_statistics.bs_testable 	:= net_count_statistics.bs_testable + 1;
+					when EL => 
+						net_count_statistics.el 			:= net_count_statistics.el + 1;
+						net_count_statistics.bs_static 		:= net_count_statistics.bs_static + 1;
+						net_count_statistics.bs_static_l 	:= net_count_statistics.bs_static_l + 1;
+						net_count_statistics.bs_testable 	:= net_count_statistics.bs_testable + 1;
+					when NR => 
+						net_count_statistics.nr 			:= net_count_statistics.nr + 1;
+						net_count_statistics.bs_dynamic 	:= net_count_statistics.bs_dynamic + 1;
+						net_count_statistics.bs_testable 	:= net_count_statistics.bs_testable + 1;
+					when NA => 
+						net_count_statistics.na 			:= net_count_statistics.na + 1;
+				end case;
+
 				exit; -- no need to search other nets in data base
 			end if;
 
@@ -2215,29 +1956,8 @@ procedure chkpsn is
 					text => "primary net " & to_string(o.name), 
 					console => false);
 
-				-- this is a primary net. it will be searched for in the netlist and its content dumped into the preliminary database
-				
--- 				dump_net_content( -- CS: send full type_net
--- 					name => o.name, 
--- 					level => primary,
--- 					class => o.class,
--- 					spacing_from_left => 2
--- 					);
-
--- 	type type_options_net (has_secondaries : boolean := true) is record
--- 		name						: type_net_name.bounded_string;
--- 		class						: type_net_class;
--- 		line_number					: positive;
--- 		case has_secondaries is
--- 			when true =>
--- 				list_of_secondary_net_names	: type_list_of_secondary_net_names.vector;
--- 			when false =>
--- 				null;
--- 		end case;
--- 	end record;
-
 				dump_net_content(
-					options_net => o,
+					net => o,
 					level => primary,
 					spacing_from_left => 2
 					);
@@ -2261,16 +1981,8 @@ procedure chkpsn is
 							text => "secondary net " & to_string(element(o.list_of_secondary_net_names, positive(s))), 
 							console => false);
 
--- 						dump_net_content(
--- 							name => element(o.list_of_secondary_net_names, positive(s)),
--- 							level => secondary,
--- 							primary_net_is => o.name, -- required for writing some cell lists where reference to primary net is required
--- 							class => o.class, 
--- 							spacing_from_left => 4
-						-- 							);
-
 						dump_net_content(
-							options_net => (
+							net => (
 								has_secondaries => false, -- because it is a secondary net
 								name => element(o.list_of_secondary_net_names, positive(s)),
 								class => o.class, -- because it inherits the class of the superordinated primary net
@@ -2309,7 +2021,7 @@ procedure chkpsn is
 		put_line("-- NON-OPTIMIZED NETS");
 		put_line(column_separator_0);
 
-		for i in 1..length(list_of_nets) loop -- CS: use summary instead ?
+		for i in 1..length(list_of_nets) loop
 			n := element(list_of_nets, positive(i));
 			if not n.optimized then -- if non-optimized
 				--put_line(prog_position);
@@ -2327,15 +2039,8 @@ procedure chkpsn is
 					text => "primary net " & to_string(n.name), 
 					console => false);
 
--- 				dump_net_content(
--- 					name => n.name, 
--- 					level => primary,
--- 					class => NA,
--- 					spacing_from_left => 2
--- 					);
-
 				dump_net_content(
-					options_net => (
+					net => (
 						has_secondaries => false, -- because it is a lonely primary net
 						name => n.name,
 						class => net_class_default,
@@ -2606,34 +2311,34 @@ procedure chkpsn is
 			file_handle => file_chkpsn_messages,
 	-- 		identation => 1,
 			text => "writing statistics ...",
-			console => false);
+			console => true);
 		
 		put_line("------- STATISTICS ----------------------------------------------------------");
 		new_line;
 		put_line(section_mark.section & row_separator_0 & "statistics");
 		put_line("---------------------------------------------------");
-		summary.net_count_statistics.atg_drivers := natural(length(list_of_atg_drive_cells));
-		put_line(" ATG-drivers   (dynamic) :" & natural'image(summary.net_count_statistics.atg_drivers));
-		summary.net_count_statistics.atg_receivers := natural(length(list_of_atg_expect_cells));
- 		put_line(" ATG-receivers (dynamic) :" & natural'image(summary.net_count_statistics.atg_receivers));
+		net_count_statistics.atg_drivers := natural(length(list_of_atg_drive_cells));
+		put_line(" ATG-drivers   (dynamic) :" & natural'image(net_count_statistics.atg_drivers));
+		net_count_statistics.atg_receivers := natural(length(list_of_atg_expect_cells));
+ 		put_line(" ATG-receivers (dynamic) :" & natural'image(net_count_statistics.atg_receivers));
 		put_line("---------------------------------------------------");
-		put_line(" Pull-Up nets        (PU):" & natural'image(summary.net_count_statistics.pu));
- 		put_line(" Pull-Down nets      (PD):" & natural'image(summary.net_count_statistics.pd));
- 		put_line(" Drive-High nets     (DH):" & natural'image(summary.net_count_statistics.dh));
- 		put_line(" Drive-Low nets      (DL):" & natural'image(summary.net_count_statistics.dl));
- 		put_line(" Expect-High nets    (EH):" & natural'image(summary.net_count_statistics.eh));
- 		put_line(" Expect-Low nets     (EL):" & natural'image(summary.net_count_statistics.el));
- 		put_line(" unrestricted nets   (NR):" & natural'image(summary.net_count_statistics.nr));
- 		put_line(" not classified nets (NA):" & natural'image(summary.net_count_statistics.na));
+		put_line(" Pull-Up nets        (PU):" & natural'image(net_count_statistics.pu));
+ 		put_line(" Pull-Down nets      (PD):" & natural'image(net_count_statistics.pd));
+ 		put_line(" Drive-High nets     (DH):" & natural'image(net_count_statistics.dh));
+ 		put_line(" Drive-Low nets      (DL):" & natural'image(net_count_statistics.dl));
+ 		put_line(" Expect-High nets    (EH):" & natural'image(net_count_statistics.eh));
+ 		put_line(" Expect-Low nets     (EL):" & natural'image(net_count_statistics.el));
+ 		put_line(" unrestricted nets   (NR):" & natural'image(net_count_statistics.nr));
+ 		put_line(" not classified nets (NA):" & natural'image(net_count_statistics.na));
 		put_line("---------------------------------------------------");
- 		put_line(" total                   :" & natural'image(summary.net_count_statistics.total));
+ 		put_line(" total                   :" & natural'image(net_count_statistics.total));
 		put_line("--------------------------------------------------");
- 		put_line(" bs-nets static          :" & natural'image(summary.net_count_statistics.bs_static));
+ 		put_line(" bs-nets static          :" & natural'image(net_count_statistics.bs_static));
  		put_line(" thereof :");
-   		put_line("   bs-nets static L      :" & natural'image(summary.net_count_statistics.bs_static_l));
-   		put_line("   bs-nets static H      :" & natural'image(summary.net_count_statistics.bs_static_h));
- 		put_line(" bs-nets dynamic         :" & natural'image(summary.net_count_statistics.bs_dynamic));
- 		put_line(" bs-nets testable        :" & natural'image(summary.net_count_statistics.bs_testable));
+		put_line("   bs-nets static H      :" & natural'image(net_count_statistics.bs_static_h));
+   		put_line("   bs-nets static L      :" & natural'image(net_count_statistics.bs_static_l));	
+ 		put_line(" bs-nets dynamic         :" & natural'image(net_count_statistics.bs_dynamic));
+ 		put_line(" bs-nets testable        :" & natural'image(net_count_statistics.bs_testable));
 		put_line("---------------------------------------------------");
 		put_line(section_mark.endsection);
 	end write_new_statistics;
@@ -2907,20 +2612,6 @@ begin
 	-- options netlist ready in list_of_options_nets. 
 	-- database netlist ready in list_of_nets.
 
--- CS: It's too confusing outputting statistics at this stage. So this block is commented.
--- CS: compare net numbers ?
---	put_line("comparing net count");
---	if total_options_net_count < udb_summary.net_count_statistics.total then
---		put_line("WARNING: Number of nets found in options file differs from number those in data base !");
---		put_line("options net count   : " & natural'image(total_options_net_count));
-
-		--put_line("data base net count : " & natural'image(udb_summary.net_count_statistics.bs_testable));
-		-- it makes not sense to output number of bs_testable, because chkpsn runs on a newly generated udb (made by mknets).
-		-- a brand new udb has all nets in class NA, hence there are no bs_testable nets (if judged by net classes)
-
---		put_line("data base net count : " & natural'image(udb_summary.net_count_statistics.total));
---	end if;
-
 	-- create premilinary data base (contining scanpath_configuration and registers)	
 	prog_position := 70;
 	write_message (
@@ -2959,7 +2650,9 @@ begin
 	prog_position := 150;	
 	write_new_cell_lists;
 
-	prog_position := 160;		
+	prog_position := 160;
+	write_new_statistics;	
+	
 	write_message (
 		file_handle => file_chkpsn_messages,
 		text => "closing preliminary " & text_identifier_database & " ...",
@@ -2970,40 +2663,40 @@ begin
 
 	
 
-	-- check preliminary database and obtain summary
-	prog_position := 170;	
-	write_message (
-		file_handle => file_chkpsn_messages,
-		text => "parsing preliminary " & text_identifier_database & " ...",
-		console => false);
-
-	-- set preliminary database as default
-	name_file_database := to_bounded_string(name_file_database_preliminary);
-	degree_of_database_integrity_check := light;
-	read_uut_database;
-	-- summary now available
+-- 	-- check preliminary database and obtain summary
+-- 	prog_position := 170;	
+-- 	write_message (
+-- 		file_handle => file_chkpsn_messages,
+-- 		text => "parsing preliminary " & text_identifier_database & " ...",
+-- 		console => false);
+-- 
+-- 	-- set preliminary database as default
+-- 	name_file_database := to_bounded_string(name_file_database_preliminary);
+-- 	degree_of_database_integrity_check := light;
+-- 	read_uut_database;
+-- 	-- summary now available
 
 
 
 	
 	-- reopen preliminary database in append mode
-	prog_position := 175;		
-	write_message (
-		file_handle => file_chkpsn_messages,
-		text => "reopening preliminary " & text_identifier_database 
-			& row_separator_0 & to_string(name_file_database) & " ...",
-		console => false);
-
-	prog_position := 180;	
-	open( 
-		file => file_database_preliminary,
-		mode => append_file,
-		name => to_string(name_file_database)
-		);
-	prog_position := 190;	
-	set_output(file_database_preliminary);
-	write_new_statistics;
-	close(file_database_preliminary);
+-- 	prog_position := 175;		
+-- 	write_message (
+-- 		file_handle => file_chkpsn_messages,
+-- 		text => "reopening preliminary " & text_identifier_database 
+-- 			& row_separator_0 & to_string(name_file_database) & " ...",
+-- 		console => false);
+-- 
+-- 	prog_position := 180;	
+-- 	open( 
+-- 		file => file_database_preliminary,
+-- 		mode => append_file,
+-- 		name => to_string(name_file_database)
+-- 		);
+-- 	prog_position := 190;	
+-- 	set_output(file_database_preliminary);
+-- 	write_new_statistics;
+-- 	close(file_database_preliminary);
 	
 	-- overwrite now useless old data base with temporarily data base
 	prog_position := 200;
