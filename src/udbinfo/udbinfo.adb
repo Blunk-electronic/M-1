@@ -99,13 +99,13 @@ begin
 	end if;
 
 	prog_position	:= 50;
-	degree_of_database_integrity_check := light;
+--	degree_of_database_integrity_check := light;
 	read_uut_database;
 
 	prog_position	:= 60;
 	case object_type_in_database is
-		when net => print_net_info(to_string(object_name_in_database));
-		when bic => print_bic_info(to_string(object_name_in_database));
+		when net => print_net_info(type_net_name.to_bounded_string(to_string(object_name_in_database)));
+		when bic => print_bic_info(type_device_name.to_bounded_string(to_string(object_name_in_database)));
 		when scc => 
 			separator_position := index(object_name_in_database,separator);
 			length_of_inquired_target := length(object_name_in_database);
@@ -119,6 +119,13 @@ begin
 		when others => null;
 	end case;
 
+	write_message (
+		file_handle => file_udbinfo_messages,
+		text => "Find a lot of information on the requested item in " & name_file_udbinfo_messages,
+		console => true,
+		file => false
+		);
+	
 	prog_position	:= 60;
 	write_log_footer;
 
