@@ -113,7 +113,7 @@ begin
 			inquired_target_sub_2 := to_bounded_string(slice(object_name_in_database,separator_position+1, length_of_inquired_target));
 
 			print_scc_info(
-				bic_name 			=> to_string(inquired_target_sub_1),
+				bic_name 			=> type_device_name.to_bounded_string(to_string(inquired_target_sub_1)),
 				control_cell_id		=> natural'value(to_string(inquired_target_sub_2))
 				);
 		when others => null;

@@ -58,7 +58,7 @@ with m1_firmware;				use m1_firmware;
 
 
 procedure bsmcl is
-	version			: constant string (1..3) := "028";
+	version			: constant string (1..3) := "001";
 	prog_position	: string (1..5) := "-----";
 
 	result   		: integer; -- the return code of external programs
@@ -130,8 +130,8 @@ procedure bsmcl is
 		if exists(to_string(database)) then
 			file_exists := true;
 		else
-			put_line(message_error & text_identifier_database & quote_single & to_string(database) & quote_single &
-				" does not exist" & exclamation);
+			put_line(message_error & text_identifier_database & row_separator_0 & to_string(database) 
+				& " does not exist !");
 		end if;
 		return file_exists;
 	end exists_database;

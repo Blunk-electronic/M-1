@@ -485,7 +485,7 @@ procedure compseq is
 		cell_id_upper_end		: natural := 0; -- holds the id of the upper bit in register wise assigments
 		cell_id_lower_end		: natural := 0; -- holds the id of the lower bit in register wise assigments
 
-		bic_valid : boolean := true;
+-- 		bic_valid : boolean := true;
 		
 		function update_pattern(
 		-- if assigment is register_wise !
@@ -586,7 +586,7 @@ procedure compseq is
 		end update_pattern;
 
 
-        procedure update_whole_register (bic : in out type_bscan_ic) is
+        procedure update_whole_register (key : in type_device_name.bounded_string; bic : in out type_bscan_ic) is
         begin
 			case set_direction is
 				when drv => -- update drive image
@@ -753,7 +753,7 @@ procedure compseq is
 			end case;
         end update_whole_register;
 
-        procedure update_bit_of_register (bic : in out type_bscan_ic) is
+        procedure update_bit_of_register (key : in type_device_name.bounded_string; bic : in out type_bscan_ic) is
         begin
 			for c in 5..field_ct loop
 				cell_assignment := get_cell_assignment(get_field_from_line(cmd,c));
@@ -818,146 +818,146 @@ procedure compseq is
 			end loop;
 		end update_bit_of_register;
 
+		-- set bic_cursor. this is an indirect check if bic is valid.
+		bic_cursor : type_list_of_bics.cursor := find(list_of_bics, to_bounded_string(get_field_from_line(cmd,2)));
+		bic : type_bscan_ic;
 		
-		begin -- compile_command_set
-		for b in 1..length(list_of_bics) loop
+	begin -- compile_command_set
+	-- 		for b in 1..length(list_of_bics) loop
+-- 		while bic_cursor /= type_list_of_bics.no_element loop
 			-- NOTE: element(list_of_bics, positive(b)) means the current bic
 
 			-- scanpath_being_compiled holds the id of the current scanpath.
 			-- We care for a device in that scanpath. if not in scanpath_being_compiled it is skipped.
-			-- Ff the device is in scanpath being compiled.
-			if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then 
+			-- 			if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then
 
-				-- If bic name is valid:
-				if element(list_of_bics, positive(b)).name = to_bounded_string(get_field_from_line(cmd,2)) then
+		bic := element(bic_cursor); -- load bic
+		if bic.chain = scanpath_being_compiled then 
+		
+			-- set set_direction flag
+			if get_field_from_line(cmd,3) = sxr_io_identifier.drive then -- if "drv" found
+				set_direction := drv;
+			elsif get_field_from_line(cmd,3) = sxr_io_identifier.expect then -- if "drv" found
+				set_direction := exp;
+			else
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & "expected keyword '" & sxr_io_identifier.drive 
+						& "' or '" & sxr_io_identifier.expect & "' after device name !",
+					console => true);
+				raise constraint_error;
+			end if;
 
-					-- set set_direction flag
-					if get_field_from_line(cmd,3) = sxr_io_identifier.drive then -- if "drv" found
-						set_direction := drv;
-					elsif get_field_from_line(cmd,3) = sxr_io_identifier.expect then -- if "drv" found
-						set_direction := exp;
-					else
-						write_message (
-							file_handle => file_compiler_messages,
-							text => message_error & "expected keyword '" & sxr_io_identifier.drive 
-								& "' or '" & sxr_io_identifier.expect & "' after device name !",
-							console => true);
-						raise constraint_error;
-					end if;
+						-- set target register and set cell_id_max for later checking the cell id
+						-- CS: do something more professional like
+		-- 						case set_register is
+		-- 							when ir 		=> 
+		-- 							when idcode 	=> 
+		-- 							when usercode	=> 
+		-- 							when boundary	=> 
+		-- 							when bypass 	=> 
+		-- 						end case;
 
-					-- set target register and set cell_id_max for later checking the cell id
-					-- CS: do something more professional like
-	-- 						case set_register is
-	-- 							when ir 		=> 
-	-- 							when idcode 	=> 
-	-- 							when usercode	=> 
-	-- 							when boundary	=> 
-	-- 							when bypass 	=> 
-	-- 						end case;
-					if get_field_from_line(cmd,4) = sir_target_register.ir then
-						target_register := ir;
-						cell_id_max := element(list_of_bics, positive(b)).len_ir - 1;
-					elsif get_field_from_line(cmd,4) = sdr_target_register.boundary then
-						target_register := boundary;
-						cell_id_max := element(list_of_bics, positive(b)).len_bsr - 1;
-					elsif get_field_from_line(cmd,4) = sdr_target_register.bypass then
-						target_register := bypass;
-						cell_id_max := bic_bypass_register_length - 1;
-					elsif get_field_from_line(cmd,4) = sdr_target_register.idcode then
-						target_register := idcode;
-						cell_id_max := bic_idcode_register_length - 1;
-					elsif get_field_from_line(cmd,4) = sdr_target_register.usercode then
-						target_register := usercode;
-						cell_id_max := bic_usercode_register_length - 1;
-					else
-						write_message (
-							file_handle => file_compiler_messages,
-							text => message_error & "invalid register name found ! Supported registers are:",
-							console => true);
+			if get_field_from_line(cmd,4) = sir_target_register.ir then
+				target_register := ir;
+				cell_id_max := bic.len_ir - 1;
+			elsif get_field_from_line(cmd,4) = sdr_target_register.boundary then
+				target_register := boundary;
+				cell_id_max := bic.len_bsr - 1;
+			elsif get_field_from_line(cmd,4) = sdr_target_register.bypass then
+				target_register := bypass;
+				cell_id_max := bic_bypass_register_length - 1;
+			elsif get_field_from_line(cmd,4) = sdr_target_register.idcode then
+				target_register := idcode;
+				cell_id_max := bic_idcode_register_length - 1;
+			elsif get_field_from_line(cmd,4) = sdr_target_register.usercode then
+				target_register := usercode;
+				cell_id_max := bic_usercode_register_length - 1;
+			else
+				write_message (
+					file_handle => file_compiler_messages,
+					text => message_error & "invalid register name found ! Supported registers are:",
+					console => true);
 
-						for r in 0..type_set_target_register'pos(type_set_target_register'last) loop
-							write_message (
-								file_handle => file_compiler_messages,
-								text => row_separator_0 & to_lower(type_set_target_register'image(type_set_target_register'val(r))),
-								console => true);
-						end loop;
-						raise constraint_error;
-					end if;
+				for r in 0..type_set_target_register'pos(type_set_target_register'last) loop
+					write_message (
+						file_handle => file_compiler_messages,
+						text => row_separator_0 & to_lower(type_set_target_register'image(type_set_target_register'val(r))),
+						console => true);
+				end loop;
+				raise constraint_error;
+			end if;
 
-					-- set assignment method (bit-wise or register-wise)
-					-- if "downto" found in field 6, the assignment method is assumed as "register-wise"
-					-- if no "downto" found in field 6, we assume "bit-wise" assignment
-					if get_field_from_line(cmd,6) = sxr_vector_orientation.downto then
-						set_assignment_method 	:= register_wise;
-						set_vector_orientation	:= downto;
+			-- set assignment method (bit-wise or register-wise)
+			-- if "downto" found in field 6, the assignment method is assumed as "register-wise"
+			-- if no "downto" found in field 6, we assume "bit-wise" assignment
+			if get_field_from_line(cmd,6) = sxr_vector_orientation.downto then
+				set_assignment_method 	:= register_wise;
+				set_vector_orientation	:= downto;
 
-						-- check if upper cell id is within targeted register
-						-- and save cell id as cell_id_upper_end
-						if natural'value(get_field_from_line(cmd,5)) <= cell_id_max then
-							cell_id_upper_end := natural'value(get_field_from_line(cmd,5));
-						else
-							write_message (
-								file_handle => file_compiler_messages,
-								text => "upper end cell id must be below or equal" & natural'image(cell_id_max) & " for this register !",
-								console => true);
-							raise constraint_error;
-						end if;
+				-- check if upper cell id is within targeted register
+				-- and save cell id as cell_id_upper_end
+				if natural'value(get_field_from_line(cmd,5)) <= cell_id_max then
+					cell_id_upper_end := natural'value(get_field_from_line(cmd,5));
+				else
+					write_message (
+						file_handle => file_compiler_messages,
+						text => "upper end cell id must be below or equal" & natural'image(cell_id_max) & " for this register !",
+						console => true);
+					raise constraint_error;
+				end if;
 
-						-- check if lower cell id is below cell_id_upper_end
-						-- and save cell id as cell_id_lower_end
-						if natural'value(get_field_from_line(cmd,7)) <= cell_id_upper_end then
-							cell_id_lower_end := natural'value(get_field_from_line(cmd,7));
-						else
-							write_message (
-								file_handle => file_compiler_messages,
-								text => "lower end cell id must be below or equal" & natural'image(cell_id_upper_end) & " for this register !",
-								console => true);
-							raise constraint_error;
-						end if;
+				-- check if lower cell id is below cell_id_upper_end
+				-- and save cell id as cell_id_lower_end
+				if natural'value(get_field_from_line(cmd,7)) <= cell_id_upper_end then
+					cell_id_lower_end := natural'value(get_field_from_line(cmd,7));
+				else
+					write_message (
+						file_handle => file_compiler_messages,
+						text => "lower end cell id must be below or equal" & natural'image(cell_id_upper_end) & " for this register !",
+						console => true);
+					raise constraint_error;
+				end if;
 
 
-					elsif get_field_from_line(cmd,6) = sxr_vector_orientation.to then
-						set_assignment_method 	:= register_wise;
-						set_vector_orientation	:= to;
-						
-						write_message (
-							file_handle => file_compiler_messages,
-							text => "register-wise assignment not supported with identifier '" & sxr_vector_orientation.to & "' !"
-								& latin_1.lf & "Check MSB, LSB and use '" & sxr_vector_orientation.downto & "' instead !",
-							console => true);
-						raise constraint_error;
-						-- CS: should be supported
-					else
-						set_assignment_method := bit_wise;
-					end if;
+			elsif get_field_from_line(cmd,6) = sxr_vector_orientation.to then
+				set_assignment_method 	:= register_wise;
+				set_vector_orientation	:= to;
+				
+				write_message (
+					file_handle => file_compiler_messages,
+					text => "register-wise assignment not supported with identifier '" & sxr_vector_orientation.to & "' !"
+						& latin_1.lf & "Check MSB, LSB and use '" & sxr_vector_orientation.downto & "' instead !",
+					console => true);
+				raise constraint_error;
+				-- CS: should be supported
+			else
+				set_assignment_method := bit_wise;
+			end if;
 
-					case set_assignment_method is
-						when register_wise =>
-							update_element(list_of_bics, positive(b), update_whole_register'access );
+			case set_assignment_method is
+				when register_wise =>
+					-- 	update_element(list_of_bics, positive(b), update_whole_register'access );
+					update_element(list_of_bics, bic_cursor, update_whole_register'access );
 
-						when bit_wise =>
-							update_element(list_of_bics, positive(b), update_bit_of_register'access );
-							-- CS: verify the instruction is valid !
-					end case;
+				when bit_wise =>
+					update_element(list_of_bics, bic_cursor, update_bit_of_register'access );
+					-- CS: verify the instruction is valid !
+			end case;
 
-					bic_valid := true;					
-					exit; -- no more bic searching required exit here
-					
-				end if; -- if bic is valid
-					
-			end if; -- on scanpath match
+		end if; -- on scanpath match
 				
 			-- CS: field 10 not read any more -> make it a comment
-		end loop;
+-- 		end loop;
 
-		if not bic_valid then -- if device is not a bic
-			write_message (
-				file_handle => file_compiler_messages,
-				text => "device " & get_field_from_line(cmd,2)
-					& " is not part of any scanpath ! Check name and capitalization !",
-				console => true);
-			raise constraint_error;
-		end if;
+-- 		if not bic_valid then -- if device is not a bic
+-- 			write_message (
+-- 				file_handle => file_compiler_messages,
+-- 				text => "device " & get_field_from_line(cmd,2)
+-- 					& " is not part of any scanpath ! Check name and capitalization !",
+-- 				console => true);
+-- 			raise constraint_error;
+-- 		end if;
 			
 	end compile_command_set;
 
@@ -1075,7 +1075,6 @@ procedure compseq is
             sir_drive	: type_sir_image;
             sir_expect	: type_sir_image;
             sir_mask	: type_sir_image;
-    -- 		b 			: type_ptr_bscan_ic;
 
             pos_start	: positive := 1;
             pos_end		: positive;
@@ -1152,7 +1151,6 @@ procedure compseq is
         -- adds images to list of test steps (pointed to by ptr_test_step_pre)
 
             length_total 	: natural := trailer_length; -- the trailer is always included
-    -- 		b 				: type_ptr_bscan_ic;
 
             procedure build_sdr_image is
             -- with the total length known, the overall sdr image can be created
@@ -1160,149 +1158,255 @@ procedure compseq is
                 sdr_drive	: type_sdr_image;
                 sdr_expect	: type_sdr_image;
                 sdr_mask	: type_sdr_image;
-    -- 			b 			: type_ptr_bscan_ic;
 
                 pos_start	: positive := 1;
                 pos_end		: positive;
 
+				bic_cursor : type_list_of_bics.cursor := last(list_of_bics);
+				bic : type_bscan_ic;
+				pos : count_type := 1 + length(list_of_bics); -- written in register file
             begin -- build_sdr_image
                 -- the last instruction loaded indicates the targeted data register
     -- 			for p in reverse 1..summary.bic_ct loop -- p defines the position (start with the highest position, close to BSC TDI)
     -- 				b := ptr_bic;
     -- 				while b /= null loop -- loop in bic list
-    -- 					if b.position = p then -- on position match
-                for b in 1..length(list_of_bics) loop
+	-- 					if b.position = p then -- on position match
+	
+				--for b in 1..length(list_of_bics) loop
+				while bic_cursor /= type_list_of_bics.no_element loop -- (start with the highest position, close to BSC TDI)
+					pos := pos - 1;
                     -- NOTE: element(list_of_bics, positive(b)) means the current bic
-                            if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- on scanpath match
+--                             if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- on scanpath match
+                            if element(bic_cursor).chain = scanpath_being_compiled then -- on scanpath match					
 
                                 -- element(list_of_bics, positive(b)).pattern_last_xxx_xxxx has MSB on the left (pos 1)
 
                                 -- if last instruction was BYPASS
-                                if element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_bypass) then
+--                                 if element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_bypass) then
+                                if element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_bypass) then								
                                     -- calculate end position to place bic-image
                                     pos_end := (pos_start + bic_bypass_register_length) - 1;
 
-                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_drive);
-                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_expect);
-                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_mask);
+--                                     sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_drive);
+--                                     sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_expect);
+--                                     sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_mask);
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(bic_cursor).pattern_last_bypass_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_bypass_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_bypass_mask);
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+--                                         & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
 
-                                -- if last instruction was EXTEST
-                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_extest) then
+								-- if last instruction was EXTEST
+--                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_extest) then
+								elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_extest) then								
                                     -- calculate end position to place bic-image
-                                    pos_end := (pos_start + element(list_of_bics, positive(b)).len_bsr) - 1;
+--                                     pos_end := (pos_start + element(list_of_bics, positive(b)).len_bsr) - 1;
+-- 
+--                                     sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_drive);
+--                                     sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_expect);
+--                                     sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_mask);
+-- 
+--                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
+--                                         & natural'image(vector_id) 
+--                                         & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
 
-                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_drive);
-                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_expect);
-                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_mask);
+                                    pos_end := (pos_start + element(bic_cursor).len_bsr) - 1;
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(bic_cursor).pattern_last_boundary_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_boundary_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_boundary_mask);
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+
 
                                 -- if last instruction was SAMPLE
-                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_sample) then
+-- 								elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_sample) then
+                                elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_sample) then								
                                     -- calculate end position to place bic-image
-                                    pos_end := (pos_start + element(list_of_bics, positive(b)).len_bsr) - 1;
+--                                     pos_end := (pos_start + element(list_of_bics, positive(b)).len_bsr) - 1;
+-- 
+--                                     sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_drive);
+--                                     sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_expect);
+--                                     sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_mask);
+-- 
+--                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
+--                                         & natural'image(vector_id) 
+--                                         & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
 
-                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_drive);
-                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_expect);
-                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_mask);
+                                    pos_end := (pos_start + element(bic_cursor).len_bsr) - 1;
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(bic_cursor).pattern_last_boundary_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_boundary_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_boundary_mask);
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
 
                                 -- if last instruction was PRELOAD
-                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_preload) then
-                                    -- calculate end position to place bic-image
-                                    pos_end := (pos_start + element(list_of_bics, positive(b)).len_bsr) - 1;
+--                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_preload) then
+--                                     -- calculate end position to place bic-image
+--                                     pos_end := (pos_start + element(list_of_bics, positive(b)).len_bsr) - 1;
+-- 
+--                                     sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_drive);
+--                                     sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_expect);
+--                                     sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_mask);
+-- 
+--                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
+--                                         & natural'image(vector_id) 
+--                                         & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
 
-                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_drive);
-                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_expect);
-                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_mask);
+                                elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_preload) then
+                                    -- calculate end position to place bic-image
+                                    pos_end := (pos_start + element(bic_cursor).len_bsr) - 1;
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(bic_cursor).pattern_last_boundary_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_boundary_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_boundary_mask);
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
 
                                 -- if last instruction was HIGHZ
-                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_highz) then
+--                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_highz) then
+--                                     -- calculate end position to place bic-image
+--                                     pos_end := (pos_start + bic_bypass_register_length) - 1;
+-- 
+--                                     sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_drive);
+--                                     sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_expect);
+--                                     sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_mask);
+-- 
+--                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
+--                                         & natural'image(vector_id) 
+--                                         & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+
+                                elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_highz) then
                                     -- calculate end position to place bic-image
                                     pos_end := (pos_start + bic_bypass_register_length) - 1;
 
-                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_drive);
-                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_expect);
-                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_mask);
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(bic_cursor).pattern_last_bypass_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_bypass_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_bypass_mask);
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
 
                                 -- if last instruction was CLAMP
-                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_clamp) then
+--                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_clamp) then
+--                                     -- calculate end position to place bic-image
+--                                     pos_end := (pos_start + bic_bypass_register_length) - 1;
+-- 
+--                                     sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_drive);
+--                                     sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_expect);
+--                                     sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_mask);
+-- 
+--                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
+--                                         & natural'image(vector_id) 
+--                                         & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+
+                                elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_clamp) then
                                     -- calculate end position to place bic-image
                                     pos_end := (pos_start + bic_bypass_register_length) - 1;
 
-                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_drive);
-                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_expect);
-                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_bypass_mask);
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(bic_cursor).pattern_last_bypass_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_bypass_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_bypass_mask);
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
 
                                 -- if last instruction was IDCODE
-                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_idcode) then
+--                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_idcode) then
+--                                     -- calculate end position to place bic-image
+--                                     pos_end := (pos_start + bic_idcode_register_length) - 1;
+-- 
+--                                     sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_idcode_drive);
+--                                     sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_idcode_expect);
+--                                     sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_idcode_mask);
+-- 
+--                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
+--                                         & natural'image(vector_id) 
+--                                         & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(IDCODE)));
+
+                                elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_idcode) then
                                     -- calculate end position to place bic-image
                                     pos_end := (pos_start + bic_idcode_register_length) - 1;
 
-                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_idcode_drive);
-                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_idcode_expect);
-                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_idcode_mask);
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(bic_cursor).pattern_last_idcode_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_idcode_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_idcode_mask);
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(IDCODE)));
+                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(IDCODE)));
 
                                 -- if last instruction was USERCODE
-                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_usercode) then
+--                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_usercode) then
+--                                     -- calculate end position to place bic-image
+--                                     pos_end := (pos_start + bic_usercode_register_length) - 1;
+-- 
+--                                     sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_usercode_drive);
+--                                     sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_usercode_expect);
+--                                     sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_usercode_mask);
+-- 
+--                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
+--                                         & natural'image(vector_id) 
+--                                         & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(USERCODE)));
+
+                                elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_usercode) then
                                     -- calculate end position to place bic-image
                                     pos_end := (pos_start + bic_usercode_register_length) - 1;
 
-                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_usercode_drive);
-                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_usercode_expect);
-                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_usercode_mask);
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(bic_cursor).pattern_last_usercode_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_usercode_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_usercode_mask);
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(USERCODE)));
+                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(USERCODE)));
 
                                 -- if last instruction was INTEST
-                                elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_intest) then
-                                    -- calculate end position to place bic-image
-                                    pos_end := (pos_start + element(list_of_bics, positive(b)).len_bsr) - 1;
+--                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_intest) then
+--                                     -- calculate end position to place bic-image
+--                                     pos_end := (pos_start + element(list_of_bics, positive(b)).len_bsr) - 1;
+-- 
+--                                     sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_drive);
+--                                     sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_expect);
+--                                     sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_mask);
+-- 
+--                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
+--                                         & natural'image(vector_id) 
+--                                         & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
 
-                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_drive);
-                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_expect);
-                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_boundary_mask);
+                                elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_intest) then
+                                    -- calculate end position to place bic-image
+                                    pos_end := (pos_start + element(bic_cursor).len_bsr) - 1;
+
+                                    sdr_drive(pos_start..pos_end) 	:= mirror_class_0(element(bic_cursor).pattern_last_boundary_drive);
+                                    sdr_expect(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_boundary_expect);
+                                    sdr_mask(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_boundary_mask);
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
 
                                 end if;
 
 
                                 -- calculate start position to place next image
                                 pos_start := pos_end + 1;
-                            end if;
-    -- 					end if;
-    -- 					b := b.next;
-    -- 				end loop;
+							end if;
+
+					previous(bic_cursor);
                 end loop;
 
                 -- insert trailer at begin of drive image (so that the trailer gets sent into the target FIRST)
@@ -1342,53 +1446,91 @@ procedure compseq is
 
             end build_sdr_image;
 
+			bic_cursor : type_list_of_bics.cursor := first(list_of_bics);
+			
         begin -- concatenate_sdr_images
             -- calculate total length of sdr image depending on latest loaded instructions
             -- from the total sdr length, the overall sdr image can be created
     -- 		for p in 1..summary.bic_ct loop -- p defines the position
     -- 			b := ptr_bic;
     -- 			while b /= null loop -- loop in bic list
-    -- 				if b.position = p then -- on position match
-                for b in 1..length(list_of_bics) loop
-                    -- NOTE: element(list_of_bics, positive(b)) means the current bic
-                        if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- on scanpath match
+	-- 				if b.position = p then -- on position match
+	
+--                 for b in 1..length(list_of_bics) loop
+			while bic_cursor /= type_list_of_bics.no_element loop	
+--                     -- NOTE: element(list_of_bics, positive(b)) means the current bic
+--                         if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- on scanpath match
+-- 
+--                             -- chaining sdr drv and exp patterns starting with device closest to BSC TDO !
+--                             -- use drv pattern depending on latest loaded instruction of particular device
+-- 
+--                             if element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_bypass) then
+--                                 length_total := length_total + bic_bypass_register_length;
+--                             elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_extest) then
+--                                 length_total := length_total + element(list_of_bics, positive(b)).len_bsr;
+--                             elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_sample) then
+--                                 length_total := length_total + element(list_of_bics, positive(b)).len_bsr;
+--                             elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_preload) then
+--                                 length_total := length_total + element(list_of_bics, positive(b)).len_bsr;
+--                             elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_highz) then
+--                                 length_total := length_total + bic_bypass_register_length;
+--                             elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_clamp) then
+--                                 length_total := length_total + bic_bypass_register_length;
+--                             elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_idcode) then
+--                                 length_total := length_total + bic_idcode_register_length;
+--                             elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_usercode) then
+--                                 length_total := length_total + bic_usercode_register_length;
+--                             elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_intest) then
+--                                 length_total := length_total + element(list_of_bics, positive(b)).len_bsr;
+--                             else
+-- 								write_message (
+-- 									file_handle => file_compiler_messages,
+-- 									text => message_error & "instruction opcode for device " 
+-- 										& to_string(element(list_of_bics, positive(b)).name) 
+-- 										& " does not match any instruction covered in Std. " & bscan_standard_1,
+-- 									console => true);
+--                                 raise constraint_error;
+--                             end if;
+-- 
+--                         end if;
 
-                            -- chaining sdr drv and exp patterns starting with device closest to BSC TDO !
-                            -- use drv pattern depending on latest loaded instruction of particular device
+				if element(bic_cursor).chain = scanpath_being_compiled then -- on scanpath match
 
-                            if element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_bypass) then
-                                length_total := length_total + bic_bypass_register_length;
-                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_extest) then
-                                length_total := length_total + element(list_of_bics, positive(b)).len_bsr;
-                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_sample) then
-                                length_total := length_total + element(list_of_bics, positive(b)).len_bsr;
-                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_preload) then
-                                length_total := length_total + element(list_of_bics, positive(b)).len_bsr;
-                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_highz) then
-                                length_total := length_total + bic_bypass_register_length;
-                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_clamp) then
-                                length_total := length_total + bic_bypass_register_length;
-                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_idcode) then
-                                length_total := length_total + bic_idcode_register_length;
-                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_usercode) then
-                                length_total := length_total + bic_usercode_register_length;
-                            elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_intest) then
-                                length_total := length_total + element(list_of_bics, positive(b)).len_bsr;
-                            else
-								write_message (
-									file_handle => file_compiler_messages,
-									text => message_error & "instruction opcode for device " 
-										& to_string(element(list_of_bics, positive(b)).name) 
-										& " does not match any instruction covered in Std. " & bscan_standard_1,
-									console => true);
-                                raise constraint_error;
-                            end if;
+					-- chaining sdr drv and exp patterns starting with device closest to BSC TDO !
+					-- use drv pattern depending on latest loaded instruction of particular device
 
-                        end if;
-    -- 				end if;
-    -- 				b := b.next;
-                end loop;
-    -- 		end loop;
+					if element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_bypass) then
+						length_total := length_total + bic_bypass_register_length;
+					elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_extest) then
+						length_total := length_total + element(bic_cursor).len_bsr;
+					elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_sample) then
+						length_total := length_total + element(bic_cursor).len_bsr;
+					elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_preload) then
+						length_total := length_total + element(bic_cursor).len_bsr;
+					elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_highz) then
+						length_total := length_total + bic_bypass_register_length;
+					elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_clamp) then
+						length_total := length_total + bic_bypass_register_length;
+					elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_idcode) then
+						length_total := length_total + bic_idcode_register_length;
+					elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_usercode) then
+						length_total := length_total + bic_usercode_register_length;
+					elsif element(bic_cursor).pattern_last_ir_drive = replace_dont_care(element(bic_cursor).opc_intest) then
+						length_total := length_total + element(bic_cursor).len_bsr;
+					else
+						write_message (
+							file_handle => file_compiler_messages,
+							text => message_error & "instruction opcode for device " 
+								& to_string(element(bic_cursor).name) 
+								& " does not match any instruction covered in Std. " & bscan_standard_1,
+							console => true);
+						raise constraint_error;
+					end if;
+
+				end if;
+
+				next(bic_cursor);
+    		end loop;
 
             -- length_total now contains the length of the overall sdr image
             build_sdr_image;
