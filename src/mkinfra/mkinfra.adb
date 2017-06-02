@@ -104,36 +104,46 @@ procedure mkinfra is
 	procedure write_sequences is
 
 		procedure one_of_all( 
-			position	: positive; 
-			instruction	: type_bic_instruction_for_infra_structure;
-			write_sxr	: boolean := true
+-- 			position	: positive; 
+			bic_cursor	: in type_list_of_bics.cursor;
+			instruction	: in type_bic_instruction_for_infra_structure;
+			write_sxr	: in boolean := true
 			) is
 		begin -- one_of_all
-			for b in 1..type_list_of_bics.length(list_of_bics) loop    
-				if positive(b) = position then -- if bic id matches position:
+-- 			for b in 1..type_list_of_bics.length(list_of_bics) loop    
+-- 				if positive(b) = position then -- if bic id matches position:
 
 					-- if desired instruction does not exist, skip writing test vector and exit
 					case instruction is
-						when bypass		=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_bypass) 
+-- 						when bypass		=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_bypass)
+						when bypass		=> if not instruction_present(element(bic_cursor).opc_bypass)  
 							then 
 								write_message (
 									file_handle => file_mkinfra_messages,
-									text => message_error & "device " & to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) 
+-- 									text => message_error & "device " & to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) 
+									text => message_error & "device " & to_string(key(bic_cursor)) 
 											& "' does not support mandatory " & type_bic_instruction'image(bypass) & " mode !",
 									console => true);
 								raise constraint_error;
 							end if;
-						when idcode		=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_idcode) then exit; end if;
-						when usercode	=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_usercode) then exit; end if;
-						when preload	=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_preload) then exit; end if;
-						when sample		=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_sample) then
+-- 						when idcode		=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_idcode) then exit; end if;
+-- 						when usercode	=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_usercode) then exit; end if;
+-- 						when preload	=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_preload) then exit; end if;
+-- 						when sample		=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_sample) then
+						when idcode		=> if not instruction_present(element(bic_cursor).opc_idcode) then goto label_end; end if;
+						when usercode	=> if not instruction_present(element(bic_cursor).opc_usercode) then goto label_end; end if;
+						when preload	=> if not instruction_present(element(bic_cursor).opc_preload) then goto label_end; end if;
+						when sample		=> if not instruction_present(element(bic_cursor).opc_sample) then
 							write_message (
 								file_handle => file_mkinfra_messages,
-								text => message_warning & "device " & to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) 
+-- 								text => message_warning & "device " & to_string(type_list_of_bics.element(list_of_bics,positive(b)).name)
+								text => message_warning & "device " & to_string(key(bic_cursor))  
 									 & "' does not support " & type_bic_instruction'image(sample) & " mode !",
 								console => true);
-							exit; end if;
-						when extest		=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_extest) then exit; end if;
+-- 							exit; end if;
+							goto label_end; end if;
+-- 						when extest		=> if not instruction_present(type_list_of_bics.element(list_of_bics,positive(b)).opc_extest) then exit; end if;
+						when extest		=> if not instruction_present(element(bic_cursor).opc_extest) then goto label_end; end if;
 					end case;
 					-- instruction exists
 
@@ -142,27 +152,36 @@ procedure mkinfra is
 					--new_line(file_sequence);
 					put(file_sequence, row_separator_0 
 						& sequence_instruction_set.set & row_separator_0
-						& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+-- 						& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+						& to_string(key(bic_cursor)) & row_separator_0
 						& sxr_io_identifier.drive & row_separator_0
 						& sir_target_register.ir
-						& type_register_length'image(type_list_of_bics.element(list_of_bics,positive(b)).len_ir - 1) & row_separator_0
+-- 						& type_register_length'image(type_list_of_bics.element(list_of_bics,positive(b)).len_ir - 1) & row_separator_0
+						& type_register_length'image(element(bic_cursor).len_ir - 1) & row_separator_0
 						& sxr_vector_orientation.downto & row_separator_0 & "0" & row_separator_0
 						& sxr_assignment_operator.assign & row_separator_0
 						);
+
 					-- write instruction depended part
 					case instruction is
-						when idcode => 		put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).opc_idcode); -- example: "11111110 idcode"
-						when usercode => 	put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).opc_usercode);
-						when sample => 		put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).opc_sample);
-						when preload =>		put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).opc_preload);
+-- 						when idcode => 		put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).opc_idcode); -- example: "11111110 idcode"
+-- 						when usercode => 	put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).opc_usercode);
+-- 						when sample => 		put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).opc_sample);
+-- 						when preload =>		put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).opc_preload);
+						when idcode => 		put_binary_class_1(file => file_sequence, binary_in => element(bic_cursor).opc_idcode); -- example: "11111110 idcode"
+						when usercode => 	put_binary_class_1(file => file_sequence, binary_in => element(bic_cursor).opc_usercode);
+						when sample => 		put_binary_class_1(file => file_sequence, binary_in => element(bic_cursor).opc_sample);
+						when preload =>		put_binary_class_1(file => file_sequence, binary_in => element(bic_cursor).opc_preload);
 						when extest => 
 							write_message (
 								file_handle => file_mkinfra_messages,
-								text => message_warning & "device " & to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) 
+-- 								text => message_warning & "device " & to_string(type_list_of_bics.element(list_of_bics,positive(b)).name)
+								text => message_warning & "device " & to_string(key(bic_cursor))  
 									 & "' WILL BE OPERATED IN " & type_bic_instruction'image(extest) & " MODE !",
 								console => true);
 
-							put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).opc_extest);
+-- 							put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).opc_extest);
+							put_binary_class_1(file => file_sequence, binary_in => element(bic_cursor).opc_extest);
 						when others => 
 							write_message (
 								file_handle => file_mkinfra_messages,
@@ -182,9 +201,11 @@ procedure mkinfra is
 					-- example: "set IC300 drv"
 					put(file_sequence, row_separator_0 
 						& sequence_instruction_set.set & row_separator_0
-						& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+-- 						& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+						& to_string(key(bic_cursor)) & row_separator_0
 						& sxr_io_identifier.drive & row_separator_0
 						);
+
 					-- write instruction depended part
 					case instruction is
 						when idcode =>
@@ -213,11 +234,13 @@ procedure mkinfra is
 						when others => -- sample, preload, extest
 							-- example: "boundary 5 downto 0 := XXX11"
 							put(file_sequence, sdr_target_register.boundary
-								& natural'image(type_list_of_bics.element(list_of_bics,positive(b)).len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto 
+-- 								& natural'image(type_list_of_bics.element(list_of_bics,positive(b)).len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto
+								& natural'image(element(bic_cursor).len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto  
 								& " 0 "
 								& sxr_assignment_operator.assign & row_separator_0
 							   );
-							put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).safebits);
+-- 							put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).safebits);
+							put_binary_class_1(file => file_sequence, binary_in => element(bic_cursor).safebits);
 							new_line(file_sequence);
 					end case;
 					
@@ -225,9 +248,11 @@ procedure mkinfra is
 					-- example: "set IC300 exp"
 					put(file_sequence, row_separator_0 
 						& sequence_instruction_set.set & row_separator_0
-						& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+-- 						& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+						& to_string(key(bic_cursor)) & row_separator_0
 						& sxr_io_identifier.expect & row_separator_0
 						);
+		
 					-- write instruction depended part
 					case instruction is
 						when idcode =>
@@ -239,7 +264,8 @@ procedure mkinfra is
 								& " 0 "
 								& sxr_assignment_operator.assign & row_separator_0
 							   );
-							put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).idcode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
+-- 							put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).idcode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
+							put_binary_class_1(file => file_sequence, binary_in => element(bic_cursor).idcode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
 
 						when usercode =>
 							-- example: "usercode 31 downto 0 = xxxx1001010100000010000010010011"
@@ -250,13 +276,15 @@ procedure mkinfra is
 								& " 0 "
 								& sxr_assignment_operator.assign & row_separator_0
 							   );
-							put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).usercode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
+-- 							put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).usercode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
+							put_binary_class_1(file => file_sequence, binary_in => element(bic_cursor).usercode); -- expect the idcode acc. bsdl. regardless what has been written here (see above)
 							-- NOTE: if usercode not programmed yet, it is all x
 
 						when others => -- sample, preload, extest
 							-- example: "boundary 5 downto 0 := X"
 							put(file_sequence, sdr_target_register.boundary
-								& natural'image(type_list_of_bics.element(list_of_bics,positive(b)).len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto 
+-- 								& natural'image(type_list_of_bics.element(list_of_bics,positive(b)).len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto
+								& natural'image(element(bic_cursor).len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto  
 								& " 0 "
 								& sxr_assignment_operator.assign
 								& " X "
@@ -270,12 +298,14 @@ procedure mkinfra is
 					end if;
 					new_line(file_sequence);
 					
-					exit; -- bic addressed by p processed. no further search of bic required
-				end if; -- if bic id matches position
+-- 					exit; -- bic addressed by p processed. no further search of bic required
+-- 				end if; -- if bic id matches position
 
-			end loop;
+-- 			end loop;
+			<<label_end>>
 		end one_of_all;
 
+		bic_cursor : type_list_of_bics.cursor;
 	begin -- write_sequences
 		put_line("writing ir/dr scans for testing of ...");
 		
@@ -298,34 +328,43 @@ procedure mkinfra is
 -- 		set IC303 exp ir 7 downto 0 = 10000001
 -- 		sir id 1
 
-		for b in 1..type_list_of_bics.length(list_of_bics) loop    
+-- 		for b in 1..type_list_of_bics.length(list_of_bics) loop
+		bic_cursor := first(list_of_bics);
+		while bic_cursor /= no_element loop        
 
 			-- write instruction drive
 			put(file_sequence, row_separator_0 
 				& sequence_instruction_set.set & row_separator_0
-				& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+-- 				& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+				& to_string(key(bic_cursor)) & row_separator_0
 				& sxr_io_identifier.drive & row_separator_0
 				& sir_target_register.ir
-				& type_register_length'image(type_list_of_bics.element(list_of_bics,positive(b)).len_ir - 1) & row_separator_0
+-- 				& type_register_length'image(type_list_of_bics.element(list_of_bics,positive(b)).len_ir - 1) & row_separator_0
+				& type_register_length'image(element(bic_cursor).len_ir - 1) & row_separator_0
 				& sxr_vector_orientation.downto & row_separator_0 & "0" & row_separator_0
 				& sxr_assignment_operator.assign & row_separator_0
 			   );
-			put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).opc_bypass);
+-- 			put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).opc_bypass);
+			put_binary_class_1(file => file_sequence, binary_in => element(bic_cursor).opc_bypass);
 			put_line(file_sequence," bypass");
 
 			-- write instruction capture
 			put(file_sequence, row_separator_0 
 				& sequence_instruction_set.set & row_separator_0
-				& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+-- 				& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+				& to_string(key(bic_cursor)) & row_separator_0
 				& sxr_io_identifier.expect & row_separator_0
 				& sir_target_register.ir
-				& type_register_length'image(type_list_of_bics.element(list_of_bics,positive(b)).len_ir - 1) & row_separator_0
+-- 				& type_register_length'image(type_list_of_bics.element(list_of_bics,positive(b)).len_ir - 1) & row_separator_0
+				& type_register_length'image(element(bic_cursor).len_ir - 1) & row_separator_0
 				& sxr_vector_orientation.downto & row_separator_0 & "0" & row_separator_0
 				& sxr_assignment_operator.assign & row_separator_0
 			   );
-			put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).capture_ir);
+-- 			put_binary_class_1(file => file_sequence, binary_in => type_list_of_bics.element(list_of_bics,positive(b)).capture_ir);
+			put_binary_class_1(file => file_sequence, binary_in => element(bic_cursor).capture_ir);
 			new_line(file_sequence);
 
+			next(bic_cursor);
 		end loop;
 
 		write_sir;
@@ -342,12 +381,15 @@ procedure mkinfra is
 -- 		sdr id 2
 
 
-		for b in 1..type_list_of_bics.length(list_of_bics) loop                
+-- 		for b in 1..type_list_of_bics.length(list_of_bics) loop                
+		bic_cursor := first(list_of_bics);
+		while bic_cursor /= no_element loop
 
 			-- write data drive
 			put(file_sequence, row_separator_0 
 				& sequence_instruction_set.set & row_separator_0
-				& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+-- 				& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+				& to_string(key(bic_cursor)) & row_separator_0
 				& sxr_io_identifier.drive & row_separator_0
 				& sdr_target_register.bypass
 				& " 0" -- bit position (since this addresses the bypass register)
@@ -359,15 +401,20 @@ procedure mkinfra is
 			-- write data expect
 			put(file_sequence, row_separator_0 
 				& sequence_instruction_set.set & row_separator_0
-				& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+-- 				& to_string(type_list_of_bics.element(list_of_bics,positive(b)).name) & row_separator_0
+				& to_string(key(bic_cursor)) & row_separator_0
 				& sxr_io_identifier.expect & row_separator_0
 				& sdr_target_register.bypass
 				& " 0" -- bit position (since this addresses the bypass register)
 				& sxr_assignment_operator.assign
-				& type_bit_char_class_0'image(type_list_of_bics.element(list_of_bics,positive(b)).capture_bypass)(2) -- expect a 0 acc. std. regardless what has been written here (see above)
+-- 				& type_bit_char_class_0'image(type_list_of_bics.element(list_of_bics,positive(b)).capture_bypass)(2) 
+
+				-- expect a 0 acc. std. regardless what has been written here (see above)
+				& strip_quotes(type_bit_char_class_0'image(element(bic_cursor).capture_bypass))
 				);
 			new_line(file_sequence);
 
+			next(bic_cursor);
 		end loop;
 
 		write_sdr;
@@ -376,17 +423,24 @@ procedure mkinfra is
 		put_line(" idcodes ...");
 		new_line(file_sequence,2);
 		put_line(file_sequence, " -- IDCODE REGISTER TEST");
-		for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
-			one_of_all(p,idcode);
+-- 		for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
+-- 			one_of_all(p,idcode);
+-- 		end loop;
+		bic_cursor := first(list_of_bics);
+		while bic_cursor /= no_element loop
+			one_of_all( bic_cursor, idcode);
 		end loop;
-
 
 		-- USERCODE CHECK ---------------------
 		put_line(" usercodes ...");
 		new_line(file_sequence,2);
 		put_line(file_sequence," -- USERCODE REGISTER TEST");
-		for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
-			one_of_all(p,usercode);
+-- 		for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
+-- 			one_of_all(p,usercode);
+-- 		end loop;
+		bic_cursor := first(list_of_bics);
+		while bic_cursor /= no_element loop
+			one_of_all( bic_cursor, usercode);
 		end loop;
 
 		-- BOUNDARY REGISTER CHECK ---------------------
@@ -395,23 +449,36 @@ procedure mkinfra is
 		put_line(file_sequence," -- BOUNDARY REGISTER TEST");
 
 		-- We test the boundary registers in both the sample and preload mode:
-		for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
-			one_of_all(p,sample);
+-- 		for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
+-- 			one_of_all(p,sample);
+-- 		end loop;
+		bic_cursor := first(list_of_bics);
+		while bic_cursor /= no_element loop
+			one_of_all( bic_cursor, sample);
 		end loop;
 
-		for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
-			one_of_all(p,preload);
+-- 		for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
+-- 			one_of_all(p,preload);
+-- 		end loop;
+		bic_cursor := first(list_of_bics);
+		while bic_cursor /= no_element loop
+			one_of_all( bic_cursor, preload);
 		end loop;
 
 		-- CAUTION: USE FOR INTRUSIVE MODE ONLY
 		if algorithm = intrusive then
-			for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
-				one_of_all(
-					position 	=> p,
-					instruction => extest,
-					write_sxr	=> false
-					);
+-- 			for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
+-- 				one_of_all(
+-- 					position 	=> p,
+-- 					instruction => extest,
+-- 					write_sxr	=> false
+-- 					);
+-- 			end loop;
+			bic_cursor := first(list_of_bics);
+			while bic_cursor /= no_element loop
+				one_of_all( bic_cursor => bic_cursor, instruction => extest, write_sxr => false);
 			end loop;
+
 			write_sir; -- SWTICHING TO EXTEST MUST HAPPEN FOR ALL BICS SIMULTANEOUSLY
 			write_sdr;
 		end if;
