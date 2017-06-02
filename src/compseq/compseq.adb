@@ -1079,33 +1079,46 @@ procedure compseq is
             pos_start	: positive := 1;
             pos_end		: positive;
 
+			bic_cursor : type_list_of_bics.cursor := last(list_of_bics);
+			--bic : type_bscan_ic; -- CS: might speed up the procedure if used as temporaily storage
+			pos : count_type := 1 + length(list_of_bics); -- written in register file
+
+			
         begin -- concatenate_sir_images
     -- 		for p in reverse 1..summary.bic_ct loop -- p defines the position (start with the highest position, close to BSC TDI)
     -- 			b := ptr_bic;
     -- 			while b /= null loop -- loop in bic list
     -- 				if b.position = p then -- on position match
-            for b in 1..length(list_of_bics) loop
+			--for b in 1..length(list_of_bics) loop
+			while bic_cursor /= type_list_of_bics.no_element loop -- (start with the highest position, close to BSC TDI)
+				pos := pos - 1;
+
             -- NOTE: element(list_of_bics, positive(b)) means the current bic
-                if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- on scanpath match
+			--if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- on scanpath match
+				if element(bic_cursor).chain = scanpath_being_compiled then -- on scanpath match
 
                     -- start pos initiated already
                     -- calculate end position to place bic-image
-                    pos_end := (pos_start + element(list_of_bics, positive(b)).len_ir) - 1;
+					--                     pos_end := (pos_start + element(list_of_bics, positive(b)).len_ir) - 1;
+					pos_end := (pos_start + element(bic_cursor).len_ir) - 1;
 
-                    sir_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_ir_drive);
-                    sir_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_ir_expect);
-                    sir_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_ir_mask);
+--                     sir_drive(pos_start..pos_end) 	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_ir_drive);
+--                     sir_expect(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_ir_expect);
+--                     sir_mask(pos_start..pos_end)	:= mirror_class_0(element(list_of_bics, positive(b)).pattern_last_ir_mask);
+
+                    sir_drive(pos_start..pos_end) 	:= mirror_class_0(element(bic_cursor).pattern_last_ir_drive);
+                    sir_expect(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_ir_expect);
+                    sir_mask(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_ir_mask);
 
                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
-                        & positive'image(vector_id) & " device" & count_type'image(b) & " ir");
+                        & positive'image(vector_id) & " device" & count_type'image(pos) & " ir");
 
                     -- calculate start position to place next image
                     pos_start := pos_end + 1;
-                end if;
-    -- 				end if;
-    -- 				b := b.next;
-    -- 			end loop;
-            end loop;
+				end if;
+					
+				previous(bic_cursor);
+			end loop;
 
             -- insert trailer at begin of drive image (so that the trailer gets sent into the target FIRST)
             sir_drive := shift_class_0(sir_drive,right,trailer_length);
@@ -1163,7 +1176,7 @@ procedure compseq is
                 pos_end		: positive;
 
 				bic_cursor : type_list_of_bics.cursor := last(list_of_bics);
-				bic : type_bscan_ic;
+-- 				bic : type_bscan_ic; -- CS: might speed up the procedure if used as temporaily storage
 				pos : count_type := 1 + length(list_of_bics); -- written in register file
             begin -- build_sdr_image
                 -- the last instruction loaded indicates the targeted data register
@@ -1177,7 +1190,7 @@ procedure compseq is
 					pos := pos - 1;
                     -- NOTE: element(list_of_bics, positive(b)) means the current bic
 --                             if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- on scanpath match
-                            if element(bic_cursor).chain = scanpath_being_compiled then -- on scanpath match					
+                            if element(bic_cursor).chain = scanpath_being_compiled then -- on scanpath match
 
                                 -- element(list_of_bics, positive(b)).pattern_last_xxx_xxxx has MSB on the left (pos 1)
 
@@ -1521,7 +1534,7 @@ procedure compseq is
 						write_message (
 							file_handle => file_compiler_messages,
 							text => message_error & "instruction opcode for device " 
-								& to_string(element(bic_cursor).name) 
+								& to_string(key(bic_cursor)) 
 								& " does not match any instruction covered in Std. " & bscan_standard_1,
 							console => true);
 						raise constraint_error;
@@ -2884,7 +2897,8 @@ procedure compseq is
 			end loop;
 		end order_img;
 
-
+		bic_cursor : type_list_of_bics.cursor := last(list_of_bics);
+		pos : count_type := 0;
 	begin -- unknown_yet
 		--	set_output(standard_output);
 		-- 		put_line("found" & natural'image(summary.scanport_ct) & " scanpaths(s)");
@@ -2931,24 +2945,33 @@ procedure compseq is
 -- 				-- position search starts with position 1, that is the device closes to BSC TDO (first in subsection chain x)
 -- 					b := ptr_bic; -- set bic pointer at end of bic list
 -- 					while b /= null loop
-				for b in 1..length(list_of_bics) loop
+-- 				for b in 1..length(list_of_bics) loop
+				while bic_cursor /= type_list_of_bics.no_element loop
+					pos := pos + 1;
 				-- NOTE: element(list_of_bics, positive(b)) means the current bic
-						if element(list_of_bics, positive(b)).chain = sp then -- on match of scanpath id
+--					if element(list_of_bics, positive(b)).chain = sp then -- on match of scanpath id
+					if element(bic_cursor).chain = sp then -- on match of scanpath id				
 -- 							if b.position = p then -- on match of position 
-								-- write in register file something like "device 1 IC301 irl 8 bsl 108" in the reg file"
-								put_line(scanport(sp).register_file,"device" & count_type'image(b)
-									& row_separator_0 & to_string(element(list_of_bics, positive(b)).name)
-									& row_separator_0 & "irl" & positive'image(element(list_of_bics, positive(b)).len_ir)
-									& row_separator_0 & "bsl" & positive'image(element(list_of_bics, positive(b)).len_bsr)
-									);
+							-- write in register file something like "device 1 IC301 irl 8 bsl 108" in the reg file"
+-- 								put_line(scanport(sp).register_file,"device" & count_type'image(b)
+-- 									& row_separator_0 & to_string(element(list_of_bics, positive(b)).name)
+-- 									& row_separator_0 & "irl" & positive'image(element(list_of_bics, positive(b)).len_ir)
+-- 									& row_separator_0 & "bsl" & positive'image(element(list_of_bics, positive(b)).len_bsr)
+-- 									);
+							put_line(scanport(sp).register_file,"device" & count_type'image(pos)
+								& row_separator_0 & to_string(key(bic_cursor))
+								& row_separator_0 & "irl" & positive'image(element(bic_cursor).len_ir)
+								& row_separator_0 & "bsl" & positive'image(element(bic_cursor).len_bsr)
+								);
 
-								-- sum up irl of chain members of that scanpath
-								-- CS: assumption is that no device is bypassed or added/inserted in the chain later
-								--scanport(sp).irl_total := scanport(sp).irl_total + b.len_ir + trailer_length ;
-								scanport(sp).irl_total := scanport(sp).irl_total + element(list_of_bics, positive(b)).len_ir;
+							-- sum up irl of chain members of that scanpath
+							-- CS: assumption is that no device is bypassed or added/inserted in the chain later
+							--scanport(sp).irl_total := scanport(sp).irl_total + b.len_ir + trailer_length ;
+-- 								scanport(sp).irl_total := scanport(sp).irl_total + element(list_of_bics, positive(b)).len_ir;
+							scanport(sp).irl_total := scanport(sp).irl_total + element(bic_cursor).len_ir;
 -- 							end if;
-						end if;
--- 						b := b.next;
+					end if;
+					next(bic_cursor);
 -- 					end loop;
 				end loop;
 				-- add trailer length to obtain the total sir length

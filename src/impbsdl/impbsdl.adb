@@ -1361,19 +1361,25 @@ procedure impbsdl is
 
 	
 	procedure read_bsld_models is
-		bic				: type_bscan_ic_pre;
-
-		use type_long_string;
 		use type_list_of_bics_pre;
+		bic				: type_bscan_ic_pre;
+		bic_cursor		: type_list_of_bics_pre.cursor := first(list_of_bics_pre);
+		
+		use type_long_string;
 		use type_model_file_name;
 		
  		line_of_file	: type_long_string.bounded_string;
 		bsdl_string		: unbounded_string;
-
+		
 	begin -- read_bsld_models
-		for i in 1..length(list_of_bics_pre) loop
-			bic := element(list_of_bics_pre, positive(i));
- 			put_line(row_separator_0 & section_mark.subsection & row_separator_0 & to_string(bic.name));
+		-- 		for i in 1..length(list_of_bics_pre) loop
+		while bic_cursor /= type_list_of_bics_pre.no_element loop
+		
+-- 			bic := element(list_of_bics_pre, positive(i));
+			bic := element(bic_cursor);
+
+--  			put_line(row_separator_0 & section_mark.subsection & row_separator_0 & to_string(bic.name));
+ 			put_line(row_separator_0 & section_mark.subsection & row_separator_0 & to_string(key(bic_cursor)));
 
 			write_message (
 				file_handle => file_import_bsdl_messages,
@@ -1467,7 +1473,8 @@ procedure impbsdl is
 			write_message (
 				file_handle => file_import_bsdl_messages,
 				identation => 1,
-				text => to_string(bic.name) & " done", 
+-- 				text => to_string(bic.name) & " done",
+				text => to_string(key(bic_cursor)) & " done",
 				console => false);
 
 			write_message (
@@ -1475,8 +1482,11 @@ procedure impbsdl is
 				text => "-------------", 
 				console => false);
 			
-			put_line(row_separator_0 & section_mark.endsubsection & row_separator_0 & to_string(bic.name));
+-- 			put_line(row_separator_0 & section_mark.endsubsection & row_separator_0 & to_string(bic.name));
+			put_line(row_separator_0 & section_mark.endsubsection & row_separator_0 & to_string(key(bic_cursor)));
 			new_line;
+
+			next(bic_cursor); -- advance cursor for next spin
 		end loop;
 	end read_bsld_models;
 
