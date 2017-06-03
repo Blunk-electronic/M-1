@@ -1081,7 +1081,7 @@ procedure compseq is
 
 			bic_cursor : type_list_of_bics.cursor := last(list_of_bics);
 			--bic : type_bscan_ic; -- CS: might speed up the procedure if used as temporaily storage
-			pos : count_type := 1 + length(list_of_bics); -- written in register file
+-- 			pos : count_type := 1 + length(list_of_bics); -- written in register file
 
 			
         begin -- concatenate_sir_images
@@ -1091,7 +1091,7 @@ procedure compseq is
     -- 				if b.position = p then -- on position match
 			--for b in 1..length(list_of_bics) loop
 			while bic_cursor /= type_list_of_bics.no_element loop -- (start with the highest position, close to BSC TDI)
-				pos := pos - 1;
+-- 				pos := pos - 1;
 
             -- NOTE: element(list_of_bics, positive(b)) means the current bic
 			--if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- on scanpath match
@@ -1111,7 +1111,8 @@ procedure compseq is
                     sir_mask(pos_start..pos_end)	:= mirror_class_0(element(bic_cursor).pattern_last_ir_mask);
 
                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
-                        & positive'image(vector_id) & " device" & count_type'image(pos) & " ir");
+--                         & positive'image(vector_id) & " device" & count_type'image(pos) & " ir");
+                        & positive'image(vector_id) & " device" & positive'image(element(bic_cursor).position) & " ir");
 
                     -- calculate start position to place next image
                     pos_start := pos_end + 1;
@@ -1177,7 +1178,7 @@ procedure compseq is
 
 				bic_cursor : type_list_of_bics.cursor := last(list_of_bics);
 -- 				bic : type_bscan_ic; -- CS: might speed up the procedure if used as temporaily storage
-				pos : count_type := 1 + length(list_of_bics); -- written in register file
+-- 				pos : count_type := 1 + length(list_of_bics); -- written in register file
             begin -- build_sdr_image
                 -- the last instruction loaded indicates the targeted data register
     -- 			for p in reverse 1..summary.bic_ct loop -- p defines the position (start with the highest position, close to BSC TDI)
@@ -1187,7 +1188,7 @@ procedure compseq is
 	
 				--for b in 1..length(list_of_bics) loop
 				while bic_cursor /= type_list_of_bics.no_element loop -- (start with the highest position, close to BSC TDI)
-					pos := pos - 1;
+-- 					pos := pos - 1;
                     -- NOTE: element(list_of_bics, positive(b)) means the current bic
 --                             if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- on scanpath match
                             if element(bic_cursor).chain = scanpath_being_compiled then -- on scanpath match
@@ -1211,7 +1212,8 @@ procedure compseq is
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
 --                                         & " device" & count_type'image(b) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
-                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+--                                         & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+										& " device" & positive'image(element(bic_cursor).position) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
 
 								-- if last instruction was EXTEST
 --                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_extest) then
@@ -1235,8 +1237,8 @@ procedure compseq is
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
-
+--                                         & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+										& " device" & positive'image(element(bic_cursor).position) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
 
                                 -- if last instruction was SAMPLE
 -- 								elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_sample) then
@@ -1260,7 +1262,8 @@ procedure compseq is
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+--                                         & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+										& " device" & positive'image(element(bic_cursor).position) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
 
                                 -- if last instruction was PRELOAD
 --                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_preload) then
@@ -1285,7 +1288,8 @@ procedure compseq is
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+--                                         & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+										& " device" & positive'image(element(bic_cursor).position) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
 
                                 -- if last instruction was HIGHZ
 --                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_highz) then
@@ -1310,7 +1314,8 @@ procedure compseq is
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+--                                         & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+										& " device" & positive'image(element(bic_cursor).position) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
 
                                 -- if last instruction was CLAMP
 --                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_clamp) then
@@ -1335,7 +1340,8 @@ procedure compseq is
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+--                                         & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
+										& " device" & positive'image(element(bic_cursor).position) & row_separator_0 & to_lower(type_bic_data_register'image(BYPASS)));
 
                                 -- if last instruction was IDCODE
 --                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_idcode) then
@@ -1360,7 +1366,8 @@ procedure compseq is
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(IDCODE)));
+--                                         & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(IDCODE)));
+										& " device" & positive'image(element(bic_cursor).position) & row_separator_0 & to_lower(type_bic_data_register'image(IDCODE)));
 
                                 -- if last instruction was USERCODE
 --                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_usercode) then
@@ -1385,7 +1392,8 @@ procedure compseq is
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(USERCODE)));
+--                                         & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(USERCODE)));
+										& " device" & positive'image(element(bic_cursor).position) & row_separator_0 & to_lower(type_bic_data_register'image(USERCODE)));
 
                                 -- if last instruction was INTEST
 --                                 elsif element(list_of_bics, positive(b)).pattern_last_ir_drive = replace_dont_care(element(list_of_bics, positive(b)).opc_intest) then
@@ -1410,8 +1418,8 @@ procedure compseq is
 
                                     put_line(scanport(scanpath_being_compiled).register_file, "step" 
                                         & natural'image(vector_id) 
-                                        & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
-
+--                                         & " device" & count_type'image(pos) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
+										& " device" & positive'image(element(bic_cursor).position) & row_separator_0 & to_lower(type_bic_data_register'image(BOUNDARY)));
                                 end if;
 
 
