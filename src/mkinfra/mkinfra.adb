@@ -429,6 +429,7 @@ procedure mkinfra is
 		bic_cursor := first(list_of_bics);
 		while bic_cursor /= no_element loop
 			one_of_all( bic_cursor, idcode);
+			next(bic_cursor);
 		end loop;
 
 		-- USERCODE CHECK ---------------------
@@ -441,6 +442,7 @@ procedure mkinfra is
 		bic_cursor := first(list_of_bics);
 		while bic_cursor /= no_element loop
 			one_of_all( bic_cursor, usercode);
+			next(bic_cursor);
 		end loop;
 
 		-- BOUNDARY REGISTER CHECK ---------------------
@@ -455,6 +457,7 @@ procedure mkinfra is
 		bic_cursor := first(list_of_bics);
 		while bic_cursor /= no_element loop
 			one_of_all( bic_cursor, sample);
+			next(bic_cursor);			
 		end loop;
 
 -- 		for p in 1..positive(length(list_of_bics)) loop -- process as much as bics are in udb
@@ -463,6 +466,7 @@ procedure mkinfra is
 		bic_cursor := first(list_of_bics);
 		while bic_cursor /= no_element loop
 			one_of_all( bic_cursor, preload);
+			next(bic_cursor);			
 		end loop;
 
 		-- CAUTION: USE FOR INTRUSIVE MODE ONLY
@@ -477,6 +481,7 @@ procedure mkinfra is
 			bic_cursor := first(list_of_bics);
 			while bic_cursor /= no_element loop
 				one_of_all( bic_cursor => bic_cursor, instruction => extest, write_sxr => false);
+				next(bic_cursor);
 			end loop;
 
 			write_sir; -- SWTICHING TO EXTEST MUST HAPPEN FOR ALL BICS SIMULTANEOUSLY
