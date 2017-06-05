@@ -58,7 +58,7 @@ with m1_files_and_directories; 	use m1_files_and_directories;
 
 procedure mknets is
 
-	version			: constant string (1..3) := "046";
+	version			: constant string (1..3) := "001";
 
 	prog_position	: natural := 0;
 
@@ -77,8 +77,9 @@ procedure mknets is
 	-- Even if there are no cells (e.g. linkage pins) the port will be returned.
 	-- Collects data in string scratch (by appending) and returns scratch as fixed string.
 		--bic : type_ptr_bscan_ic;
-        bic 	: in positive;
-		pin 	: in type_pin_name.bounded_string) 
+		--         bic 	: in positive;
+		bic_cursor	: type_list_of_bics.cursor;
+		pin 		: in type_pin_name.bounded_string) 
 		return string is -- pb01_11 | 20 bc_1 input x | 19 bc_1 output3 x 18 0 z
 		scratch 	: type_universal_string.bounded_string;
 		port_name 	: type_port_name.bounded_string;
@@ -91,7 +92,8 @@ procedure mknets is
 		use type_list_of_pin_names;
 		use type_list_of_bsr_bits;		
 		
-		b 	: type_bscan_ic := type_list_of_bics.element(list_of_bics,bic);
+	-- 		b 	: type_bscan_ic := type_list_of_bics.element(list_of_bics,bic);
+		b 	: type_bscan_ic := type_list_of_bics.element(bic_cursor);
 		pp 	: type_port_pin; -- for temporarily storage
 		pi 	: type_pin_name.bounded_string; -- for temporarily storage
 		bit	: type_bit_of_boundary_register; -- for temporarily storage
@@ -238,6 +240,7 @@ procedure mknets is
 			procedure write_pin is
 			-- writes something like: IC303 NA SN74BCT8240ADWR SOIC24 2 Y1(1) | 7 BC_1 OUTPUT3 X 17 1 Z
 				use type_list_of_bics;
+				bic_cursor : type_list_of_bics.cursor := first(list_of_bics);
 			begin
 				-- write the basic pin info like "R101 NA 2k7 0207/10 2"
 				put(2 * row_separator_0 & to_string(pin_scratch.device_name) & row_separator_0 &
@@ -249,13 +252,18 @@ procedure mknets is
 
 				-- if pin belongs to a bic, additionally write 
 				-- port and cell info like "SOIC24 2 Y1(1) | 7 BC_1 OUTPUT3 X 17 1 Z"
-				for i in 1..type_list_of_bics.length(list_of_bics) loop
-					bic := element(list_of_bics, positive(i));
-                    if bic.name = pin_scratch.device_name then
+				-- 				for i in 1..type_list_of_bics.length(list_of_bics) loop
+				while bic_cursor /= type_list_of_bics.no_element loop
+-- 					bic := element(list_of_bics, positive(i));
+					bic := element(bic_cursor);
+--                     if bic.name = pin_scratch.device_name then
+                    if key(bic_cursor) = pin_scratch.device_name then
 						put(get_cell_info(
-							bic => positive(i),
+-- 							bic => positive(i),
+							bic_cursor => bic_cursor,
 							pin => pin_scratch.device_pin_name));
 					end if;
+					next(bic_cursor);
 				end loop;
 
 				new_line;

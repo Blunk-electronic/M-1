@@ -54,7 +54,7 @@ with m1_string_processing;		use m1_string_processing;
 
 procedure mkmemcon is
 
-	version			: string (1..3) := "032";
+	version			: string (1..3) := "001";
 	prog_position	: natural := 0;
 
 	use type_name_database;
@@ -2590,6 +2590,7 @@ procedure mkmemcon is
 			end evaluate_record_of_control_cells;
 			-- FOR DETECTING SHARED CONTROL CELL CONFLICTS BEGIN
 
+			bic_cursor : type_list_of_bics.cursor;
 			
 		begin -- read_value_bitwise
 			-- translate the given value into a string of bit characters of (0,1,z,Z) held by variable v
@@ -2618,7 +2619,10 @@ procedure mkmemcon is
 -- 					for bic_id in 1..summary.bic_ct loop -- loop in bic list pointed to by b
 -- 						b := ptr_bic;
 -- 						while b /= null loop
-					for b in 1..length(list_of_bics) loop
+					bic_cursor := first(list_of_bics);
+-- 					for b in 1..length(list_of_bics) loop
+					while bic_cursor /= type_list_of_bics.no_element loop
+
 						-- NOTE: element(list_of_bics, positive(b)) means the current bic
 -- 							if b.id = bic_id then -- on bic id match
 								--put_line(standard_output,positive'image(bic_id) & " " & universal_string_type.to_string(b.name));
@@ -2629,8 +2633,11 @@ procedure mkmemcon is
 								p := ptr_memory_pin;
 								while p /= null loop
 									if p.class_pin = pin_class then
-										if to_string(p.name_bic_driver) = to_string(element(list_of_bics, positive(b)).name) then
-											put(file_sequence, "  set " & to_string(element(list_of_bics, positive(b)).name) & " drv boundary"); -- CS: use text variables
+-- 										if to_string(p.name_bic_driver) = to_string(element(list_of_bics, positive(b)).name) then
+-- 											put(file_sequence, "  set " & to_string(element(list_of_bics, positive(b)).name) & " drv boundary"); -- CS: use text variables
+-- 											bic_required_as_driver := true; -- mark bic as used for this group
+										if p.name_bic_driver = key(bic_cursor) then
+											put(file_sequence, "  set " & to_string(key(bic_cursor)) & " drv boundary"); -- CS: use text constants
 											bic_required_as_driver := true; -- mark bic as used for this group
 											exit; -- bic is used, so no more looking ahead requried
 										end if;
@@ -2647,7 +2654,8 @@ procedure mkmemcon is
 															-- bic (p.name_bic_driver and b.name) and the bit position (i)
 
 											if p.class_pin = pin_class then -- on pin_class match
-												if to_string(p.name_bic_driver) = to_string(element(list_of_bics, positive(b)).name) then -- on bic match
+												--if to_string(p.name_bic_driver) = to_string(element(list_of_bics, positive(b)).name) then -- on bic match
+												if p.name_bic_driver = key(bic_cursor) then -- on bic match
 													if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
 
 														-- the given direction of the group implies which cell it to be addressed
@@ -2716,6 +2724,7 @@ procedure mkmemcon is
 -- 							end if;
 -- 							b := b.next;
 -- 						end loop;
+						next(bic_cursor);
 					end loop;
 				
 					if self_monitoring then
@@ -2725,7 +2734,9 @@ procedure mkmemcon is
 -- 							b := ptr_bic;
 -- 							while b /= null loop
 -- 								if b.id = bic_id then -- on bic id match
-						for b in 1..length(list_of_bics) loop
+-- 						for b in 1..length(list_of_bics) loop
+						bic_cursor := first(list_of_bics);
+						while bic_cursor /= type_list_of_bics.no_element loop
 							-- NOTE: element(list_of_bics, positive(b)) means the current bic
 
 									-- look ahead into receiver list to figure out if the current bic is used as receiver for this group at all
@@ -2741,9 +2752,12 @@ procedure mkmemcon is
 														p.receiver_list := p.receiver_list_last;
 														while p.receiver_list /= null loop -- loop though receiver list
 															-- on match of bic name
-															if to_string(p.receiver_list.name_bic) = to_string(element(list_of_bics, positive(b)).name) then
+-- 															if to_string(p.receiver_list.name_bic) = to_string(element(list_of_bics, positive(b)).name) then
+-- 																bic_required_for_self_monitoring := true;
+-- 																put(file_sequence, "  set " & to_string(element(list_of_bics, positive(b)).name) & " exp boundary"); -- CS: use text variables
+															if p.receiver_list.name_bic = key(bic_cursor) then
 																bic_required_for_self_monitoring := true;
-																put(file_sequence, "  set " & to_string(element(list_of_bics, positive(b)).name) & " exp boundary"); -- CS: use text variables
+																put(file_sequence, "  set " & to_string(key(bic_cursor)) & " exp boundary"); -- CS: use text constants
 																exit l_1; -- no need to search for further occurences of bic in pin list
 															end if;
 															p.receiver_list := p.receiver_list.next;
@@ -2764,7 +2778,8 @@ procedure mkmemcon is
 														if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
 															p.receiver_list := p.receiver_list_last;
 															while p.receiver_list /= null loop
-																if to_string(p.receiver_list.name_bic) = to_string(element(list_of_bics, positive(b)).name) then
+-- 																if to_string(p.receiver_list.name_bic) = to_string(element(list_of_bics, positive(b)).name) then
+																if p.receiver_list.name_bic = key(bic_cursor) then
 																	case v(i) is
 																		when '0' | '1' =>
 																			-- expect 0/1 addresses input cells
@@ -2796,6 +2811,7 @@ procedure mkmemcon is
 -- 								end if; -- on bic id match
 -- 								b := b.next;
 -- 							end loop;
+							next(bic_cursor);
 						end loop;
 					end if;
 
@@ -2805,7 +2821,9 @@ procedure mkmemcon is
 -- 						b := ptr_bic;
 -- 						while b /= null loop
 -- 							if b.id = bic_id then -- on bic id match
-						for b in 1..length(list_of_bics) loop
+-- 						for b in 1..length(list_of_bics) loop
+						bic_cursor := first(list_of_bics);
+						while bic_cursor /= type_list_of_bics.no_element loop
 							-- NOTE: element(list_of_bics, positive(b)) means the current bic
 
 								-- look ahead into receiver list to figure out if the current bic is used as receiver for this group at all
@@ -2821,9 +2839,11 @@ procedure mkmemcon is
 													p.receiver_list := p.receiver_list_last;
 													while p.receiver_list /= null loop -- loop though receiver list
 														-- on match of bic name
-														if to_string(p.receiver_list.name_bic) = to_string(element(list_of_bics, positive(b)).name) then
+-- 														if to_string(p.receiver_list.name_bic) = to_string(element(list_of_bics, positive(b)).name) then
+														if p.receiver_list.name_bic = key(bic_cursor) then
 															bic_required_as_receiver := true;
-															put(file_sequence, "  set " & to_string(element(list_of_bics, positive(b)).name) & " exp boundary"); -- CS: use text variables
+-- 															put(file_sequence, "  set " & to_string(element(list_of_bics, positive(b)).name) & " exp boundary"); -- CS: use text variables
+															put(file_sequence, "  set " & to_string(key(bic_cursor)) & " exp boundary"); -- CS: use text constants
 															exit l_2; -- no need to search for further occurences of bic in pin list
 														end if;
 														p.receiver_list := p.receiver_list.next;
@@ -2844,7 +2864,8 @@ procedure mkmemcon is
 													if p.index = v'last - i then -- on index match (NOTE: v has MSB left, i has MSB right)
 														p.receiver_list := p.receiver_list_last;
 														while p.receiver_list /= null loop
-															if to_string(p.receiver_list.name_bic) = to_string(element(list_of_bics, positive(b)).name) then
+-- 															if to_string(p.receiver_list.name_bic) = to_string(element(list_of_bics, positive(b)).name) then
+															if p.receiver_list.name_bic = key(bic_cursor) then
 																case v(i) is
 																	when '0' | '1' =>
 																		-- expect 0/1 addresses input cells
@@ -2875,6 +2896,7 @@ procedure mkmemcon is
 
 -- 							end if; -- on bic id match
 -- 							b := b.next;
+							next(bic_cursor);
 						end loop;
 -- 					end loop;
 			end case;

@@ -297,6 +297,8 @@ procedure mkintercon is
 				);
 			end add_to_receiver_list;
 
+			bic_cursor : type_list_of_bics.cursor;
+
 		begin -- write_dynamic_drive_and_expect_values
 			--put_line (" -- set dynamic drive and expect values");
 
@@ -324,19 +326,29 @@ procedure mkintercon is
 					driver_id := 0;
 					--device := ptr_bic; -- Set BIC pointer at end of list.
 					--while device /= null loop
-					for b in 1..length(list_of_bics) loop
+					--for b in 1..length(list_of_bics) loop
+					bic_cursor := first(list_of_bics);
+					while bic_cursor /= type_list_of_bics.no_element loop
 						-- If device (BIC) has at least one dynamic drive cell, write sdr drive header (like "set IC301 drv boundary")
 						-- In this case it appears in cell list atg_drive.
 
 						-- NOTE: element(list_of_bics, positive(b)) means the current bic
-						if element(list_of_bics, positive(b)).has_dynamic_drive_cell then
+-- 						if element(list_of_bics, positive(b)).has_dynamic_drive_cell then
+-- 							put(file_sequence,
+-- 								row_separator_0 & sequence_instruction_set.set & row_separator_0 &
+-- 								to_string( element(list_of_bics, positive(b)).name ) & row_separator_0 &
+-- 								sxr_io_identifier.drive & row_separator_0 &
+-- 								sdr_target_register.boundary
+-- 								);
+
+						if element(bic_cursor).has_dynamic_drive_cell then
 							put(file_sequence,
 								row_separator_0 & sequence_instruction_set.set & row_separator_0 &
-								to_string( element(list_of_bics, positive(b)).name ) & row_separator_0 &
+								to_string( key(bic_cursor) ) & row_separator_0 &
 								sxr_io_identifier.drive & row_separator_0 &
 								sdr_target_register.boundary
 								);
-
+							
 							-- COLLECT CELL ID AND INVERTED-STATUS OF ALL DRIVERS OF THE DEVICE (BIC).
 							-- The list "atg_drive" is searched for the current BIC. On match the driver cell and value are written in
 							-- sequence file.
@@ -347,7 +359,8 @@ procedure mkintercon is
 								-- On BIC name match, advance driver_id.
 
 								-- NOTE: element(list_of_atg_drive_cells, positive(c)) means the current atg drive cell
-								if to_string( element(list_of_atg_drive_cells, positive(d)).device ) = to_string(element(list_of_bics, positive(b)).name) then
+-- 								if to_string( element(list_of_atg_drive_cells, positive(d)).device ) = to_string(element(list_of_bics, positive(b)).name) then
+								if element(list_of_atg_drive_cells, positive(d)).device = key(bic_cursor) then
 									driver_id := driver_id + 1; -- advance driver_id for each driver cell
 									put(file_sequence, type_cell_id'image(element(list_of_atg_drive_cells, positive(d)).id) 
 										& sxr_assignment_operator.assign); -- write cell id and assigment operator (like "45=")
@@ -405,21 +418,26 @@ procedure mkintercon is
 							new_line(file_sequence);
 
 						end if;
+						next(bic_cursor);
 					end loop;
 
 
 					-- WRITE RECEIVERS
 					-- The receivers collected in the receiver list are now written in the sequence file.
 					-- The receiver cells are written for one BIC after another. For every BIC the driver id starts at position #1.
-					for b in 1..length(list_of_bics) loop
+					--for b in 1..length(list_of_bics) loop
+					bic_cursor := first(list_of_bics);					
+					while bic_cursor /= type_list_of_bics.no_element loop
 						-- NOTE: element(list_of_bics, positive(b)) means the current bic
 						
 						--If device (BIC) has a dynamic expect cell, write sdr expect header. Something like "set IC301 exp boundary"
-						if element(list_of_bics, positive(b)).has_dynamic_expect_cell then
+						-- if element(list_of_bics, positive(b)).has_dynamic_expect_cell then
+						if element(bic_cursor).has_dynamic_expect_cell then						
 							-- WRITING RECEIVERS OF A SINGLE BIC BEGIN
 							put(file_sequence, 
 								row_separator_0 & sequence_instruction_set.set & row_separator_0 &
-								to_string(element(list_of_bics, positive(b)).name) & row_separator_0 &
+								-- 								to_string(element(list_of_bics, positive(b)).name) & row_separator_0 &
+								to_string(key(bic_cursor)) & row_separator_0 &
 								sxr_io_identifier.expect & row_separator_0 &
 								sdr_target_register.boundary
 								);
@@ -439,7 +457,8 @@ procedure mkintercon is
 								-- Read the receiver list and filter the receiver cells of the current BIC.
 								while receivers_of_test_step(driver_id) /= null loop
 									-- On match of BIC name: write the receiver cells of the current BIC in the sequence file (like "44=0 46=1 ..."
-									if to_string(receivers_of_test_step(driver_id).device) = to_string( element(list_of_bics, positive(b)).name ) then
+									--if to_string(receivers_of_test_step(driver_id).device) = to_string( element(list_of_bics, positive(b)).name ) then
+									if receivers_of_test_step(driver_id).device = key(bic_cursor) then
 										put(file_sequence, 
 											type_cell_id'image(receivers_of_test_step(driver_id).cell) &
 											sxr_assignment_operator.assign);
@@ -457,6 +476,8 @@ procedure mkintercon is
 							new_line(file_sequence);
 							-- WRITING RECEIVERS OF A SINGLE BIC FINISHED
 						end if;
+
+						next(bic_cursor);
 					end loop;
 					-- WRITING RECEVIERS OF ATG STEP FINISHED
 
