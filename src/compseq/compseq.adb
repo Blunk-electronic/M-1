@@ -1184,6 +1184,7 @@ procedure compseq is
 -- 				bic : type_bscan_ic; -- CS: might speed up the procedure if used as temporaily storage
 -- 				pos : count_type := 1 + length(list_of_bics); -- written in register file
             begin -- build_sdr_image
+				put_line("  length total" & positive'image(length_total));
                 -- the last instruction loaded indicates the targeted data register
     -- 			for p in reverse 1..summary.bic_ct loop -- p defines the position (start with the highest position, close to BSC TDI)
     -- 				b := ptr_bic;
@@ -1475,7 +1476,6 @@ procedure compseq is
 			
 		begin -- concatenate_sdr_images
 			put_line(" concatenating SDR images ...");
-			put_line("  length total" & positive'image(length_total));
             -- calculate total length of sdr image depending on latest loaded instructions
             -- from the total sdr length, the overall sdr image can be created
     -- 		for p in 1..summary.bic_ct loop -- p defines the position
@@ -2914,8 +2914,8 @@ procedure compseq is
 			end loop;
 		end order_img;
 
-		bic_cursor : type_list_of_bics.cursor := last(list_of_bics);
-		pos : count_type := 0;
+		bic_cursor : type_list_of_bics.cursor;
+-- 		pos : count_type := 0;
 	begin -- unknown_yet
 		--	set_output(standard_output);
 		-- 		put_line("found" & natural'image(summary.scanport_ct) & " scanpaths(s)");
@@ -2963,8 +2963,9 @@ procedure compseq is
 -- 					b := ptr_bic; -- set bic pointer at end of bic list
 -- 					while b /= null loop
 -- 				for b in 1..length(list_of_bics) loop
+				bic_cursor := first(list_of_bics);
 				while bic_cursor /= type_list_of_bics.no_element loop
-					pos := pos + 1;
+-- 					pos := pos + 1;
 				-- NOTE: element(list_of_bics, positive(b)) means the current bic
 --					if element(list_of_bics, positive(b)).chain = sp then -- on match of scanpath id
 					if element(bic_cursor).chain = sp then -- on match of scanpath id				
@@ -2975,7 +2976,7 @@ procedure compseq is
 -- 									& row_separator_0 & "irl" & positive'image(element(list_of_bics, positive(b)).len_ir)
 -- 									& row_separator_0 & "bsl" & positive'image(element(list_of_bics, positive(b)).len_bsr)
 -- 									);
-							put_line(scanport(sp).register_file,"device" & count_type'image(pos)
+							put_line(scanport(sp).register_file,"device" & positive'image(element(bic_cursor).position)
 								& row_separator_0 & to_string(key(bic_cursor))
 								& row_separator_0 & "irl" & positive'image(element(bic_cursor).len_ir)
 								& row_separator_0 & "bsl" & positive'image(element(bic_cursor).len_bsr)
