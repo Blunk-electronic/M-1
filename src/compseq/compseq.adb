@@ -1085,6 +1085,8 @@ procedure compseq is
 
 			
         begin -- concatenate_sir_images
+			put_line(" concatenating SIR images ...");
+			put_line("  length total" & positive'image(length_total));
     -- 		for p in reverse 1..summary.bic_ct loop -- p defines the position (start with the highest position, close to BSC TDI)
     -- 			b := ptr_bic;
     -- 			while b /= null loop -- loop in bic list
@@ -1097,6 +1099,8 @@ procedure compseq is
 			--if element(list_of_bics, positive(b)).chain = scanpath_being_compiled then -- on scanpath match
 				if element(bic_cursor).chain = scanpath_being_compiled then -- on scanpath match
 
+					put_line("  bic: " & to_string(key(bic_cursor)));
+				
                     -- start pos initiated already
                     -- calculate end position to place bic-image
 					--                     pos_end := (pos_start + element(list_of_bics, positive(b)).len_ir) - 1;
@@ -1469,7 +1473,9 @@ procedure compseq is
 
 			bic_cursor : type_list_of_bics.cursor := first(list_of_bics);
 			
-        begin -- concatenate_sdr_images
+		begin -- concatenate_sdr_images
+			put_line(" concatenating SDR images ...");
+			put_line("  length total" & positive'image(length_total));
             -- calculate total length of sdr image depending on latest loaded instructions
             -- from the total sdr length, the overall sdr image can be created
     -- 		for p in 1..summary.bic_ct loop -- p defines the position
@@ -1517,6 +1523,8 @@ procedure compseq is
 
 				if element(bic_cursor).chain = scanpath_being_compiled then -- on scanpath match
 
+					put_line("  bic: " & to_string(key(bic_cursor)));
+					
 					-- chaining sdr drv and exp patterns starting with device closest to BSC TDO !
 					-- use drv pattern depending on latest loaded instruction of particular device
 
@@ -1559,7 +1567,8 @@ procedure compseq is
 
 
 
- 	begin -- compile_command
+	begin -- compile_command
+		put_line(" compiling command: " & cmd);
 		prog_position	:= 400;
 
 		--hard+soft trst (default)
