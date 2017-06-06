@@ -1736,33 +1736,39 @@ procedure chkpsn is
 		n : type_net; -- for temporarily storage of a net taken from current database
 -- 		p : type_pin; -- for temporarily storage of a pin of net d
 
-		procedure set_optimized_flag (net : in out type_net) is
+		--procedure set_optimized_flag (net : in out type_net) is
+		procedure set_optimized_flag (key : in type_net_name.bounded_string; net : in out type_net) is
 		begin
 			net.optimized := true;
 		end set_optimized_flag;
 
+		net_cursor : type_list_of_nets.cursor := find(list_of_nets, net.name);
 	begin -- dump_net_content for net name given in "name"
 		-- net name "name" is passed from superordinated procedure make_new_net_list when calling this procedure
 		-- Marks the net as "optimized".
 		-- Fetches net content from database netlist in n.
 		
-		for i in 1..length(list_of_nets) loop
-			n := element(list_of_nets, positive(i));
+		--for i in 1..length(list_of_nets) loop
+		--	n := element(list_of_nets, positive(i));
+		
+		n := element(net_cursor);
 
-			-- on match of net name: means, the net given from make_new_net_list has been found in database
-			if n.name = net.name then
+-- 			-- on match of net name: means, the net given from make_new_net_list has been found in database
+-- 			if n.name = net.name then
 
 				write_message (
 					file_handle => file_chkpsn_messages,
 		  			identation => 2,
 					text => "writing " & type_net_level'image(level) 
 						& " class " & type_net_class'image(net.class) -- class requested by given net !
-						& " net " & to_string(n.name), 
+						--& " net " & to_string(n.name),
+						& " net " & to_string(key(net_cursor)), 
 					console => false);
 				
 				-- mark this net as optimized by chkpsn
 				-- later this net will be skipped when writing non-optimized nets into the preliminary data base
-				update_element(list_of_nets, positive(i), set_optimized_flag'access);
+				--update_element(list_of_nets, positive(i), set_optimized_flag'access);
+				update_element(container => list_of_nets, position => net_cursor, process => set_optimized_flag'access);
 
 				-- loop through part list of the net
 				-- and dump the net content like "IC301 ? XC9536 PLCC-S44 2  pb00_00 | 107 bc_1 input x | 106 bc_1 output3 x 105 0 z"
@@ -1827,7 +1833,7 @@ procedure chkpsn is
 							update_cell_lists( net => (
 								class => net.class,
 								level => primary,
-								name => n.name,
+								--name => n.name,
 								pins => n.pins,
 								bs_bidir_pin_count => n.bs_bidir_pin_count,
 								bs_input_pin_count => n.bs_input_pin_count,
@@ -1843,7 +1849,7 @@ procedure chkpsn is
 							update_cell_lists( net => (
 								class => net.class,
 								level => secondary,
-								name => n.name,
+								--name => n.name,
 								pins => n.pins,
 								bs_bidir_pin_count => n.bs_bidir_pin_count,
 								bs_input_pin_count => n.bs_input_pin_count,
@@ -1897,10 +1903,10 @@ procedure chkpsn is
 						net_count_statistics.na 			:= net_count_statistics.na + 1;
 				end case;
 
-				exit; -- no need to search other nets in data base
-			end if;
-
-		end loop;
+-- 				exit; -- no need to search other nets in data base
+-- 			end if;
+-- 
+-- 		end loop;
 	end dump_net_content;
 
 	
