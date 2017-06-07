@@ -38,6 +38,7 @@ with ada.characters.handling;	use ada.characters.handling;
 with ada.containers;        	use ada.containers;
 with ada.containers.vectors;
 with ada.containers.indefinite_vectors;
+with ada.containers.ordered_maps;
 
 --with ada.strings.unbounded; use ada.strings.unbounded;
 with ada.strings.bounded; 		use ada.strings.bounded;
@@ -86,7 +87,8 @@ procedure mkoptions is
 	
  	type type_cluster is record
 		bs_capable		: boolean := false;
-		nets			: type_list_of_nets.vector;
+		--		nets			: type_list_of_nets.vector;
+		nets			: type_list_of_nets.map;
 	end record;
 	package type_list_of_clusters is new vectors (index_type => positive, element_type => type_cluster);
 	use type_list_of_clusters;
@@ -338,6 +340,8 @@ procedure mkoptions is
 										 ), 
 								pin_b => ( name => to_bounded_string("") -- to be overwritten later
 										 ));
+	
+		net_cursor : type_list_of_nets.cursor;
 	begin -- set_bridge_pins
 		-- We search the database netlist until the given bridge_in found.
 		-- We count the matches and assign the pin names a and b.
@@ -348,10 +352,13 @@ procedure mkoptions is
 			text => " with pins ",
 			lf => false,
 			console => false);
-		
+
+		net_cursor := first(list_of_nets);
 		loop_netlist:
-		for i in 1..length(list_of_nets) loop -- loop in netlist
-			net := element(list_of_nets, positive(i)); -- load a net
+		--for i in 1..length(list_of_nets) loop -- loop in netlist
+		while net_cursor /= type_list_of_nets.no_element loop
+			--net := element(list_of_nets, positive(i)); -- load a net
+			net := element(net_cursor);
 			length_of_pinlist := length(net.pins); -- load number of pins in the net
 			for i in 1..length_of_pinlist loop -- loop in pinlist
 				pin := type_pin_base(element(net.pins, positive(i))); -- load a pin
@@ -407,6 +414,7 @@ procedure mkoptions is
 					end case;
 				end if;
 			end loop;
+			next(net_cursor);
 		end loop loop_netlist;
 
 		-- write a warning if bridge has only one pin connected
@@ -433,9 +441,13 @@ procedure mkoptions is
 		pin					: m1_database.type_pin_base;
 		length_of_pinlist	: count_type; -- CS: we assume there are no zero-pin nets
 		occurences			: natural := 0;
+		net_cursor 			: type_list_of_nets.cursor;
 	begin -- device_occurences_in_netlist
-		for i in 1..length(list_of_nets) loop -- loop in netlist
-			net := element(list_of_nets, positive(i)); -- load a net
+		--for i in 1..length(list_of_nets) loop -- loop in netlist
+		net_cursor := first(list_of_nets);
+		while net_cursor /= type_list_of_nets.no_element loop
+			--net := element(list_of_nets, positive(i)); -- load a net
+			net := element(net_cursor);
 			length_of_pinlist := length(net.pins); -- load number of pins in the net
 			for i in 1..length_of_pinlist loop -- loop in pinlist
 				pin := type_pin_base(element(net.pins, positive(i))); -- load a pin
@@ -451,6 +463,7 @@ procedure mkoptions is
 					end if;
 				end if;
 			end loop;
+			next(net_cursor);
 		end loop;
 		return occurences;
 	end device_occurences_in_netlist;
@@ -582,11 +595,16 @@ procedure mkoptions is
 			net		: type_net;
 			pin		: m1_database.type_pin_base;
 			scratch	: type_device_name.bounded_string;
-		begin -- add_bridges_matching_wildcard_to_list_of_bridges
 
+			net_cursor : type_list_of_nets.cursor;
+		begin -- add_bridges_matching_wildcard_to_list_of_bridges
+			net_cursor := first(list_of_nets);
 			loop_netlist:
-			for i in 1..length_of_netlist loop
-				net := element(list_of_nets, positive(i)); -- load a net
+			--for i in 1..length_of_netlist loop
+			while net_cursor /= type_list_of_nets.no_element loop
+				--net := element(list_of_nets, positive(i)); -- load a net
+				net := element(net_cursor);
+				
 				for i in 1..length(net.pins) loop
 					pin := type_pin_base(element(net.pins, positive(i))); -- load a pin
 
@@ -630,6 +648,7 @@ procedure mkoptions is
 					end if;
 				end loop;
 			end loop loop_netlist;
+			next(net_cursor);
 		end add_bridges_matching_wildcard_to_list_of_bridges;
 		
 	begin -- read_mkoptions_configuration
@@ -1233,7 +1252,7 @@ procedure mkoptions is
 		return ( is_connector_pin => false);
 	end is_pin_of_connector;
 
-	procedure set_cluster_id (net : in out type_net) is
+	procedure set_cluster_id (net_name : in type_net_name.bounded_string; net : in out type_net) is
 	-- Assigns the current cluster id to the given net.
 	-- Cluster id is just a copy of the global cluster_counter.
 	begin
@@ -1243,7 +1262,7 @@ procedure mkoptions is
 			file_handle => file_mkoptions_messages,
 			identation => 3,
 			text => --"cluster " & positive'image(cluster_counter) 
-				"net " & to_string(net.name),
+				"net " & to_string(net_name),
 			console => false);
 
 		net.cluster_id := cluster_counter;			
@@ -1260,7 +1279,8 @@ procedure mkoptions is
 	-- If requested the pin by which we have entered the net is ignored. This prevents returning
 	-- into the net we came from.
 	-- Writes the name of the net in the routing file.
-		net					: in type_net; -- the net to search in
+		--net					: in type_net; -- the net to search in
+		net_cursor			: in type_list_of_nets.cursor;
 		ignore_entry_pin	: boolean; -- if entry pin is to be ignored or not
 		entry_pin			: in m1_database.type_pin_base := ( -- the pin itself
 									device_name => to_bounded_string(""),
@@ -1274,12 +1294,15 @@ procedure mkoptions is
 	begin -- find_pin
 
 		-- write net name in routing file
-		csv.put_field(file_routing, to_string(net.name));
+		--csv.put_field(file_routing, to_string(net.name));
+		csv.put_field(file_routing, to_string(key(net_cursor)));
 		
-		length_of_pinlist := length(net.pins);
+		--length_of_pinlist := length(net.pins);
+		length_of_pinlist := length(element(net_cursor).pins);
 		for p in 1..length_of_pinlist loop -- search in pinlist of given net
-			pin := type_pin_base(element(net.pins, positive(p))); -- load a pin
-
+			--pin := type_pin_base(element(net.pins, positive(p))); -- load a pin
+			pin := type_pin_base(element( element(net_cursor).pins, positive(p))); -- load a pin
+			
 			-- If requested, the entry pin is ignored.
 			if ignore_entry_pin and type_pin_base(pin) = entry_pin then
 				null;
@@ -1346,10 +1369,15 @@ procedure mkoptions is
 		length_of_pinlist	: count_type;
 		pin_scratch			: m1_database.type_pin_base;
 		net_found			: boolean := false; -- True once a net for processing has been found.
+	
+		net_cursor : type_list_of_nets.cursor;
 	begin -- find_net
+		net_cursor := first(list_of_nets);
 		loop_netlist:
-		for i in 1..length_of_netlist loop
-			net := element(list_of_nets, positive(i));
+		--for i in 1..length_of_netlist loop
+		while net_cursor /= type_list_of_nets.no_element loop
+			--net := element(list_of_nets, positive(i));
+			net := element(net_cursor);
 
 			-- The net must be a non-processed cluster net. -- FN9
 			-- This test just speeds up the search. It would be a waste of time
@@ -1362,11 +1390,13 @@ procedure mkoptions is
 
 					if pin_scratch.device_name = device and pin_scratch.device_pin_name = pin then -- FN4 / FN5
 						net_found := true;
-						update_element(list_of_nets, positive(i), set_cluster_id'access);
+						--update_element(list_of_nets, positive(i), set_cluster_id'access);
+						update_element(list_of_nets, net_cursor, set_cluster_id'access);
 
 						-- Find a connector or bridge pin in this net:
-						find_pin(	 
-							net => net, -- the current net we are in
+						find_pin(
+							--net => net, -- the current net we are in
+							net_cursor => net_cursor,
 							ignore_entry_pin => true, -- the current entry pin must be ignored
 							entry_pin => type_pin_base(pin_scratch) -- the current entry pin itself
 							);
@@ -1376,6 +1406,8 @@ procedure mkoptions is
 				end loop;
 					
 			end if;
+
+			next(net_cursor);
 		end loop loop_netlist;
 
 		-- If no net has been found, the given pin is either not connected
@@ -1413,18 +1445,21 @@ procedure mkoptions is
 		result_of_connector_query	: type_result_of_connector_query;
 		result_of_bridge_query		: type_result_of_bridge_query;
 
-		procedure set_cluster_flag (net : in out type_net) is
+		procedure set_cluster_flag (net_name : in type_net_name.bounded_string; net : in out type_net) is
 		begin
 			net.cluster := true;
 
 			write_message (
 				file_handle => file_mkoptions_messages,
 				identation => 2,
-				text => to_string(net.name),
+				--text => to_string(net.name),
+				text => to_string(net_name),
 				console => false);
 		
 		end set_cluster_flag;
-			
+
+		net_cursor : type_list_of_nets.cursor;
+		
 	begin -- make_netlist
 		write_message (
 			file_handle => file_mkoptions_messages,
@@ -1439,23 +1474,28 @@ procedure mkoptions is
 
 		-- Search in list_of_nets for a device with same name as a connector or a bridge.
 		-- If found, set the flag "cluster" of that net.
-		for i in 1..length_of_netlist loop
-			net := element(list_of_nets, positive(i)); -- load a net
-
+		net_cursor := first(list_of_nets);
+		--for i in 1..length_of_netlist loop
+		while net_cursor /= type_list_of_nets.no_element loop
+			--net := element(list_of_nets, positive(i)); -- load a net
+			net := element(net_cursor);
+			
 			length_of_pinlist := length(net.pins);
 			for p in 1..length_of_pinlist loop
 				pin := type_pin_base(element(net.pins, positive(p))); -- load a pin
 
 				-- test if pin belongs to a connector
 				if is_pin_of_connector(pin).is_connector_pin then
-					update_element(list_of_nets, positive(i), set_cluster_flag'access);
+					--update_element(list_of_nets, positive(i), set_cluster_flag'access);
+					update_element(list_of_nets, net_cursor, set_cluster_flag'access);
 					exit; 	-- Skip testing remaining pins
 							-- as net is already marked as member of a cluster
 				end if;
 
 				-- test if pin belongs to a bridge
 				if is_pin_of_bridge(pin).is_bridge_pin then
-					update_element(list_of_nets, positive(i), set_cluster_flag'access);
+					--update_element(list_of_nets, positive(i), set_cluster_flag'access);
+					update_element(list_of_nets, net_cursor, set_cluster_flag'access);
 					exit; 	-- Skip testing remaining pins
 							-- as net is already marked as member of a cluster
 				end if;
@@ -1466,6 +1506,7 @@ procedure mkoptions is
 -- 				end if;
 
 			end loop;
+			next(net_cursor);
 		end loop;
 
 		-- search cluster nets (action AC1)
@@ -1475,8 +1516,11 @@ procedure mkoptions is
 			text => "examining cluster nets ...",
 			console => true);
 
-		for i in 1..length_of_netlist loop
-			net := element(list_of_nets, positive(i)); -- load a net
+-- 		for i in 1..length_of_netlist loop
+-- 			net := element(list_of_nets, positive(i)); -- load a net
+		net_cursor := first(list_of_nets);
+		while net_cursor /= type_list_of_nets.no_element loop
+			net := element(net_cursor);
 
 			-- Care for cluster nets only:
 			-- If net is a cluster and if it has not been assigned a cluster id yet
@@ -1493,16 +1537,19 @@ procedure mkoptions is
 					console => false);
 				
 				-- assign cluster id 
-				update_element(list_of_nets, positive(i), set_cluster_id'access);
+				--update_element(list_of_nets, positive(i), set_cluster_id'access);
+				update_element(list_of_nets, net_cursor, set_cluster_id'access);
 
 				-- Find a connector or bridge pin in the net. Since there is no entry pin
 				-- at this stage, there is no entry pin to be ignored.
-				find_pin(net => net, ignore_entry_pin => true);
+				--find_pin(net => net, ignore_entry_pin => true);
+				find_pin(net_cursor => net_cursor, ignore_entry_pin => true);
 
 				-- put a linebread at end of line in routing file
 				csv.put_lf(file_routing);
-				
 			end if;
+			
+			next(net_cursor);
 		end loop;
 
 	end make_netlist;	
@@ -1514,6 +1561,8 @@ procedure mkoptions is
 	-- Appends cluster to list_of_clusters.
 		net		: type_net;
 		cluster	: type_cluster; -- for temporarily usage before appended to list_of_clusters
+
+		net_cursor : type_list_of_nets.cursor;
 	begin -- make_cluster_lists
 		
 		write_message (
@@ -1532,28 +1581,35 @@ procedure mkoptions is
 				console => false);
 
 			-- loop in netlist
-			for i in 1..length_of_netlist loop
+			net_cursor := first(list_of_nets);
+			--for i in 1..length_of_netlist loop
+			while net_cursor /= type_list_of_nets.no_element loop
 
 				-- Load a net. test if it is part of a cluster and if cluster id matches c_id.
 				-- On match, add the net to the list of nets of cluster.
 				-- If any net of the cluster is scan capable, mark the whole cluster as scan capable.
-				net := element(list_of_nets, positive(i));
+				--net := element(list_of_nets, positive(i));
+				net := element(net_cursor);
+				
 				if net.cluster and net.cluster_id = c_id then
 
 					write_message (
 						file_handle => file_mkoptions_messages,
 						identation => 3,
-						text => to_string(net.name),
+						--text => to_string(net.name),
+						text => to_string(key(net_cursor)),
 						console => false);
 
-					append(cluster.nets, net);
+					--append(cluster.nets, net);
+					insert(container => cluster.nets, key => key(net_cursor), new_item => net);
 
 					if net.bs_capable then
 						cluster.bs_capable := true;
 					end if;
 					
 				end if;	-- if cluster id matches
-				
+
+				next(net_cursor);
 			end loop; -- loop in netlist
 
 			if cluster.bs_capable then
@@ -1568,7 +1624,8 @@ procedure mkoptions is
 			append(list_of_clusters, cluster);
 
 			-- purge netlist of temporarily cluster for next spin
-			delete(cluster.nets, 1, length(cluster.nets));
+			--delete(cluster.nets, 1, length(cluster.nets)); -- CS: use clear instead
+			clear(cluster.nets); -- CS: use clear instead
 
 			-- reset bs_capable flag for next spin
 			cluster.bs_capable := false; 
@@ -1663,6 +1720,8 @@ procedure mkoptions is
 
 		primary_net_found	: boolean := false;
 		name_of_primary_net	: type_net_name.bounded_string;
+
+		net_cursor : type_list_of_nets.cursor;
 	begin -- write_bs_clusters
 		new_line(file_mkoptions_messages);		
 		write_message (
@@ -1696,15 +1755,19 @@ procedure mkoptions is
 					identation => 3,
 					text => "searching driver pin WITHOUT disable specification ...",
 					console => false);
-				
+
+				net_cursor := first(cluster.nets);
 				loop_nets_output2:
-				for i in 1..length(cluster.nets) loop
-					net := element(cluster.nets, positive(i));
+				--for i in 1..length(cluster.nets) loop
+				while net_cursor /= type_list_of_nets.no_element loop
+					--net := element(cluster.nets, positive(i));
+					net := element(net_cursor);
 
 					write_message (
 						file_handle => file_mkoptions_messages,
 						identation => 4,
-						text => "in net " & to_string(net.name) & " ...",
+						--text => "in net " & to_string(net.name) & " ...",
+						text => "in net " & to_string(key(net_cursor)) & " ...",
 						console => false);
 					
 					if net.bs_output_pin_count > 0 then
@@ -1727,10 +1790,12 @@ procedure mkoptions is
 										console => false);
 
 									-- Save name of primary net. Required for sorting secondary nets.
-									name_of_primary_net := net.name;
+									--name_of_primary_net := net.name;
+									name_of_primary_net := key(net_cursor);
 
 									-- write net header like "Section ADR23 class NA"
-									put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+									--put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0
+									put(section_mark.section & row_separator_0 & to_string(key(net_cursor)) & row_separator_0 
 										& netlist_keyword_header_class & row_separator_0
 										& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
 										& row_separator_0 & comment_mark);
@@ -1755,6 +1820,8 @@ procedure mkoptions is
 							end if;
 						end loop;
 					end if;
+
+					next(net_cursor);
 				end loop loop_nets_output2;
 
 				-- Search for a primary net with a driver with disable specification
@@ -1766,14 +1833,18 @@ procedure mkoptions is
 						text => "... none found. Searching driver pin WITH disable specification ...",
 						console => false);
 
+					net_cursor := first(cluster.nets);
 					loop_nets_disable_spec:
-					for i in 1..length(cluster.nets) loop
-						net := element(cluster.nets, positive(i));
+					--for i in 1..length(cluster.nets) loop
+					while net_cursor /= type_list_of_nets.no_element loop
+						--net := element(cluster.nets, positive(i));
+						net := element(net_cursor);
 
 						write_message (
 							file_handle => file_mkoptions_messages,
 							identation => 4,
-							text => "in net " & to_string(net.name) & " ...",
+							--text => "in net " & to_string(net.name) & " ...",
+							text => "in net " & to_string(key(net_cursor)) & " ...",
 							console => false);
 						
 						if net.bs_output_pin_count > 0 or net.bs_bidir_pin_count > 0 then
@@ -1795,10 +1866,12 @@ procedure mkoptions is
 											console => false);
 
 										-- Save name of primary net. Required for sorting secondary nets.
-										name_of_primary_net := net.name;
+										--name_of_primary_net := net.name;
+										name_of_primary_net := key(net_cursor);
 
 										-- write net header like "Section ADR23 class NA"
-										put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+										--put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0
+										put(section_mark.section & row_separator_0 & to_string(key(net_cursor)) & row_separator_0 
 											& netlist_keyword_header_class & row_separator_0
 											& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
 											& row_separator_0 & comment_mark);
@@ -1818,6 +1891,8 @@ procedure mkoptions is
 								end if;
 							end loop;
 						end if;
+
+						next(net_cursor);
 					end loop loop_nets_disable_spec;
 
 				end if;
@@ -1831,14 +1906,18 @@ procedure mkoptions is
 						text => "... none found. Searching receiver pin ...",
 						console => false);
 
+					net_cursor := first(cluster.nets);
 					loop_nets_receiver:
-					for i in 1..length(cluster.nets) loop
-						net := element(cluster.nets, positive(i));
+					--for i in 1..length(cluster.nets) loop
+					while net_cursor /= type_list_of_nets.no_element loop
+						--net := element(cluster.nets, positive(i));
+						net := element(net_cursor);
 
 						write_message (
 							file_handle => file_mkoptions_messages,
 							identation => 4,
-							text => "in net " & to_string(net.name) & " ...",
+							--text => "in net " & to_string(net.name) & " ...",
+							text => "in net " & to_string(key(net_cursor)) & " ...",
 							console => false);
 						
 						if net.bs_input_pin_count > 0 then
@@ -1859,10 +1938,12 @@ procedure mkoptions is
 											console => false);
 
 										-- Save name of primary net. Required for sorting secondary nets.
-										name_of_primary_net := net.name;
+										--name_of_primary_net := net.name;
+										name_of_primary_net := key(net_cursor);
 
 										-- write net header like "Section ADR23 class NA"
-										put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+										--put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0
+										put(section_mark.section & row_separator_0 & to_string(key(net_cursor)) & row_separator_0 
 											& netlist_keyword_header_class & row_separator_0
 											& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
 											& row_separator_0 & comment_mark);
@@ -1886,6 +1967,8 @@ procedure mkoptions is
 								end if;
 							end loop;
 						end if;
+
+						next(net_cursor);
 					end loop loop_nets_receiver;
 
 				end if;
@@ -1908,25 +1991,35 @@ procedure mkoptions is
 						text => "writing secondary nets ...",
 						console => false);
 					
-					-- write header of section secondary nets
+					-- write header of section secondary nets: "SubSection secondary_nets"
 					put_line(row_separator_0 & section_mark.subsection 
 							& row_separator_0 & options_keyword_secondary_nets);
 
-					for i in 1..length(cluster.nets) loop
-						net := element(cluster.nets, positive(i));
-						if net.name /= name_of_primary_net then
+					net_cursor := first(cluster.nets);
+					--for i in 1..length(cluster.nets) loop
+					while net_cursor /= type_list_of_nets.no_element loop
+						--net := element(cluster.nets, positive(i));
+						net := element(net_cursor);
+						
+						--if net.name /= name_of_primary_net then
+						if key(net_cursor) /= name_of_primary_net then -- skip designated primary net
 
 							write_message (
 								file_handle => file_mkoptions_messages,
 								identation => 4,
-								text => to_string(net.name),
+								--text => to_string(net.name),
+								text => to_string(key(net_cursor)),
 								console => false);
 							
-							put_line(2*row_separator_0 & options_keyword_net & row_separator_0 & to_string(net.name));
+							--put_line(2*row_separator_0 & options_keyword_net & row_separator_0 & to_string(net.name));
+							-- write something like "Net motor_on_off"
+							put_line(2*row_separator_0 & options_keyword_net & row_separator_0 & to_string(key(net_cursor)));
 
-							write_net_content(net);
-
+							write_net_content(net); -- write pins of secondary net
+							
 						end if;
+
+						next(net_cursor);	
 					end loop;
 
 					-- write footer of section seconary nets
@@ -1944,6 +2037,7 @@ procedure mkoptions is
 
 	procedure write_single_bs_nets is
 		net : type_net;
+		net_cursor : type_list_of_nets.cursor;
 	begin -- write_single_bs_nets
 		new_line(file_mkoptions_messages);
 		write_message (
@@ -1951,18 +2045,24 @@ procedure mkoptions is
 			identation => 1,
 			text => "writing single bscan nets ...",
 			console => false);
-		
-		for i in 1..length(list_of_nets) loop
-			net := element(list_of_nets, positive(i));
+
+		net_cursor := first(list_of_nets);
+		--for i in 1..length(list_of_nets) loop
+		while net_cursor /= type_list_of_nets.no_element loop
+			--net := element(list_of_nets, positive(i));
+			net := element(net_cursor);
+			
 			if not net.cluster and net.bs_capable then
 
 				write_message (
 					file_handle => file_mkoptions_messages,
 					identation => 2,
-					text => to_string(net.name),
+					--text => to_string(net.name),
+					text => to_string(key(net_cursor)),
 					console => false);
 
-				put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+				--put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0
+				put(section_mark.section & row_separator_0 & to_string(key(net_cursor)) & row_separator_0
 					& netlist_keyword_header_class & row_separator_0
 					& type_net_class'image(net_class_default) -- CS: automatic class setting could be invoked here
 					& row_separator_0 & comment_mark & text_single_bs_net);
@@ -1992,6 +2092,8 @@ procedure mkoptions is
 				new_line;
 
 			end if;
+				
+			next(net_cursor);
 		end loop;
 
 	end write_single_bs_nets;
@@ -2005,6 +2107,7 @@ procedure mkoptions is
 		cluster				: type_cluster;
 		net 				: type_net;
 		name_of_primary_net	: type_net_name.bounded_string;
+		net_cursor : type_list_of_nets.cursor;
 	begin -- write_non_bs_clusters
 		new_line(file_mkoptions_messages);
 		write_message (
@@ -2019,19 +2122,24 @@ procedure mkoptions is
 			if not cluster.bs_capable then
 
 				-- Take the first net of the cluster as primary net.
-				net := element(cluster.nets, 1);
+				--net := element(cluster.nets, 1);
+				net_cursor := first(cluster.nets);
+				net := element(net_cursor);
 
 				write_message (
 					file_handle => file_mkoptions_messages,
 					identation => 2,
-					text => "primary net " & to_string(net.name),
+					--text => "primary net " & to_string(net.name),
+					text => "primary net " & to_string(key(net_cursor)),
 					console => false);
 				
 				-- Save name of primary net. Required for sorting secondary nets.
-				name_of_primary_net := net.name;
+				--name_of_primary_net := net.name;
+				name_of_primary_net := key(net_cursor);
 
 				-- write net header like "Section ADR23 class NA"
-				put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+				--put(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0
+				put(section_mark.section & row_separator_0 & to_string(key(net_cursor)) & row_separator_0
 					& netlist_keyword_header_class & row_separator_0
 					& type_net_class'image(net_class_default)
 					& row_separator_0 & comment_mark);
@@ -2044,7 +2152,7 @@ procedure mkoptions is
 				end if;
 				new_line;
 				
-				write_net_content(net);
+				write_net_content(net); -- write pins of primary net
 
 				-- If the cluster has more than one net, write remaining nets a secondary nets:
 				if length(cluster.nets) > 1 then
@@ -2059,22 +2167,31 @@ procedure mkoptions is
 					put_line(row_separator_0 & section_mark.subsection 
 							& row_separator_0 & options_keyword_secondary_nets);
 
-					for i in 1..length(cluster.nets) loop
-						net := element(cluster.nets, positive(i));
-						if net.name /= name_of_primary_net then
+					net_cursor := first(cluster.nets);
+					--for i in 1..length(cluster.nets) loop
+					while net_cursor /= type_list_of_nets.no_element loop
+						--net := element(cluster.nets, positive(i));
+						net := element(net_cursor);
+						
+						--if net.name /= name_of_primary_net then
+						if key(net_cursor) /= name_of_primary_net then -- skip designated primary net
 
 							write_message (
 								file_handle => file_mkoptions_messages,
 								identation => 3,
-								text => to_string(net.name),
+								--text => to_string(net.name),
+								text => to_string(key(net_cursor)),
 								console => false);
 							
 							-- write secondary net like "Net A12"
-							put_line(2*row_separator_0 & options_keyword_net & row_separator_0 & to_string(net.name));
+							--put_line(2*row_separator_0 & options_keyword_net & row_separator_0 & to_string(net.name));
+							put_line(2*row_separator_0 & options_keyword_net & row_separator_0 & to_string(key(net_cursor)));
 
-							write_net_content(net);
+							write_net_content(net); -- write pins of secondary net
 
 						end if;
+							
+						next(net_cursor);
 					end loop;
 
 					-- write footer of section seconary nets
@@ -2093,6 +2210,7 @@ procedure mkoptions is
 	procedure write_single_non_bs_nets is
 	-- Writes single non bscan nets in options file.
 		net : type_net;
+		net_cursor : type_list_of_nets.cursor;
 	begin
 		new_line(file_mkoptions_messages);		
 		write_message (
@@ -2100,28 +2218,36 @@ procedure mkoptions is
 			identation => 1,
 			text => "writing single non-bscan nets ...",
 			console => false);
-		
-		for i in 1..length(list_of_nets) loop
-			net := element(list_of_nets, positive(i));
+
+		net_cursor := first(list_of_nets);
+		--for i in 1..length(list_of_nets) loop
+		while net_cursor /= type_list_of_nets.no_element loop
+			--net := element(list_of_nets, positive(i));
+			net := element(net_cursor);
+			
 			if not net.cluster and not net.bs_capable then
 
 				write_message (
 					file_handle => file_mkoptions_messages,
 					identation => 2,
-					text => to_string(net.name),
+					--text => to_string(net.name),
+					text => to_string(key(net_cursor)),
 					console => false);
 
-				put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0 
+				--put_line(section_mark.section & row_separator_0 & to_string(net.name) & row_separator_0
+				put_line(section_mark.section & row_separator_0 & to_string(key(net_cursor)) & row_separator_0 
 					& netlist_keyword_header_class & row_separator_0
 					& type_net_class'image(net_class_default)
 					& row_separator_0 & comment_mark & text_single_non_bs_net);
 
-				write_net_content(net);
+				write_net_content(net); -- write pins of net
 				
 				-- write primary net footer
 				put_line(section_mark.endsection);
 				new_line;
 			end if;
+				
+			next(net_cursor);
 		end loop;
 	end write_single_non_bs_nets;	
 	

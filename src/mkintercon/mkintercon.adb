@@ -492,13 +492,21 @@ procedure mkintercon is
 		function get_dynamic_bs_nets return natural is
 			n : natural := 0;
 			use type_list_of_nets;
+			net_cursor : type_list_of_nets.cursor;
 		begin
-			for i in 1..positive(length(list_of_nets)) loop
-				if element(list_of_nets, i).class = NR 
-					or element(list_of_nets, i).class = PU
-					or element(list_of_nets, i).class = PD then
-						n := n + 1;
+			net_cursor := first(list_of_nets);
+			--for i in 1..positive(length(list_of_nets)) loop
+			while net_cursor /= type_list_of_nets.no_element loop
+-- 				if element(list_of_nets, i).class = NR 
+-- 					or element(list_of_nets, i).class = PU
+-- 					or element(list_of_nets, i).class = PD then
+				if element(net_cursor).class = NR 
+					or element(net_cursor).class = PU
+					or element(net_cursor).class = PD then
+					n := n + 1;
 				end if;	
+					
+				next(net_cursor);
 			end loop;
 			return n;
 		end get_dynamic_bs_nets;

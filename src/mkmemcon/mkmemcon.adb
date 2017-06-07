@@ -360,28 +360,37 @@ procedure mkmemcon is
 		-- now the net list (from data base) is searched for a net that contains the target device with name_pin_given
 			net_name	: type_net_name.bounded_string;
 			net_found	: boolean := false; -- indicates whether a net has been found
+			net_cursor	: type_list_of_nets.cursor;
+			net			: type_net;
 		begin
+			net_cursor := first(list_of_nets);
 			loop_through_net_list:
-			for n in 1..length(list_of_nets) loop
+			--for n in 1..length(list_of_nets) loop
+			while net_cursor /= type_list_of_nets.no_element loop
+				net := element(net_cursor);
 				-- NOTE: element(list_of_nets, positive(n)) means the current net
-				for p in 1..length( element(list_of_nets, positive(n)).pins ) loop -- loop through pins of net
+				--for p in 1..length( element(list_of_nets, positive(n)).pins ) loop -- loop through pins of net
+				for p in 1..length(net.pins) loop -- loop through pins of net
 					-- NOTE: element(element(list_of_nets, positive(n)).pins, positive(p)) means the current pin
 					-- to speed up the process, only non-scan pins are adressed
-					if not element(element(list_of_nets, positive(n)).pins, positive(p)).is_bscan_capable then
+					--if not element(element(list_of_nets, positive(n)).pins, positive(p)).is_bscan_capable then
+					if not element(net.pins, positive(p)).is_bscan_capable then
 
 						-- on device name match
-						if to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_name) 
-							= to_string(ptr_target.device_name) then
+						--if to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_name)
+						if element(net.pins, positive(p)).device_name = ptr_target.device_name then
 
 							-- on pin name match, the net connected to the given pin has been found
-							if to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_pin_name) 
-								= to_string(name_pin_given) then
+							--if to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_pin_name)
+							if element(net.pins, positive(p)).device_pin_name = name_pin_given then
 								
-								net_name := element(list_of_nets, positive(n)).name; -- save net name
+								--net_name := element(list_of_nets, positive(n)).name; -- save net name
+								net_name := key(net_cursor); -- save net name
 								--put_line("net " & to_string(net_name));
 
 								-- do a net class check in connection with pin direction
-								case element(list_of_nets, positive(n)).class is
+								--case element(list_of_nets, positive(n)).class is
+								case element(net_cursor).class is
 									-- class NA | EL | EH nets can not be used to drive data into the target
 									when NA | EL | EH =>
 										case direction_given is
@@ -404,7 +413,8 @@ procedure mkmemcon is
 													text => " of " & to_string(ptr_target.device_name) 
 														& " is connected to net " & to_string(net_name) 
 														& " which is in class " 
-														& type_net_class'image(element(list_of_nets, positive(n)).class) & " !"
+														--& type_net_class'image(element(list_of_nets, positive(n)).class) & " !"
+														& type_net_class'image(element(net_cursor).class) & " !"
 														& latin_1.lf
 														& "In nets of this class, no drivers become active !",
 													console => true);
@@ -419,7 +429,8 @@ procedure mkmemcon is
 												put_line(" of " & to_string(ptr_target.device_name) 
 													& " is connected to net "
 													& to_string(net_name) & " which is in class " 
-													& type_net_class'image( element(list_of_nets, positive(n)).class ) & " !"
+													--& type_net_class'image( element(list_of_nets, positive(n)).class ) & " !"
+													& type_net_class'image( element(net_cursor).class ) & " !"
 													& latin_1.lf & "In nets of this class, no drivers become active !");
 											when output =>
 												null; -- CS: put warning ?
@@ -432,27 +443,32 @@ procedure mkmemcon is
 								-- verify value of target, but do this only once
 								-- the global flag invalid_value is used to ensure this message comes up only once
 								if not invalid_value then
-									if to_string( element(element(list_of_nets, positive(n)).pins, positive(p)).device_value) 
-										/= to_string(ptr_target.value) then
+									--if to_string( element(element(list_of_nets, positive(n)).pins, positive(p)).device_value)
+									if element(net.pins, positive(p)).device_value 
+										--/= to_string(ptr_target.value) then
+										/= ptr_target.value then
 										invalid_value := true;
 										put_line(message_warning & "target value mismatch !");
 										put_line(" value given in model file is " 
 											& to_string(ptr_target.value));
 										put_line(" value found in " & text_identifier_database & " is "
-											& to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_value));
+											--& to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_value));
+											& to_string(element(net.pins, positive(p)).device_value));
 									end if;
 								end if;
 
 								-- verify package, but do this only once
 								-- the global flag invalid_package is used to ensure this message comes up only once
 								if not invalid_package then
-									if to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_package) 
-										/= to_string(ptr_target.device_package) then
+-- 									if to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_package) 
+-- 										/= to_string(ptr_target.device_package) then
+									if element(net.pins, positive(p)).device_package /= ptr_target.device_package then
 										invalid_package := true;
 										put_line(message_warning & "target package mismatch !");
 										put_line(" package given as parameter is " & to_string(ptr_target.device_package));
 										put_line(" package found in " & text_identifier_database & " is " 
-											& to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_package));
+											--& to_string(element(element(list_of_nets, positive(n)).pins, positive(p)).device_package));
+											& to_string(element(net.pins, positive(p)).device_package));
 									end if;
 								end if;
 
@@ -466,6 +482,7 @@ procedure mkmemcon is
 						end if; -- on device name match
 					end if; -- pin must not be scan capable
 				end loop;
+				next(net_cursor);
 			end loop loop_through_net_list;
 
 			-- if net not found after searching the uut net list, abort
