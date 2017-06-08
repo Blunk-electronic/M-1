@@ -1,38 +1,11 @@
-*~
+# ada stuff
 *.o
 *.ali
-#include
-#bin
+
+# editor stuff
+*~
 DEADJOE
-*.tmp
-*.vec
-*.bin
-*.lis
-*.hex
 *.kate-swp
-*.b#?
-*.s#?
-*.epf
-*.epf.in
-eagle.rc
-
-#UUTs
-# files in test directories:
-uut/*/*/*.seq
-uut/*/*/*.vec
-uut/*/*/*.lis
-uut/*/*/*.reg
-uut/*/*/*.csv
-uut/*/*/netlist.txt
-uut/*/*/readme.txt
-
-# files in uut root directory
-uut/*/*.udb
-uut/*/*.csv
-
-# others
-uut/*/setup/journal.txt
-uut/*/bak
 
 
 

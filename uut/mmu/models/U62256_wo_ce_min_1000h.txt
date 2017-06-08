@@ -1,5 +1,5 @@
 Section info
-	value		UM62256
+    value UM62256
 	compatibles	62256
 	date		2016-05-24
 	version		2.0
@@ -8,7 +8,7 @@ Section info
 	class		RAM
 	manufacturer	UMC
 	write_protect	false
-	protocol	parallel
+ protocol	parallel
 	ram_type	SRAM
 EndSection
 

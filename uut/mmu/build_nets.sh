@@ -1,33 +1,23 @@
 #! /bin/bash
 
 set -e
-if [ ! -e tmp ] 
-	then
-		mkdir tmp
-fi
 
-if [ ! -e bak ] 
-	then
-		mkdir bak
-fi
+database=mmu_default.udb
 
 # initialize databases
-cp mmu_seed.txt mmu_default.udb
-cp mmu_seed.txt mmu_sram_ic202.udb
-cp mmu_seed.txt mmu_sram_ic203.udb
-cp mmu_seed.txt mmu_osc.udb
+cp mmu_seed.txt $database
 
 # import BSDL models
-bsmcl import_bsdl mmu_default.udb
-bsmcl import_bsdl mmu_sram_ic202.udb
-bsmcl import_bsdl mmu_sram_ic203.udb
-bsmcl import_bsdl mmu_osc.udb
+echo "importing BSDL models..."
+bsmcl import_bsdl $database
+
+# import eagle netlist
+echo "importing eagle netlist ..."
+bsmcl import_cad eagle cad/mmu_v101r4_from_brd.net cad/mmu_v101r4_from_brd.part main
 
 # make boundary scan nets from skeleton.txt
-bsmcl mknets mmu_default.udb
-bsmcl mknets mmu_sram_ic202.udb
-bsmcl mknets mmu_sram_ic203.udb
-bsmcl mknets mmu_osc.udb
+bsmcl mknets $database
 
-echo "PASSED" > tmp/test_result.tmp
+#bsmcl mkoptions $database
+#bsmcl chkpsn $database 
 exit
