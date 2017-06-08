@@ -1360,7 +1360,7 @@ procedure impbsdl is
 
 
 	
-	procedure read_bsld_models is
+	procedure read_bsdl_models is
 		use type_list_of_bics_pre;
 		bic				: type_bscan_ic_pre;
 		bic_cursor		: type_list_of_bics_pre.cursor := first(list_of_bics_pre);
@@ -1372,6 +1372,8 @@ procedure impbsdl is
 		bsdl_string		: unbounded_string;
 		
 	begin -- read_bsld_models
+		put_line(file_import_bsdl_messages, "reading" & count_type'image(length(list_of_bics_pre)) & " BSDL models ...");
+		
 		-- 		for i in 1..length(list_of_bics_pre) loop
 		while bic_cursor /= type_list_of_bics_pre.no_element loop
 		
@@ -1383,12 +1385,12 @@ procedure impbsdl is
 
 			write_message (
 				file_handle => file_import_bsdl_messages,
-				identation => 2,
-				text => "BSDL model file " & to_string(bic.model_file), 
+				identation => 1,
+				text => to_string(key(bic_cursor)) & " -> BSDL model file " & to_string(bic.model_file), 
 				lf => false,
-				console => false);
+				console => true);
 
-			put(standard_output, "  BSDL model file " & to_string(bic.model_file)); 
+			--put(standard_output, "  BSDL model file " & to_string(bic.model_file)); 
 
 			
 			-- read options (if given) begin
@@ -1488,7 +1490,7 @@ procedure impbsdl is
 
 			next(bic_cursor); -- advance cursor for next spin
 		end loop;
-	end read_bsld_models;
+	end read_bsdl_models;
 
 	procedure copy_scanpath_configuration is
 		line_counter : natural := 0;
@@ -1590,7 +1592,7 @@ begin
 	write_section_registers_header;
 	
 	prog_position	:= 110;
-	read_bsld_models;
+	read_bsdl_models;
 
 	prog_position	:= 120;
 	-- write section registers footer
