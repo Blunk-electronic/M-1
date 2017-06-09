@@ -29,6 +29,8 @@
 --
 --   history of changes:
 --
+with ada.characters;			use ada.characters;
+with ada.characters.latin_1;	use ada.characters.latin_1;
 with interfaces;				use interfaces;
 with ada.directories;			use ada.directories;
 with ada.containers;			use ada.containers;
@@ -165,12 +167,20 @@ package body m1_files_and_directories is
 						
 						if exists (to_string(interface_to_bsc)) then
 --							if is_open (to_string(interface_to_bsc)) then -- CS
+								prog_position := "ENV52";
 								read_bsc_status_registers(interface_to_bsc);
 								if bsc_register_firmware_executor >= bsc_firmware_executor_min then -- see m1_firmware
 									-- CS: read other registers ?
 									scan_master_present := true;
+									prog_position := "ENV52";
 								else
-									put(message_warning & " boundary scan controller firmware invalid ! Test execution not possible !");
+									--put(message_warning & " boundary scan controller firmware invalid ! Test execution not possible !");
+									prog_position := "ENV54";
+									write_message (
+										file_handle => current_output,
+										text => message_warning & " boundary scan controller firmware invalid ! Test execution not possible !",
+										console => true);
+
 									-- CS: show firmware version detected
 								end if;
 -- 							else
@@ -179,9 +189,17 @@ package body m1_files_and_directories is
 						else
 							--put_line(message_error & " interface " & to_string(interface_to_bsc) & " to boundary scan controller not found !");
 							--put_line("Make sure the USB connector is plugged into the PC !");
-							put_line(message_error & "boundary scan controller communication failure !");
-							put_line("Check cables, turn on boundary scan controller and try again !");
-							raise constraint_error;
+							prog_position := "ENV56";
+							write_message (
+								file_handle => current_output,
+								text => message_warning & "boundary scan controller communication failure !"
+									& latin_1.lf
+									& "Check cables, turn on boundary scan controller and try again !"
+									& latin_1.lf
+									& " Test execution not possible !",
+								console => true);
+
+							--raise constraint_error;
 						end if;
 
 						
@@ -190,16 +208,26 @@ package body m1_files_and_directories is
 				end if; -- if line contains anything useful
 
 			end loop;
+
+			prog_position := "ENV60";
 			close(file_system_configuraion);
 		end if;
 
+		prog_position := "ENV70";
 		set_input(previous_input);
 
 	exception -- CS: rework
 			when others =>
-				put_line(message_error & "in system configuration file !"); -- CS: refine output (line number, affected line, ...)
-				put_line(prog_position);
-				raise;
+-- 				put_line(message_error & "in system configuration file !"); -- CS: refine output (line number, affected line, ...)
+-- 				put_line(prog_position);
+
+			write_message (
+				file_handle => current_output,
+				text => message_error & "in system configuration file !"
+					& latin_1.lf
+					& "program position " & prog_position,
+				console => true);
+			raise;
 	end check_environment;
 
 
