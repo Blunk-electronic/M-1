@@ -6,7 +6,7 @@
 --                                                                          --
 --                               B o d y                                    --
 --                                                                          --
---         Copyright (C) 2016 Mario Blunk, Blunk electronic                 --
+--         Copyright (C) 2017 Mario Blunk, Blunk electronic                 --
 --                                                                          --
 --    This program is free software: you can redistribute it and/or modify  --
 --    it under the terms of the GNU General Public License as published by  --
@@ -24,7 +24,7 @@
 
 --   Please send your questions and comments to:
 --
---   Mario.Blunk@blunk-electronic.de
+--   info@blunk-electronic.de
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   history of changes:
@@ -36,11 +36,15 @@ with ada.text_io; 				use ada.text_io;
 with ada.characters.handling;	use ada.characters.handling;
 with ada.directories;			use ada.directories;
 
-with m1_internal; 				use m1_internal;
+with ada.containers;			use ada.containers;
+
+with m1_base;					use m1_base;
+with m1_database;				use m1_database;
 with m1_numbers;				use m1_numbers;
 with m1_files_and_directories; 	use m1_files_and_directories;
+with m1_string_processing;		use m1_string_processing;
 with m1_firmware;				use m1_firmware;
-
+with m1_test_gen_and_exec;		use m1_test_gen_and_exec;
 
 --with gtkada;
 
@@ -62,7 +66,7 @@ with bsmgui_cb; 		use bsmgui_cb;
 
 procedure bsmgui is
 
-	version					: string (1..3) := "015";
+	version					: string (1..3) := "001";
 
 	window_main 			: gtk_window;
 	box_back				: gtk_box;
@@ -79,95 +83,88 @@ procedure bsmgui is
 	filter_scripts			: gtk_file_filter;
 	--filter_tests			: gtk_file_filter;
 
+
+	use type_name_directory_home;
+	use type_name_script;
+	use type_name_project;
+	use type_name_test;
+	
 	procedure read_last_session is
 	-- Reads session configuration file (.M-1/session.conf) and restores project, script and test.
 		file_session	: ada.text_io.file_type;
-		line			: extended_string.bounded_string;
+		line			: type_fields_of_line;
 	begin
 		-- First make sure the configuration file exists. It does not exist after a brand new installation.
 		-- It will be created when operator quits the gui.
-		if exists (compose
-							(
-							containing_directory => universal_string_type.to_string(name_directory_home) & name_directory_separator &
-								name_directory_configuration,
-							name => name_file_configuration_session 
-							)
-					) then
+		if exists (compose (
+			containing_directory => compose( to_string(name_directory_home), name_directory_configuration),
+			name => name_file_configuration_session 
+			)) then
 
 			-- open the configuration file
 			put_line("restoring last session ...");
-			open(	file => file_session,
-					mode => in_file,
-					name => compose
-								(
-								containing_directory => universal_string_type.to_string(name_directory_home) & name_directory_separator &
-									name_directory_configuration,
-								name => name_file_configuration_session 
-								)
-				);
+			open( file => file_session, mode => in_file, name => compose (
+				containing_directory => compose( to_string(name_directory_home), name_directory_configuration),
+				name => name_file_configuration_session));
 			set_input(file_session);
 
 			while not end_of_file
 			loop
-				line := remove_comment_from_line(extended_string.to_bounded_string(get_line)); -- comments start with "--"
+				line := read_line(get_line); -- comments start with "--"
 				--put_line(extended_string.to_string(line));
-				if get_field_count(extended_string.to_string(line)) /= 0 then -- if line contains anything
+				if line.field_count /= 0 then -- if line contains anything
 					
 					-- get project
 					if get_field_from_line(line,1) = text_project then 
-						name_project := universal_string_type.to_bounded_string(get_field_from_line(line,2));
+						name_project := to_bounded_string(get_field_from_line(line,2));
 						-- check if project is valid
-						if valid_project(universal_string_type.to_string(name_project)) then
+						if valid_project(name_project) then
 							--put_line(text_project & ": " & universal_string_type.to_string(name_project));
-							if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_project)) then
-								put_line("set project: " & universal_string_type.to_string(name_project));
+							if set_current_folder(chooser_set_uut, to_string(name_project)) then
+								put_line("set project: " & to_string(name_project));
 							end if;
 						else
-							put_line(message_error & "Project " & quote_single &
-								universal_string_type.to_string(name_project) & quote_single & " invalid" & exclamation);
+							put_line(message_error & "project " & quote_single &
+								to_string(name_project) & quote_single & " invalid !");
 						end if;
 					end if;
 
 					-- get script
 					if get_field_from_line(line,1) = text_script then 
-						name_script := universal_string_type.to_bounded_string( 
-									(
-									universal_string_type.to_string(name_project) &
-									name_directory_separator & 
+						name_script := to_bounded_string( compose (
+									to_string(name_project), 
 									get_field_from_line(line,2)
 									));
 
 						-- check if script is valid
-						if valid_script(universal_string_type.to_string(name_script)) then
-							if set_filename(chooser_set_script,universal_string_type.to_string(name_script)) then  
-								put_line("set script: " & universal_string_type.to_string(name_script));
+						if valid_script(name_script) then
+							if set_filename(chooser_set_script, to_string(name_script)) then  
+								put_line("set script: " & to_string(name_script));
 								set_sensitive (button_start_stop_script, true);
 							end if;
 						else
-							put_line(message_error & "Script " & quote_single &
-								universal_string_type.to_string(name_script) & quote_single & " invalid" & exclamation);
+							put_line(message_error & "script " & quote_single &
+								to_string(name_script) & quote_single & " invalid !");
 						end if;
 					end if;
 
 					-- get test
 					if get_field_from_line(line,1) = text_test then 
-						name_test := universal_string_type.to_bounded_string( 
-									(
-									universal_string_type.to_string(name_project) &
-									name_directory_separator & 
+						name_test := to_bounded_string( compose (
+									to_string(name_project),
 									get_field_from_line(line,2)
 									));
 
 						-- check if test is valid
 						-- Test if test has been compiled yet. If not compiled (or invalid) default to project root directory.
-						if test_compiled(universal_string_type.to_string(name_test)) then
-							if set_current_folder(chooser_set_test,universal_string_type.to_string(name_test)) then 
-								put_line("set test: " & universal_string_type.to_string(name_test));
+						if test_compiled(name_test) then
+							if set_current_folder(chooser_set_test, to_string(name_test)) then 
+								put_line("set test: " & to_string(name_test));
 								set_sensitive (button_start_stop_test, true);
 							end if;
 						else
-							put_line(message_warning & "Test invalid or not compiled yet" & exclamation);
-							if set_current_folder(chooser_set_test,universal_string_type.to_string(name_project)) then 
+							put_line(message_warning & "test invalid or not compiled yet !");
+							if set_current_folder(chooser_set_test, to_string(name_project)) then 
 								null;
 							end if;
 							set_sensitive (button_start_stop_test, false);
@@ -179,54 +176,48 @@ procedure bsmgui is
 			end loop;
 			close(file_session);
 
-
-
-
-
 		else
 			-- NO SESSION FILE EXISTS -> CREATE A NEW ONE 
-			put_line("no session found, creating a new one ...");
-			--create_session_configuration_file;
-			create( file => file_session, name => compose
-							(
-							containing_directory => universal_string_type.to_string(name_directory_home) & name_directory_separator &
-								name_directory_configuration,
-							name => name_file_configuration_session 
-							)
-				);
-			-- write info headline
-			write_session_file_headline;
+			--			put_line("no session found, creating a new one ...");
+			put_line("no session found. assuming defaults ...");
 
-			-- The project directory will be $HOME/M-1/uut (default)
-			put_line( file_session, text_project & row_separator_0 &
-				universal_string_type.to_string(name_directory_home) &
-				name_directory_separator &
-				name_directory_projects_default
-				);
-
-			-- Since there is no project set yet, no script and no test can be set. So just write the identifiers:
-			put_line( file_session, text_script);
-			put_line( file_session, text_test);
-			close(file_session);
+-- 			--create_session_configuration_file;
+-- 			create( file => file_session, mode => out_file, name => compose (
+-- 				containing_directory => compose ( to_string(name_directory_home), name_directory_configuration),
+-- 				name => name_file_configuration_session 
+-- 				));
+-- 			
+-- 			-- write info headline
+-- 			--write_session_file_headline;
+-- 
+-- 			-- The project directory will be $HOME/M-1/uut (default)
+-- 			put_line(" writing project directory ...");
+-- 			put_line( file_session, text_project & row_separator_0 &
+-- 				to_string(name_directory_home) & name_directory_separator & name_directory_projects_default);
+-- 
+-- 			-- Since there is no project set yet, no script and no test can be set. So just write the identifiers:
+-- 			put_line( file_session, text_script);
+-- 			put_line( file_session, text_test);
+-- 			close(file_session);
 
 			-- Set the project name, script and test to the default directory
-			name_project := universal_string_type.to_bounded_string(
-								universal_string_type.to_string(name_directory_home) &
+			name_project := to_bounded_string(
+								to_string(name_directory_home) &
 								name_directory_separator &
 								name_directory_projects_default
 							);
-			name_script := name_project;
-			name_test := name_project;
+			name_script := to_bounded_string(to_string(name_project));
+			name_test := to_bounded_string(to_string(name_project));
 
-			if set_current_folder(chooser_set_uut, universal_string_type.to_string(name_project)) then
+			if set_current_folder(chooser_set_uut, to_string(name_project)) then
 				null;
 			end if;
 
-			if chooser_set_script.set_filename(universal_string_type.to_string(name_script)) then  
+			if chooser_set_script.set_filename(to_string(name_script)) then  
 				null;
 			end if;
 
-			if set_current_folder(chooser_set_test,universal_string_type.to_string(name_test)) then  
+			if set_current_folder(chooser_set_test,to_string(name_test)) then  
 				null;
 			end if;
 
