@@ -3,7 +3,7 @@
 # This is the install script for System M-1. 
 # If started with option "-make" the binaries will not be built.
 
-version=011
+version=001
 
 set -e
 
@@ -83,19 +83,10 @@ echo "copying script files in" $dest_script_dir "..."
 #echo "WARNING ! Already existing script files residing there will be overwritten !"
 #procedure_operator_confirmation
 	
-#procedure_copy_script impaltium
 procedure_copy_script impeagle
 procedure_copy_script imporcad
 procedure_copy_script open_report
 procedure_copy_script run_and_log_sequence
-#procedure_copy_script clrram
-#procedure_copy_script diag
-#procedure_copy_script dump_outram
-#procedure_copy_script loadtest
-#procedure_copy_script runtest
-#procedure_copy_script stoptest
-#procedure_copy_script version
-#procedure_copy_script stop_sequence
 procedure_copy_script mkproject
 procedure_copy_script run_continuous
 #procedure_copy_script set_breakpoint
@@ -132,7 +123,7 @@ if [ ! "$1" = "-make" ]
 		procedure_make udbinfo
 		procedure_make compseq
 		procedure_make impbsdl
-		procedure_make impzuken
+		#procedure_make impzuken
 		procedure_make impprotel
 		procedure_make joinnetlist
 		procedure_make mkinfra
@@ -142,7 +133,7 @@ if [ ! "$1" = "-make" ]
 		procedure_make mkoptions
 		procedure_make mktoggle
 		procedure_make mkclock
-		procedure_make mkvmod
+		#procedure_make mkvmod
 		procedure_gnatmake bsmgui
 fi
 

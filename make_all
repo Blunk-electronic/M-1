@@ -1,6 +1,6 @@
 #! /bin/bash
 
-version=002
+version=001
 
 procedure_make()
 	{
@@ -46,7 +46,7 @@ procedure_make mkoptions
 procedure_make mktoggle
 procedure_make mkclock
 #procedure_make mkvmod
-#procedure_gnatmake bsmgui
+procedure_gnatmake bsmgui
 
 exit
 echo done
