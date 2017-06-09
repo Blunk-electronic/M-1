@@ -1,0 +1,10476 @@
+------------------------------------------------------------------------------
+--                                                                          --
+--                    SYSTEM M-1 INTERNAL COMPONENTS                        --
+--                                                                          --
+--                                 M-1                                      --
+--                                                                          --
+--                               B o d y                                    --
+--                                                                          --
+--         Copyright (C) 2017 Mario Blunk, Blunk electronic                 --
+--                                                                          --
+--    This program is free software: you can redistribute it and/or modify  --
+--    it under the terms of the GNU General Public License as published by  --
+--    the Free Software Foundation, either version 3 of the License, or     --
+--    (at your option) any later version.                                   --
+--                                                                          --
+--    This program is distributed in the hope that it will be useful,       --
+--    but WITHOUT ANY WARRANTY; without even the implied warranty of        --
+--    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         --
+--    GNU General Public License for more details.                          --
+--                                                                          --
+--    You should have received a copy of the GNU General Public License     --
+--    along with this program.  If not, see <http://www.gnu.org/licenses/>. --
+------------------------------------------------------------------------------
+
+--   Please send your questions and comments to:
+--
+--   Mario.Blunk@blunk-electronic.de
+--   or visit <http://www.blunk-electronic.de> for more contact data
+--
+--   history of changes:
+--		- read_uut_data_base now checks scanport output voltage for a supported discrete value
+
+
+with ada.text_io;					use ada.text_io;
+with ada.strings.unbounded; 		use ada.strings.unbounded;
+with ada.strings.bounded; 			use ada.strings.bounded;
+with ada.strings.unbounded.text_io; use ada.strings.unbounded.text_io;
+
+with ada.strings; 					use ada.strings;
+with ada.characters;				use ada.characters;
+with ada.characters.latin_1;		use ada.characters.latin_1;
+
+with ada.containers;                use ada.containers;
+with ada.containers.vectors;
+
+with gnat.os_lib;   				use gnat.os_lib;
+with ada.directories;				use ada.directories;
+
+with m1;
+with m1_files_and_directories; 		use m1_files_and_directories;
+with m1_serial_communications;		use m1_serial_communications;
+with gnat.serial_communications;	use gnat.serial_communications;
+--with m1_numbers;
+
+package body m1_internal is
+
+	prog_position 	: string (1..5) := "IT000";
+
+-- 	procedure read_data_base is
+-- 	begin
+-- 		summary := read_uut_data_base(
+-- 			name_of_data_base_file => universal_string_type.to_string(name_file_data_base),
+-- 			debug_level => debug_level 
+-- 			); --.net_count_statistics.total > 0 then null; 
+-- 
+-- 		if not summary.sections_processed.all_sections then
+-- 
+-- 			if not summary.sections_processed.section_scanpath_configuration then
+-- 				put_line("WARNING : Section " & section_scanpath_configuration & " incomplete or missing !");
+-- 				--raise constraint_error;
+-- 			end if;
+-- 
+-- 			if not summary.sections_processed.section_registers then
+-- 				put_line("WARNING : Section " & section_registers & " incomplete or missing !");
+-- 				--raise constraint_error;
+-- 			end if;
+-- 
+-- 			if not summary.sections_processed.section_netlist then
+-- 				put_line("WARNING : Section " & section_netlist & " incomplete or missing !");
+-- 				--raise constraint_error;
+-- 			end if;
+-- 
+-- 			if not summary.sections_processed.section_static_control_cells_class_EX_NA then
+-- 				put_line("WARNING : Section " & section_static_control_cells_class_EX_NA & " incomplete or missing !");
+-- 				--raise constraint_error;
+-- 			end if;
+-- 
+-- 			if not summary.sections_processed.section_static_control_cells_class_DX_NR then
+-- 				put_line("WARNING : Section " & section_static_control_cells_class_DX_NR & " incomplete or missing !");
+-- 				--raise constraint_error;
+-- 			end if;
+-- 
+-- 			if not summary.sections_processed.section_static_control_cells_class_PX then
+-- 				put_line("WARNING : Section " & section_static_control_cells_class_PX & " incomplete or missing !");
+-- 				--raise constraint_error;
+-- 			end if;
+-- 
+-- 			if not summary.sections_processed.section_static_output_cells_class_PX then
+-- 				put_line("WARNING : Section " & section_static_output_cells_class_PX & " incomplete or missing !");
+-- 				--raise constraint_error;
+-- 			end if;
+-- 
+-- 			if not summary.sections_processed.section_static_output_cells_class_DX_NR then
+-- 				put_line("WARNING : Section " & section_static_output_cells_class_DX_NR & " incomplete or missing !");
+-- 				--raise constraint_error;
+-- 			end if;
+-- 
+-- 			if not summary.sections_processed.section_static_expect then
+-- 				put_line("WARNING : Section " & section_static_expect & " incomplete or missing !");
+-- 				--raise constraint_error;
+-- 			end if;
+-- 
+-- 			if not summary.sections_processed.section_atg_expect then
+-- 				put_line("WARNING : Section " & section_atg_expect & " incomplete or missing !");
+-- 				--raise constraint_error;
+-- 			end if;
+-- 
+-- 			if not summary.sections_processed.section_atg_drive then
+-- 				put_line("WARNING : Section " & section_atg_drive & " incomplete or missing !");
+-- 				--raise constraint_error;
+-- 			end if;
+-- 
+-- 			if not summary.sections_processed.section_input_cells_class_NA then
+-- 				put_line("WARNING : Section " & section_input_cells_class_NA & " incomplete or missing !");
+-- 				--raise constraint_error;
+-- 			end if;
+-- 
+-- 			if not summary.sections_processed.section_statistics then
+-- 				put_line("WARNING : Section " & section_statistics & " incomplete or missing !");
+-- 			end if;
+-- 		end if;
+-- 
+-- 	end read_data_base;
+
+
+-- 	function fraction_port_name(port_name_given : string) return type_port_vector is
+-- 	-- breaks down something line A[14:0] into the components name=A, msb=14, lsb=0 and length=15
+-- 	-- if a single port given like 'CE', the components are name=CE, msb=0, lsb=0 and length=1
+--  		length		: natural := port_name_given'last;
+-- 		ob			: string (1..1) := "[";
+-- 		cb			: string (1..1) := "]";
+-- 		ifs			: string (1..1) := ":";
+-- 		pos_ob		: positive;
+-- 		pos_cb		: positive;
+-- 		pos_ifs		: positive;
+-- 		ct_ifs		: natural := ada.strings.fixed.count(port_name_given,ifs);
+-- 		ct_ob		: natural := ada.strings.fixed.count(port_name_given,ob);
+-- 		ct_cb		: natural := ada.strings.fixed.count(port_name_given,cb);
+-- 		port_vector	: type_port_vector;
+-- 	begin
+-- 		if ct_ob = 1 and ct_cb = 1 and ct_ifs = 1 then -- it seems like a vector
+-- 
+-- 			-- get position of opening, closing bracket and ifs to verify syntax
+-- 			pos_ob  := ada.strings.fixed.index(port_name_given,ob);
+-- 			pos_cb  := ada.strings.fixed.index(port_name_given,cb);
+-- 			pos_ifs := ada.strings.fixed.index(port_name_given,ifs);
+-- 
+-- 			-- the opening bracket must be on position greater 1 -- example ADR[14:0]
+-- 			-- the closing bracket must be on last position
+-- 			if pos_ob > 1 and pos_cb = length then
+-- 
+-- 				-- ifs must be within brackets, but not next to a bracket
+-- 				-- MSB is always on the left, LSB always on the left
+-- 				if pos_ifs > pos_ob + 1 and pos_ifs < pos_cb - 1 then
+-- 					port_vector.msb := positive'value(port_name_given (pos_ob+1 .. pos_ifs-1)); -- msb is always non-zero
+-- 					port_vector.lsb := natural'value(port_name_given (pos_ifs+1 .. pos_cb-1));
+-- 
+-- 					-- msb must be greater than lsb
+-- 					if port_vector.msb > port_vector.lsb then
+-- 						-- the port name is from pos. 1 to opening bracket
+-- 						port_vector.name := universal_string_type.to_bounded_string(port_name_given (port_name_given'first .. pos_ob-1));
+-- 					else
+-- 						raise constraint_error;
+-- 					end if;
+-- 				else
+-- 					raise constraint_error;
+-- 				end if;
+-- 			else
+-- 				raise constraint_error;
+-- 			end if;
+-- 
+-- 
+-- 		elsif ct_ob = 0 and ct_cb = 0 and ct_ifs = 0 then -- it is a single port (no vector)
+-- 			-- copy port_name_given as it is in port_name_given.name
+-- 			-- and set msb equal to lsb to indicate a non-vector port
+-- 			port_vector.name := universal_string_type.to_bounded_string(port_name_given);
+-- 			port_vector.msb := 0;
+-- 			port_vector.lsb := 0;
+-- 		
+-- 		else -- other bracket counts are invalid
+-- 			raise constraint_error;
+-- 		end if;
+-- 
+-- 		-- calculate vector length. in case of a single port, the length becomes 1
+-- 		port_vector.length := port_vector.msb - port_vector.lsb + 1;
+-- 		return port_vector;
+-- 	end fraction_port_name;
+
+
+
+-- 	function instruction_present(instruction_in : type_string_of_bit_characters_class_1) return boolean is
+-- 	-- returns false if given instruction opcode contains no 1 and no 0
+-- 	begin
+-- 		for c in 1..instruction_in'last loop
+-- 			case instruction_in(c) is
+-- 				when '0' => return true;
+-- 				when '1' => return true;
+-- 				when others => null;
+-- 			end case;
+-- 		end loop;
+-- 		return false;
+-- 	end instruction_present;
+
+-- 	function negate_bit_character_class_0 (character_given : type_bit_char_class_0) return type_bit_char_class_0 is
+-- 	begin
+-- 		case character_given is
+-- 			when '0' => return '1';
+-- 			when '1' => return '0';
+-- 		end case;
+-- 	end negate_bit_character_class_0;
+
+-- 	function drive_value_derived_from_class (class_given : type_net_class) return type_bit_char_class_0 is
+-- 	begin
+-- 		case class_given is
+-- 			when DL | PU => return '0';
+-- 			when DH | PD => return '1';
+-- 			when others =>
+-- 				put_line("ERROR : A drive value can only be derived from classes DL, DH, PD or PU !");
+-- 				raise constraint_error;
+-- 		end case;
+-- 	end drive_value_derived_from_class;
+-- 
+-- 	function inverted_status_derived_from_class_and_disable_value (
+-- 		class_given 		: type_net_class;
+-- 		disable_value_given : type_bit_char_class_0) return boolean is
+-- 	begin
+-- 		case class_given is
+-- 			when PD =>
+-- 				if disable_value_given = '0' then 
+-- 					-- a disable value of 0, causes the pin to go L
+-- 					return false; --> no inversion required
+-- 				else
+-- 					-- a disable value of 1, causes the pin to go L
+-- 					return true; -- inversion is required
+-- 				end if;
+-- 
+-- 			when PU =>
+-- 				if disable_value_given = '0' then 
+-- 					-- a disable value of 0, causes the pin to go H
+-- 					return true; -- inversion is required
+-- 				else
+-- 					-- a disable value of 1, causes the pin to go H
+-- 					return false; --> no inversion required
+-- 				end if;
+-- 
+-- 			when others =>
+-- 				put_line("ERROR : An inverted status can only be derived from class PD or PU !");
+-- 				raise constraint_error;
+-- 		end case;
+-- 	end inverted_status_derived_from_class_and_disable_value;
+-- 
+-- 	function disable_value_derived_from_class_and_inverted_status(
+-- 		class_given : type_net_class;
+-- 		inverted_given : boolean) return type_bit_char_class_0 is
+-- 	begin
+-- 		case class_given is
+-- 			when PU =>
+-- 				if inverted_given then
+-- 					return '0';
+-- 				else 
+-- 					return '1';
+-- 				end if;
+-- 			when PD =>
+-- 				if inverted_given then
+-- 					return '1';
+-- 				else 
+-- 					return '0';
+-- 				end if;
+-- 			when others =>
+-- 				put_line("ERROR : An disable value can only be derived from class PD or PU !");
+-- 				raise constraint_error;
+-- 		end case;
+-- 	end disable_value_derived_from_class_and_inverted_status;
+
+-- 	procedure print_bic_info (bic_name : string) is
+-- --		b 			: type_ptr_bscan_ic := ptr_bic;
+-- 		bic_found	: boolean := false;
+-- 	begin
+-- 		new_line;
+-- 		put_line("BSCAN-IC INFO");
+-- 		put_line("---------------------------------");
+--         --while b /= null loop
+-- 
+--         for b in 1..length(list_of_bics) loop
+--             --if b.name = bic_name then
+--             if universal_string_type.to_string(element(list_of_bics,positive(b)).name) = bic_name then
+-- 				bic_found := true;
+--                 --put_line("  id          :" & positive'image(element(list_of_bics,positive(b)).id));
+--                 put_line("  id          :" & positive'image(positive(b)));
+-- 				put_line("  name        : " & to_string(element(list_of_bics,positive(b)).name));
+-- 				put_line("  package     : " & to_string(element(list_of_bics,positive(b)).housing));
+-- 				put_line("  model file  : " & to_string(element(list_of_bics,positive(b)).model_file));
+-- 				put_line("  options     : " & to_string(element(list_of_bics,positive(b)).options));
+-- 				put_line("  value       : " & to_string(element(list_of_bics,positive(b)).value));
+-- 				put_line("  chain       :" & positive'image(element(list_of_bics,positive(b)).chain));
+-- 				put_line("  position    :" & positive'image(element(list_of_bics,positive(b)).position));
+-- 				put_line("  length ir   :" & positive'image(element(list_of_bics,positive(b)).len_ir));
+-- 				put     ("  capture ir  : "); put_binary_class_1(element(list_of_bics,positive(b)).capture_ir); new_line;
+-- 				put     ("  op bypass   : "); put_binary_class_1(element(list_of_bics,positive(b)).opc_bypass); new_line;
+-- 				put     ("  op extest   : "); put_binary_class_1(element(list_of_bics,positive(b)).opc_extest); new_line;
+-- 				if instruction_present(element(list_of_bics,positive(b)).opc_sample) then 
+-- 					put ("  op sample   : "); put_binary_class_1(element(list_of_bics,positive(b)).opc_sample); new_line;
+-- 				end if;
+-- 				if instruction_present(element(list_of_bics,positive(b)).opc_idcode) then 
+-- 					put ("  op idcode   : "); put_binary_class_1(element(list_of_bics,positive(b)).opc_idcode); new_line;
+-- 				end if;
+-- 				if instruction_present(element(list_of_bics,positive(b)).opc_usercode) then 
+-- 					put ("  op usercode : "); put_binary_class_1(element(list_of_bics,positive(b)).opc_usercode); new_line;
+-- 				end if;
+-- 				if instruction_present(element(list_of_bics,positive(b)).opc_highz) then 
+-- 					put ("  op highz    : "); put_binary_class_1(element(list_of_bics,positive(b)).opc_highz); new_line;
+-- 				end if;
+-- 				if instruction_present(element(list_of_bics,positive(b)).opc_clamp) then 
+-- 					put ("  op clamp    : "); put_binary_class_1(element(list_of_bics,positive(b)).opc_clamp); new_line;
+-- 				end if;
+-- 				if instruction_present(element(list_of_bics,positive(b)).opc_intest) then 
+-- 					put ("  op intest   : "); put_binary_class_1(element(list_of_bics,positive(b)).opc_intest); new_line;
+-- 				end if;
+-- 				put_line("  length bsr  :" & positive'image(element(list_of_bics,positive(b)).len_bsr));
+-- 					
+-- 				put_line ("  boundary register description :");
+-- 				for i in 1..element(list_of_bics,positive(b)).len_bsr_description loop
+-- 					put("   cell id:" & type_cell_id'image(element(list_of_bics,positive(b)).boundary_register(i).id) & row_separator_1 &
+-- 						"type: " & type_boundary_register_cell'image(element(list_of_bics,positive(b)).boundary_register(i).cell_type) & row_separator_1 &
+-- 						"port: " & to_string(element(list_of_bics,positive(b)).boundary_register(i).port) & row_separator_1 &
+-- 						"function: " & type_cell_function'image(element(list_of_bics,positive(b)).boundary_register(i).cell_function) & row_separator_1 &
+-- 						"safe val: " & type_bit_char_class_1'image(element(list_of_bics,positive(b)).boundary_register(i).cell_safe_value));
+-- 					if element(list_of_bics,positive(b)).boundary_register(i).control_cell_id /= -1 then
+-- 						put_line(row_separator_1 &
+-- 						"ctrl cell: " & type_cell_id'image(element(list_of_bics,positive(b)).boundary_register(i).control_cell_id) & row_separator_1 &
+-- 						"dis val: " & type_bit_char_class_0'image(element(list_of_bics,positive(b)).boundary_register(i).disable_value) & row_separator_1 &
+-- 						"dis rslt: " & type_disable_result'image(element(list_of_bics,positive(b)).boundary_register(i).disable_result) 
+-- 						);
+-- 					else
+-- 						new_line;
+-- 					end if;
+-- 				end loop;
+-- 
+-- 				put_line ("  port io map :");
+-- 				for i in 1..element(list_of_bics,positive(b)).len_port_io_map loop
+-- 					put("   name: " & to_string(element(list_of_bics,positive(b)).port_io_map(i).name) & row_separator_1 &
+-- 						"dir: " & type_port_direction'image(element(list_of_bics,positive(b)).port_io_map(i).direction) & row_separator_1 &
+-- 						"vectored: " & boolean'image(element(list_of_bics,positive(b)).port_io_map(i).is_vector));
+-- 					if element(list_of_bics,positive(b)).port_io_map(i).is_vector then
+-- 						put_line(row_separator_1 & 
+-- 						"start:" & positive'image(element(list_of_bics,positive(b)).port_io_map(i).index_start) & row_separator_1 & 
+-- 						"orientation: " & type_vector_orientation'image(element(list_of_bics,positive(b)).port_io_map(i).vector_orientation) & row_separator_1 & 
+-- 						"end:" & positive'image(element(list_of_bics,positive(b)).port_io_map(i).index_end) & row_separator_1 &
+-- 						"lenght:" & positive'image(element(list_of_bics,positive(b)).port_io_map(i).vector_length) & row_separator_1
+-- 						);
+-- 					else
+-- 						new_line;
+-- 					end if;
+-- 				end loop;
+-- 
+-- 				put_line ("  port pin map :");
+-- 				for i in 1..element(list_of_bics,positive(b)).len_port_pin_map loop
+-- 	-- 				put_line("   name: " & to_string(b.port_pin_map(i).port_name) & row_separator_1 &
+-- 	-- 					"pin count:" & positive'image(b.port_pin_map(i).pin_count) & row_separator_1 &
+-- 	-- 					"pin name: " & to_string(b.port_pin_map(i).pin_names)
+-- 					put("   name: " & to_string(element(list_of_bics,positive(b)).port_pin_map(i).port_name) & row_separator_1 &
+-- 						"pin count:" & positive'image(element(list_of_bics,positive(b)).port_pin_map(i).pin_count) & row_separator_1 & "pin name(s): " );
+-- 					for p in 1..element(list_of_bics,positive(b)).port_pin_map(i).pin_count loop
+-- 						put(to_string(element(list_of_bics,positive(b)).port_pin_map(i).pin_names(p)) & " ");
+-- 					end loop;
+-- 					new_line;
+-- 				end loop;
+-- 
+-- 				new_line;
+-- 			end if;
+-- 			--b := b.next;
+-- 		end loop;
+-- 		if not bic_found then
+-- 			put_line("ERROR: device not found !");
+-- 		else
+-- 			put_line("---------------------------------");
+-- 		end if;
+-- 		--put_line("TOTAL :" & positive'image(bic_counter));
+-- 	end print_bic_info;
+
+-- 	procedure print_scc_info (bic_name : string ; control_cell_id : type_cell_id) is
+-- 		--b 			: type_ptr_bscan_ic := ptr_bic;
+-- 		bic_found	: boolean := false;
+-- 
+-- 		n			: type_ptr_list_of_nets_with_shared_control_cell;
+-- 		c			: type_ptr_shared_control_cell_with_nets;
+-- 		j			: type_ptr_shared_control_cell_journal := ptr_shared_control_cell_journal;
+-- 
+-- 		--bic_has_shared_control_cells : boolean := false;
+-- 	begin
+-- 		new_line;
+-- 		put_line("SHARED CONTROL CELL INFO");
+-- 		put_line(column_separator_0);
+-- 		loop_through_bic_list:
+--         --while b /= null loop
+--         for b in 1..length(list_of_bics) loop
+--             --if b.name = bic_name then
+-- 			--if to_string(b.name) = bic_name then        
+--             if universal_string_type.to_string(element(list_of_bics,positive(b)).name) = bic_name then
+-- 				bic_found := true;
+-- 				if control_cell_id < element(list_of_bics,positive(b)).len_bsr then
+-- 
+-- 					while j /= null loop
+-- 						if j.bic_name = bic_name then
+-- 							put_line("BIC name       : " & to_string(element(list_of_bics,positive(b)).name));
+-- 							--bic_has_shared_control_cells := true;
+-- 							--c := j.cell_ptr; -- set c at end of list of "shared control cells with nets"
+-- 							c := j.ptr_cell_last; -- set c at end of list of "shared control cells with nets"
+-- 							while c /= null loop
+-- 								if c.cell_id = control_cell_id then
+-- 									put_line("control cell   :" & type_cell_id'image(control_cell_id));
+-- 									put     ("shared by nets : ");
+-- 
+-- 									--n := c.ptr_net;
+-- 									n := c.ptr_net_last; -- set n at end of list of "list of nets with shared control cell"
+-- 									while n /= null loop
+-- 										put(to_string(n.net_name) & row_separator_0);
+-- 										n := n.next;
+-- 									end loop;
+-- 									new_line;
+-- 									exit loop_through_bic_list;
+-- 								end if;
+-- 								c := c.next;
+-- 							end loop;
+-- 							put_line("Specified cell" & type_cell_id'image(control_cell_id) & " is not shared by any net.");
+-- 							exit loop_through_bic_list;
+-- 						end if;
+-- 						j := j.next;
+-- 					end loop;
+-- 					new_line;
+-- 					put_line("Specified device does not have any shared control cells.");
+-- 					exit loop_through_bic_list;
+-- 				else
+-- 					put_line("ERROR: Specified cell" & type_cell_id'image(control_cell_id) & " not found in boundary register !");
+-- 				end if;
+-- 			end if;
+-- 			--b := b.next;
+-- 		end loop loop_through_bic_list;
+-- 		if not bic_found then
+-- 			put_line("ERROR: device does not exist in uut data base !");
+-- 		else
+-- 			put_line(column_separator_0);
+-- 		end if;
+-- 	end print_scc_info;
+
+-- 	function is_shared (bic_name : universal_string_type.bounded_string; control_cell_id : type_cell_id) return boolean is
+-- 	-- returns true if given bic exists and control cell is shared
+-- 	--	b 			: type_ptr_bscan_ic := ptr_bic;
+-- 		c			: type_ptr_shared_control_cell_with_nets;
+-- 		j			: type_ptr_shared_control_cell_journal := ptr_shared_control_cell_journal;
+-- 	begin -- is_shared
+--         --while b /= null loop -- loop through bic list
+--         for b in 1..length(list_of_bics) loop    
+--             --if b.name = bic_name then -- given ic is a bic
+--             if universal_string_type.to_string(element(list_of_bics,positive(b)).name) = bic_name then
+-- 				while j /= null loop -- loop through shared control cell journal pointed to by j
+-- 					if j.bic_name = bic_name then -- given bic has shared control cells
+-- 						--c := j.cell_ptr; -- set c at end of list of "shared control cells with nets"
+-- 						c := j.ptr_cell_last; -- set c at end of list of "shared control cells with nets"
+-- 						while c /= null loop
+-- 							if c.cell_id = control_cell_id then -- given cell is shared
+-- 								return true; -- so quit searching and return to calling program
+-- 							end if;
+-- 						c := c.next; -- advance to next shared cell of given bic
+-- 						end loop;
+-- 					end if; -- given bic has shared control cells
+-- 					j := j.next; -- anvance to next bic
+-- 				end loop;
+-- 			end if; -- given ic is a bic
+-- 			--b := b.next; -- loop through bic list
+-- 		end loop;
+-- 		return false;
+-- 	end is_shared;
+
+-- 	function get_safe_value_of_cell (device : universal_string_type.bounded_string; id : type_cell_id) return type_bit_char_class_1 is
+-- 	-- this function looks up the safebits string specified in section registers.
+-- 	-- NOTE: The only reliable source of safe values for cells is to be found in section registers.safebits !
+-- 		--b			: type_ptr_bscan_ic := ptr_bic;
+-- 		cell_found	: boolean := false;
+-- 		safe_value	: type_bit_char_class_1; -- x,X,0,1
+-- 	begin
+--         --while b /= null loop
+--         for b in 1..length(list_of_bics) loop    
+--             --if b.name = device then -- find bic name
+--             if element(list_of_bics,positive(b)).name = device then
+-- 				for i in 1..element(list_of_bics,positive(b)).len_bsr loop -- loop as long as how many cells are in boundary register
+-- 											-- start with safe bit pos 1 -> this is cell MSB
+-- 											-- end with safe bit pos last -> this is cell LSB
+-- 											-- safebits x1xxxxxxxxxxxxxxxx (MSB left, LSB right !)
+-- 					if i = element(list_of_bics,positive(b)).len_bsr - id then -- if i matches given id 
+-- 						cell_found := true;
+-- 						case element(list_of_bics,positive(b)).safebits(i) is
+-- 							when 'x' | 'X' => safe_value := 'X'; -- translate x or X to X
+-- 							when others => safe_value := element(list_of_bics,positive(b)).safebits(i); -- all other values (0,1) can be taken as they are
+-- 						end case;
+-- 						exit; -- cell found, cancel search here
+-- 					end if;
+-- 				end loop;
+-- 				exit; -- exit here (searching other bics makes no sense)
+-- 			end if;
+-- 			--b := b.next;
+-- 		end loop;
+-- 
+-- 		if not cell_found then
+-- 			put_line("ERROR: The given cell with ID" & type_cell_id'image(id) & " does not exist in device '" & to_string(device) & "' !");
+-- 			raise constraint_error;
+-- 		end if;
+-- 		return safe_value;
+-- 	end get_safe_value_of_cell;
+
+
+-- 	function query_render_net_class (
+-- 		primary_net_name 					: string;
+-- 		primary_net_class					: type_net_class;
+-- 		list_of_secondary_net_names			: type_list_of_secondary_net_names;
+-- 		secondary_net_count					: natural
+-- 		) return boolean is	-- returns true if class rendering allowed
+-- 		n									: type_ptr_net := ptr_net;
+-- 		net_found							: boolean := false;
+-- 		pin_found							: boolean := false;
+-- 		output2_pin_without_disable_spec_ct	: natural := 0;
+-- 		secondary_with_inputs				: boolean := false;
+-- 
+-- 		procedure put_error_on_invalid_class( net_name : string; class : type_net_class) is
+-- 		begin
+-- 			put_line("       Class '" & type_net_class'image(class) & "' not allowed for net '" & net_name & "' !");
+-- 			raise constraint_error;
+-- 		end put_error_on_invalid_class;
+-- 
+-- 		procedure put_warning_on_missing_input_pin( net_name : string; class : type_net_class) is
+-- 		begin
+-- 			put_line("WARNING: Class '" & type_net_class'image(class) & "' net '" & net_name & "' has no input pins to measure state ! (SR2)");
+-- 		end put_warning_on_missing_input_pin;
+-- 
+-- 		function secondary_net_has_input_pin ( net_name : string) return boolean is
+-- 			n						: type_ptr_net := ptr_net;
+-- 			net_found				: boolean := false;
+-- 			input_found				: boolean := false;
+-- 		begin
+-- 			while n /= null loop
+-- 				if to_string(n.name) = net_name then
+-- 					net_found := true;
+-- 					if n.bs_capable then
+-- 						-- HR10 : secondary nets must not have output pins without disable specification 
+-- 						if (n.bs_bidir_pin_count > 0 or n.bs_output_pin_count > 0) then
+-- 							for p in 1..n.part_ct loop
+-- 								if n.pin(p).is_bscan_capable then
+-- 									if n.pin(p).cell_info.control_cell_id = -1 then
+-- 										put_line("ERROR: Net '" & net_name & "' has a pin without disable specification and can not become a secondary net ! (HR10)");
+-- 										put_error_on_invalid_class(primary_net_name,primary_net_class);
+-- 									end if;
+-- 								end if;
+-- 							end loop;
+-- 						end if;
+-- 
+-- 						-- SR7: secondary nets should have input pins
+-- 						if (n.bs_bidir_pin_count > 0 or n.bs_input_pin_count > 0) then
+-- 							input_found := true;
+-- 						end if;
+-- 					else
+-- 						-- net is not scan capable, hence no bs-inputs present
+-- 						--put_warning_on_missing_input_pin(net_name, primary_net_class); -- CS: warning really required ?
+-- 						input_found := false;
+-- 					end if;
+-- 					exit;
+-- 				end if;
+-- 				n := n.next;
+-- 			end loop;
+-- 
+-- 			if not net_found then
+-- 				put_line("ERROR: Secondary net '" & net_name & "' not found in UUT data base !");
+-- 				raise constraint_error;
+-- 			end if;
+-- 
+-- 			return input_found;
+-- 		end secondary_net_has_input_pin;
+-- 	
+-- 		function secondary_nets_exist return boolean is
+-- 		-- reads list of secondary nets one by one, and checks if this net does appear in data base
+-- 			n						: type_ptr_net := ptr_net;
+-- 			net_found				: boolean := false;
+-- 		begin
+-- 			for s in 1..secondary_net_count loop -- loop as many times as there are secondary nets
+-- 				net_found := false; -- reset "net found flag"
+-- 				n := ptr_net; -- reset net pointer to the end of the data base net list
+-- 				while n /= null loop -- loop though net list until begin of list reached
+-- 					if n.name = list_of_secondary_net_names(s) then -- on match of net name
+-- 						net_found := true; -- set "net found flag"
+-- 						exit; -- no more seaching required
+-- 					end if;
+-- 					n := n.next; -- advance net pointer (of net list) to next net
+-- 				end loop;
+-- 
+-- 				-- evaluate "net found flag"
+-- 				if net_found then
+-- 					null; -- fine
+-- 				else
+-- 					put_line("ERROR : Net '" & to_string(list_of_secondary_net_names(s)) & "' not found in data base !");
+-- 					raise constraint_error;
+-- 				end if;
+-- 
+-- 			end loop;
+-- 			return true;
+-- 		end secondary_nets_exist;
+-- 		
+-- 	begin
+-- 		while n /= null loop
+-- 			if to_string(n.name) = primary_net_name then
+-- 				net_found := true;
+-- 				
+-- 				-- if secondary nets attached, make sure they exist
+-- 				if secondary_net_count /= 0 then
+-- 					if secondary_nets_exist then
+-- 						null;
+-- 					end if;
+-- 				end if;
+-- 
+-- 				if n.bs_capable then
+-- 
+-- 					case primary_net_class is
+-- 						when NA => null; -- all nets can be changed to class NA
+-- 						when others =>
+-- 
+-- 							-- SR2: primary nets of this class should have input pins
+-- 							if n.bs_input_pin_count > 0 or n.bs_bidir_pin_count > 0 then
+-- 								null; -- fine
+-- 							else
+-- 								if secondary_net_count = 0 then -- if there are no secondary nets:
+-- 									put_warning_on_missing_input_pin(primary_net_name, primary_net_class);
+-- 								else
+-- 								-- SR2.2: if there are secondary nets, at least one of them should have an input pin
+-- 									secondary_with_inputs := false;
+-- 									for s in 1..secondary_net_count loop
+-- 										if secondary_net_has_input_pin(to_string(list_of_secondary_net_names(s))) then
+-- 											secondary_with_inputs := true;
+-- 											exit; -- no more input pin search in remaining secondary nets required
+-- 										end if;
+-- 									end loop;
+-- 									if not secondary_with_inputs then
+-- 										put_line("WARNING: Neither primary net '" & primary_net_name & "' nor any of its secondary nets "
+-- 											& "has input pins to measure state ! (SR2.2)");
+-- 										put_line("         Net '" & primary_net_name & "' can neither be tested for '"
+-- 											& type_fault'image(open) & "' nor for '" & type_fault'image(short) & "' !");
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 					end case;
+-- 
+-- 					case primary_net_class is
+-- 						when EL | EH => 
+-- 							-- HR2.1: primary nets of this class having no secondary nets must have input or bidir pins 
+-- 							if n.bs_input_pin_count > 0 or n.bs_bidir_pin_count > 0 then
+-- 								null; -- fine
+-- 							else
+-- 								if secondary_net_count = 0 then -- if there are no secondary nets:
+-- 									put_line("ERROR: Net '" & primary_net_name & "' has no input pins to measure state ! (HR2.1)");
+-- 									put_error_on_invalid_class(primary_net_name,primary_net_class);
+-- 								else
+-- 								-- HR2.2.1: if there are secondary nets, at least one of them must have an input pin
+-- 									secondary_with_inputs := false;
+-- 									for s in 1..secondary_net_count loop
+-- 										if secondary_net_has_input_pin(to_string(list_of_secondary_net_names(s))) then
+-- 											secondary_with_inputs := true;
+-- 											exit; -- no more input pin search in remaining secondary nets required
+-- 										end if;
+-- 									end loop;
+-- 									if not secondary_with_inputs then
+-- 										put_line("ERROR: Neither primary net '" & primary_net_name & "' nor any of its secondary nets "
+-- 											& "has input pins to measure state ! (HR2.2.1)");
+-- 										raise constraint_error;
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						when others => null;
+-- 					end case;
+-- 
+-- 					case primary_net_class is
+-- 						when EL | EH | PU | PD | NA =>
+-- 							-- HR1: primary nets of this class must not have any output2 pins without disable specification
+-- 							for p in 1..n.part_ct loop
+-- 								if n.pin(p).is_bscan_capable then
+-- 									if n.pin(p).cell_info.output_cell_function = output2 then
+-- 										if n.pin(p).cell_info.control_cell_id = -1 then -- means, there is no control cell
+-- 											put_line("ERROR: Net '" & primary_net_name & "' has output pins that can not be disabled ! (HR1)");
+-- 											put_error_on_invalid_class(primary_net_name,primary_net_class);
+-- 										end if;
+-- 									end if;
+-- 								end if;
+-- 							end loop;
+-- 						when others => null;
+-- 					end case;
+-- 
+-- 					case primary_net_class is
+-- 						when DH | DL | NR =>
+-- 							-- SR3.x : lonely pin rules checks:
+-- 
+-- 							-- if there is only one bidir pin
+-- 							if (n.bs_bidir_pin_count = 1 and n.bs_input_pin_count = 0 and n.bs_output_pin_count = 0) then
+-- 								if secondary_net_count = 0 then -- if there are no secondary nets:
+-- 									put_line("WARNING: Net '" & primary_net_name & "' can not be tested for '" & type_fault'image(open) & "' ! (SR3.1)");
+-- 								else
+-- 									secondary_with_inputs := false;
+-- 									for s in 1..secondary_net_count loop
+-- 										if secondary_net_has_input_pin(to_string(list_of_secondary_net_names(s))) then
+-- 											secondary_with_inputs := true;
+-- 											exit; -- no more input pin search in remaining secondary nets required
+-- 										end if;
+-- 									end loop;
+-- 									if not secondary_with_inputs then
+-- 										--put_line("WARNING: Neither primary net '" & primary_net_name & "' nor any of its secondary nets "
+-- 										--	& "has input pins to measure state. They can not be tested for '" & type_fault'image(open) & "' ! (SR3.1)");
+-- 										put_line("WARNING: Neither primary net '" & primary_net_name & "' nor any of its secondary nets "
+-- 											& "can be tested for '" & type_fault'image(open) & "' ! (SR3.1)");
+-- 									end if;
+-- 								end if;
+-- 
+-- 							-- if there is only one output pin
+-- 							elsif (n.bs_bidir_pin_count = 0 and n.bs_input_pin_count = 0 and n.bs_output_pin_count = 1) then
+-- 								if secondary_net_count = 0 then -- if there are no secondary nets:
+-- 									put_line("WARNING: Net '" & primary_net_name & "' can neither be tested for '" 
+-- 										& type_fault'image(open) & "' nor for '" & type_fault'image(short) & "' ! (SR3.2)");
+-- 								else
+-- 									secondary_with_inputs := false;
+-- 									for s in 1..secondary_net_count loop
+-- 										if secondary_net_has_input_pin(to_string(list_of_secondary_net_names(s))) then
+-- 											secondary_with_inputs := true;
+-- 											exit; -- no more input pin search in remaining secondary nets required
+-- 										end if;
+-- 									end loop;
+-- 									if not secondary_with_inputs then
+-- -- 										put_line("WARNING: Neither primary net '" & primary_net_name & "' nor any of its secondary nets "
+-- -- 											& "has input pins to measure state. They can neither be tested for '" 
+-- -- 											& type_fault'image(open) & "' nor for '" & type_fault'image(short) & "' ! (SR3.2)");
+-- 										put_line("WARNING: Neither primary net '" & primary_net_name & "' nor any of its secondary nets "
+-- 											& "can be tested for '" 
+-- 											& type_fault'image(open) & "' or for '" & type_fault'image(short) & "' ! (SR3.2)");
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- ----------
+-- 
+-- -- 							if secondary_net_count = 0 then
+-- -- 								if (n.bs_bidir_pin_count = 1 and n.bs_input_pin_count = 0 and n.bs_output_pin_count = 0) then
+-- -- 									put_line("WARNING: Net '" & primary_net_name & "' can not be tested for open ! (SR3.1)");
+-- -- 									-- CS: refine error output
+-- -- 								end if;
+-- -- 
+-- -- 								if (n.bs_bidir_pin_count = 0 and n.bs_input_pin_count = 0 and n.bs_output_pin_count = 1) then
+-- -- 									put_line("WARNING: Net '" & primary_net_name & "' can neither be tested for open nor for shorts ! (SR3.2)");
+-- -- 									-- CS: refine error output
+-- -- 								end if;
+-- -- 							else
+-- -- 								null; -- check if any secondary net has an input
+-- -- 							end if;
+-- 						when others => null;
+-- 					end case;
+-- 
+-- 					case primary_net_class is
+-- 						when NR | DH | DL =>
+-- 							-- HR4.2A: nets of this cass must have at least one output pin -- CS: not tested yet
+-- 							if (n.bs_bidir_pin_count > 0 or n.bs_output_pin_count > 0) then
+-- 
+-- 								-- SR4.1, 5.1, 6.1 : primary nets of this class must not have more than one output2 pin without disable specification
+-- 								-- otherwise a design warning is to output
+-- 								if (n.bs_bidir_pin_count > 1 or n.bs_output_pin_count > 1) then
+-- 									output2_pin_without_disable_spec_ct	:= 0;
+-- 									for p in 1..n.part_ct loop
+-- 										if n.pin(p).is_bscan_capable then
+-- 											if n.pin(p).cell_info.output_cell_function = output2 then
+-- 												if n.pin(p).cell_info.control_cell_id = -1 then -- means, there is no control cell for that pin
+-- 													output2_pin_without_disable_spec_ct := output2_pin_without_disable_spec_ct + 1;
+-- 													if output2_pin_without_disable_spec_ct > 1 then
+-- 														put_line("WARNING: Net '" & primary_net_name & "' has more than one output2 pin that can not be disabled ! (SR4.1)");
+-- 														exit;
+-- 													end if;
+-- 												end if;
+-- 											end if;
+-- 										end if;
+-- 									end loop;
+-- 								end if;
+-- 
+-- 							else
+-- 								put_line("ERROR: Net '" & primary_net_name & "' has no output pins ! (HR4.2A)");
+-- 								put_error_on_invalid_class(primary_net_name,primary_net_class);
+-- 							end if;
+-- 
+-- 						when others => null;
+-- 					end case;
+-- 
+-- 					case primary_net_class is
+-- 						when NR =>
+-- 							-- HR4.2 : if there is only one driver pin, primary nets of this class must not have self controlled output cell 
+-- 							if (n.bs_bidir_pin_count = 1 or n.bs_output_pin_count = 1) then
+-- 								for p in 1..n.part_ct loop
+-- 									if n.pin(p).is_bscan_capable then
+-- 
+-- 										-- if there is a control and an output cell, and if they have the same id, it is a self controlled output cell
+-- 										-- pins having no control and no output cell must be excluded from this check
+-- 										if n.pin(p).cell_info.output_cell_id /= -1 then -- if there is an output cell
+-- 											if n.pin(p).cell_info.control_cell_id = n.pin(p).cell_info.output_cell_id then
+-- 												put_line("ERROR: Net '" & primary_net_name & "' has a pin with a self controlled output cell ! (HR4.2)");
+-- 												put_error_on_invalid_class(primary_net_name,primary_net_class);
+-- 											end if;
+-- 										end if;
+-- 
+-- 									end if;
+-- 								end loop;
+-- 							end if;
+-- 						when others => null;
+-- 					end case;
+-- 
+-- 					case primary_net_class is
+-- 						when PU | PD =>
+-- 							-- HR7.1, HR8.1 : there must be at least one bidir or output pin with disable specification
+-- 							-- NOTE: HR1 has been checked above, so the outputs in the net have disable specs.
+-- 							pin_found := false; -- reset this flag from previous checks
+-- 							if (n.bs_bidir_pin_count > 0 or n.bs_output_pin_count > 0) then
+-- 								for p in 1..n.part_ct loop
+-- 									if n.pin(p).is_bscan_capable then -- check scan capable pins only
+-- 										if n.pin(p).cell_info.output_cell_id /= -1 then -- if there is an output cell
+-- 											if n.pin(p).cell_info.control_cell_id /= -1 then -- if there is a control cell (already ensured by HR1)
+-- 
+-- 												-- if self controlled output cell, check disable result
+-- 												-- if control and output cell have the same id, it is a self controlled output cell
+-- 												if n.pin(p).cell_info.control_cell_id = n.pin(p).cell_info.output_cell_id then
+-- 
+-- 													case primary_net_class is
+-- 														when PU =>
+-- 															if n.pin(p).cell_info.disable_result = weak1 
+-- 															or n.pin(p).cell_info.disable_result = pull1
+-- 															or n.pin(p).cell_info.disable_result = z
+-- 															then 
+-- 																pin_found := true; -- fine
+-- 															end if;
+-- 														when PD =>
+-- 															if n.pin(p).cell_info.disable_result = weak0 
+-- 															or n.pin(p).cell_info.disable_result = pull0
+-- 															or n.pin(p).cell_info.disable_result = z
+-- 															then 
+-- 																pin_found := true; -- fine
+-- 															end if;
+-- 														when others => null;
+-- 													end case;
+-- 
+-- 												else -- it is a non-self controlling output cell
+-- 													pin_found := true; -- fine
+-- 
+-- 													-- check for disable results according to net class PD/PU
+-- 													case primary_net_class is
+-- 														when PD => -- in PD nets there should not be any pull-up resistance
+-- 															if n.pin(p).cell_info.disable_result = weak1 
+-- 															or n.pin(p).cell_info.disable_result = pull1
+-- 															then 
+-- 																put_line("WARNING: Net '" & primary_net_name 
+-- 																& "' has a driver pin with disable result that contradicts net class !");
+-- 															end if;
+-- 														when PU => -- in PU nets there should not be any pull-down resistance
+-- 															if n.pin(p).cell_info.disable_result = weak0 
+-- 															or n.pin(p).cell_info.disable_result = pull0
+-- 															then 
+-- 																put_line("WARNING: Net '" & primary_net_name 
+-- 																& "' has a driver pin with disable result that contradicts net class !");
+-- 															end if;
+-- 														when others => null;
+-- 													end case;
+-- 
+-- 												end if;
+-- 
+-- 											else  -- this code should never be reached at all !
+-- 												put_line("ERROR: No control cell found ! (HR1)");
+-- 												put_error_on_invalid_class(primary_net_name,primary_net_class);
+-- 											end if;
+-- 										end if;
+-- 									end if;
+-- 								end loop;
+-- 								if not pin_found then
+-- 									put_line("ERROR: Net '" & primary_net_name & "' has no driver pins with suitable disable results ! (HR7.1, HR 8.1)");
+-- 									put_error_on_invalid_class(primary_net_name,primary_net_class);
+-- 								end if;
+-- 							else
+-- 								put_line("ERROR: Net '" & primary_net_name & "' has no output pins ! (HR7.1, HR 8.1)");
+-- 								put_error_on_invalid_class(primary_net_name,primary_net_class);
+-- 							end if;
+-- 						when others => null;
+-- 					end case;
+-- 
+-- 				else
+-- 					put_line("ERROR: Net '" & primary_net_name & "' is not connected to any scan capable pin !");
+-- 					put_error_on_invalid_class(primary_net_name,primary_net_class);
+-- 				end if;
+-- 				exit;
+-- 			end if;
+-- 			n := n.next;
+-- 		end loop;
+-- 
+-- 		if net_found then
+-- 			null; -- fine
+-- 		else
+-- 			put_line("ERROR: Primary net '" & primary_net_name & "' not found in UUT data base !");
+-- 			raise constraint_error;
+-- 		end if;
+-- 
+-- 		return true;
+-- 	end query_render_net_class;
+
+
+
+-- 	procedure verify_net_classes is
+-- 	-- finds primary nets in net list and passes them to query_render_net_class
+-- 		n			: type_ptr_net := ptr_net;
+-- 	begin
+-- 		while n /= null loop
+-- 			if n.level = primary then
+-- 				if n.bs_capable then
+-- 					-- check if class requirement of the primary net and its secondary nets can be fulfilled
+-- 					-- NOTE: This is a compound of primary and secondary nets !
+-- 					if query_render_net_class (
+-- 						primary_net_name => to_string(n.name), -- pass name of primary net
+-- 						primary_net_class => n.class, -- pass class of primary net (seondary nets inherit class of primary net)
+-- 						list_of_secondary_net_names	=> n.list_of_secondary_net_names, -- pass array of seondary net names
+-- 						secondary_net_count	=> n.secondary_net_ct -- pass number of secondary nets
+-- 						) then 
+-- 							null;
+-- 					end if;
+-- 				end if;
+-- 			end if;
+-- 			n := n.next;
+-- 		end loop;
+-- 	end verify_net_classes;
+
+
+-- 	procedure print_net_info (net_name : string) is
+-- 		n			: type_ptr_net := ptr_net;
+-- 		net_found	: boolean := false;
+-- 	begin
+-- 		new_line;
+-- 		put_line("NET INFO: " & net_name);
+-- 		put_line("----------------------------------------------------------------------------------------------------------------------------------------------");
+-- 		while n /= null loop
+-- 			if to_string(n.name) = net_name then
+-- 				net_found := true;
+-- 				put_line("level               : " & type_net_level'image(n.level));
+-- 				if n.level = secondary then
+-- 					put_line("primary net         : " & to_string(n.name_of_primary_net));
+-- 				end if;
+-- 				put_line("class               : " & type_net_class'image(n.class));
+-- 				put_line("bs capable          : " & boolean'image(n.bs_capable));
+-- 				put_line("pin count total     : " & trim(natural'image(n.part_ct),left));
+-- 				put_line("bs bidir pin count  : " & trim(natural'image(n.bs_bidir_pin_count),left));
+-- 				put_line("bs input pin count  : " & trim(natural'image(n.bs_input_pin_count),left));
+-- 				put_line("bs output pin count : " & trim(natural'image(n.bs_output_pin_count),left));
+-- 				put_line("pin list begin :");
+-- 				for p in 1..n.part_ct loop
+-- 					put(row_separator_0 & to_string(n.pin(p).device_name) & row_separator_0
+-- 						& type_device_class'image(n.pin(p).device_class) & row_separator_0
+-- 						& to_string(n.pin(p).device_value) & row_separator_0
+-- 						& to_string(n.pin(p).device_package) & row_separator_0
+-- 						& to_string(n.pin(p).device_pin_name) & row_separator_0
+-- 						);
+-- 					if n.bs_capable then
+-- 						--put("cells: ");
+-- 						if n.pin(p).cell_info.input_cell_id /= -1 then
+-- 							put(row_separator_1 & "in:" & type_cell_id'image(n.pin(p).cell_info.input_cell_id)
+-- 								& row_separator_0 & type_boundary_register_cell'image(n.pin(p).cell_info.input_cell_type)
+-- 								& row_separator_0 & "sv: " & type_bit_char_class_1'image(n.pin(p).cell_info.input_cell_safe_value)
+-- 								);
+-- 						end if;
+-- 						if n.pin(p).cell_info.output_cell_id /= -1 then
+-- 							put(row_separator_1 & "out:" & type_cell_id'image(n.pin(p).cell_info.output_cell_id)
+-- 								& row_separator_0 & type_boundary_register_cell'image(n.pin(p).cell_info.output_cell_type)
+-- 								& row_separator_0 & type_cell_function'image(n.pin(p).cell_info.output_cell_function)
+-- 								& row_separator_0 & "sv: " & type_bit_char_class_1'image(n.pin(p).cell_info.output_cell_safe_value)
+-- 								);
+-- 						end if;
+-- 						if n.pin(p).cell_info.control_cell_id /= -1 then
+-- 							put(row_separator_1 & "ctrl:" & type_cell_id'image(n.pin(p).cell_info.control_cell_id)
+-- 								& row_separator_0 & "shared: " & boolean'image(n.pin(p).cell_info.control_cell_shared)
+-- 								& row_separator_0 & "safe: " 
+-- 								& type_bit_char_class_1'image(get_safe_value_of_cell (n.pin(p).device_name, n.pin(p).cell_info.control_cell_id))
+-- 								& row_separator_0 & "dv: " & type_bit_char_class_0'image(n.pin(p).cell_info.disable_value)
+-- 								& row_separator_0 & "dr: " & type_disable_result'image(n.pin(p).cell_info.disable_result)
+-- 								);
+-- 						end if;
+-- 
+-- 					end if;
+-- 					new_line;
+-- 				end loop;
+-- 				put_line("pin list end");
+-- 				if n.level = primary then
+-- 					if n.secondary_net_ct > 0 then
+-- 						put_line("secondary net count : " & trim(natural'image(n.secondary_net_ct),left));
+-- 						put("secondary nets      : ");
+-- 						for s in 1..n.secondary_net_ct loop
+-- 							put(to_string(n.list_of_secondary_net_names(s)) & row_separator_0);
+-- 						end loop;
+-- 						new_line;
+-- 					end if;
+-- 				end if;
+-- 				exit;
+-- 			end if;
+-- 			n := n.next;
+-- 		end loop;
+-- 		if not net_found then
+-- 			put_line("ERROR: Net not found !");
+-- 			--raise constraint_error;
+-- 		else
+-- 			put_line("----------------------------------------------------------------------------------------------------------------------------------------------");
+-- 		end if;
+-- 	end print_net_info;
+
+
+-- 	function is_primary (name_net : universal_string_type.bounded_string) return boolean is
+-- 	-- returns true if given net is a primary net
+-- 		n	: type_ptr_net := ptr_net;
+-- 	begin
+-- 		while n /= null loop
+-- 			if universal_string_type.to_string(n.name) = universal_string_type.to_string(name_net) then
+-- 				if n.level = primary then
+-- 					return true;
+-- 				else
+-- 					return false;
+-- 				end if;
+-- 			end if;
+-- 			n := n.next;
+-- 		end loop;
+-- 		-- if loop finished, net has not been found in data base
+-- 		put_line("ERROR: Net '" & universal_string_type.to_string(name_net) & "' not found in data base !");
+-- 		raise constraint_error;
+-- 		return false; -- this code should be never reached, but is required for compiliation
+-- 	end is_primary;
+
+-- 	function get_primary_net (name_net : universal_string_type.bounded_string) return universal_string_type.bounded_string is
+-- 	-- returns the name of the superordinated primary net.
+-- 	-- if given net is a primary net, the same name will be returned
+-- 		n	: type_ptr_net := ptr_net;
+-- 	begin
+-- 		while n /= null loop
+-- 			if universal_string_type.to_string(n.name) = universal_string_type.to_string(name_net) then
+-- 				if n.level = primary then
+-- 					return n.name;
+-- 				else
+-- 					return n.name_of_primary_net;
+-- 				end if;
+-- 			end if;
+-- 			n := n.next;
+-- 		end loop;
+-- 		-- if loop finished, net has not been found in data base
+-- 		put_line("ERROR: Net '" & universal_string_type.to_string(name_net) & "' not found in data base !");
+-- 		raise constraint_error;
+-- 		return universal_string_type.to_bounded_string(""); -- this code should be never reached, but is required for compiliation
+-- 	end get_primary_net;
+
+-- 	function get_secondary_nets (name_net : universal_string_type.bounded_string) return type_list_of_secondary_net_names is
+-- 	-- returns a list of secondary nets connected to the given primary net
+-- 	-- if there are no secondary nets, an empty list is returned
+-- 		n	: type_ptr_net := ptr_net;
+-- 		l	: type_list_of_secondary_net_names; -- := (others => universal_string_type.to_bounded_string(""));
+-- 	begin
+-- 		while n /= null loop
+-- 			if universal_string_type.to_string(n.name) = universal_string_type.to_string(name_net) then
+-- 				if n.level = primary then
+-- 					return n.list_of_secondary_net_names;
+-- 				end if;
+-- 			end if;
+-- 			n := n.next;
+-- 		end loop;
+-- 		-- if loop finished, net has not been found in data base or is not a primary net
+-- 		put_line("ERROR: Primary net '" & universal_string_type.to_string(name_net) & "' not found in data base !");
+-- 		raise constraint_error;
+-- 		return l; -- this code should be never reached, but is required for compiliation
+-- 	end get_secondary_nets;
+
+-- 	function get_number_of_secondary_nets (name_net : universal_string_type.bounded_string) return natural is
+-- 	-- returns the number of secondary nets connected to the given primary net
+-- 		n	: type_ptr_net := ptr_net;
+-- 	begin
+-- 		while n /= null loop
+-- 			if universal_string_type.to_string(n.name) = universal_string_type.to_string(name_net) then
+-- 				if n.level = primary then
+-- 					return n.secondary_net_ct;
+-- 				end if;
+-- 			end if;
+-- 			n := n.next;
+-- 		end loop;
+-- 		-- if loop finished, net has not been found in data base or is not a primary net
+-- 		put_line("ERROR: Primary net '" & universal_string_type.to_string(name_net) & "' not found in data base !");
+-- 		raise constraint_error;
+-- 		return 0; -- this code should be never reached, but is required for compiliation
+-- 	end get_number_of_secondary_nets;
+
+-- 
+-- 	function remove_comment_from_line(text_in : string) return string is
+-- 		position_of_comment : natural;
+-- 		-- NOTE: tabulators will be left unchanged. no substituion with whitespace is done !
+-- 	begin
+-- 		if text_in'length > 0 then -- if line contains something
+-- 			position_of_comment := index(text_in,"--");
+-- 			case position_of_comment is -- check position of comment
+-- 				when 0 => -- no comment found -> return line as it is
+-- 					return text_in;
+-- 				when 1 => return ""; -- comment at beginning of line -> do nothing
+-- 				when others => -- comment somewhere in the line -> delete comment
+-- 					--put_line("comment at pos :" & natural'image(position_of_comment));
+-- 					return delete(text_in, position_of_comment, text_in'length); -- remove comment
+-- 			end case;
+-- 		end if;
+-- 		return "";
+-- 	end remove_comment_from_line;
+
+
+-- 	function get_field_count (text_in : string) return natural is
+-- 		line_length	:	Natural := text_in'last;	-- length of given text
+-- 		char_pt		:	Natural := 1;				-- charcter pointer (points to character being processed inside the given line)
+-- 		IFS1		: 	constant Character := ' '; 				-- field separator space
+-- 		IFS2		: 	constant Character := Character'Val(9); -- field separator tabulator
+-- 		field_ct	:	Natural := 0;				-- field counter (the first field found gets number 1 assigned)
+-- 		field_pt	:	Natural := 1;				-- field pointer (points to the charcter being processed inside the current field)
+-- 		inside_field:	Boolean := true;			-- true if char_pt points inside a field
+-- 		char_current:	Character;					-- holds current character being processed
+-- 		char_last	:	Character := ' ';			-- holds character processed previous to char_current
+-- 	begin
+-- 		while char_pt <= line_length
+-- 			loop
+-- 				--put (char_pt);
+-- 				char_current:= text_in(char_pt); 
+-- 				if char_current = IFS1 or char_current = IFS2 then
+-- 					inside_field := false;
+-- 				else
+-- 					inside_field := true;
+-- 				end if;
+-- 
+-- 				-- count fields if character other than IFS found
+-- 				if ((char_last = IFS1 or char_last = IFS2) and (char_current /= IFS1 and char_current /= IFS2)) then
+-- 					field_ct:=field_ct+1;
+-- 				end if;
+-- 
+-- 				-- save last character
+-- 				char_last:=char_current;
+-- 				-- advance character pointer by one
+-- 				char_pt:=char_pt+1; 
+-- 				--put (char_current); put (" --"); new_line;
+-- 			end loop;
+-- 		return field_ct;
+-- 	end get_field_count;
+-- 
+-- 
+-- 	function get_field_from_line (text_in : string; position : positive; ifs : character := ' ') return string is
+-- 		value		:	extended_string.bounded_string;	-- field content to return (NOTE: Value gets converted to string on return)
+-- 		line_length	:	natural :=	text_in'length;	-- length of given line
+-- 		char_pt		:	positive := 1;				-- charcter pointer (points to character being processed inside the given line)
+-- 		ifs1		: 	character; 					-- field separator space
+-- 		ifs2		: 	character; 					-- field separator tabulator
+-- 		field_ct	:	natural := 0;				-- field counter (the first field found gets number 1 assigned)
+-- 		field_pt	:	natural := 1;				-- field pointer (points to the charcter being processed inside the current field)
+-- 		inside_field:	boolean := true;			-- true if char_pt points inside a field
+-- 		char_current:	character;					-- holds current character being processed
+-- 		char_last	:	character := ifs;			-- holds character processed previous to char_current
+-- 	begin
+-- 		if ifs = ' ' then
+-- 			ifs1 := ifs;
+-- 			ifs2 := character'Val(9); -- tabulator
+-- 			--char_last := ' ';
+-- 		else
+-- 			ifs1 := ifs;
+-- 			ifs2 := ifs;
+-- 			--char_last := ifs;
+-- 		end if;
+-- 		while char_pt <= line_length
+-- 			loop
+-- 				char_current := text_in(char_pt); 
+-- 				if char_current = IFS1 or char_current = IFS2 then
+-- 					inside_field := false;
+-- 				else
+-- 					inside_field := true;
+-- 				end if;
+-- 	
+-- 				-- count fields if character other than IFS found
+-- 				if ((char_last = IFS1 or char_last = IFS2) and (char_current /= IFS1 and char_current /= IFS2)) then
+-- 					field_ct:=field_ct+1;
+-- 				end if;
+-- 				if (position = field_ct) then
+-- 					if (inside_field = true) then -- if field entered
+-- 						--skip LF -- CS: skip other control characters ?
+-- 						if char_current /= character'val(10) then 
+-- 							value := value & char_current; 
+-- 						end if;
+-- 						
+-- 						field_pt:=field_pt+1;
+-- 					end if;
+-- 				end if;
+-- 
+-- 				if (field_ct > position) then return to_string(value); end if;
+-- 							
+-- 				-- save last character
+-- 				char_last:=char_current;
+-- 
+-- 				-- advance character pointer by one
+-- 				char_pt:=char_pt+1; 
+-- 
+-- 				--put (char_current); put (" --"); new_line;
+-- 			end loop;
+-- 		return to_string(value);
+-- 	end get_field_from_line;
+
+
+	--    	function read_uut_data_base
+--     	procedure read_uut_data_base is
+-- 		-- creates a list of objects of type type_net indicated by pointer ptr_net 
+-- 			-- after reading section netlist
+-- 		
+-- 		-- creates a list of objects of type type_bscan_ic_pre indicated by pointer ptr_bic_pre 
+-- 			-- after reading section scanpath configuration
+-- 		
+-- 		-- creates a list of objects of type type_bscan_ic indicated by pointer ptr_bic 
+-- 			-- after reading section registers
+-- 		
+-- 		-- creates a list of objects of type type_shared_control_cell_journal indicated by pointer ptr_shared_control_cell_journal 
+-- 			-- after reading section netlist
+-- 
+-- 		-- to do: 
+-- 		--	check multiple occurences of bic in section registers
+-- 		--	save line numbers of objects in order to make debugging easier
+-- 		--  direct warnings in directory "msg" file warnings_database.txt
+-- 
+--    		(
+--    		name_of_data_base_file : string;
+-- 		debug_level	: natural := 0
+-- -- 		dedicated_action : boolean := false;
+-- -- 		action : type_action := import_bsdl
+-- 		) return type_udb_summary is
+-- 
+-- 		net_count_statistics	: type_net_count_statistics;
+-- 		sections_processed		: type_udb_section_processed;
+-- 		udb_summary				: type_udb_summary;
+-- 
+-- 		previous_input			: ada.text_io.file_type renames current_input;
+-- -- 		line_length_in_file : natural := 20000; -- this should cover the most cases
+-- -- 		package type_line_of_file is new generic_bounded_length(line_length_in_file); use type_line_of_file;
+-- 		line_of_file 			: extended_string.bounded_string;
+-- 		a 						: extended_string.bounded_string; -- scratch
+-- 		b 						: extended_string.bounded_string; -- scratch
+-- 		--data_base_error			: exception;
+-- 		line_counter			: natural := 0;
+-- 		section_scan_path_configuration_entered	: boolean := false;
+-- 		subsection_options_entered				: boolean := false;
+-- 		subsection_chain_1_entered 				: boolean := false;
+-- 		subsection_chain_2_entered 				: boolean := false;
+-- 		scanpath_counter						: natural := 0; -- counts scanpaths on leaving "subsection chain x"
+-- 		section_registers_entered				: boolean := false;
+-- 		subsection_bic_entered					: boolean := false;
+-- 		--bic_counter								: natural := 0; -- counts bic on adding to list of bics (boundary scan ic)
+-- 		bic_value 								: universal_string_type.bounded_string;
+-- 		bic_housing								: universal_string_type.bounded_string;
+-- 		bic_options								: universal_string_type.bounded_string;
+-- 		bic_model_file							: extended_string.bounded_string;
+-- 		bic_being_processed						: extended_string.bounded_string;
+-- 		bic_boundary_register_length 			: type_register_length := 1;
+-- 		bic_safebits							: extended_string.bounded_string;
+-- 		bic_safebits_total						: type_register_length;
+-- 		bic_instruction_register_length 		: type_register_length;
+-- 		bic_boundary_register_description_length: natural; -- number of lines in "SubSection boundary_register"
+-- 		bic_port_io_map_length					: natural; -- number of lines in "SubSection port_io_map"
+-- 		bic_port_pin_map_length					: natural; -- number of lines in "SubSection port_pin_map"
+-- 		bic_instruction_capture					: universal_string_type.bounded_string;
+-- 		bic_position 							: natural := 0;	-- position of boundary scan capable ic in a particular chain
+-- 		bic_opc_bypass							: universal_string_type.bounded_string; -- for temporarily use only
+-- 		bic_opc_extest							: universal_string_type.bounded_string; -- for temporarily use only
+-- 		bic_opc_sample							: universal_string_type.bounded_string; -- for temporarily use only
+-- 		bic_opc_preload							: universal_string_type.bounded_string; -- for temporarily use only
+-- 		bic_opc_idcode							: universal_string_type.bounded_string; -- for temporarily use only
+-- 		bic_opc_usercode						: universal_string_type.bounded_string; -- for temporarily use only
+-- 		bic_opc_highz							: universal_string_type.bounded_string; -- for temporarily use only
+-- 		bic_opc_clamp							: universal_string_type.bounded_string; -- for temporarily use only
+-- 		bic_opc_intest							: universal_string_type.bounded_string; -- for temporarily use only
+-- 		bic_idcode_register_length 				: constant type_register_length := 32; -- defined by standard
+-- 		bic_usercode_register_length 			: constant type_register_length := 32; -- defined by standard
+-- 		bic_bypass_register_length 				: constant type_register_length := 1; -- defined by standard
+-- -- 		bic_port_name							: extended_string.bounded_string; -- for temporarily use only
+-- -- 		bic_port_name							: extended_string.bounded_string; -- for temporarily use only
+-- 		scratch_string							: universal_string_type.bounded_string; -- for temporarily use only
+-- 		section_name_scratch					: universal_string_type.bounded_string; -- for temporarily use only
+-- 
+-- 		subsection_safebits_entered				: boolean := false;
+-- 		subsection_instruction_opcodes_entered	: boolean := false;
+-- 		subsection_boundary_register_entered	: boolean := false;
+-- 		subsection_port_io_map_entered			: boolean := false;
+-- 		subsection_port_pin_map_entered			: boolean := false;
+-- 
+-- 		section_netlist_entered 				: boolean := false;
+-- 		subsection_net_entered 					: boolean := false;
+-- 		net_level_entered						: type_net_level := primary;
+-- 		secondary_net_ct						: natural := 0;
+-- 		name_of_net_being_processed				: extended_string.bounded_string;
+-- 		name_of_current_primary_net				: extended_string.bounded_string;
+-- 		class_of_net_being_processed			: type_net_class;
+-- 		class_of_current_primary_net			: type_net_class := NA;
+-- 		device_name_scratch						: universal_string_type.bounded_string;
+-- 		device_class_scratch					: type_device_class;
+-- 		device_value_scratch					: universal_string_type.bounded_string;
+-- 		device_package_scratch					: universal_string_type.bounded_string;
+-- 		part_count_of_net_being_processed		: natural := 0;
+-- --		list_of_secondary_net_names				: type_list_of_secondary_net_names; -- array for temporarily storage of secondary net names
+-- 
+-- 
+-- 		section_static_control_cells_class_EX_NA_entered			: boolean := false;
+-- 		section_static_control_cells_class_DX_NR_entered			: boolean := false;
+-- 		section_static_control_cells_class_PX_entered				: boolean := false;
+-- 		section_static_output_cells_class_PX_entered				: boolean := false;
+-- 		section_static_output_cells_class_DX_NR_entered				: boolean := false;
+-- 		section_static_expect_entered								: boolean := false;
+-- 		section_atg_expect_entered									: boolean := false;
+-- 		section_atg_drive_entered									: boolean := false;
+-- 		section_input_cells_in_class_NA_nets_entered				: boolean := false;
+-- 
+-- 		cell_list_net_class										: type_net_class;
+-- 		cell_list_net_level										: type_net_level;
+-- 		cell_list_net_name										: universal_string_type.bounded_string;
+-- 		cell_list_device_name									: universal_string_type.bounded_string;
+-- 		cell_list_pin_name										: universal_string_type.bounded_string;
+-- 		cell_list_control_cell_id								: natural;
+-- --		cell_list_control_cell_disable_value					: type_bit_char_class_0;
+-- 		cell_list_control_cell_in_enable_state					: boolean;
+-- 		cell_list_control_cell_value							: type_bit_char_class_0;
+-- 		cell_list_control_cell_inverted							: boolean;
+-- 		cell_list_primary_net_controlled_by_control_cell		: boolean;
+-- 		cell_list_output_cell_id								: natural;
+-- 		cell_list_output_cell_drive_value						: type_bit_char_class_0;
+-- 		cell_list_input_cell_id									: natural;
+-- 		cell_list_input_cell_expect_value						: type_bit_char_class_0;
+-- 		cell_list_primary_net_is								: universal_string_type.bounded_string;
+-- 
+-- 		section_statistics_entered 		: boolean := false;
+-- 
+-- 		prog_position	: natural := 0;
+
+-- 		procedure add_to_scan_chain_pre(
+-- 			list				: in out type_ptr_bscan_ic_pre;
+-- 			name_given			: in universal_string_type.bounded_string;
+-- 			housing_given		: in universal_string_type.bounded_string;
+-- 			model_file_given	: in extended_string.bounded_string;
+-- 			options_given		: in universal_string_type.bounded_string;
+-- 			chain_given			: in natural;
+-- 			position_given		: in natural
+-- 			) is
+-- 		begin
+-- 			list := new type_bscan_ic_pre'(
+-- 				next 		=> list,
+-- 				name 		=> name_given,
+-- 				housing		=> housing_given,
+-- 				model_file	=> model_file_given,
+-- 				options		=> options_given,
+-- 				chain 		=> chain_given,
+-- 				position 	=> position_given
+-- 				);
+-- 		end add_to_scan_chain_pre;
+
+		
+-- 		procedure add_to_scan_chain(
+-- 			list				: in out type_ptr_bscan_ic;
+-- 			name_given			: in universal_string_type.bounded_string;
+-- 			housing_given		: in universal_string_type.bounded_string;
+-- 			model_file_given	: in extended_string.bounded_string;
+-- 			options_given		: in universal_string_type.bounded_string;
+-- 			value_given			: in universal_string_type.bounded_string;
+-- 			chain_given			: in natural;
+-- 			position_given		: in natural;
+-- 			len_ir_given		: in natural;
+-- 			capture_ir_given	: in type_string_of_bit_characters_class_1;
+-- 			len_bsr_given		: in natural;
+-- 			idcode_given		: in type_bic_idcode := bic_idcode;
+-- 			usercode_given		: in type_bic_usercode := bic_usercode;
+-- 			opc_bypass_given	: in type_string_of_bit_characters_class_1;
+-- 			opc_extest_given	: in type_string_of_bit_characters_class_1;
+-- 			opc_sample_given	: in type_string_of_bit_characters_class_1;
+-- 			opc_preload_given	: in type_string_of_bit_characters_class_1;
+-- 			opc_idcode_given	: in type_string_of_bit_characters_class_1;
+-- 			opc_usercode_given	: in type_string_of_bit_characters_class_1;
+-- 			opc_clamp_given		: in type_string_of_bit_characters_class_1;
+-- 			opc_highz_given		: in type_string_of_bit_characters_class_1;
+-- 			opc_intest_given	: in type_string_of_bit_characters_class_1;
+-- 			safebits_given		: in type_string_of_bit_characters_class_1;
+-- 			trst_pin_given		: in boolean := false;
+-- 			len_bsr_description_given	: in positive;
+-- 			boundary_register_given		: in type_boundary_register_description;
+-- 			len_port_io_map_given		: in positive;
+-- 			port_io_map_given			: in type_port_io_map;
+-- 			len_port_pin_map_given		: in positive;
+-- 			port_pin_map_given			: in type_port_pin_map
+-- 			) is
+-- 		begin
+-- 			prog_position := 1000;
+-- 			bic_counter := bic_counter + 1;
+-- 			list := new type_bscan_ic'(
+-- 				next 		=> list,
+-- 				id			=> bic_counter,
+-- 				name 		=> name_given,
+-- 				value		=> value_given,
+-- 				housing		=> housing_given,
+-- 				model_file	=> model_file_given,
+-- 				options		=> options_given,
+-- 				chain 		=> chain_given,
+-- 				position 	=> position_given,
+-- 				len_ir 		=> len_ir_given,
+-- 				capture_ir 	=> capture_ir_given,
+-- 				len_bsr 	=> len_bsr_given,
+-- 				idcode 		=> idcode_given,
+-- 				usercode 	=> usercode_given,
+-- 				opc_bypass	=> opc_bypass_given,
+-- 				opc_extest	=> opc_extest_given,
+-- 				opc_intest	=> opc_intest_given,
+-- 				opc_sample	=> opc_sample_given,
+-- 				--instruction_sample_present	=> instruction_sample_present_given,
+-- 				opc_preload	=> opc_preload_given,
+-- 				opc_idcode	=> opc_idcode_given,
+-- 				opc_usercode	=> opc_usercode_given,
+-- 				opc_clamp		=> opc_clamp_given,
+-- 				opc_highz		=> opc_highz_given,
+-- 				capture_bypass	=> '0', -- CS: for non conformant ics this could be useful someday
+-- 				safebits		=> safebits_given,
+-- 				trst_pin		=> trst_pin_given,
+-- 				len_bsr_description		=> len_bsr_description_given,
+-- 				boundary_register 		=> boundary_register_given,
+-- 				len_port_io_map			=> len_port_io_map_given,
+-- 				port_io_map				=> port_io_map_given,
+-- 				len_port_pin_map		=> len_port_pin_map_given,
+-- 				port_pin_map			=> port_pin_map_given,
+-- 				has_static_drive_cell	=> false, -- will be set later when processing cell lists
+-- 				has_static_expect_cell	=> false, -- will be set later when processing cell lists
+-- 
+-- 				has_dynamic_drive_cell	=> false, -- will be set later when processing cell lists
+-- 				has_dynamic_expect_cell	=> false, -- will be set later when processing cell lists
+-- 
+-- 				-- this is compiler related. we assign default values. compseq will overwrite them if addressed in sequence file
+-- 				-- supposed read-only registers also get written, in order to test if they are read-only
+--  				pattern_last_ir_drive			=> replace_dont_care(opc_bypass_given), -- safety measure
+--  				pattern_last_ir_expect			=> replace_dont_care(capture_ir_given),
+--  				pattern_last_ir_mask			=> to_binary_class_0(to_binary(len_ir_given * '1',len_ir_given)), -- creates a string of ones (all bits get checked)
+--  				pattern_last_boundary_drive		=> replace_dont_care(safebits_given),
+-- 				pattern_last_boundary_expect	=> to_binary_class_0(to_binary(len_bsr_given * '0',len_bsr_given)), -- creates a string of zeros
+-- 				pattern_last_boundary_mask		=> to_binary_class_0(to_binary(len_bsr_given * '1',len_bsr_given)), -- creates a string of ones (all bits get checked)
+--  				pattern_last_bypass_drive		=> to_binary_class_0(to_binary(bic_bypass_register_length * '1',bic_bypass_register_length)), -- creates a one
+--  				pattern_last_bypass_expect		=> to_binary_class_0(to_binary(bic_bypass_register_length * '0',bic_bypass_register_length)), -- creates a zero
+--  				pattern_last_bypass_mask		=> to_binary_class_0(to_binary(bic_bypass_register_length * '1',bic_bypass_register_length)), -- creates a one (all bits get checked)
+-- 				pattern_last_idcode_drive		=> to_binary_class_0(to_binary(bic_idcode_register_length * '0',bic_idcode_register_length)), -- creates a string of zeros
+-- 				pattern_last_idcode_expect		=> replace_dont_care(idcode_given),
+-- 				pattern_last_idcode_mask		=> to_binary_class_0(to_binary(bic_idcode_register_length * '1',bic_idcode_register_length)), -- creates a string of ones (all bits get checked)
+-- 				pattern_last_usercode_drive		=> to_binary_class_0(to_binary(bic_usercode_register_length * '0',bic_usercode_register_length)), -- creates a string of zeros
+--  				pattern_last_usercode_expect	=> replace_dont_care(usercode_given),
+-- 				pattern_last_usercode_mask		=> to_binary_class_0(to_binary(bic_usercode_register_length * '1',bic_usercode_register_length)) -- creates a string of ones (all bits get checked)
+-- 				);
+-- 		end add_to_scan_chain;
+
+-- 		procedure add_to_boundary_register(
+-- 			list					: in out type_ptr_bit_of_boundary_register;
+-- 			id_given				: in type_cell_id;
+-- 			cell_type_given			: in type_boundary_register_cell; -- BC_1
+-- 			port_given				: in universal_string_type.bounded_string;
+-- 			cell_function_given		: in type_cell_function; -- INTERNAL, CONTROLR
+-- 			cell_safe_value_given	: in type_bit_char_class_1;
+-- 			control_cell_id_given	: in type_control_cell_id := -1 ;-- 0; -- -1 is default and means: no control cell connected
+-- 			disable_value_given		: in type_bit_char_class_0 := '1'; -- 1
+-- 			disable_result_given	: in type_disable_result := Z
+-- 			) is
+-- 		begin
+-- 			prog_position := 2000;
+-- 			list := new type_bit_of_boundary_register'(
+-- 				next 			=> list,
+-- 				id 				=> id_given,
+-- 				appears_in_net_list	=> false, -- will be used later when checking multiple occurences of cell
+-- 				cell_type		=> cell_type_given,
+-- 				port	 		=> port_given,
+-- 				cell_function	=> cell_function_given,
+-- 				cell_safe_value	=> cell_safe_value_given,
+-- 				control_cell_id	=> control_cell_id_given,
+-- 				disable_value	=> disable_value_given,
+-- 				disable_result	=> disable_result_given
+-- 				);
+-- 		end add_to_boundary_register;
+
+-- 		procedure add_to_port_io_map(
+-- 			list						: in out type_ptr_port;
+-- 			name_given					: in universal_string_type.bounded_string;
+-- 			direction_given				: in type_port_direction;
+-- 			index_start_given			: in natural;
+-- 			index_end_given				: in natural;
+-- 			vector_length_given			: in positive;
+-- 			is_vector_given				: in boolean;
+-- 			vector_orientation_given	: in type_vector_orientation
+-- 			) is
+-- 		begin
+-- 			prog_position := 3000;
+-- 			list := new type_port'(
+-- 				next 				=> list,
+-- 				name				=> name_given,
+-- 				direction			=> direction_given,
+-- 				index_start			=> index_start_given,
+-- 				index_end			=> index_end_given,
+-- 				vector_length		=> vector_length_given,
+-- 				is_vector			=> is_vector_given,
+-- 				vector_orientation	=> vector_orientation_given
+-- 				);
+-- 		end add_to_port_io_map;
+
+-- 		procedure add_to_port_pin_map(
+-- 			list						: in out type_ptr_port_pin;
+-- 			port_name_given				: in universal_string_type.bounded_string;
+-- 			pin_count_given				: in positive;
+-- --			pin_names_given				: in extended_string.bounded_string
+-- 			pin_names_given				: in type_list_of_pin_names
+-- 			) is
+-- 		begin
+-- 			prog_position := 4000;
+-- 			list := new type_port_pin'(
+-- 				next				=> list,
+-- 				port_name			=> port_name_given,
+-- 				pin_count			=> pin_count_given,
+-- 				pin_names			=> pin_names_given
+-- 				--pin_appears_in_net_list => (others => false) -- will be set later when processing net list
+-- 				);
+-- 		end add_to_port_pin_map;
+				
+
+-- 		procedure add_to_scanport(
+-- 			list								: in out type_ptr_scanport;
+-- 			id_given							: in positive;
+-- 			voltage_out_given					: in type_voltage_out;
+-- 			voltage_threshold_tdi_given			: in type_threshold_tdi;
+-- 			characteristic_tck_driver_given		: in type_driver_characteristic;
+-- 			characteristic_tms_driver_given		: in type_driver_characteristic;
+-- 			characteristic_tdo_driver_given		: in type_driver_characteristic;
+-- 			characteristic_trst_driver_given	: in type_driver_characteristic
+-- 			) is
+-- 		begin
+-- 			--scanpath_counter := scanpath_counter + 1; -- wrong here, moved to actions to do when leaving "subsection chain x"
+-- 			prog_position := 5000;
+-- 			list := new scanport'(
+-- 				next => list,
+-- 				id => id_given,
+-- 				active => false, -- set by procedure "mark_active_scanport"
+-- 				voltage_out => voltage_out_given,
+-- 				voltage_threshold_tdi => voltage_threshold_tdi_given,
+-- 				characteristic_tck_driver => characteristic_tck_driver_given,
+-- 				characteristic_tms_driver => characteristic_tms_driver_given,
+-- 				characteristic_tdo_driver => characteristic_tdo_driver_given,
+-- 				characteristic_trst_driver => characteristic_trst_driver_given
+-- 				);
+-- 		end add_to_scanport;
+
+-- 		procedure add_to_pin_list(
+-- 			list								: in out type_ptr_pin;
+-- 			device_name_given					: in universal_string_type.bounded_string;
+-- 			device_class_given					: in type_device_class;
+-- 			device_value_given					: in universal_string_type.bounded_string;
+-- 			device_package_given				: in universal_string_type.bounded_string;
+-- 			device_pin_name_given				: in universal_string_type.bounded_string;
+-- 			device_port_name_given				: in universal_string_type.bounded_string := to_bounded_string("");
+-- 			is_bscan_capable_given				: in boolean;
+-- 			cell_info_given						: in type_pin_cell_info := pin_cell_info_default
+-- 			) is
+-- 		begin
+-- 			prog_position := 6000;
+-- 			list := new type_pin'(
+-- 				next => list,
+-- 				device_name			=> device_name_given,
+-- 				device_class		=> device_class_given,
+-- 				device_value		=> device_value_given,
+-- 				device_package		=> device_package_given,
+-- 				device_pin_name		=> device_pin_name_given,
+-- 				pin_checked			=> false,
+-- 				device_port_name	=> device_port_name_given,
+-- 				is_bscan_capable	=> is_bscan_capable_given,
+-- 				cell_info			=> cell_info_given
+-- 				);
+-- 		end add_to_pin_list;
+
+-- 		procedure verify_net_appears_only_once_in_net_list (name_given : string) is
+-- 			name	: universal_string_type.bounded_string := to_bounded_string(name_given);
+-- 			n		: type_ptr_net := ptr_net;
+-- 		begin
+-- 			prog_position := 7000;
+-- 			while n /= null loop
+-- 				if n.name = name then
+-- 					put_line("ERROR: Net '" & to_string(name) & "' already exists in net list !");
+-- 					raise constraint_error;
+-- 				end if;
+-- 				n := n.next;
+-- 			end loop;
+-- 		end verify_net_appears_only_once_in_net_list;
+
+
+-- 		procedure add_to_net_list(
+-- --			list						: in out type_ptr_net;
+-- 			name_given					: in universal_string_type.bounded_string;
+-- 			class_given					: in type_net_class;
+-- 			bs_bidir_pin_count_given	: in natural;
+-- 			bs_input_pin_count_given	: in natural;
+-- 			bs_output_pin_count_given	: in natural;
+-- 			bs_capable_given			: in boolean;
+-- 			net_level_given				: in type_net_level;
+-- 			--secondary_net_ct_given		: in natural := 0; -- the number of secondary nets (of a primary net) will be assigned by
+-- 			-- function add_secondary_net_names_to_primary_net
+-- 			name_of_primary_net_given	: in universal_string_type.bounded_string;
+-- 			pin_given		 			: in type_pins_of_net
+-- 			) is
+-- 
+-- 			procedure verify_pin_appears_only_once_in_net_list is
+-- 				n		: type_ptr_net;
+-- 				l		: type_pins_of_net := pin_given; -- make a local copy of pin_given
+-- 				device	: universal_string_type.bounded_string;
+-- 				pin		: universal_string_type.bounded_string;
+-- 			begin
+-- 				-- check if pin appears only once in the current net
+-- 				-- loop inside l and check if every pin appears only once
+-- 				for o in 1..l'last loop -- outer loop
+-- 					device 	:= l(o).device_name; -- get device name
+-- 					pin		:= l(o).device_pin_name; -- get pin name
+-- 					l(o).pin_checked := true; -- mark pin as checked
+-- 
+-- 					for i in 1..l'last loop -- inner loop
+-- 						if not l(i).pin_checked then -- skip pins already marked as checked (see above)
+-- 							if l(i).device_name = device then -- on device match
+-- 								if l(i).device_pin_name = pin then -- on pin match
+-- 									put_line("ERROR: Device '" & to_string(device) & "' pin '" 
+-- 										& to_string(pin) & "' must appear only once in this net !");
+-- 									raise constraint_error;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+-- 					end loop;
+-- 				end loop;
+-- 
+-- 				-- loop in net list and check if any pin of array pin_given appears in other nets
+-- 				for p in 1..pin_given'last loop -- loop though pin_given (which is an array of pins)
+-- 					device 	:= pin_given(p).device_name; -- get device name
+-- 					pin		:= pin_given(p).device_pin_name; -- get pin name
+-- 
+-- 					n := ptr_net; -- set n to end of net list
+-- 					while n /= null loop
+-- 						for a in 1..n.part_ct loop -- loop through pin list of current net (n points to this net)
+-- 
+-- 							if n.pin(a).device_name = device then -- on device match
+-- 								if n.pin(a).device_pin_name = pin then -- on pin match
+-- 									put_line("ERROR: Device '" & to_string(device) & "' pin '" & to_string(pin) 
+-- 										& "' already used in net '" & to_string(n.name) & "' !");
+-- 									raise constraint_error;
+-- 								end if;
+-- 							end if;
+-- 			
+-- 						end loop;
+-- 						n := n.next;
+-- 					end loop;
+-- 
+-- 				end loop;
+-- 			end verify_pin_appears_only_once_in_net_list;
+-- 
+-- 		begin
+-- 			prog_position := 8000;
+-- 			verify_pin_appears_only_once_in_net_list;
+-- 
+-- 			case net_level_given is
+-- 				when secondary => 
+-- 					list := new type_net'(
+-- 						next => list,
+-- 						level 					=> secondary,
+-- 						part_ct					=> pin_given'last, -- the part count can be taken from the size of the array "pin_given"
+-- 						name					=> name_given,
+-- 						--appears_in_cell_list	=> false,
+-- 						class					=> class_given,
+-- 						bs_bidir_pin_count		=> bs_bidir_pin_count_given,
+-- 						bs_input_pin_count		=> bs_input_pin_count_given,
+-- 						bs_output_pin_count		=> bs_output_pin_count_given,
+-- 						bs_capable				=> bs_capable_given,
+-- 						optimized				=> false, -- this is just a default, it will be set by chkpsn
+-- 						name_of_primary_net		=> name_of_primary_net_given,
+-- 						pin						=> pin_given
+-- 						);
+-- 				when primary =>
+-- 					list := new type_net'( -- it is primary net
+-- 						next => list,
+-- 						part_ct					=> pin_given'last, -- the part count can be taken from the size of the array "pin_given"
+-- 						level 					=> primary,
+-- 						name					=> name_given,
+-- 						--appears_in_cell_list	=> false,
+-- 						class					=> class_given,
+-- 						bs_bidir_pin_count		=> bs_bidir_pin_count_given,
+-- 						bs_input_pin_count		=> bs_input_pin_count_given,
+-- 						bs_output_pin_count		=> bs_output_pin_count_given,
+-- 						bs_capable				=> bs_capable_given,
+-- 						optimized				=> false, -- this is just a default, it will be set by chkpsn
+-- 						secondary_net_ct		=> 0, --secondary_net_ct_given, -- see note in function header
+-- 						list_of_secondary_net_names	=> (others => universal_string_type.to_bounded_string("")), -- A list of secondary net
+-- 						-- names (belonging to a primary net) will be assigned
+-- 						-- later by function add_secondary_net_names_to_primary_net.
+-- 						pin						=> pin_given
+-- 						);
+-- 			end case;
+-- 		end add_to_net_list;
+
+-- 		procedure add_secondary_net_names_to_primary_net is
+-- 			-- the primary net must be allocated anew, so that the secondary nets can be assigned
+-- 			n : type_ptr_net := ptr_net; -- set pointer n at end of net list
+-- 		begin
+-- 			prog_position := 9000;
+-- 			while n /= null loop -- loop down the list until primary net found
+-- 				if to_string(n.name) = name_of_current_primary_net then
+-- 					n.secondary_net_ct := secondary_net_ct; -- assign secondary net count
+-- 					for s in 1..secondary_net_ct loop
+-- 						n.list_of_secondary_net_names(s) := list_of_secondary_net_names(s);
+-- 					end loop;	
+-- 				end if;
+-- 				n := n.next; -- advance net pointer
+-- 			end loop;
+-- 		end add_secondary_net_names_to_primary_net;
+
+
+-- 		function is_register_present(text_in : string)
+-- 			return boolean is
+-- 		begin
+-- 			prog_position := 10000;
+-- 			-- check whether text_in is type_bic_optional_register_present. return false is yes
+-- 			case type_bic_optional_register_present'value(to_upper(text_in)) is
+-- 				--when NO | NONE => null; --put_line("not present");
+-- 				when others => null;
+-- 			end case;
+-- 			return false;
+-- 			
+-- 			exception -- means, text_in was something other than type_bic_optional_register_present
+-- 				when constraint_error => return true;
+-- 		end is_register_present;
+
+
+-- 		procedure complete_bic_data (name_of_bic_given: string) is
+-- 			--bp 			: type_ptr_bscan_ic_pre := ptr_bic_pre;
+-- 			chain		: positive;
+-- 			position	: positive;
+-- 			housing		: universal_string_type.bounded_string;
+-- 			model_file	: extended_string.bounded_string;
+-- 			options		: universal_string_type.bounded_string;
+-- 
+-- 			function convert_bsr_description_list_to_array(length_of_list : positive) return type_boundary_register_description is
+-- 			-- the description list was dynamic in size so far. now it is converted into a static array of size length_of_list
+-- 				subtype type_rd is type_boundary_register_description (1..length_of_list);
+-- 				d 	: type_rd; -- this is the static array of size length_of_list
+-- 				b	: type_ptr_bit_of_boundary_register := ptr_bsr; -- set pointer b at end of list (bsr points there after processing SubSection boundary_register)
+-- 				i	: natural := 0;
+-- 			begin
+-- 				prog_position := 11100;
+-- 				while b /= null loop -- loop until begin of list reached
+-- 					i := i + 1; -- i points to the bit position being processed in array d
+-- 					--put_line("id : " & natural'image (b.id));
+-- 					-- copy register bit data in static array d
+-- 					d(i).id					:= b.id;
+-- 					d(i).cell_type			:= b.cell_type;
+-- 					d(i).port				:= b.port;
+-- 					d(i).cell_function		:= b.cell_function;
+-- 					d(i).cell_safe_value	:= b.cell_safe_value;
+-- 					d(i).control_cell_id	:= b.control_cell_id;
+-- 					d(i).disable_value		:= b.disable_value;
+-- 					d(i).disable_result		:= b.disable_result;
+-- 					b := b.next; -- advance list pointer
+-- 				end loop;
+-- 				if i /= length_of_list then -- if (for some reason) bit positions processed differs from length_of_list
+-- 					prog_position := 11200;
+-- 					raise constraint_error;
+-- 				end if;
+-- 				return d; -- return the filled array of boundary register bit descriptions
+-- 			end convert_bsr_description_list_to_array;
+-- 
+-- 			function convert_port_io_map_list_to_array(length_of_list : positive) return type_port_io_map is
+-- 			-- the port_io_map list was dynamic in size so far. now it is converted into a static array of size length_of_list
+-- 				subtype type_iom is type_port_io_map (1..length_of_list);
+-- 				p	: type_ptr_port := ptr_bic_port_io_map; -- set pointer p at end of list (ptr_bic_port_io_map points there after processing SubSection port_io_map)
+-- 				d	: type_iom;
+-- 				i	: natural := 0;
+-- 			begin
+-- 				prog_position := 11300;
+-- 				while p /= null loop -- loop until begin of list reached
+-- 					i := i + 1; -- i points to the port being processed in array p
+-- 					-- copy port in static array d
+-- 					d(i).name				:= p.name;
+-- 					d(i).direction			:= p.direction;
+-- 					d(i).index_start		:= p.index_start;
+-- 					d(i).index_end			:= p.index_end;
+-- 					d(i).vector_length		:= p.vector_length;
+-- 					d(i).is_vector			:= p.is_vector;
+-- 					d(i).vector_orientation	:= p.vector_orientation;
+-- 					p := p.next; -- advance list pointer
+-- 				end loop;
+-- 				if i /= length_of_list then -- if (for some reason) ports processed differs from length_of_list
+-- 					prog_position := 11400;
+-- 					raise constraint_error;
+-- 				end if;
+-- 				return d; -- return the filled array of port_io_map
+-- 			end convert_port_io_map_list_to_array;
+-- 
+-- 			function convert_port_pin_map_list_to_array(length_of_list : positive) return type_port_pin_map is
+-- 			-- the port_pin_map list was dynamic in size so far. now it is converted into a static array of size length_of_list
+-- 				subtype type_ppm is type_port_pin_map (1..length_of_list);
+-- 				p	: type_ptr_port_pin := ptr_bic_port_pin_map; -- set pointer p at end of list (ptr_bic_port_pin_map points there after processing SubSection port_pin_map)
+-- 				d	: type_ppm;
+-- 				i	: natural := 0;
+-- 			begin
+-- 				prog_position := 11500;
+-- 				while p /= null loop -- loop until begin of list reached
+-- 					i := i + 1; -- i points to the pin_port being processed in array p
+-- 					-- copy port_pin in static array d
+-- 					d(i).port_name					:= p.port_name;
+-- 					d(i).pin_count					:= p.pin_count;
+-- 					d(i).pin_names					:= p.pin_names;
+-- 					--d(i).pin_appears_in_net_list	:= p.pin_appears_in_net_list;
+-- 					p := p.next; -- advance list pointer
+-- 				end loop;
+-- 				if i /= length_of_list then -- if (for some reason) ports processed differs from length_of_list
+-- 					prog_position := 11600;
+-- 					raise constraint_error;
+-- 				end if;
+-- 				return d; -- return the filled array of port_pin_map
+-- 			end convert_port_pin_map_list_to_array;
+-- 
+--             bic_scratch : type_bscan_ic (
+--                             len_ir => bic_instruction_register_length,
+--                             len_bsr => bic_boundary_register_length,
+--                             len_bsr_description => bic_boundary_register_description_length,
+--                             len_port_io_map => bic_port_io_map_length,
+--                             len_port_pin_map => bic_port_pin_map_length);
+--             
+-- 		begin -- complete_bic_data
+--             --put_line(standard_output,"test");
+-- 			prog_position := 11000;
+--             --while bp /= null loop -- loop through bscan_ic_pre list (created while reading scan path configuration)
+--             for b in 1..length(list_of_bics_pre) loop    
+--                 --if bp.name = name_of_bic_given then -- when bic found:
+--                 if element(list_of_bics_pre,positive(b)).name = name_of_bic_given then
+-- 					chain := element(list_of_bics_pre,positive(b)).chain; -- get chain number
+-- 					position := element(list_of_bics_pre,positive(b)).position; -- get position
+-- 					housing := element(list_of_bics_pre,positive(b)).housing; -- get housing (or package name)
+-- 					model_file := element(list_of_bics_pre,positive(b)).model_file; -- get model file
+-- 					options := element(list_of_bics_pre,positive(b)).options; -- get options
+-- 					if debug_level >= 10 then
+-- 						put_line("  completing  " & name_of_bic_given);
+-- 						put_line("   - chain       " & positive'image(chain));
+-- 						put_line("   - position    " & positive'image(position));
+-- 						put_line("   - len bsr     " & positive'image(bic_boundary_register_length));
+-- 						put_line("   - len ir      " & positive'image(bic_instruction_register_length));
+-- 						--put     (" - capt ir     "); put_binary_class_1(to_binary_class_1(to_binary(to_string(bic_instruction_capture),bic_instruction_register_length,class_1)));
+-- 					end if;
+-- 
+-- 					if length(bic_opc_bypass) = 0 then
+-- 						bic_opc_bypass := bic_instruction_register_length * '1';
+-- 						if debug_level >= 5 then put_line("WARNING: Instruction '" & type_bic_instruction'image(BYPASS) & "' not found ! Defaulting to '" & to_string(bic_opc_bypass) & "'"); end if;
+-- 					end if;
+-- 					if length(bic_opc_extest) = 0 then
+-- 						bic_opc_extest := bic_instruction_register_length * '0';
+-- 						if debug_level >= 5 then put_line("WARNING: Instruction '" & type_bic_instruction'image(EXTEST) & "' not found ! Defaulting to '" & to_string(bic_opc_extest) & "'"); end if;
+-- 					end if;
+-- 					if length(bic_opc_intest) = 0 then
+-- 						bic_opc_intest := bic_instruction_register_length * 'X';
+-- 					end if;
+-- 					if length(bic_opc_sample) = 0 then
+-- 						if debug_level >= 5 then put_line("WARNING: Instruction '" & type_bic_instruction'image(SAMPLE) & "' not found !"); end if;
+-- 						bic_opc_sample := bic_instruction_register_length * 'X';
+-- 						--bic_opc_sample_present := false;
+-- 					end if;
+-- 					if length(bic_opc_preload) = 0 then
+-- 						bic_opc_preload := bic_instruction_register_length * 'X';
+-- 					end if;
+-- 					if length(bic_opc_idcode) = 0 then
+-- 						if debug_level >= 5 then put_line("WARNING: Instruction '" & type_bic_instruction'image(IDCODE) & "' not found !"); end if;
+-- 						bic_opc_idcode := bic_instruction_register_length * 'X';
+-- 					end if;
+-- 					if length(bic_opc_usercode) = 0 then
+-- 						bic_opc_usercode := bic_instruction_register_length * 'X';
+-- 					end if;
+-- 					if length(bic_opc_clamp) = 0 then
+-- 						bic_opc_clamp := bic_instruction_register_length * 'X';
+-- 					end if;
+-- 					if length(bic_opc_highz) = 0 then
+-- 						bic_opc_highz := bic_instruction_register_length * 'X';
+-- 					end if;
+-- 
+-- -- 					put     ("oc bypass   "); put_binary_class_1(to_binary_class_1(to_binary(to_string(bic_opc_bypass),bic_instruction_register_length,class_1)));
+-- -- 					put     ("oc extest   "); put_binary_class_1(to_binary_class_1(to_binary(to_string(bic_opc_extest),bic_instruction_register_length,class_1)));
+-- -- 					put     ("oc intest   "); put_binary_class_1(to_binary_class_1(to_binary(to_string(bic_opc_intest),bic_instruction_register_length,class_1)));
+-- -- 					put     ("oc sample   "); put_binary_class_1(to_binary_class_1(to_binary(to_string(bic_opc_sample),bic_instruction_register_length,class_1)));
+-- -- 					put     ("oc preload  "); put_binary_class_1(to_binary_class_1(to_binary(to_string(bic_opc_preload),bic_instruction_register_length,class_1)));
+-- -- 					put     ("oc idcode   "); put_binary_class_1(to_binary_class_1(to_binary(to_string(bic_opc_idcode),bic_instruction_register_length,class_1)));
+-- -- 					put     ("oc usercode "); put_binary_class_1(to_binary_class_1(to_binary(to_string(bic_opc_usercode),bic_instruction_register_length,class_1)));
+-- -- 					put     ("oc clamp    "); put_binary_class_1(to_binary_class_1(to_binary(to_string(bic_opc_clamp),bic_instruction_register_length,class_1)));
+-- -- 					put     ("oc highz    "); put_binary_class_1(to_binary_class_1(to_binary(to_string(bic_opc_highz),bic_instruction_register_length,class_1)));
+-- 
+-- 					-- CS:
+-- 					-- perform in depth check of safebits, port io maps, port_pin maps cross dependencies
+-- 
+-- 					prog_position := 11400;
+-- 					--put_binary_class_1(
+-- -- 					add_to_scan_chain(
+-- -- 						list 				=> ptr_bic,
+-- -- 						name_given			=> to_bounded_string(name_of_bic_given),
+-- -- 						housing_given		=> housing,
+-- -- 						model_file_given	=> model_file,
+-- -- 						options_given		=> options,
+-- -- 						value_given			=> bic_value,
+-- -- 						chain_given			=> chain,
+-- -- 						position_given		=> position,
+-- -- 						len_ir_given		=> bic_instruction_register_length,
+-- -- 						capture_ir_given	=> to_binary_class_1(to_binary(to_string(bic_instruction_capture),bic_instruction_register_length,class_1)),
+-- -- 						len_bsr_given		=> bic_boundary_register_length,
+-- -- 						idcode_given		=> bic_idcode,
+-- -- 						usercode_given		=> bic_usercode,
+-- -- 						opc_bypass_given	=> to_binary_class_1(to_binary(to_string(bic_opc_bypass),bic_instruction_register_length,class_1)),
+-- -- 						opc_extest_given	=> to_binary_class_1(to_binary(to_string(bic_opc_extest),bic_instruction_register_length,class_1)),
+-- -- 						opc_sample_given	=> to_binary_class_1(to_binary(to_string(bic_opc_sample),bic_instruction_register_length,class_1)),
+-- -- 						opc_preload_given	=> to_binary_class_1(to_binary(to_string(bic_opc_preload),bic_instruction_register_length,class_1)),
+-- -- 						opc_idcode_given	=> to_binary_class_1(to_binary(to_string(bic_opc_idcode),bic_instruction_register_length,class_1)),
+-- -- 						opc_usercode_given	=> to_binary_class_1(to_binary(to_string(bic_opc_usercode),bic_instruction_register_length,class_1)),
+-- -- 						opc_clamp_given		=> to_binary_class_1(to_binary(to_string(bic_opc_clamp),bic_instruction_register_length,class_1)),
+-- -- 						opc_highz_given		=> to_binary_class_1(to_binary(to_string(bic_opc_highz),bic_instruction_register_length,class_1)),
+-- -- 						opc_intest_given	=> to_binary_class_1(to_binary(to_string(bic_opc_intest),bic_instruction_register_length,class_1)),
+-- -- 						safebits_given		=> to_binary_class_1(to_binary(to_string(bic_safebits),bic_boundary_register_length,class_1)),
+-- -- 						trst_pin_given		=> bic_trst_present,
+-- -- 						len_bsr_description_given	=> bic_boundary_register_description_length,
+-- -- 						boundary_register_given		=> convert_bsr_description_list_to_array(bic_boundary_register_description_length),
+-- -- 						len_port_io_map_given		=> bic_port_io_map_length,
+-- -- 						port_io_map_given			=> convert_port_io_map_list_to_array(bic_port_io_map_length),
+-- -- 						len_port_pin_map_given		=> bic_port_pin_map_length,
+-- -- 						port_pin_map_given			=> convert_port_pin_map_list_to_array(bic_port_pin_map_length)
+-- --                         );
+-- 
+--                     bic_scratch.name := to_bounded_string(name_of_bic_given);
+--                     bic_scratch.housing := housing;
+--                     bic_scratch.model_file := model_file;
+--                     bic_scratch.options := options;
+--                     bic_scratch.value := bic_value;
+--                     bic_scratch.position := position;
+--                     bic_scratch.chain := chain;
+--                     bic_scratch.capture_ir := to_binary_class_1(to_binary(to_string(bic_instruction_capture),bic_instruction_register_length,class_1));
+--                     bic_scratch.idcode := bic_idcode;
+--                     bic_scratch.usercode := bic_usercode;
+--                     bic_scratch.opc_bypass := to_binary_class_1(to_binary(to_string(bic_opc_bypass),bic_instruction_register_length,class_1));
+--                     bic_scratch.opc_extest := to_binary_class_1(to_binary(to_string(bic_opc_extest),bic_instruction_register_length,class_1));
+--                     bic_scratch.opc_sample := to_binary_class_1(to_binary(to_string(bic_opc_sample),bic_instruction_register_length,class_1));                 
+--                     bic_scratch.opc_preload := to_binary_class_1(to_binary(to_string(bic_opc_preload),bic_instruction_register_length,class_1));
+--                     bic_scratch.opc_highz := to_binary_class_1(to_binary(to_string(bic_opc_highz),bic_instruction_register_length,class_1));
+--                     bic_scratch.opc_clamp := to_binary_class_1(to_binary(to_string(bic_opc_clamp),bic_instruction_register_length,class_1));                               
+--                     bic_scratch.opc_idcode := to_binary_class_1(to_binary(to_string(bic_opc_idcode),bic_instruction_register_length,class_1));
+--                     bic_scratch.opc_usercode := to_binary_class_1(to_binary(to_string(bic_opc_usercode),bic_instruction_register_length,class_1));
+--                     bic_scratch.opc_intest := to_binary_class_1(to_binary(to_string(bic_opc_intest),bic_instruction_register_length,class_1));
+--                     bic_scratch.safebits := to_binary_class_1(to_binary(to_string(bic_safebits),bic_boundary_register_length,class_1));
+--                     bic_scratch.boundary_register := convert_bsr_description_list_to_array(bic_boundary_register_description_length);
+--                     bic_scratch.port_io_map := convert_port_io_map_list_to_array(bic_port_io_map_length);
+--                     bic_scratch.port_pin_map := convert_port_pin_map_list_to_array(bic_port_pin_map_length);
+-- 
+-- -- 			bic_counter := bic_counter + 1;                    
+--                     append(list_of_bics, bic_scratch);
+--                     
+-- 					--put_line("bsr lenght :" & type_register_length'image(b.len_bsr));
+-- 					--b.safebits 	:= to_binary_class_1(to_binary(text_in => to_string(bic_safebits), length => bic_boundary_register_length, class => class_1));
+-- 					--put_binary_class_1(b.safebits);
+-- 					exit;
+-- 				end if;
+-- 				--bp := bp.next;
+-- 			end loop;
+-- 			-- clear temporarily used opcode strings
+-- 			bic_opc_bypass		:= to_bounded_string("");
+-- 			bic_opc_extest		:= to_bounded_string("");
+-- 			bic_opc_sample		:= to_bounded_string("");
+-- 			bic_opc_preload		:= to_bounded_string("");
+-- 			bic_opc_idcode		:= to_bounded_string("");
+-- 			bic_opc_usercode	:= to_bounded_string("");
+-- 			bic_opc_highz		:= to_bounded_string("");
+-- 			bic_opc_clamp		:= to_bounded_string("");
+-- 			bic_opc_intest		:= to_bounded_string("");
+-- 		end complete_bic_data;
+
+-- 		function is_bic (name_of_ic_given: string) return boolean is
+-- 			--bp : type_ptr_bscan_ic_pre := ptr_bic_pre;
+-- 		begin
+-- 			--while bp /= null loop
+--             for b in 1..length(list_of_bics_pre) loop
+-- 				if element(list_of_bics_pre,positive(b)).name = name_of_ic_given then
+-- 					--put_line(to_string(b.name));
+-- 					return true;
+-- 				end if;
+-- 				--bp := bp.next;
+-- 			end loop;
+-- 			return false;
+-- 		end is_bic;
+
+-- 		procedure read_opcode is
+-- 			i	: type_bic_instruction;
+-- 			oc	: universal_string_type.bounded_string;
+-- 			pos : natural := 0;
+-- 		begin
+-- 			if length(a) > 0 then
+-- 				i := type_bic_instruction'value(to_string(a)); -- indirect test of supported instruction
+-- 				if get_field_count(to_string(line_of_file)) > 1 then -- if at least one opcode follows a supported instruction
+-- 					-- CS: only the first opcode after instruction name will be read. all others ignored !
+-- 					pos := 1;
+-- 					oc := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 					-- check for valid opcode
+-- 					if to_binary_class_1(to_binary(to_string(oc),bic_instruction_register_length,class_1)) not in type_string_of_bit_characters_class_1 then 
+-- 						raise constraint_error; 
+-- 					end if;
+-- 					case i is
+-- 						when BYPASS		=> bic_opc_bypass := oc;
+-- 						when EXTEST 	=> bic_opc_extest := oc;
+-- 						when INTEST 	=> bic_opc_intest := oc;
+-- 						when SAMPLE		=> bic_opc_sample := oc;
+-- 						when PRELOAD	=> bic_opc_preload := oc;
+-- 						when IDCODE 	=> bic_opc_idcode := oc;
+-- 						when USERCODE	=> bic_opc_usercode := oc;
+-- 						when HIGHZ 		=> bic_opc_highz:= oc;
+-- 						when CLAMP	 	=> bic_opc_clamp := oc;
+-- 						when others => null;
+-- 					end case;
+-- 				else -- if opcode missing
+-- 					pos := 10;
+-- 					put_line("ERROR: Instruction opcode expected after instruction name !");
+-- 					raise constraint_error;
+-- 				end if;
+-- 			end if;
+-- 			exception
+-- 				when constraint_error => 
+-- 					--put_line(natural'image(pos));
+-- 					case pos is 
+-- 						when 0 => if debug_level >= 30 then
+-- 									put_line("WARNING: instruction " & to_string(a) & " is not supported by standard " & bscan_standard_1 & " !");
+-- 								  end if;
+-- 						when 1 => raise;
+-- 						when others => raise;
+-- 					end case;
+-- 		end read_opcode;
+
+-- 		procedure read_boundary_register is --(boundary_register_length : type_register_length) is
+-- 			--b : bscan_ic_ptr := bic; -- set b to begin of bic list
+-- 			--b : type_bit_of_boundary_register_ptr :=ptr_bsr;
+-- 			begin
+-- 				prog_position := 12000;
+-- 				trim(line_of_file,both);
+-- 				if length(line_of_file) > 0 then -- if the line contains anything
+-- 					-- search bic_being_processed in list of bics
+-- 					--while b /= null loop
+-- 						--if to_string(b.name) = to_string(bic_being_processed) then -- when found
+-- 							-- add boundary register cell to boundary_register of bic_being_processed
+-- 							--put_line("--" & to_string(b.name));
+-- 							prog_position := 12010;
+-- 							case get_field_count(to_string(line_of_file)) is
+-- 								-- if optional [control_cell disable_value disable_result] are NOT provided:
+-- 								when 5 => 
+-- 									add_to_boundary_register(
+-- 										--list 					=> b.boundary_register,
+-- 										list 					=> ptr_bsr,  
+-- 										id_given				=> type_cell_id'value(get_field_from_line(line_of_file,1)),
+-- 										cell_type_given			=> type_boundary_register_cell'value(to_upper(get_field_from_line(line_of_file,2))),
+-- 										port_given				=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3)),
+-- 										cell_function_given		=> type_cell_function'value(to_upper(get_field_from_line(line_of_file,4))),
+-- 										cell_safe_value_given	=> to_binary(text_in => get_field_from_line(line_of_file,5), length => 1, class => class_1)(1)
+-- 										);
+-- 								-- if optional [control_cell disable_value disable_result] ARE provided:
+-- 								when 8 =>
+-- 									add_to_boundary_register(
+-- 										--list 					=> b.boundary_register,
+-- 										list 					=> ptr_bsr,  
+-- 										id_given				=> type_cell_id'value(get_field_from_line(line_of_file,1)),
+-- 										cell_type_given			=> type_boundary_register_cell'value(get_field_from_line(line_of_file,2)),
+-- 										port_given				=> universal_string_type.to_bounded_string(get_field_from_line(line_of_file,3)),
+-- 										cell_function_given		=> type_cell_function'value(get_field_from_line(line_of_file,4)),
+-- 										cell_safe_value_given	=> to_binary(text_in => get_field_from_line(line_of_file,5), length => 1, class => class_1)(1),
+-- 										control_cell_id_given	=> type_control_cell_id'value(get_field_from_line(line_of_file,6)),
+-- 										disable_value_given		=> to_binary(text_in => get_field_from_line(line_of_file,7), length => 1, class => class_0)(1),
+-- 										disable_result_given	=> type_disable_result'value(get_field_from_line(line_of_file,8))
+-- 										);
+-- 								when others =>
+-- 									put_line("ERROR: Invalid field count !");
+-- 									raise constraint_error;
+-- 							end case;
+-- 							bic_boundary_register_description_length := bic_boundary_register_description_length + 1; -- count number of entries like "4 bc_1 pb01_16 output3 x 3 0 WEAK0"
+-- 							--exit; -- no more bic_being_processed search required
+-- 						--end if;
+-- 						--b := b.next;
+-- 					--end loop;
+-- 				end if;
+-- 			end read_boundary_register;
+
+-- 		procedure read_port_io_map is
+-- 			field_count		: positive;
+-- 			name, scratch	: universal_string_type.bounded_string;
+-- 			ifs_position	: positive;
+-- 			port_direction	: type_port_direction;
+-- 			idx_start		: natural;
+-- 			idx_end			: natural;
+-- 			vector_length	: positive;
+-- 			vector_orientation	: type_vector_orientation;
+-- 			is_vector			: boolean := false;
+-- 		begin
+-- 			prog_position := 12100;
+-- 			trim(line_of_file,both);
+-- 			name := to_bounded_string(""); -- clear port name from previous line
+-- 			if length(line_of_file) > 0 then -- if the line contains anything
+-- 				if debug_level >= 50 then
+-- 					put("-- " & to_string(line_of_file) & " | ");
+-- 				end if;
+-- 
+-- 				-- find position of ifs
+-- 				prog_position := 12110;
+-- 				-- make sure there is an ifs, if not abort
+-- 				if index(line_of_file,port_ifs) = 0 then 
+-- 					put_line("ERROR: Field separator '" & port_ifs & "' not found !");
+-- 					raise constraint_error;
+-- 				end if;
+-- 				field_count := get_field_count(to_string(line_of_file));
+-- 				for f in 1..field_count loop
+-- 					if get_field_from_line(line_of_file,f) =  port_ifs then
+-- 						ifs_position := f;
+-- 						if debug_level >= 50 then
+-- 							put("ifs position :" & natural'image(ifs_position) & " | ");
+-- 						end if;
+-- 					end if;
+-- 				end loop;
+-- 
+-- 				-- collect port names on the left of ifs
+-- 				prog_position := 12120;
+-- 				for f in 1..(ifs_position - 1) loop
+-- 					name := trim(name & row_separator_0 & get_field_from_line(line_of_file,f),both);
+-- 				end loop;
+-- 
+-- 				-- check for keyword right of ifs
+-- 				prog_position := 12130;
+-- 				scratch := to_bounded_string(get_field_from_line(line_of_file,ifs_position+1));
+-- 				if scratch = port_direction_in then 
+-- 					port_direction := input;
+-- 				elsif scratch = port_direction_out then
+-- 					port_direction := output;
+-- 				elsif scratch = port_direction_inout then
+-- 					port_direction := inout;
+-- 				elsif scratch = port_direction_linkage then
+-- 					port_direction := linkage;
+-- 				else
+-- 					put_line("ERROR: Port direction invalid !");
+-- 					raise constraint_error;
+-- 				end if;
+-- 
+-- 				-- check if it is a vector
+-- 				prog_position := 12140;
+-- 				for f in (ifs_position+1)..field_count loop
+-- 					if 		to_upper(get_field_from_line(line_of_file,f)) = type_vector_orientation'image(to) then
+-- 								vector_orientation := to;
+-- 								is_vector	:= true; -- set is_vector flag
+-- 					elsif 	to_upper(get_field_from_line(line_of_file,f)) = type_vector_orientation'image(downto) then 
+-- 								vector_orientation := downto;
+-- 								is_vector := true; -- set is_vector flag
+-- -- 					else
+-- -- 						put_line("ERROR: Expected identifier '" & type_vector_orientation'image(downto) 
+-- -- 								& "' or '" & type_vector_orientation'image(to) & "' after start index !");
+-- -- 						raise constraint_error;
+-- 					-- CS: do someting when identifier to/downto has typing error like "dowto". currently this leads to a incorrect error message
+-- 					end if;
+-- 					if is_vector then
+-- 						prog_position := 12150;
+-- 						-- make sure there is only one field before ifs (means ifs =2)
+-- 						if ifs_position /= 2 then
+-- 							put_line("ERROR: Vectored port permits only one name field before '" & port_ifs & "' !");
+-- 							raise constraint_error;
+-- 						end if;
+-- 						-- assign start and end point of port vector. 
+-- 						idx_start	:= natural'value(get_field_from_line(line_of_file,f-1)); -- start is always the number found before (do/downto) !
+-- 						idx_end		:= natural'value(get_field_from_line(line_of_file,f+1)); -- end   is always the number found after  (do/downto) !
+-- 						prog_position := 12160;
+-- 						case vector_orientation is
+-- 							when to 	=> vector_length := 1 + idx_end - idx_start;
+-- 							when downto	=> vector_length := 1 + idx_start - idx_end;
+-- 						end case;
+-- 						if debug_level >= 50 then
+-- 							put("orientation : " & type_vector_orientation'image(vector_orientation) & " | ");
+-- 							put("length :" & positive'image(vector_length) & " | ");
+-- 							new_line;
+-- 						end if;
+-- 						exit;
+-- 					end if;
+-- 				end loop;
+-- --				if debug_level >= 20 then new_line; end if;
+-- 
+-- 				-- add port to list
+-- 				add_to_port_io_map( 
+-- 					list 						=> ptr_bic_port_io_map,
+-- 					name_given					=> name,
+-- 					direction_given				=> port_direction,
+-- 					index_start_given			=> idx_start,
+-- 					index_end_given				=> idx_end,
+-- 					vector_length_given			=> vector_length,
+-- 					is_vector_given				=> is_vector,
+-- 					vector_orientation_given	=> vector_orientation
+-- 					);
+-- 				bic_port_io_map_length := bic_port_io_map_length + 1; -- count entries in section (like "y2 : out 1 to 4" )
+-- 			end if;
+-- 		end read_port_io_map;
+
+-- 		procedure read_port_pin_map is
+-- 			-- extracts from a line like "a1 23 22 21 20" the port name and pins
+-- 			field_count		: positive;
+-- 			port_name		: universal_string_type.bounded_string;
+-- 			pin_count		: positive;
+-- --			pin_names		: extended_string.bounded_string;
+-- 			pin_names		: list_of_pin_names;
+-- 			is_vector		: boolean := false;
+-- 
+-- 		begin
+--  			prog_position := 12200;
+-- 			trim(line_of_file,both);
+-- 			port_name := to_bounded_string(""); -- clear port name from previous line
+-- 			if length(line_of_file) > 0 then -- if the line contains anything
+-- 				if debug_level >= 50 then
+-- 					put("-- " & to_string(line_of_file) & row_separator_1);
+-- 				end if;
+-- 				
+-- 				field_count := get_field_count(to_string(line_of_file));
+-- 				port_name	:= to_bounded_string(get_field_from_line(line_of_file,1)); -- the first field always contains the port name
+-- 				pin_count	:= field_count - 1; -- all other fields are pin names
+-- 				if pin_count = 1 then -- if there is more than one pin, it is a vectored port
+-- 					is_vector := true;
+-- 				end if;
+-- 
+-- 				-- collect all pin names in fields 2..field_count separated by row_separator_0
+-- -- 				for f in 2..field_count loop
+-- -- 					pin_names := trim(pin_names & row_separator_0 & get_field_from_line(line_of_file,f) ,both);
+-- -- 				end loop;
+-- 				prog_position := 12210;
+-- 				for f in 2..field_count loop
+-- 					pin_names(f-1) := to_bounded_string(get_field_from_line(line_of_file,f));
+-- 				end loop;
+-- 				
+-- 				-- add port_pin to list
+-- 				add_to_port_pin_map(
+-- 					list				=> ptr_bic_port_pin_map,
+-- 					port_name_given		=> port_name,
+-- 					pin_count_given		=> pin_count,
+-- 					pin_names_given		=> pin_names
+-- 					--pin_names_given		=> make_pin_list -- creates an array of pin names
+-- 					);
+-- 
+-- 				bic_port_pin_map_length := bic_port_pin_map_length + 1; -- count entries in section (like "y2 7 8 9 10")
+-- 			end if;
+-- 		end read_port_pin_map;
+
+-- 		function build_cell_info(
+-- 		-- builds from a line like "IC301 ? XC9536 PLCC-S44 43  pb01_03 | 44 bc_1 input x | 43 bc_1 output3 x 42 0 z"
+-- 		-- the object cell_info. cell_info is part of type type_pin
+-- 			text_in : extended_string.bounded_string;
+-- 			device	: string;
+-- 			port	: string;
+-- 			pin		: string
+-- 			) return type_pin_cell_info is
+-- 			cell_info						: type_pin_cell_info;
+-- 			--field_count		: positive := get_field_count(to_string(text_in));
+-- 			cell_id, cell_control_cell_id	: type_cell_id; -- boundary register cell id 0,2,4,5, ...
+-- 			cell_type						: type_boundary_register_cell; -- bc_1, bc_2, ...
+-- 			--cell_function					: type_cell_info_cell_function; -- input , output2, output3
+-- 			cell_function					: type_cell_function; -- input , output2, output3, bidir, clock, ...
+-- 			cell_safe_value					: type_bit_char_class_1; -- x,X,0,1
+-- 			cell_disable_value				: type_bit_char_class_0; -- 0,1
+-- 			cell_disable_result				: type_disable_result; -- weakx, pullx or z
+-- 			prog_position					: natural := 0;
+-- 			field_count_min					: positive := 2; -- there must be at least one cell entry after the default fields "name class value package pin port"
+-- 			field_count_max					: positive := 3; -- maximim number of cell entries is 2 (separated by "|")
+-- 			subtype type_field_count is positive range field_count_min..field_count_max;
+-- 			-- example for 2 entries  : "IC303 ? SN74BCT8240ADWR SOIC24 10 y2(4) | 0 bc_1 output3 X 16 1 z "
+-- 			-- example for 3 entries  : "IC301 ? XC9536 PLCC-S44 2  pb00_00 | 107 bc_1 input x | 106 bc_1 output3 x 105 0 z"
+-- 			field_count					: type_field_count; -- holds number of fields
+-- 			type type_cell_entry is array (natural range field_count_min..field_count_max) of universal_string_type.bounded_string;
+-- 			cell_entry					: type_cell_entry; -- all cell entries will go here
+-- 
+-- 			cell_entry_field_count_min	: positive := 4; -- there must be at least 4 fields within an entry like "107 bc_1 input x"
+-- 			cell_entry_field_count_max	: positive := 7; -- there must be no more than 7 fields within an entry like "106 bc_1 output3 x 105 0 z"
+-- 			subtype type_cell_entry_field_count is positive range cell_entry_field_count_min..cell_entry_field_count_max;
+-- 			cell_entry_field_count	: type_cell_entry_field_count; -- holds number of fields withing an entry
+-- 			scratch					: extended_string.bounded_string;
+-- 			e_bak					: positive;
+-- 			--c_bak					: positive;
+-- 
+-- 			procedure verify_cell(
+-- 			-- verifies the connection of device, port, port index, control cell, save value, disable value, disable result, ... against
+-- 			-- the specifications derived from the bsdl-model (section registers)
+-- 			-- example line from net list:  IC301 ? XC9536 PLCC-S44 43  pb01_03 | 44 bc_1 input x | 43 bc_1 output3 x 42 0 z
+-- 				id			: type_cell_id; -- 44,43,42
+-- 				ctype		: type_boundary_register_cell; -- bc_1
+-- 				func		: type_cell_function; -- input, output3, ...
+-- 				safe		: type_bit_char_class_1; -- x,1,0
+-- 				cc			: type_control_cell_id := -1; -- control cell id -- default -1 if no cc given
+-- 				dv			: type_bit_char_class_0 := '0'; -- 0,1 -- default if no dv given
+-- 				dr			: type_disable_result := Z; -- z, weak0, ... -- default if no dr given
+-- 				pin			: string; -- 43
+-- 				port		: string; -- pb01_03
+-- 				device		: string) -- IC301 
+-- 				is
+-- 				--b 					: type_ptr_bscan_ic := ptr_bic;
+-- 				cell_id_valid		: boolean := false;
+-- 				cc_id_valid			: boolean := false;
+-- 				cell_type_valid		: boolean := false;
+-- 				port_valid			: boolean := false;
+-- 				device_valid 		: boolean := false;
+-- 				port_name_valid		: boolean := false;
+-- 				port_index_valid 	: boolean := false;
+-- 				pin_valid 			: boolean := false;
+-- 				function_valid		: boolean := false;
+-- 				cc_function_valid	: boolean := false;
+-- 				safe_value_valid	: boolean := false;
+-- 				dv_valid 			: boolean := false;
+-- 				dr_valid 			: boolean := false;
+-- 				port_scratch		: universal_string_type.bounded_string := to_bounded_string(port);
+-- 				port_opening_bracket_count 	: natural;
+-- 				port_closing_bracket_count 	: natural;
+-- 				port_is_vectored			: boolean; -- set if portname and port index found by port given in net list
+-- 														-- if a port like y2(4) found, for example
+-- 				opening_bracket_position	: positive;
+-- 				closing_bracket_position	: positive;
+-- 				port_index					: natural;
+-- 				port_name					: universal_string_type.bounded_string;
+-- 				prog_position				: natural := 0;
+-- 
+-- 				procedure put_error_on_syntax_error_in_port is
+-- 				begin
+-- 					put_line("ERROR: Syntax error in port '" & port & "' !");
+-- 					raise constraint_error;
+-- 				end put_error_on_syntax_error_in_port;
+-- 
+-- 				procedure check_safe_value_of_control_cell is
+-- 				-- this procedure looks up the safebits string specified in section registers.
+-- 				-- it puts a warning if the safe bit of the control cell being processed (cc) is undefined
+-- 				-- or if the safe value (for this control cell) -given in safebits- results in an enabled output pin
+-- 				-- NOTE: The only reliable source of safe values for control cells is to be found in section registers.safebits !
+-- 					--b	: type_ptr_bscan_ic := ptr_bic;
+-- 				begin
+--                     --while b /= null loop
+--                     for b in 1..length(list_of_bics) loop    
+--                         --if b.name = device then -- find bic name
+--                         if element(list_of_bics,positive(b)).name = device then
+-- 							for i in 1..element(list_of_bics,positive(b)).len_bsr loop -- loop as long as how many cells are in boundary register
+-- 														-- start with safe bit pos 1 -> this is cell MSB
+-- 														-- end with safe bit pos last -> this is cell LSB
+-- 														-- safebits x1xxxxxxxxxxxxxxxx (MSB left, LSB right !)
+-- 								if i = element(list_of_bics,positive(b)).len_bsr - cc then -- if i matches given cc id 
+-- 									-- check if safe value results in an enabled output (which is quite dangerous)
+-- 									case element(list_of_bics,positive(b)).safebits(i) is
+-- 										when 'x' | 'X' => 
+-- 											put_line("WARNING: Line" & natural'image(line_counter) & ": Control cell with undefined safe value found !");
+-- 											put_line("affected line : " & trim(to_string(text_in),both)); 
+-- 										when '0' => -- if safe bit value is 0, the disable value should be the same
+--  											case dv is
+--  												when '0' => null; -- fine
+--  												when '1' => -- this is in contradiction with the safe bit value
+-- 													put_line("WARNING: Line" & natural'image(line_counter) & ": Control cell with dangerous safe value found !");
+-- 													put_line("affected line : " & trim(to_string(text_in),both)); 
+-- 											end case;
+-- 										when '1' => -- if safe bit value is 1, the disable value should be the same
+--  											case dv is
+--  												when '1' => null; -- fine
+--  												when '0' => -- this is in contradiction with the safe bit value
+-- 													put_line("WARNING: Line" & natural'image(line_counter) & ": Control cell with dangerous safe value found !");
+-- 													put_line("affected line : " & trim(to_string(text_in),both)); 
+-- 											end case;
+-- 									end case;
+-- 									exit; -- no more bit search required
+-- 								end if;
+-- 							end loop;
+-- 							exit; -- no more bic search required
+-- 						end if;
+-- 						--b := b.next;
+-- 					end loop;
+-- 				end check_safe_value_of_control_cell;
+-- 
+--                 
+--                 procedure mark_cell_as_used (bic_id : positive; cell_id : positive) is
+--                 -- CS: comment
+--                     procedure set_appears_in_cell_list (bic : in out type_bscan_ic) is
+--                     begin
+--                         bic.boundary_register(cell_id).appears_in_net_list := true;
+--                     end set_appears_in_cell_list;
+--                 begin
+--                     update_element(list_of_bics,positive(bic_id),
+--                                     set_appears_in_cell_list'access);                        
+--                 end mark_cell_as_used;
+-- 
+-- 			begin -- verify_cell
+--                 --while b /= null loop
+--                 for b in 1..length(list_of_bics) loop    
+-- 					if element(list_of_bics,positive(b)).name = device then -- if device found
+-- 						device_valid := true;
+-- 
+-- 						-- check syntax of port name: number and position of opening and closing brackets
+-- 						prog_position := 10;
+-- 						port_opening_bracket_count := universal_string_type.count(port_scratch,"(");
+-- 						port_closing_bracket_count := universal_string_type.count(port_scratch,")");
+-- 						prog_position := 20;
+-- 						case port_opening_bracket_count is
+-- 							when 0 => 
+-- 								prog_position := 30;
+-- 								if port_closing_bracket_count = 0 then -- if no brackets found, it is a non-vectored port
+-- 									port_is_vectored 	:= false;
+-- 									port_name			:= port_scratch; -- save port name as it is in port_name
+-- 								else
+-- 									put_error_on_syntax_error_in_port;
+-- 								end if;
+-- 							when 1 =>
+-- 								prog_position := 50;
+-- 								if port_closing_bracket_count = 1 then -- if one opening and one closing bracket found
+-- 		
+-- 									-- the first bracket must be on postion 2 or greater
+-- 									if universal_string_type.index(port_scratch,"(") > 1 then 
+-- 										prog_position := 60;
+-- 
+-- 										-- the last bracket must be on last position
+-- 										if universal_string_type.index(port_scratch,")") = length(port_scratch) then
+-- 											prog_position := 70;
+-- 
+-- 											-- slice the number enclosed in brackets and save it as port_index
+-- 											-- slice the part before '(' and save it as port_name
+-- 											opening_bracket_position := universal_string_type.index(port_scratch,"(");
+-- 											closing_bracket_position := universal_string_type.index(port_scratch,")");
+-- 											prog_position := 75;
+-- 											port_index 	:= natural'value( slice(port_scratch,opening_bracket_position+1, closing_bracket_position-1) );
+-- 											port_name	:= to_bounded_string(slice(port_scratch,1,opening_bracket_position-1));
+-- 											port_is_vectored := true; -- this is to be verified against the actual port name given by bsdl-model
+-- 																	-- see below
+-- 											-- port extraction done
+-- 										else
+-- 											put_error_on_syntax_error_in_port;
+-- 										end if;
+-- 									else
+-- 										prog_position := 80;
+-- 										put_error_on_syntax_error_in_port;
+-- 									end if;
+-- 								else
+-- 									prog_position := 90;
+-- 									put_error_on_syntax_error_in_port;
+-- 								end if;
+-- 							when others =>
+-- 								prog_position := 100;
+-- 								put_error_on_syntax_error_in_port;
+-- 						end case;
+-- 						-- port extraction done: port_name and port_index hold result
+-- 
+-- 						-- search port_name in port_io_map (defined by bsdl-model). if port is vectored then verify index
+-- 						prog_position := 500;
+--  						for p in 1..element(list_of_bics,positive(b)).len_port_io_map loop 
+-- 								--put_line(" --- " & to_string(b.port_io_map(p).name));
+--  							if element(list_of_bics,positive(b)).port_io_map(p).name = port_name then -- if port found as defined by bsdl-model (section registers)
+-- 								port_name_valid := true; -- the port name (like "y2") found in net list is regarded as valid
+-- 
+-- 								-- verify port_index
+-- 								prog_position := 510;
+-- 								if port_is_vectored then -- verify if port is vectored according to index extraction above
+-- 									if element(list_of_bics,positive(b)).port_io_map(p).is_vector then -- if vector port according to port_io_map (derived from bsdl-model)
+-- 
+-- 										case element(list_of_bics,positive(b)).port_io_map(p).vector_orientation is
+-- 											when to =>
+-- 												-- verify port index of a rising vector
+-- 												prog_position := 520;
+-- 												-- if the index (like the 8 in "y2(8)") is in range between index_start and index_end
+-- 												for i in element(list_of_bics,positive(b)).port_io_map(p).index_start..element(list_of_bics,positive(b)).port_io_map(p).index_end loop
+-- 													if i = port_index then
+-- 														port_index_valid := true; -- the index is to be regarded as valid
+-- 														-- CS: verify the port has not been used yet in the net list
+-- 
+-- 														-- verify pin of RISING VECTORED port
+-- 														prog_position := 530;
+-- 														for pp in 1..element(list_of_bics,positive(b)).len_port_pin_map loop -- search port_name in port_pin_map
+-- 															--put_line("-- port: " & to_string(b.port_pin_map(pp).port_name));
+-- 															-- NOTE: the port name is the primary key between port_io_map and port_pin_map !
+-- 															if element(list_of_bics,positive(b)).port_pin_map(pp).port_name = port_name then -- if port found
+-- 																--put_line("-- port found in port_pin_map");
+-- 
+-- 																-- verify position of pin name in accordance to port_index and vector orientation
+-- 																-- in a rising vector, the given pin must appear at postion port_index in the port_pin_map
+-- 																prog_position := 540;
+-- 																--for a in 1..b.port_pin_map(pp).pin_count loop -- use pin_count to find pin 
+-- 																--	if b.port_pin_map(pp).pin_names(a) = to_bounded_string(pin) then
+-- 																	--NOTE: if b.port_pin_map(pp).pin_names(a) = pin then -- does work as well
+-- 																	--but shouldn't compile. compiler bug ?
+-- 																if element(list_of_bics,positive(b)).port_pin_map(pp).pin_names(port_index) = to_bounded_string(pin) then
+-- 																	pin_valid := true;
+-- 																	exit; -- no more pin searching required
+-- 																end if;
+-- 															end if;
+-- 														end loop;
+-- 													end if; -- if port found
+-- 												end loop;
+-- 
+-- 											when downto =>
+-- 												-- verify port index of a falling vector
+-- 												prog_position := 620;
+-- 												-- if the index (like the 8 in "y2(8)") is in range between index_end and index_start
+-- 												for i in element(list_of_bics,positive(b)).port_io_map(p).index_end..element(list_of_bics,positive(b)).port_io_map(p).index_start loop
+-- 													if i = port_index then
+-- 														port_index_valid := true; -- regard the index as valid
+-- 														-- CS: verify the port has not been used yet in the net list
+-- 
+-- 														-- verify pin of FALLING VECTORED port
+-- 														prog_position := 630;
+-- 														for pp in 1..element(list_of_bics,positive(b)).len_port_pin_map loop -- search port_name in port_pin_map
+-- 															--put_line("-- port: " & to_string(b.port_pin_map(pp).port_name));
+-- 															-- NOTE: the port name is the primary key between port_io_map and port_pin_map !
+-- 															if element(list_of_bics,positive(b)).port_pin_map(pp).port_name = port_name then -- if port found
+-- 																--put_line("-- port found in port_pin_map");
+-- 
+-- 																-- verify position of pin name in accordance to port_index and vector orientation
+-- 																-- in a falling vector, the given pin must appear at postion port_index in the port_pin_map
+-- 																prog_position := 640;
+-- 																--for a in 1..b.port_pin_map(pp).pin_count loop -- use pin_count to find pin 
+-- 																--	if b.port_pin_map(pp).pin_names(a) = to_bounded_string(pin) then
+-- 																	--NOTE: if b.port_pin_map(pp).pin_names(a) = pin then -- does work as well
+-- 																	--but shouldn't compile. compiler bug ?
+-- 
+-- 																if element(list_of_bics,positive(b)).port_pin_map(pp).pin_names(element(list_of_bics,positive(b)).port_io_map(p).index_start - port_index + 1) = to_bounded_string(pin) then
+-- 																	pin_valid := true;
+-- 																	exit; -- no more pin searching required
+-- 																end if;
+-- 															end if;
+-- 														end loop;
+-- 													end if; -- if port found
+-- 												end loop;
+-- 										end case;
+-- 
+-- 									else -- contradiction: port index extraction yielded port index, but non-vectored port according to port_io_map
+-- 										prog_position := 650;
+-- 										put_line("ERROR: Invalid port found ! Index for port '" & to_string(port_name) & "' not allowed !");
+-- 										raise constraint_error;
+-- 									end if;
+-- 
+-- 								else -- if port is non-vectored according to port index extraction above
+-- 
+-- 									if not element(list_of_bics,positive(b)).port_io_map(p).is_vector then -- if non-vector port according to port_io_map
+-- 										-- verify pin of NON-VECTOR port
+-- 										prog_position := 700;
+-- 											for pp in 1..element(list_of_bics,positive(b)).len_port_pin_map loop -- search port_name in port_pin_map
+-- 												-- NOTE: the port name is the primary key between port_io_map and port_pin_map !
+-- 												if element(list_of_bics,positive(b)).port_pin_map(pp).port_name = port_name then -- if port found
+-- 													-- in a non-vector port, the selector 'pin_names' contains the only pin name of the port
+-- 													if element(list_of_bics,positive(b)).port_pin_map(pp).pin_names(1) = to_bounded_string(pin) then
+-- 
+-- 													--NOTE: if b.port_pin_map(pp).pin_names(1) = pin then -- does work as well
+-- 													--but shouldn't compile. compiler bug ?
+-- 														--prog_position := 165;
+-- 														--put_line("-- pin                : " & to_string(b.port_pin_map(pp).pin_names(1)));
+-- 														--put_line("-- appears in net list: " & boolean'image(b.port_pin_map(pp).pin_appears_in_net_list(1)));
+-- 														--if b.port_pin_map(pp).pin_appears_in_net_list(1) then
+-- 														--	put_line("ERROR: Device '" & device & "' pin '" & pin & "' already in use !");
+-- 														--	raise constraint_error;
+-- 														--else
+-- 														--	b.port_pin_map(pp).pin_appears_in_net_list(1) := true; -- mark pin as appears in net list
+-- 														pin_valid := true;
+-- 														exit; -- no more pin searching required
+-- 														--end if;
+-- 													end if;
+-- 												end if;
+-- 											end loop;
+-- 
+-- 									else -- contradiction: port index extraction yielded no, but vectored port according to port_io_map
+-- 										prog_position := 710;
+-- 										put_line("ERROR: Invalid port found ! Index expected for port '" & to_string(port_name) & "' !");
+-- 										raise constraint_error;
+-- 									end if;
+-- 								end if; -- if port_is_vectored
+-- 
+-- 								exit; -- no more port searching required
+--  							end if;
+--  						end loop;
+-- 
+-- 						-- search for given cell id in boundary register
+-- 						prog_position := 400;
+-- 						for c in 1..element(list_of_bics,positive(b)).len_bsr_description loop
+-- 							if element(list_of_bics,positive(b)).boundary_register(c).id = id then
+-- 								cell_id_valid := true;
+-- 
+-- 								-- check if cell has already found in net list and abort if cell already in use
+-- 								if element(list_of_bics,positive(b)).boundary_register(c).appears_in_net_list then
+-- 									put_line("ERROR: Cell with ID" & type_cell_id'image(id) & " of this device is already in use !");
+-- 									raise constraint_error;
+-- 								else
+--                                     -- if not used yet, mark cell as used now
+--                                     --b.boundary_register(c).appears_in_net_list := true;                    
+--                                     mark_cell_as_used(bic_id => positive(b), cell_id => c);
+-- 								end if;
+-- 								
+-- 								if element(list_of_bics,positive(b)).boundary_register(c).cell_type = ctype then
+-- 									cell_type_valid := true;
+-- 									if element(list_of_bics,positive(b)).boundary_register(c).port = port_scratch then
+-- 										port_valid := true;
+-- 										if element(list_of_bics,positive(b)).boundary_register(c).cell_function = func then
+-- 											function_valid := true;
+-- 											if element(list_of_bics,positive(b)).boundary_register(c).cell_safe_value = safe then -- this is about the safe value of the output cell !
+-- 												safe_value_valid := true;
+-- 												if cc /= -1 then -- if a control cell was given
+-- 													-- if control cell defined in model matches given control cell
+-- 													if element(list_of_bics,positive(b)).boundary_register(c).control_cell_id = cc then
+-- 														cc_id_valid := true;
+-- 
+-- 														-- if disable value defined in model matches given disable value
+-- 														if element(list_of_bics,positive(b)).boundary_register(c).disable_value = dv then
+-- 															dv_valid := true;
+-- 															-- if disable result definded in model matches given disable result
+-- 															if element(list_of_bics,positive(b)).boundary_register(c).disable_result = dr then
+-- 																dr_valid := true;
+-- 																check_safe_value_of_control_cell;
+-- 																exit;
+-- 															end if;
+-- 														end if;
+-- 													end if;
+-- 												end if;
+-- 											end if;
+-- 										end if;
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end loop;
+-- 
+-- 						exit; -- no more device searching required
+-- 					end if;
+-- 					--b := b.next;
+-- 				end loop;
+-- 
+-- 				-- if device not found after searching bic list
+-- 				prog_position := 200;
+-- 				if not device_valid then
+-- 					put_line("ERROR: Invalid device found ! '" & device & "' is not part of any scan chain !");
+-- 					--put_line("        Check scan path configuration !");
+-- 					raise constraint_error;
+-- 				end if;
+-- 
+-- 				-- if port_name not found after searching port_io_map
+-- 				prog_position := 210;
+-- 				if not port_name_valid then
+-- 					put_line("ERROR: Invalid port found. Device '" & device & "' does not have a port '" & to_string(port_name) & "' !");
+-- 					raise constraint_error;
+-- 				end if;
+-- 
+-- 				-- if port_index invalid after searching port (which is a type_port in array type_port_io_map)
+-- 				prog_position := 220;
+-- 				if port_is_vectored then
+-- 					if not port_index_valid then
+-- 						put_line("ERROR: Invalid index found. Port '" & to_string(port_name) & "' does not have an index" & natural'image(port_index) & " !");
+-- 						raise constraint_error;
+-- 					end if;
+-- 				end if;
+-- 
+-- 				-- if pin invalid after searching in port_pin_map
+-- 				prog_position := 230;
+-- 				if not pin_valid then
+-- 					if port_is_vectored then
+-- 						put_line("ERROR: Invalid pin found. Vector port '" & to_string(port_name) & "(" 
+-- 							& trim(natural'image(port_index),left) 
+-- 							& ")' is not mapped to pin '" & pin & "' !");
+-- 						raise constraint_error;
+-- 					else
+-- 						prog_position := 235;
+-- 						put_line("ERROR: Invalid pin found. Port '" & to_string(port_name) & "' is not mapped to pin '" & pin & "' !");
+-- 						raise constraint_error;
+-- 					end if;
+-- 				end if;
+-- 
+-- 				-- if input/output cell id invalid after searching in boundary register
+-- 				prog_position := 240;
+-- 				if not cell_id_valid then
+-- 					put_line("ERROR: Invalid cell found ! Cell ID" & type_cell_id'image(id) & " invalid for given device !");
+-- 					raise constraint_error;
+-- 				end if;
+-- 
+-- 				-- if cell type invalid
+-- 				prog_position := 245;
+-- 				if not cell_type_valid then
+-- 					put_line("ERROR: Invalid cell found ! Cell type '" & type_boundary_register_cell'image(ctype) & "' invalid for given port !");
+-- 					raise constraint_error;
+-- 				end if;
+-- 
+-- 				-- if port invalid
+-- 				prog_position := 250;
+-- 				if not port_valid then
+-- 					put_line("ERROR: Invalid port found ! Port '" & to_string(port_scratch) & "' is not connected to given cell !");
+-- 					raise constraint_error;
+-- 				end if;
+-- 
+-- 				-- if function invalid
+-- 				prog_position := 260;
+--  				if not function_valid then
+--  					put_line("ERROR: Invalid cell function '" & type_cell_function'image(func) & "' found !" );
+--  					raise constraint_error;
+--  				end if;
+-- 
+-- 				-- if safe value invalid
+-- 				prog_position := 270;
+--  				if not safe_value_valid then
+-- 					case func is
+-- 						when input =>
+-- 							put_line("WARNING: Line" & natural'image(line_counter) & ": Invalid safe value " & type_bit_char_class_1'image(safe) & " for cell" & type_cell_id'image(id) & " found !" );
+-- 						when others =>
+-- 							put_line("ERROR: Invalid safe value " & type_bit_char_class_1'image(safe) & " for cell" & type_cell_id'image(id) & " found !" );
+-- 							raise constraint_error;
+-- 					end case;
+--  				end if;
+-- 
+-- 				-- if control cell given, if id invalid after searching in boundary register
+-- 				prog_position := 280;
+-- 				if cc /= -1 then -- means, if there was a control cell given
+-- 					if not cc_id_valid then
+-- 						put_line("ERROR: Invalid control cell found ! Cell ID" & type_cell_id'image(cc) & " invalid for this port !");
+-- 						raise constraint_error;
+-- 					end if;
+--  					if not dv_valid then
+--  						put_line("ERROR: Invalid disable value " & type_bit_char_class_0'image(dv) & " for control cell with ID" & type_cell_id'image(cc) & " found !");
+--  						raise constraint_error;
+--  					end if;
+--  					if not dr_valid then
+--  						put_line("ERROR: Invalid disable result '" & type_disable_result'image(dr) & "' for output cell with ID" & type_cell_id'image(id) & " found !");
+--  						raise constraint_error;
+--  					end if;
+-- 				end if;
+-- 
+-- 				exception
+-- 					when constraint_error => 
+-- 						case prog_position is 
+-- 							when 75 => 
+-- 								put_line("ERROR: Invalid index found in port '" & port & "'! Index must be a positive number !");
+-- 							when others => null; --raise;
+-- 						end case;
+-- 						put_line("prog position: verify_pin: " & natural'image(prog_position));
+-- 						raise;
+-- 
+-- 			end verify_cell;
+-- 
+-- 
+-- 		begin -- build_cell_info
+-- 			field_count := 1 + extended_string.count(text_in,row_separator_1a); -- get number of fields separated by row_separator_1a
+-- 			--put_line("field count :" & natural'image(field_count));
+-- 			-- plus 1 because: if one separator found, there are two entries (incl. the default field "name class value package pin port")
+-- 			-- exception handler will do the rest of too less or too many fields found
+-- 
+-- 			-- extract cell entries (like "104 bc_1 input x") and copy them in in array cell_entry.
+-- 			-- in cell_entry array the entries are accessed via index e for further processing
+-- 			prog_position := 20;
+-- 			for e in field_count_min..field_count loop -- we always start with field 2
+-- 				e_bak := e; -- backup field id so that exception handler can output affected field
+-- 				-- example: if line is "IC301 ? XC9536 PLCC-S44 3  pb00_01 | 104 bc_1 input x | 103 bc_1 output3 x 102 0 z" then the first field
+-- 				-- to read is "104 bc_1 input x" (field 2)
+-- 				-- field 3 would be "103 bc_1 output3 x 102 0 z"
+-- 				cell_entry(e) := to_bounded_string(get_field_from_line(text_in => text_in, position => e, ifs => row_separator_1a(1))); -- ifs must be passed as character
+-- 				cell_entry(e) := trim(cell_entry(e),both); -- trim head and tail of entry
+-- 				prog_position := 30;
+-- 				cell_entry_field_count := get_field_count(to_string(cell_entry(e))); -- get field count within entry -- exception handler cares for range violations
+-- 				if debug_level >= 40 then
+-- 					put_line("cell entry" & type_field_count'image(e-1) & ": ->" & to_string(cell_entry(e)) & "<- field count :" &
+-- 					type_cell_entry_field_count'image(cell_entry_field_count));
+-- 				end if;
+-- 				
+-- 				-- read field by field within a particular cell_entry indexed by e
+--  				for c in 1..cell_entry_field_count loop
+-- 					--c_bak := c; -- backup field id so that exception handler can output affected field
+-- 					scratch := extended_string.to_bounded_string(to_string(cell_entry(e)));
+--  					--put_line(positive'image(c) & ": " & get_field_from_line(scratch,c));
+--  					case c is
+--  						when 1 => 
+--  							prog_position := 100; 
+--  							cell_id := type_cell_id'value(get_field_from_line(scratch,c));
+--  							-- exception handler will do the rest on error
+--  						when 2 => 
+--  							prog_position := 110;
+--  							cell_type := type_boundary_register_cell'value(get_field_from_line(scratch,c));
+--  							-- exception handler will do the rest on error
+--  						when 3 => 
+--  							prog_position := 120;
+--  							--cell_function := type_cell_info_cell_function'value(get_field_from_line(scratch,c));
+-- 							cell_function := type_cell_function'value(get_field_from_line(scratch,c));
+-- 							-- exception handler will do the rest on error
+-- 
+-- 							-- if it is an input cell, make sure there are no control cell parameters
+-- 							if cell_function = input then
+-- 								case cell_entry_field_count is
+-- 									when 4 => -- an input cell entry has 4 fields
+-- 										--put_line(trim(to_string(text_in),both)); 
+-- 										-- look ahead and fetch safe value from field 4
+-- 										prog_position := 2000;
+-- 										cell_safe_value := type_bit_char_class_1'value("'" & to_upper(get_field_from_line(scratch,c + 1)) & "'");
+-- 
+-- 										-- place the collected input cell info in cell_info
+-- 										-- example "104 bc_1 input x"
+-- 
+-- 										-- make sure this is the first and only input cell of this pin
+-- 										if cell_info.input_cell_id = -1 then -- if no input cell registered yet (indicated by -1)
+-- 											--put_line("input cell ID registered : " & natural'image(cell_info.id_input_cell));
+-- 											cell_info.input_cell_id := cell_id; -- register this input cell 
+-- 										else -- otherwise an input cell has already been found
+-- 											prog_position := 2010;
+-- 											put_line("ERROR: Only one input cell allowed !");
+-- 											--put_line("input cell ID already registered :" & natural'image(cell_info.id_input_cell));
+-- 											raise constraint_error;
+-- 										end if;
+-- 
+-- 										cell_info.input_cell_type := cell_type; -- bc_1
+-- 										cell_info.input_cell_function := cell_function; -- input
+-- 										cell_info.input_cell_safe_value := cell_safe_value;
+-- 
+-- 										prog_position := 2020;
+-- 										verify_cell(id => cell_id, ctype => cell_type, func => cell_function, safe => cell_safe_value,
+-- 											pin => pin, port => port, device => device);
+-- 
+-- 									when others =>
+-- 										prog_position := 2100;
+-- 										raise constraint_error;
+-- 								end case;
+-- 							end if;
+-- 
+-- 							-- (c holds 3) if it is an output2 cell:
+-- 							if cell_function = output2 then
+-- 								case cell_entry_field_count is
+-- 									when 4 =>
+-- 										-- look ahead and fetch safe value from field 4
+-- 										prog_position := 1100;
+-- 										cell_safe_value := type_bit_char_class_1'value("'" & to_upper(get_field_from_line(scratch,c + 1)) & "'");
+-- 										if cell_safe_value = 'X' then -- CS: needs testing !
+-- 											put_line("WARNING: Line" & natural'image(line_counter) & ": Output2 cell with undefined safe value found !");
+-- 											put_line("affected line : " & trim(to_string(text_in),both)); 
+-- 										end if;
+-- 
+-- 										-- place the collected output2 cell info in cell_info
+-- 										-- example "104 bc_1 output2 1"
+-- 
+-- 										-- make sure this is the first and only output cell of this pin
+-- 										if cell_info.output_cell_id = -1 then -- if no output cell registered yet (indicated by default -1)
+-- 											cell_info.output_cell_id := cell_id; -- register this output cell 
+-- 										else -- otherwise a output cell has already been found
+-- 											prog_position := 1110;
+-- 											put_line("ERROR: Only one output cell allowed !");
+-- 											raise constraint_error;
+-- 										end if;
+-- 
+-- 										prog_position := 1120;
+-- 										cell_info.output_cell_type := cell_type; -- bc_1
+-- 										cell_info.output_cell_function := cell_function; -- output2
+-- 										cell_info.output_cell_safe_value := cell_safe_value;
+-- 
+-- 										prog_position := 1130;
+-- 										verify_cell(id => cell_id, ctype => cell_type, func => cell_function, safe => cell_safe_value,
+-- 											pin => pin, port => port, device => device);
+-- 
+-- 
+-- 									when 7 => 
+-- 										-- A control cell is associated: (103 bc_1 output2 x 103 0 weak0)
+-- 										-- In this case it is a "self controlling" output2 cell.
+-- 
+-- 										-- look ahead and fetch safe value from field 4
+-- 										prog_position := 1200;
+-- 										cell_safe_value := type_bit_char_class_1'value("'" & to_upper(get_field_from_line(scratch,c + 1)) & "'");
+-- 
+-- 										-- make sure the control cell ID (field 5) matches the output cell ID
+-- 										-- fetch control cell ID from field 5
+-- 										-- raise error on mismatch of output2 cell ID and control cell ID
+-- 										prog_position := 1210;
+-- 										cell_control_cell_id := type_cell_id'value(get_field_from_line(scratch,c + 2));
+-- 										if cell_id = cell_control_cell_id then 
+-- 											null;
+-- 										else
+-- 											prog_position := 1220;
+-- 											raise constraint_error;
+-- 										end if;
+-- 
+-- 										-- fetch disable value from field 6
+-- 										prog_position := 1230;
+-- 										cell_disable_value := type_bit_char_class_0'value("'" & get_field_from_line(scratch,c + 3) & "'"); 
+-- 
+-- 										-- fetch disable result from field 7
+-- 										prog_position := 1240;
+-- 										cell_disable_result := type_disable_result'value(get_field_from_line(scratch,c + 4));
+-- 
+-- 										-- disable result against disable value and put warning if nessecariy
+-- 										case cell_disable_result is
+-- 											when Z => null;
+-- 											when weak0 | pull0 => 
+-- 												case cell_disable_value is
+-- 													when '0' => null; -- fine
+-- 													when '1' =>
+-- 														put_line("WARNING: Line" & natural'image(line_counter) 
+-- 															& ": Disable value of self controlled output cell contradicts with disable result !");
+-- 														put_line("affected line : " & trim(to_string(text_in),both)); 
+-- 												end case;
+-- 											when weak1 | pull1 =>
+-- 												case cell_disable_value is
+-- 													when '1' => null; -- fine
+-- 													when '0' =>
+-- 														put_line("WARNING: Line" & natural'image(line_counter) 
+-- 															& ": Disable value of self controlled output cell contradicts with disable result !");
+-- 														put_line("affected line : " & trim(to_string(text_in),both)); 
+-- 												end case;
+-- 											when others => 
+-- 												prog_position := 1250;
+-- 												raise constraint_error;
+-- 										end case;
+-- 
+-- 										-- place the collected output2 cell info in cell_info
+-- 										-- example "104 bc_1 output2 x 104 weak0"
+-- 
+-- 										-- make sure this is the first and only output cell of this pin
+-- 										if cell_info.output_cell_id = -1 then -- if no output cell registered yet (indicated by default -1)
+-- 											cell_info.output_cell_id := cell_id; -- register this output cell 
+-- 										else -- otherwise a output cell has already been found
+-- 											prog_position := 1260;
+-- 											put_line("ERROR: Only one output cell allowed !");
+-- 											raise constraint_error;
+-- 										end if;
+-- 
+-- 										prog_position := 1270;
+-- 										cell_info.output_cell_type := cell_type; -- bc_1
+-- 										cell_info.output_cell_function := cell_function; -- output2
+-- 										cell_info.output_cell_safe_value := cell_safe_value;
+-- 										cell_info.control_cell_id := cell_control_cell_id;
+-- 										cell_info.disable_value := cell_disable_value;
+-- 										cell_info.disable_result := cell_disable_result;
+-- 
+-- 										prog_position := 1280;
+-- 										verify_cell(id => cell_id, ctype => cell_type, func => cell_function, safe => cell_safe_value, 
+-- 											cc => cell_control_cell_id,
+-- 											dv => cell_disable_value, dr => cell_disable_result, pin => pin, port => port, device => device);
+-- 
+-- 										-- check if control cell is used already and set "shared" flag if nessecary
+-- 										--cell_info.control_cell_shared := shared_control_cell(cell_control_cell_id);
+-- 									when others => 
+-- 										prog_position := 1300;
+-- 										raise constraint_error;
+-- 
+-- 								end case;
+-- 							end if;
+-- 
+-- 							-- (c holds 3) if it is an output3 cell, make sure there are control cell parameters provided
+-- 							if cell_function = output3 then
+-- 								case cell_entry_field_count is
+-- 									when 7 => -- an output3 cell entry has 7 fields
+-- 
+-- 										-- look ahead and fetch safe value from field 4
+-- 										prog_position := 3000;
+-- 										cell_safe_value := type_bit_char_class_1'value("'" & to_upper(get_field_from_line(scratch,c + 1)) & "'");
+-- 
+-- 										-- there must be a control cell associated
+-- 										-- fetch control cell ID from field 5
+-- 										prog_position := 3010;
+-- 										cell_control_cell_id := type_cell_id'value(get_field_from_line(scratch,c + 2));
+-- 
+-- 										-- Put warning if control cell ID (field 5) matches the output cell ID (should be quite unusual)
+-- 										-- In this case it is a "self controlling" output3 cell (should be quite unusual).
+-- 										if cell_id = cell_control_cell_id then 
+-- 											prog_position := 3020;
+-- 											put_line("WARNING: Self controlling " & type_cell_function'image(output3) & " cell found.");
+-- 											put_line("line   : " & trim(to_string(text_in),both)); 
+-- 											put_line("cell   : " & to_string(cell_entry(e)));
+-- 
+-- 											-- CS: check std conformity !
+-- 											--raise constraint_error;
+-- 										end if;
+-- 
+-- 										-- fetch disable value from field 6
+-- 										prog_position := 3030;
+-- 										cell_disable_value := type_bit_char_class_0'value("'" & get_field_from_line(scratch,c + 3) & "'"); 
+-- 
+-- 										-- fetch disable result from field 7
+-- 										prog_position := 3040;
+-- 										cell_disable_result := type_disable_result'value(get_field_from_line(scratch,c + 4)); 
+-- 
+-- 
+-- 										-- place the collected output3 cell info in cell_info
+-- 										-- example "104 bc_1 output3 x 17 weak0"
+-- 
+-- 										-- make sure this is the first and only output cell of this pin
+-- 										if cell_info.output_cell_id = -1 then -- if no output cell registered yet (indicated by default -1)
+-- 											cell_info.output_cell_id := cell_id; -- register this output cell 
+-- 										else -- otherwise an output cell has already been found
+-- 											prog_position := 3050;
+-- 											put_line("ERROR: Only one output cell allowed !");
+-- 											raise constraint_error;
+-- 										end if;
+-- 
+-- 										prog_position := 3060;
+-- 										cell_info.output_cell_type := cell_type; -- bc_1
+-- 										cell_info.output_cell_function := cell_function; -- output3
+-- 										cell_info.output_cell_safe_value := cell_safe_value;
+-- 										cell_info.control_cell_id := cell_control_cell_id;
+-- 										cell_info.disable_value := cell_disable_value;
+-- 										cell_info.disable_result := cell_disable_result;
+-- 
+-- 										prog_position := 3070;
+-- 										verify_cell(id => cell_id, ctype => cell_type, func => cell_function, safe => cell_safe_value,
+-- 											cc => cell_control_cell_id,
+-- 											dv => cell_disable_value, dr => cell_disable_result, pin => pin, port => port, device => device);
+-- 
+-- 										-- check if control cell is used already and set "shared" flag if nessecary
+-- 										--cell_info.control_cell_shared := shared_control_cell(cell_control_cell_id);
+-- 
+-- 									when others =>
+-- 										prog_position := 3100;
+-- 										raise constraint_error;
+-- 								end case;
+-- 							end if;
+-- 
+--  						when others => 
+-- 							-- No further accessing of fields within cell entry required, because in previous cases fields 4..7 have been
+-- 							-- looked for and checked ahead.
+-- 							exit;
+--  					end case;
+--  				end loop;
+-- 
+-- 			end loop;
+-- 
+-- 			-- now all data for cell_info has been collected
+-- 			
+-- 			-- if there is an input cell, do some cross checking
+-- 			if cell_info.input_cell_id /= -1 then -- if id not equal -1, then there is an input cell
+-- 				-- make sure input and output cell IDs are not the same and put a warning if nessecariy
+-- 				if cell_info.input_cell_id = cell_info.output_cell_id then
+-- 					put_line("WARNING: ID of input and output cell are the same !");
+-- 					put_line("line : " & trim(to_string(text_in),both)); 
+-- 					prog_position := 4000;
+-- 				end if;
+-- 				-- make sure input and control cell IDs are not the same and put a warning if nessecariy
+-- 				if cell_info.input_cell_id = cell_info.control_cell_id then
+-- 					put_line("WARNING: ID of input and control cell are the same !");
+-- 					put_line("line : " & trim(to_string(text_in),both)); 
+-- 					prog_position := 4010;
+-- 				end if;
+-- 			end if;
+-- 
+-- 			return cell_info;
+-- 
+-- 			exception
+-- 				when constraint_error => 
+-- 					case prog_position is 
+-- 						when 0 => 
+-- 							put_line("ERROR: At least one and maximal two cell entries separated by '" &
+-- 								row_separator_1a & "' allowed ! Found :" &
+-- 								natural'image(extended_string.count(text_in,row_separator_1a)));
+-- 							--raise;
+-- 						when 100 => 
+-- 							put_line("ERROR: Boundary register cell ID as natural number expected after '" & row_separator_1a & "' !");
+-- 							--raise;
+-- 						when 110 => 
+-- 							put_line("ERROR: Invalid cell type found after cell ID !");
+-- 								-- CS: put allowed cell types using enumeration_io
+-- 							--raise;
+-- 						when 120 => 
+-- 							put_line("ERROR: Invalid cell function found after cell type !");
+-- 								-- CS: put allowed cell functions using enumeration_io
+-- 							--raise;
+-- 						when 2000 | 1100 | 1200 | 3000 => 
+-- 							put_line("ERROR: Invalid safe value found after cell function !");
+-- 							--raise;
+-- 						when 2100 => 
+-- 							put_line("ERROR: Too many parameters for this kind of cell !");
+-- 							--raise;
+-- 						when 1210 => 
+-- 							put_line("ERROR: Control cell ID as natural number expected after safe value !");
+-- 							raise;
+-- 						when 1220 => 
+-- 							put_line("ERROR: ID of output cell and associated control cell must match !");
+-- 							--raise;
+-- 						when 1230 | 3030 =>
+-- 							put_line("ERROR: Invalid disable value found after control cell !");
+-- 							-- CS: put allowed cell functions using enumeration_io
+-- 							--raise;
+-- 						when 1240 | 3040 =>
+-- 							put_line("ERROR: Invalid disable result found after disable value !");
+-- 							-- CS: put allowed cell functions using enumeration_io
+-- 							--raise;
+-- 
+-- 						when 30 | 1300 | 3100 => 
+-- 							put_line("ERROR: Invalid field count withing cell entry ! " &
+-- 									"Valid number of fields are:" & 
+-- 								positive'image(cell_entry_field_count_min) & " and " &
+-- 								trim(positive'image(cell_entry_field_count_max),left) & ".");
+-- 							--raise;
+-- 						when others => null; --raise;
+-- 					end case;
+-- 
+-- 					put_line("line : " & trim(to_string(text_in),both)); 
+-- 					put_line("cell : " & to_string(cell_entry(e_bak)));
+-- 					--put_line("field: " & get_field_from_line(scratch,c_bak));
+-- 					put_line("prog position:" & natural'image(prog_position));
+-- 					raise;
+-- 		end build_cell_info;
+
+-- 		procedure complete_net_data is
+-- 			prog_position	: natural := 0;
+-- 			-- make a static array of size part_count where the pin list will go
+-- 			subtype type_pins_of_net_sized is type_pins_of_net (1..part_count_of_net_being_processed);
+-- 			pin_of_net		: type_pins_of_net_sized;
+-- 			p				: type_ptr_pin := ptr_pin; -- set pointer p at end of pin list ("pin" points there after processing net)
+-- 			subtype pin_id is natural range 1..part_count_of_net_being_processed;
+-- 			i				: pin_id := 1; -- pin index in array pins_of_net
+-- 			bs_input_count	: natural := 0;
+-- 			bs_output_count	: natural := 0;
+-- 			bs_bidir_count	: natural := 0;
+-- 			bs_capable		: boolean := false;
+-- 		begin
+-- 			-- transfer pin list to static array "pin_of_net" begin
+-- 			prog_position := 10;
+-- 			while p /= null loop -- loop until begin of pin list reached
+-- 
+-- 				-- copy pin data in static array pin_of_net
+-- 				prog_position := 20;
+-- 				pin_of_net(i).device_name		:= p.device_name;
+-- 				pin_of_net(i).device_class		:= p.device_class;
+-- 				pin_of_net(i).device_value		:= p.device_value;
+-- 				pin_of_net(i).device_package	:= p.device_package;
+-- 				pin_of_net(i).device_pin_name	:= p.device_pin_name;
+-- 				pin_of_net(i).device_port_name	:= p.device_port_name;
+-- 				pin_of_net(i).is_bscan_capable	:= p.is_bscan_capable;
+-- 				pin_of_net(i).cell_info			:= p.cell_info;
+-- 
+-- 				if debug_level >= 30 then 
+-- 					put_line("  - device : " & to_string(pin_of_net(i).device_name) & row_separator_1 &
+-- 						" pin: " & to_string(pin_of_net(i).device_pin_name));
+-- 				end if;
+-- 
+-- 				-- count bidir pins (both input and output cell provided)
+-- 				if pin_of_net(i).cell_info.input_cell_id /= -1 and pin_of_net(i).cell_info.output_cell_id /= -1 then
+-- 					bs_bidir_count := bs_bidir_count + 1; 
+-- 					bs_capable := true; -- set bs_capable flag
+-- 				end if;
+-- 
+-- 				-- count input pins (only input cell provided)
+-- 				--if pin_of_net(i).cell_info.input_cell_id /= -1 then
+-- 				if pin_of_net(i).cell_info.input_cell_id /= -1 and pin_of_net(i).cell_info.output_cell_id = -1 then
+-- 					bs_input_count := bs_input_count + 1;
+-- 					bs_capable := true; -- set bs_capable flag
+-- 				end if;
+-- 
+-- 				-- count output pins (only output cell provided)
+-- 				--if pin_of_net(i).cell_info.output_cell_id /= -1 then
+-- 				if pin_of_net(i).cell_info.output_cell_id /= -1 and pin_of_net(i).cell_info.input_cell_id = -1 then
+-- 					bs_output_count := bs_output_count + 1;
+-- 					bs_capable := true; -- set bs_capable flag
+-- 				end if;
+-- 
+-- 
+-- 				-- advance i. i points to the pin being processed in array pin_of_net
+-- 				-- do not do this when last member of array pin_of_net reached (to prevent range error)
+-- 				prog_position := 100;
+-- 				if i < part_count_of_net_being_processed then
+-- 					i := i + 1; 
+-- 				end if;
+-- 				prog_position := 101;
+-- 				p := p.next; -- advance list pointer
+-- 			end loop;
+-- 			-- transfer pin list to static array "pin_of_net" finished
+-- 
+-- 			if debug_level >= 40 then
+-- 				put_line("    - bidir  pin count :" & natural'image(bs_bidir_count));
+-- 				put_line("    - input  pin count :" & natural'image(bs_input_count));
+-- 				put_line("    - output pin count :" & natural'image(bs_output_count));
+-- 			end if;
+-- 
+-- 			-- CS: check level and class against bs_pin counts !
+-- 			case net_level_entered is
+-- 				when primary =>
+-- 					case class_of_net_being_processed is
+-- 						when NR | DL | DH | PU | PD | EH | EL =>
+-- 							if not bs_capable then
+-- 								put_line("ERROR: Net '" & to_string(name_of_net_being_processed) 
+-- 									& "' has no scan capable pins and can not become a primary net of class '" 
+-- 									& type_net_class'image(class_of_net_being_processed) & "' !");
+-- 								raise constraint_error;
+-- 							end if;
+-- 						when others => null;
+-- 					end case;
+-- 
+-- 				when secondary =>
+-- 					case class_of_net_being_processed is
+-- 						when NR | DL | DH | PU | PD | EH | EL =>
+-- 							if not bs_capable then
+-- 								put_line("WARNING: Net '" & to_string(name_of_net_being_processed) 
+-- 									& "' has no scan capable pins and can not be tested !");
+-- 							end if;
+-- 						when others => null;
+-- 					end case;
+-- 			end case;
+-- 
+-- 			-- CS: check net class against bs_pin directions (in, out, disable results)
+-- 
+-- 			prog_position := 300;
+-- 			add_to_net_list(
+-- 				list 						=> ptr_net,
+-- 				name_given					=> to_bounded_string(to_string(name_of_net_being_processed)),
+-- 				class_given					=> class_of_net_being_processed,
+-- 				bs_bidir_pin_count_given	=> bs_bidir_count,
+-- 				bs_input_pin_count_given	=> bs_input_count,
+-- 				bs_output_pin_count_given	=> bs_output_count,
+-- 				bs_capable_given			=> bs_capable,
+-- 				net_level_given				=> net_level_entered, -- if net being processed is within a subsection secondary nets
+-- 																-- this flag is set and will be passed on as it is
+-- 				--secondary_net_ct_given		=> -- the number of secondary nets will be set later by 
+-- 				-- function add_secondary_net_names_to_primary_net
+-- 				name_of_primary_net_given	=> to_bounded_string(to_string(name_of_current_primary_net)),
+-- 				pin_given		 			=> pin_of_net -- pass the static pin list array generated above
+-- 				);
+-- 
+-- 			-- update net statistics
+-- 			net_count_statistics.total := net_count_statistics.total + 1;
+-- 			case class_of_net_being_processed is
+-- 				when PU => 
+-- 					net_count_statistics.pu := net_count_statistics.pu + 1;
+-- 					net_count_statistics.bs_dynamic := net_count_statistics.bs_dynamic + 1;
+-- 					net_count_statistics.bs_testable := net_count_statistics.bs_testable + 1;
+-- 				when PD => 
+-- 					net_count_statistics.pd := net_count_statistics.pd + 1; 
+-- 					net_count_statistics.bs_dynamic := net_count_statistics.bs_dynamic + 1;
+-- 					net_count_statistics.bs_testable := net_count_statistics.bs_testable + 1;
+-- 				when DH => 
+-- 					net_count_statistics.dh := net_count_statistics.dh + 1;
+-- 					net_count_statistics.bs_static := net_count_statistics.bs_static + 1;
+-- 					net_count_statistics.bs_static_h := net_count_statistics.bs_static_h + 1;
+-- 					net_count_statistics.bs_testable := net_count_statistics.bs_testable + 1;
+-- 				when DL => 
+-- 					net_count_statistics.dl := net_count_statistics.dl + 1;
+-- 					net_count_statistics.bs_static := net_count_statistics.bs_static + 1;
+-- 					net_count_statistics.bs_static_l := net_count_statistics.bs_static_l + 1;
+-- 					net_count_statistics.bs_testable := net_count_statistics.bs_testable + 1;
+-- 				when EH => 
+-- 					net_count_statistics.eh := net_count_statistics.eh + 1;
+-- 					net_count_statistics.bs_static := net_count_statistics.bs_static + 1;
+-- 					net_count_statistics.bs_static_h := net_count_statistics.bs_static_h + 1;
+-- 					net_count_statistics.bs_testable := net_count_statistics.bs_testable + 1;
+-- 				when EL => 
+-- 					net_count_statistics.el := net_count_statistics.el + 1;
+-- 					net_count_statistics.bs_static := net_count_statistics.bs_static + 1;
+-- 					net_count_statistics.bs_static_l := net_count_statistics.bs_static_l + 1;
+-- 					net_count_statistics.bs_testable := net_count_statistics.bs_testable + 1;
+-- 				when NR => 
+-- 					net_count_statistics.nr := net_count_statistics.nr + 1;
+-- 					net_count_statistics.bs_dynamic := net_count_statistics.bs_dynamic + 1;
+-- 					net_count_statistics.bs_testable := net_count_statistics.bs_testable + 1;
+-- 				when NA => 
+-- 					net_count_statistics.na := net_count_statistics.na + 1;
+-- 			end case;
+-- 
+-- 			exception
+-- 				when constraint_error => 
+-- 					case prog_position is 
+-- 						when 0 => null;
+-- 						when others => null;
+-- 					end case;
+-- 
+-- -- 					put_line("line : " & trim(to_string(text_in),both)); 
+-- -- 					put_line("cell : " & to_string(cell_entry(e_bak)));
+-- -- 					--put_line("field: " & get_field_from_line(scratch,c_bak));
+-- 					put_line("prog position: Complete net data CN" & trim(natural'image(prog_position),left));
+-- 					raise;
+-- 
+-- 		end complete_net_data;
+
+
+-- 		procedure put_error_on_endsection_expected is
+-- 		begin
+-- 			put_line("ERROR: " & type_end_of_section_mark'image(EndSection) & " expected !");
+-- 		end put_error_on_endsection_expected;
+-- 
+-- 		procedure cell_list_put_error_on_class_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: Expected keyword '" & type_cell_list_class_identifier'image(class) & "' at begin of line !");
+-- 		end cell_list_put_error_on_class_identifier_expected;
+-- 
+-- 		procedure cell_list_put_error_on_invalid_class is
+-- 		begin
+-- 			put_line("ERROR: Invalid net class found for this section !");
+-- 		end cell_list_put_error_on_invalid_class;
+-- 
+-- 		procedure cell_list_put_error_on_invalid_net_level is
+-- 		begin
+-- 			put_line("ERROR: Expected net level keyword '" & type_cell_list_net_level'image(primary_net) & "' or '" &
+-- 				type_cell_list_net_level'image(secondary_net) & "' after net class !");
+-- 		end cell_list_put_error_on_invalid_net_level;
+-- 
+-- 		procedure cell_list_put_error_on_device_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: Expected keyword '" & type_cell_list_device_identifier'image(device) & "' after net name !");
+-- 		end cell_list_put_error_on_device_identifier_expected;
+-- 
+-- 		procedure cell_list_put_error_on_pin_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: Expected keyword '" & type_cell_list_pin_identifier'image(pin) & "' after device name !");
+-- 		end cell_list_put_error_on_pin_identifier_expected;
+-- 
+-- 		procedure cell_list_put_error_on_control_cell_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: Expected keyword '" & type_cell_list_control_cell_identifier'image(control_cell) & "' after pin name !");
+-- 			put_line("        This section addresses control cells exclusively !");
+-- 		end cell_list_put_error_on_control_cell_identifier_expected;
+-- 
+-- 		procedure cell_list_put_error_on_output_cell_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: Expected keyword '" & type_cell_list_output_cell_identifier'image(output_cell) & "' after pin name !");
+-- 			put_line("        This section addresses output cells exclusively !");
+-- 		end cell_list_put_error_on_output_cell_identifier_expected;
+-- 
+-- 		procedure cell_list_put_error_on_output_control_cell_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: Expected keyword '" & type_cell_list_output_cell_identifier'image(output_cell) & "' or '" & 
+-- 				type_cell_list_control_cell_identifier'image(control_cell) & "' after pin name !");
+-- 			put_line("        This section addresses output or control cells exclusively !");
+-- 		end cell_list_put_error_on_output_control_cell_identifier_expected;
+-- 
+-- 		procedure cell_list_put_error_on_input_cell_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: Expected keyword '" & type_cell_list_input_cell_identifier'image(input_cell) & "' after pin name !");
+-- 			put_line("        This section addresses input cells exclusively !");
+-- 		end cell_list_put_error_on_input_cell_identifier_expected;
+-- 
+-- 		procedure cell_list_put_error_on_expect_value_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: Expected keyword '" & type_cell_list_expect_value_identifier'image(expect_value) & "' after cell id !");
+-- 		end cell_list_put_error_on_expect_value_identifier_expected;
+-- 
+-- 		procedure cell_list_put_error_on_cell_locked_to_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: Expected keyword '" & type_cell_list_locked_to_identifier'image(locked_to) & "' after cell id !");
+-- 		end cell_list_put_error_on_cell_locked_to_identifier_expected;
+-- 
+-- 		procedure cell_list_put_error_on_drive_value_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: Expected keyword '" & type_cell_list_drive_value_identifier'image(drive_value) & "' after 'locked_to' !");
+-- 		end cell_list_put_error_on_drive_value_identifier_expected;
+-- 
+-- 		procedure cell_list_put_error_on_disable_value_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: Expected keyword '" & type_cell_list_disable_value_identifier'image(disable_value) & "' after 'locked_to' !");
+-- 		end cell_list_put_error_on_disable_value_identifier_expected;
+-- 
+-- 		procedure cell_list_put_error_on_enable_disable_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: Expected keyword '" & type_cell_list_disable_value_identifier'image(disable_value) & "' or '"
+-- 				& type_cell_list_enable_value_identifier'image(enable_value) &"' after 'locked_to' !");
+-- 		end cell_list_put_error_on_enable_disable_identifier_expected; 
+-- 
+-- 		procedure cell_list_put_error_on_invalid_static_expect_value is
+-- 		begin
+-- 			put_line("ERROR: Invalid expect value for input cell in this net class !");
+-- 		end cell_list_put_error_on_invalid_static_expect_value;
+-- 
+-- 		procedure cell_list_put_error_on_primary_net_is_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: After '" & type_cell_list_expect_value_identifier'image(expect_value) & "' expected keyword '" & 
+-- 				type_cell_list_primary_net_is_identifier'image(primary_net_is) & "' followed by name of primary net !");
+-- 			put_line("        Secondary nets require specification of superordinated primary net !");
+-- 			put_line("Example: 'class DL secondary_net A3R device IC1 pin 2 input_cell 7 expect_value 0 primary_net_is A3' ");
+-- 		end cell_list_put_error_on_primary_net_is_identifier_expected;
+-- 
+-- 		procedure cell_list_put_error_on_primary_net_name_mismatch is
+-- 		begin
+-- 			put_line("ERROR: Invalid primary net name found after '" & type_cell_list_primary_net_is_identifier'image(primary_net_is) & "' !"); 
+-- 			put_line("        The primary net name differs from those specified in net list !");
+-- 		end cell_list_put_error_on_primary_net_name_mismatch;
+-- 
+-- 		procedure cell_list_put_error_on_control_cell_inverted_identifier_expected is
+-- 		begin
+-- 			put_line("ERROR: Expected '" & type_cell_list_control_cell_inverted_identifier'image(inverted) & "' followed by '" &
+-- 			type_cell_list_control_cell_inverted'image(yes) & "', '" & 
+-- 			type_cell_list_control_cell_inverted'image(true) & "', '" &
+-- 			type_cell_list_control_cell_inverted'image(no) & "' or '" &
+-- 			type_cell_list_control_cell_inverted'image(false) &
+-- 			"' after control cell ID !");
+-- 		end cell_list_put_error_on_control_cell_inverted_identifier_expected;
+-- 
+-- 		procedure cell_list_put_error_on_contradicting_net_level (
+-- 			net		: universal_string_type.bounded_string;
+-- 			level	: type_net_level )
+-- 			is
+-- 		begin
+-- 			put_line("ERROR: Level of net '" & to_string(net) & "' should be type '" & type_net_level'image(level) & "' !");
+-- 			put_line("        The level found contradicts with those specified in section 'net list' !");
+-- 		end cell_list_put_error_on_contradicting_net_level;
+-- 
+-- 		procedure cell_list_put_error_on_contradicting_net_class (
+-- 			net		: universal_string_type.bounded_string;
+-- 			class	: type_net_class )
+-- 			is
+-- 		begin
+-- 			put_line("ERROR: Class of net '" & to_string(net) & "' should be '" & type_net_class'image(class) & "' !");
+-- 			put_line("        The class found contradicts with those specified in section 'net list' !");
+-- 		end cell_list_put_error_on_contradicting_net_class;
+-- 
+-- 		procedure cell_list_put_error_on_non_scan_net (
+-- 			net		: universal_string_type.bounded_string) is
+-- 		begin
+-- 			put_line("ERROR: Net '" & to_string(net) & "' is not scan capable and must not appear here !");
+-- 		end cell_list_put_error_on_non_scan_net;
+-- 
+-- 		procedure cell_list_put_error_on_invalid_control_cell is
+-- 		begin 
+-- 			put_line("ERROR: Control cell ID invalid ! Contradiction with those specified in section 'net list' !");
+-- 		end cell_list_put_error_on_invalid_control_cell;
+-- 
+-- 		procedure cell_list_put_error_on_invalid_output_cell is
+-- 		begin
+-- 			put_line("ERROR: Output cell ID invalid ! Contradiction with those specified in section 'net list' !");
+-- 		end cell_list_put_error_on_invalid_output_cell;
+-- 
+-- 		procedure cell_list_put_error_on_invalid_input_cell is
+-- 		begin
+-- 			put_line("ERROR: Input cell ID invalid ! Contradiction with those specified in section 'net list' !");
+-- 		end cell_list_put_error_on_invalid_input_cell;
+-- 
+-- 		procedure cell_list_put_error_on_invalid_disable_value is
+-- 		begin 
+-- 			put_line("ERROR: Control cell disable value invalid ! Contradiction with those specified in section 'net list' !");
+-- 		end cell_list_put_error_on_invalid_disable_value;
+-- 
+-- 		procedure cell_list_put_error_on_invalid_enable_value is
+-- 		begin
+-- 			put_line("ERROR: Control cell enable value invalid ! Contradiction with disable value specified in section 'net list' !");
+-- 		end cell_list_put_error_on_invalid_enable_value;
+-- 
+-- 		procedure cell_list_put_error_on_pin_not_found(
+-- 			device		: universal_string_type.bounded_string;
+-- 			pin			: universal_string_type.bounded_string;
+-- 			net			: universal_string_type.bounded_string
+-- 			) is
+-- 		begin
+-- 			put_line("ERROR: Device '" & to_string(device) & "' pin '" & to_string(pin) & "' is not connected to net '" & to_string(net) & "' !");
+-- 		end cell_list_put_error_on_pin_not_found;
+-- 
+-- 		procedure cell_list_put_error_on_net_not_found(
+-- 			net 		: universal_string_type.bounded_string
+-- 			) is
+-- 		begin
+-- 			put_line("ERROR: Net '" & to_string(net) & "' does not appear in net list and is considered as invalid !");
+-- 		end cell_list_put_error_on_net_not_found;
+
+-- 		procedure mark_bic_as_having_static_drive_cell(device : universal_string_type.bounded_string) is
+-- 			--b	: type_ptr_bscan_ic := ptr_bic;
+--             bic_found : boolean := false;
+-- 
+--             procedure set_has_static_drive_cell ( bic : in out type_bscan_ic) is
+--             begin
+--                 bic.has_static_drive_cell := true;
+--             end set_has_static_drive_cell;
+-- 		begin
+--             --while b /= null loop
+--             for b in 1..length(list_of_bics) loop    
+--                 --if b.name = device then
+--                 if element(list_of_bics,positive(b)).name = device then
+--                     bic_found := true;
+--                     --b.has_static_drive_cell := true;
+--                     update_element(list_of_bics,positive(b),set_has_static_drive_cell'access);
+-- 					exit;
+-- 				end if;
+-- 				--b := b.next;
+-- 			end loop;
+-- 
+-- 			if not bic_found then
+-- 				put_line("ERROR : Device '" & to_string(device) & "' is not part of any scan path !");
+-- 				raise constraint_error;
+-- 			end if;
+-- 		end mark_bic_as_having_static_drive_cell;
+
+-- 		procedure mark_bic_as_having_static_expect_cell(device : universal_string_type.bounded_string) is
+-- 			--b	: type_ptr_bscan_ic := ptr_bic;
+--             bic_found : boolean := false;
+-- 
+--             procedure set_has_static_expect_cell ( bic : in out type_bscan_ic) is
+--             begin
+--                 bic.has_static_expect_cell := true;
+--             end set_has_static_expect_cell;
+-- 
+-- 		begin
+-- 			--while b /= null loop
+--             for b in 1..length(list_of_bics) loop    
+--                 --if b.name = device then
+--                 if element(list_of_bics,positive(b)).name = device then            
+-- 					bic_found := true;
+--                     --b.has_static_expect_cell := true;
+--                     update_element(list_of_bics,positive(b),set_has_static_expect_cell'access);
+-- 					exit;
+-- 				end if;
+-- 				--b := b.next;
+-- 			end loop;
+-- 
+-- 			if not bic_found then
+-- 				put_line("ERROR : Device '" & to_string(device) & "' is not part of any scan path !");
+-- 				raise constraint_error;
+-- 			end if;
+-- 		end mark_bic_as_having_static_expect_cell;
+
+-- 		procedure mark_bic_as_having_dynamic_drive_cell(device : universal_string_type.bounded_string) is
+-- 			--b	: type_ptr_bscan_ic := ptr_bic;
+--             bic_found : boolean := false;
+-- 
+--             procedure set_has_dynamic_drive_cell ( bic : in out type_bscan_ic) is
+--             begin
+--                 bic.has_dynamic_drive_cell := true;
+--             end set_has_dynamic_drive_cell;
+--             
+-- 		begin
+--         --	while b /= null loop
+--             for b in 1..length(list_of_bics) loop            
+--                 --if b.name = device then
+--                 if element(list_of_bics,positive(b)).name = device then                        
+-- 					bic_found := true;
+--                     --b.has_dynamic_drive_cell := true;
+--                     update_element(list_of_bics,positive(b),set_has_dynamic_drive_cell'access);
+-- 					exit;
+-- 				end if;
+-- 				--b := b.next;
+-- 			end loop;
+-- 
+-- 			if not bic_found then
+-- 				put_line("ERROR : Device '" & to_string(device) & "' is not part of any scan path !");
+-- 				raise constraint_error;
+-- 			end if;
+-- 		end mark_bic_as_having_dynamic_drive_cell;
+
+-- 		procedure mark_bic_as_having_dynamic_expect_cell(device : universal_string_type.bounded_string) is
+--             --b	: type_ptr_bscan_ic := ptr_bic;        
+--             bic_found : boolean := false;
+-- 
+--             procedure set_has_dynamic_expect_cell ( bic : in out type_bscan_ic) is
+--             begin
+--                 bic.has_dynamic_expect_cell := true;
+--             end set_has_dynamic_expect_cell;
+--             
+-- 		begin
+--         --while b /= null loop
+--             for b in 1..length(list_of_bics) loop                    
+--                 --if b.name = device then
+--                 if element(list_of_bics,positive(b)).name = device then                                    
+-- 					bic_found := true;
+--                     --b.has_dynamic_expect_cell := true;
+--                     update_element(list_of_bics,positive(b),set_has_dynamic_expect_cell'access);
+-- 					exit;
+-- 				end if;
+-- 				--b := b.next;
+-- 			end loop;
+-- 
+-- 			if not bic_found then
+-- 				put_line("ERROR : Device '" & to_string(device) & "' is not part of any scan path !");
+-- 				raise constraint_error;
+-- 			end if;
+-- 		end mark_bic_as_having_dynamic_expect_cell;
+
+-- 		-- PROCESSING CELL LISTS BEGIN
+-- 		procedure lock_control_cell_in_class_EH_EL_NA_net(
+-- 			-- The pin and cell data extracted from the cell list is verified against the net list.
+-- 			-- If valid, the cell info will be filled with those values.
+-- 			class 			: type_net_class;
+-- 			level 			: type_net_level;
+-- 			net				: universal_string_type.bounded_string;
+-- 			device			: universal_string_type.bounded_string;
+-- 			pin				: universal_string_type.bounded_string;
+-- 			control_cell_id					: type_cell_id;
+-- 			control_cell_in_enable_state	: boolean; -- not enumerated here because the control cell value is taken as disable value anyway
+-- 			control_cell_value				: type_bit_char_class_0
+-- 			) is
+-- 			n				: type_ptr_net := ptr_net; -- set pointer p at end of net list
+-- 			prog_position	: natural := 0;
+-- 			pin_found		: boolean := false;
+-- 			net_found		: boolean := false;
+-- 		begin
+-- 			if debug_level >= 20 then
+-- 				put_line(" - class: " & type_net_class'image(class) & " level: " & type_net_level'image(level) & " net: " & 
+-- 					to_string(net) & " dev: " & to_string(device) & " pin: " & to_string(pin) & " ctrl cell id:" &
+-- 					type_cell_id'image(control_cell_id) &
+-- 					" disbl val: " & type_bit_char_class_0'image(control_cell_value));
+-- 			end if;
+-- 
+-- 			prog_position := 10;
+-- 			while n /= null loop
+-- 				if n.name = net then
+-- 					net_found := true;
+-- 
+-- 					--put_line("found net in list");
+-- 					prog_position := 100;
+-- 					if not n.bs_capable then
+-- 						cell_list_put_error_on_non_scan_net (net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 200;
+-- 					if n.class /= class then
+-- 						cell_list_put_error_on_contradicting_net_class(net => net, class => n.class);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 300;
+-- 					if n.level /= level then
+-- 						cell_list_put_error_on_contradicting_net_level(net => net, level => n.level);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 400;
+-- 					for p in 1..n.part_ct loop
+-- 						if n.pin(p).device_name = device and n.pin(p).device_pin_name = pin then
+-- 							pin_found := true;
+-- 							mark_bic_as_having_static_drive_cell(device);
+-- 							prog_position := 410;
+-- 							if n.pin(p).cell_info.control_cell_id /= control_cell_id then
+-- 								cell_list_put_error_on_invalid_control_cell;
+-- 								raise constraint_error;
+-- 							else
+-- 								-- if cell already in any cell list, print error, otherwise mark cell as "appears in cell list"
+-- 								if n.pin(p).cell_info.control_cell_appears_in_cell_list then
+-- 									put_line("ERROR: Device '" & to_string(device) & "' pin '" 
+-- 										& to_string(pin) & "' control cell" 
+-- 										& type_cell_id'image(control_cell_id) & " already in cell list !");
+-- 									--put_line("ERROR: Control cell with ID " & natural'image(control_cell_id) & " already in use !");
+-- 									raise constraint_error;
+-- 								else
+-- 									-- mark this cell as "appeares in cell list"
+-- 									n.pin(p).cell_info.control_cell_appears_in_cell_list := true;
+-- 								end if;
+-- 							end if;
+-- 							
+-- 							-- if control cell value in cell list differs from disable value in netlist, abort.
+-- 							-- otherwise control_cell_drive_static is set according to given control cell value
+-- 							if n.pin(p).cell_info.disable_value /= control_cell_value then
+-- 								cell_list_put_error_on_invalid_disable_value;
+-- 								raise constraint_error;
+-- 							else
+-- 								n.pin(p).cell_info.control_cell_drive_static := control_cell_value;
+-- 							end if;
+-- 
+-- 							exit; -- no more searching required
+-- 						end if;
+-- 					end loop;
+-- 					prog_position := 420;
+-- 					if not pin_found then
+-- 						cell_list_put_error_on_pin_not_found(device => device, pin => pin, net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 					
+-- 					exit;
+-- 				end if;
+-- 				n := n.next;
+-- 			end loop;
+-- 			
+-- 			-- if net not found in net list
+-- 			if not net_found then 
+-- 				cell_list_put_error_on_net_not_found(net => net);
+-- 				raise constraint_error;
+-- 			end if;
+-- 
+-- 			exception
+-- 				when constraint_error => 
+-- 					case prog_position is 
+-- 						when 0 => null;
+-- 						when others => null;
+-- 					end case;
+-- 					put_line("prog position: Lock control cell in class EH EL NA net : " & trim(natural'image(prog_position),left));
+-- 					raise;
+-- 		end lock_control_cell_in_class_EH_EL_NA_net;
+
+
+-- 		procedure lock_control_cell_in_class_DX_NR(
+-- 			-- The pin and cell data extracted from the cell list is verified against the net list.
+-- 			-- If valid, the cell info will be filled with those values.
+-- 			class 			: type_net_class;
+-- 			level 			: type_net_level;
+-- 			net				: universal_string_type.bounded_string;
+-- 			device			: universal_string_type.bounded_string;
+-- 			pin				: universal_string_type.bounded_string;
+-- 			control_cell_id					: type_cell_id;
+-- 			control_cell_in_enable_state	: boolean;
+-- 			control_cell_value				: type_bit_char_class_0
+-- 			) is
+-- 			n				: type_ptr_net := ptr_net; -- set pointer p at end of net list
+-- 			prog_position	: natural := 0;
+-- 			pin_found		: boolean := false;
+-- 			net_found		: boolean := false;
+-- 		begin
+-- 			if debug_level >= 20 then
+-- 				put_line(" - class: " & type_net_class'image(class) & " level: " & type_net_level'image(level) & " net: " & 
+-- 					to_string(net) & " dev: " & to_string(device) & " pin: " & to_string(pin) & " ctrl cell id:" &
+-- 					type_cell_id'image(control_cell_id) &
+-- 					" val: " & type_bit_char_class_0'image(control_cell_value) & " enable state: " &
+-- 					boolean'image(control_cell_in_enable_state));
+-- 			end if;
+-- 
+-- 			prog_position := 10;
+-- 			while n /= null loop
+-- 				if n.name = net then
+-- 					net_found := true;
+-- 
+-- 					prog_position := 100;
+-- 					if not n.bs_capable then
+-- 						cell_list_put_error_on_non_scan_net (net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 200;
+-- 					if n.class /= class then
+-- 						cell_list_put_error_on_contradicting_net_class(net => net, class => n.class);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 300;
+-- 					if n.level /= level then
+-- 						cell_list_put_error_on_contradicting_net_level(net => net, level => n.level);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 400;
+-- 					for p in 1..n.part_ct loop
+-- 						if n.pin(p).device_name = device and n.pin(p).device_pin_name = pin then
+-- 							pin_found := true;
+-- 							mark_bic_as_having_static_drive_cell(device);
+-- 							prog_position := 410;
+-- 
+-- 							-- the pin found in the net list must have the current control cell associated
+-- 							if n.pin(p).cell_info.control_cell_id /= control_cell_id then
+-- 								cell_list_put_error_on_invalid_control_cell;
+-- 								raise constraint_error;
+-- 							else
+-- 								-- if cell already in any cell list, print error, otherwise mark cell as "appears in cell list"
+-- 								if n.pin(p).cell_info.control_cell_appears_in_cell_list then
+-- 									put_line("ERROR: Device '" & to_string(device) & "' pin '" 
+-- 										& to_string(pin) & "' control cell" 
+-- 										& type_cell_id'image(control_cell_id) & " already in cell list !");
+-- 									raise constraint_error;
+-- 								else
+-- 									-- mark this cell as "appeares in cell list"
+-- 									n.pin(p).cell_info.control_cell_appears_in_cell_list := true;
+-- 								end if;
+-- 							end if;
+-- 							
+-- 							-- if control cell disable/enable value in cell list differs from disable value in netlist, abort.
+-- 							case control_cell_in_enable_state is
+-- 								when false => -- means the control cell is locked to disable value
+-- 									-- so the disable value given in net list must match the given control cell value 
+-- 									if n.pin(p).cell_info.disable_value = control_cell_value then
+-- 										null; -- fine
+-- 									else
+-- 										cell_list_put_error_on_invalid_disable_value;
+-- 										raise constraint_error;
+-- 									end if;
+-- 								when true => -- means the control cell is locked to enable value
+-- 									-- so the disable value given in net list must match the given control cell value INVERTED
+-- 									-- since this data type is type_bit_char_class_0 (either 0 or 1), checking the inverted value is easy:
+-- 									if n.pin(p).cell_info.disable_value /= control_cell_value then
+-- 										null; -- fine
+-- 									else
+-- 										cell_list_put_error_on_invalid_enable_value;
+-- 										raise constraint_error;
+-- 									end if;
+-- 							end case;
+-- 							-- control_cell_drive_static is to be set according to given control cell value
+-- 							n.pin(p).cell_info.control_cell_drive_static := control_cell_value;
+-- 
+-- 
+-- 							exit; -- no more searching required
+-- 						end if;
+-- 					end loop;
+-- 					prog_position := 420;
+-- 					if not pin_found then
+-- 						cell_list_put_error_on_pin_not_found(device => device, pin => pin, net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 					
+-- 					exit;
+-- 				end if;
+-- 				n := n.next;
+-- 			end loop;
+-- 
+-- 			-- if net not found in net list
+-- 			if not net_found then 
+-- 				cell_list_put_error_on_net_not_found(net => net);
+-- 				raise constraint_error;
+-- 			end if;
+-- 
+-- 			exception
+-- 				when constraint_error => 
+-- 					case prog_position is 
+-- 						when 0 => null;
+-- 						when others => null;
+-- 					end case;
+-- 					put_line("prog position: Lock control cell in class DH DL NR net : " & trim(natural'image(prog_position),left));
+-- 					raise;
+-- 		end lock_control_cell_in_class_DX_NR;
+
+
+-- 		procedure lock_control_cell_in_class_PU_PD_net(
+-- 			-- The pin and cell data extracted from the cell list is verified against the net list.
+-- 			-- If valid, the cell info will be filled with those values.
+-- 			class 			: type_net_class;
+-- 			level 			: type_net_level;
+-- 			net				: universal_string_type.bounded_string;
+-- 			device			: universal_string_type.bounded_string;
+-- 			pin				: universal_string_type.bounded_string;
+-- 			control_cell_id					: type_cell_id;
+-- 			control_cell_value				: type_bit_char_class_0
+-- 			) is
+-- 			n				: type_ptr_net := ptr_net; -- set pointer p at end of net list
+-- 			prog_position	: natural := 0;
+-- 			pin_found		: boolean := false;
+-- 			net_found		: boolean := false;
+-- 		begin
+-- 			if debug_level >= 20 then
+-- 				put_line(" - class: " & type_net_class'image(class) & " level: " & type_net_level'image(level) & " net: " & 
+-- 					to_string(net) & " dev: " & to_string(device) & " pin: " & to_string(pin) & " ctrl cell id:" &
+-- 					type_cell_id'image(control_cell_id) &
+-- 					" val: " & type_bit_char_class_0'image(control_cell_value) & " disable state");
+-- 			end if;
+-- 
+-- 			prog_position := 10;
+-- 			while n /= null loop
+-- 				if n.name = net then
+-- 					net_found := true;
+-- 
+-- 					prog_position := 100;
+-- 					if not n.bs_capable then
+-- 						cell_list_put_error_on_non_scan_net (net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 200;
+-- 					if n.class /= class then
+-- 						cell_list_put_error_on_contradicting_net_class(net => net, class => n.class);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 300;
+-- 					if n.level /= level then
+-- 						cell_list_put_error_on_contradicting_net_level(net => net, level => n.level);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 400;
+-- 					for p in 1..n.part_ct loop
+-- 						if n.pin(p).device_name = device and n.pin(p).device_pin_name = pin then
+-- 							pin_found := true;
+-- 							mark_bic_as_having_static_drive_cell(device);
+-- 							prog_position := 410;
+-- 							if n.pin(p).cell_info.control_cell_id /= control_cell_id then
+-- 								cell_list_put_error_on_invalid_control_cell;
+-- 								raise constraint_error;
+-- 							else
+-- 								-- if cell already in any cell list, print error, otherwise mark cell as "appears in cell list"
+-- 								if n.pin(p).cell_info.control_cell_appears_in_cell_list then
+-- 									--put_line("ERROR: Control cell with ID " & natural'image(control_cell_id) & " already in use !");
+-- 									put_line("ERROR: Device '" & to_string(device) & "' pin '" 
+-- 										& to_string(pin) & "' control cell" 
+-- 										& type_cell_id'image(control_cell_id) & " already in cell list !");
+-- 									raise constraint_error;
+-- 								else
+-- 									-- mark this cell as "appears in cell list"
+-- 									n.pin(p).cell_info.control_cell_appears_in_cell_list := true;
+-- 								end if;
+-- 							end if;
+-- 							
+-- -- 							-- if control cell disable/enable value in cell list differs from disable value in netlist, abort.
+-- -- 							case control_cell_in_enable_state is
+-- -- 								when false => -- means the control cell is locked to disable value
+-- -- 									-- so the disable value given in net list must match the given control cell value 
+-- -- 									if n.pin(p).cell_info.disable_value = control_cell_value then
+-- -- 										null; -- fine
+-- -- 									else
+-- -- 										cell_list_put_error_on_invalid_disable_value;
+-- -- 										raise constraint_error;
+-- -- 									end if;
+-- -- 								when true => -- means the control cell is locked to enable value
+-- -- 									-- so the disable value given in net list must match the given control cell value INVERTED
+-- -- 									-- since this data type is type_bit_char_class_0 (either 0 or 1), checking the inverted value is easy:
+-- -- 									if n.pin(p).cell_info.disable_value /= control_cell_value then
+-- -- 										null; -- fine
+-- -- 									else
+-- -- 										cell_list_put_error_on_invalid_enable_value;
+-- -- 										raise constraint_error;
+-- -- 									end if;
+-- -- 							end case;
+-- 
+-- 							-- if control cell disable value in cell list differs from disable value in netlist, abort.
+-- 							-- the control cell is locked to disable value
+-- 							-- so the disable value given in net list must match the given control cell value 
+-- 							if n.pin(p).cell_info.disable_value = control_cell_value then
+-- 								null; -- fine
+-- 							else
+-- 								cell_list_put_error_on_invalid_disable_value;
+-- 								raise constraint_error;
+-- 							end if;
+-- 
+-- 							-- control_cell_drive_static is to be set according to given control cell value
+-- 							n.pin(p).cell_info.control_cell_drive_static := control_cell_value;
+-- 							exit; -- no more searching required
+-- 						end if;
+-- 					end loop;
+-- 					prog_position := 420;
+-- 					if not pin_found then
+-- 						cell_list_put_error_on_pin_not_found(device => device, pin => pin, net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 					
+-- 					exit;
+-- 				end if;
+-- 				n := n.next;
+-- 			end loop;
+-- 
+-- 			-- if net not found in net list
+-- 			if not net_found then 
+-- 				cell_list_put_error_on_net_not_found(net => net);
+-- 				raise constraint_error;
+-- 			end if;
+-- 
+-- 			exception
+-- 				when constraint_error => 
+-- 					case prog_position is 
+-- 						when 0 => null;
+-- 						when others => null;
+-- 					end case;
+-- 					put_line("prog position: Lock control cell in class PU PD net : " & trim(natural'image(prog_position),left));
+-- 					raise;
+-- 		end lock_control_cell_in_class_PU_PD_net;
+
+
+-- 		procedure lock_output_cell_in_class_PU_PD_net(
+-- 			-- The pin and cell data extracted from the cell list is verified against the net list.
+-- 			-- If valid, the cell info will be filled with those values.
+-- 			class 			: type_net_class;
+-- 			level 			: type_net_level;
+-- 			net				: universal_string_type.bounded_string;
+-- 			device			: universal_string_type.bounded_string;
+-- 			pin				: universal_string_type.bounded_string;
+-- 			output_cell_id	: type_cell_id;
+-- 			output_cell_drive_value	: type_bit_char_class_0
+-- 			) is
+-- 			n				: type_ptr_net := ptr_net; -- set pointer p at end of net list
+-- 			prog_position	: natural := 0;
+-- 			pin_found		: boolean := false;
+-- 			net_found		: boolean := false;
+-- 		begin
+-- 			if debug_level >= 20 then
+-- 				put_line(" - class: " & type_net_class'image(class) & " level: " & type_net_level'image(level) & " net: " & 
+-- 					to_string(net) & " dev: " & to_string(device) & " pin: " & to_string(pin) & " output cell id:" &
+-- 					type_cell_id'image(output_cell_id) &
+-- 					" drive val: " & type_bit_char_class_0'image(output_cell_drive_value));
+-- 			end if;
+-- 
+-- 			prog_position := 10;
+-- 			while n /= null loop
+-- 				if n.name = net then
+-- 					net_found := true;
+-- 
+-- 					prog_position := 100;
+-- 					if not n.bs_capable then
+-- 						cell_list_put_error_on_non_scan_net (net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 200;
+-- 					if n.class /= class then
+-- 						cell_list_put_error_on_contradicting_net_class(net => net, class => n.class);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 300;
+-- 					if n.level /= level then
+-- 						cell_list_put_error_on_contradicting_net_level(net => net, level => n.level);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 400;
+-- 					for p in 1..n.part_ct loop
+-- 						if n.pin(p).device_name = device and n.pin(p).device_pin_name = pin then
+-- 							pin_found := true;
+-- 							mark_bic_as_having_static_drive_cell(device);
+-- 							prog_position := 410;
+-- 							if n.pin(p).cell_info.output_cell_id /= output_cell_id then
+-- 								cell_list_put_error_on_invalid_output_cell;
+-- 								raise constraint_error;
+-- 							else
+-- 								-- if cell already in any cell list, print error, otherwise mark cell as "appears in cell list"
+-- 								if n.pin(p).cell_info.output_cell_appears_in_cell_list then
+-- 									--put_line("ERROR: Output cell with ID " & natural'image(output_cell_id) & " already in use !");
+-- 
+-- 									put_line("ERROR: Device '" & to_string(device) & "' pin '" 
+-- 										& to_string(pin) & "' output cell" 
+-- 										& type_cell_id'image(output_cell_id) & " already in cell list !");
+-- 									raise constraint_error;
+-- 								else
+-- 									-- mark this cell as "appears in cell list"
+-- 									n.pin(p).cell_info.output_cell_appears_in_cell_list := true;
+-- 								end if;
+-- 							end if;
+-- 							
+-- 							-- output_cell_drive_static is to be set according to given output cell value
+-- 							n.pin(p).cell_info.output_cell_drive_static := output_cell_drive_value;
+-- 							exit; -- no more searching required
+-- 						end if;
+-- 					end loop;
+-- 					prog_position := 420;
+-- 					if not pin_found then
+-- 						cell_list_put_error_on_pin_not_found(device => device, pin => pin, net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 					
+-- 					exit;
+-- 				end if;
+-- 				n := n.next;
+-- 			end loop;
+-- 
+-- 			-- if net not found in net list
+-- 			if not net_found then 
+-- 				cell_list_put_error_on_net_not_found(net => net);
+-- 				raise constraint_error;
+-- 			end if;
+-- 
+-- 			exception
+-- 				when constraint_error => 
+-- 					case prog_position is 
+-- 						when 0 => null;
+-- 						when others => null;
+-- 					end case;
+-- 					put_line("prog position: Lock output cell in class PU PD net : " & trim(natural'image(prog_position),left));
+-- 					raise;
+-- 		end lock_output_cell_in_class_PU_PD_net;
+
+
+-- 		procedure lock_output_cell_in_class_DX(
+-- 			-- The pin and cell data extracted from the cell list is verified against the net list.
+-- 			-- If valid, the cell info will be filled with those values.
+-- 			class 			: type_net_class;
+-- 			level 			: type_net_level;
+-- 			net				: universal_string_type.bounded_string;
+-- 			device			: universal_string_type.bounded_string;
+-- 			pin				: universal_string_type.bounded_string;
+-- 			output_cell_id	: type_cell_id;
+-- 			output_cell_drive_value	: type_bit_char_class_0
+-- 			) is
+-- 			n				: type_ptr_net := ptr_net; -- set pointer p at end of net list
+-- 			prog_position	: natural := 0;
+-- 			pin_found		: boolean := false;
+-- 			net_found		: boolean := false;
+-- 		begin
+-- 			if debug_level >= 20 then
+-- 				put_line(" - class: " & type_net_class'image(class) & " level: " & type_net_level'image(level) & " net: " & 
+-- 					to_string(net) & " dev: " & to_string(device) & " pin: " & to_string(pin) & " output cell id:" &
+-- 					type_cell_id'image(output_cell_id) &
+-- 					" drive val: " & type_bit_char_class_0'image(output_cell_drive_value));
+-- 			end if;
+-- 
+-- 			prog_position := 10;
+-- 			while n /= null loop
+-- 				if n.name = net then
+-- 					net_found := true;
+-- 
+-- 					prog_position := 100;
+-- 					if not n.bs_capable then
+-- 						cell_list_put_error_on_non_scan_net (net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 200;
+-- 					if n.class /= class then
+-- 						cell_list_put_error_on_contradicting_net_class(net => net, class => n.class);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 300;
+-- 					if n.level /= level then
+-- 						cell_list_put_error_on_contradicting_net_level(net => net, level => n.level);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 400;
+-- 					for p in 1..n.part_ct loop
+-- 						if n.pin(p).device_name = device and n.pin(p).device_pin_name = pin then
+-- 							pin_found := true;
+-- 							mark_bic_as_having_static_drive_cell(device);
+-- 							prog_position := 410;
+-- 							if n.pin(p).cell_info.output_cell_id /= output_cell_id then
+-- 								cell_list_put_error_on_invalid_output_cell;
+-- 								raise constraint_error;
+-- 							else
+-- 								-- if cell already in any cell list, print error, otherwise mark cell as "appears in cell list"
+-- 								if n.pin(p).cell_info.output_cell_appears_in_cell_list then
+-- 									--put_line("ERROR: Output cell with ID " & natural'image(output_cell_id) & " already in use !");
+-- 
+-- 									put_line("ERROR: Device '" & to_string(device) & "' pin '" 
+-- 										& to_string(pin) & "' output cell" 
+-- 										& type_cell_id'image(output_cell_id) & " already in cell list !");
+-- 									raise constraint_error;
+-- 								else
+-- 									-- mark this cell as "appears in cell list"
+-- 									n.pin(p).cell_info.output_cell_appears_in_cell_list := true;
+-- 								end if;
+-- 							end if;
+-- 							
+-- 							-- output_cell_drive_static is to be set according to given output cell value
+-- 							n.pin(p).cell_info.output_cell_drive_static := output_cell_drive_value;
+-- 							exit; -- no more searching required
+-- 						end if;
+-- 					end loop;
+-- 					prog_position := 420;
+-- 					if not pin_found then
+-- 						cell_list_put_error_on_pin_not_found(device => device, pin => pin, net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 					
+-- 					exit;
+-- 				end if;
+-- 				n := n.next;
+-- 			end loop;
+-- 
+-- 			-- if net not found in net list
+-- 			if not net_found then 
+-- 				cell_list_put_error_on_net_not_found(net => net);
+-- 				raise constraint_error;
+-- 			end if;
+-- 
+-- 			exception
+-- 				when constraint_error => 
+-- 					case prog_position is 
+-- 						when 0 => null;
+-- 						when others => null;
+-- 					end case;
+-- 					put_line("prog position: Lock output cell in class DH DL net : " & trim(natural'image(prog_position),left));
+-- 					raise;
+-- 		end lock_output_cell_in_class_DX;
+
+
+-- 		procedure lock_input_cell_static_expect(
+-- 			-- The pin and cell data extracted from the cell list is verified against the net list.
+-- 			-- If valid, the cell info will be filled with those values.
+-- 			class 			: type_net_class;
+-- 			level 			: type_net_level;
+-- 			net				: universal_string_type.bounded_string;
+-- 			device			: universal_string_type.bounded_string;
+-- 			pin				: universal_string_type.bounded_string;
+-- 			input_cell_id			: type_cell_id;
+-- 			input_cell_expect_value	: type_bit_char_class_0;
+-- 			primary_net_is			: universal_string_type.bounded_string
+-- 			) is
+-- 			n				: type_ptr_net := ptr_net; -- set pointer p at end of net list
+-- 			prog_position	: natural := 0;
+-- 			pin_found		: boolean := false;
+-- 			net_found		: boolean := false;
+-- 		begin
+-- 			if debug_level >= 20 then
+-- 				put(" - class: " & type_net_class'image(class) & " level: " & type_net_level'image(level) & " net: " & 
+-- 					to_string(net) & " dev: " & to_string(device) & " pin: " & to_string(pin) & " input cell id:" &
+-- 					type_cell_id'image(input_cell_id) &
+-- 					" expect val: " & type_bit_char_class_0'image(input_cell_expect_value));
+-- 				if level = secondary then
+-- 					put_line(" primary_net_is : " & to_string(primary_net_is));
+-- 				else
+-- 					new_line;
+-- 				end if;
+-- 			end if;
+-- 
+-- 			prog_position := 10;
+-- 			while n /= null loop
+-- 				if n.name = net then
+-- 					net_found := true;
+-- 
+-- 					prog_position := 100;
+-- 					if not n.bs_capable then
+-- 						cell_list_put_error_on_non_scan_net (net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 200;
+-- 					if n.class /= class then
+-- 						cell_list_put_error_on_contradicting_net_class(net => net, class => n.class);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 300;
+-- 					if n.level /= level then
+-- 						cell_list_put_error_on_contradicting_net_level(net => net, level => n.level);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 400;
+-- 					for p in 1..n.part_ct loop
+-- 						if n.pin(p).device_name = device and n.pin(p).device_pin_name = pin then
+-- 							pin_found := true;
+-- 							mark_bic_as_having_static_expect_cell(device);
+-- 							prog_position := 410;
+-- 							if n.pin(p).cell_info.input_cell_id /= input_cell_id then
+-- 								cell_list_put_error_on_invalid_input_cell;
+-- 								raise constraint_error;
+-- 							else
+-- 								-- if cell already in any cell list, print error, otherwise mark cell as "appears in cell list"
+-- 								if n.pin(p).cell_info.input_cell_appears_in_cell_list then
+-- 									--put_line("ERROR: Input cell with ID " & natural'image(input_cell_id) & " already in use !");
+-- 									put_line("ERROR: Device '" & to_string(device) & "' pin '" 
+-- 										& to_string(pin) & "' input cell" 
+-- 										& type_cell_id'image(input_cell_id) & " already in cell list !");
+-- 									raise constraint_error;
+-- 								else
+-- 									-- mark this cell as "appears in cell list"
+-- 									n.pin(p).cell_info.input_cell_appears_in_cell_list := true;
+-- 								end if;
+-- 							end if;
+-- 							
+-- 							-- input_cell_expect_static is to be set according to given input cell value
+-- 							n.pin(p).cell_info.input_cell_expect_static := input_cell_expect_value;
+-- 							exit; -- no more pin searching required
+-- 						end if;
+-- 					end loop;
+-- 					prog_position := 420;
+-- 					if not pin_found then
+-- 						cell_list_put_error_on_pin_not_found(device => device, pin => pin, net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					-- check name of given primary net
+-- 					if n.level = secondary then
+-- 						if n.name_of_primary_net = primary_net_is then
+-- 							null; -- primary net name given in cell list matches primary net name defined in netlist
+-- 						else
+-- 							cell_list_put_error_on_primary_net_name_mismatch;
+-- 							raise constraint_error;
+-- 						end if;
+-- 					end if;
+-- 
+-- 					exit; -- no more net searching required
+-- 				end if;
+-- 				n := n.next;
+-- 			end loop;
+-- 
+-- 			-- if net not found in net list
+-- 			if not net_found then 
+-- 				cell_list_put_error_on_net_not_found(net => net);
+-- 				raise constraint_error;
+-- 			end if;
+-- 
+-- 			exception
+-- 				when constraint_error => 
+-- 					case prog_position is 
+-- 						when 0 => null;
+-- 						when others => null;
+-- 					end case;
+-- 					put_line("prog position: Lock input cell in static net : " & trim(natural'image(prog_position),left));
+-- 					raise;
+-- 		end lock_input_cell_static_expect;
+
+
+-- 		procedure assign_input_cell_atg_expect(
+-- 			-- The pin and cell data extracted from the cell list is verified against the net list.
+-- 			-- If valid, the cell info will be filled with those values.
+-- 			class 			: type_net_class;
+-- 			level 			: type_net_level;
+-- 			net				: universal_string_type.bounded_string;
+-- 			device			: universal_string_type.bounded_string;
+-- 			pin				: universal_string_type.bounded_string;
+-- 			input_cell_id	: type_cell_id;
+-- 			primary_net_is	: universal_string_type.bounded_string
+-- 			) is
+-- 			n				: type_ptr_net := ptr_net; -- set pointer p at end of net list
+-- 			prog_position	: natural := 0;
+-- 			pin_found		: boolean := false;
+-- 			net_found		: boolean := false;
+-- 		begin
+-- 			if debug_level >= 20 then
+-- 				put(" - class: " & type_net_class'image(class) & " level: " & type_net_level'image(level) & " net: " & 
+-- 					to_string(net) & " dev: " & to_string(device) & " pin: " & to_string(pin) & " input cell id:" &
+-- 					type_cell_id'image(input_cell_id));
+-- 				if level = secondary then
+-- 					put_line(" primary_net_is : " & to_string(primary_net_is));
+-- 				else
+-- 					new_line;
+-- 				end if;
+-- 			end if;
+-- 
+-- 			prog_position := 10;
+-- 			while n /= null loop
+-- 				if n.name = net then
+-- 					net_found := true;
+-- 
+-- 					prog_position := 100;
+-- 					if not n.bs_capable then
+-- 						cell_list_put_error_on_non_scan_net (net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 200;
+-- 					if n.class /= class then
+-- 						cell_list_put_error_on_contradicting_net_class(net => net, class => n.class);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 300;
+-- 					if n.level /= level then
+-- 						cell_list_put_error_on_contradicting_net_level(net => net, level => n.level);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 400;
+-- 					for p in 1..n.part_ct loop
+-- 						if n.pin(p).device_name = device and n.pin(p).device_pin_name = pin then
+-- 							pin_found := true;
+-- 							mark_bic_as_having_dynamic_expect_cell(device);
+-- 							prog_position := 410;
+-- 							if n.pin(p).cell_info.input_cell_id /= input_cell_id then
+-- 								cell_list_put_error_on_invalid_input_cell;
+-- 								raise constraint_error;
+-- 							else
+-- 								-- if cell already in any cell list, print error, otherwise mark cell as "appears in cell list"
+-- 								if n.pin(p).cell_info.input_cell_appears_in_cell_list then
+-- 									--put_line("ERROR: Input cell with ID " & natural'image(input_cell_id) & " already in use !");
+-- 									put_line("ERROR: Device '" & to_string(device) & "' pin '" 
+-- 										& to_string(pin) & "' input cell" 
+-- 										& type_cell_id'image(input_cell_id) & " already in cell list !");
+-- 									raise constraint_error;
+-- 								else
+-- 									-- mark this cell as "appears in cell list"
+-- 									n.pin(p).cell_info.input_cell_appears_in_cell_list := true;
+-- 								end if;
+-- 							end if;
+-- 							
+-- 							-- mark input cell as target for atg
+-- 							n.pin(p).cell_info.input_cell_expect_atg := true;
+-- 							exit; -- no more pin searching required
+-- 						end if;
+-- 					end loop;
+-- 					prog_position := 420;
+-- 					if not pin_found then
+-- 						cell_list_put_error_on_pin_not_found(device => device, pin => pin, net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					-- check name of given primary net
+-- 					if n.level = secondary then
+-- 						if n.name_of_primary_net = primary_net_is then
+-- 							null; -- primary net name given in cell list matches primary net name defined in netlist
+-- 						else
+-- 							cell_list_put_error_on_primary_net_name_mismatch;
+-- 							raise constraint_error;
+-- 						end if;
+-- 					end if;
+-- 
+-- 					exit; -- no more net searching required
+-- 				end if;
+-- 				n := n.next;
+-- 			end loop;
+-- 
+-- 			-- if net not found in net list
+-- 			if not net_found then 
+-- 				cell_list_put_error_on_net_not_found(net => net);
+-- 				raise constraint_error;
+-- 			end if;
+-- 
+-- 			exception
+-- 				when constraint_error => 
+-- 					case prog_position is 
+-- 						when 0 => null;
+-- 						when others => null;
+-- 					end case;
+-- 					put_line("prog position: Assign input cell in atg net : " & trim(natural'image(prog_position),left));
+-- 					raise;
+-- 		end assign_input_cell_atg_expect;
+
+
+-- 		procedure assign_output_control_cell_atg_drive(
+-- 			-- The pin and cell data extracted from the cell list is verified against the net list.
+-- 			-- If valid, the cell info will be filled with those values.
+-- 			class 						: type_net_class;
+-- 			level 						: type_net_level;
+-- 			net							: universal_string_type.bounded_string;
+-- 			device						: universal_string_type.bounded_string;
+-- 			pin							: universal_string_type.bounded_string;
+-- 			controlled_by_control_cell	: boolean;
+-- 			output_cell_id				: type_cell_id;
+-- 			control_cell_id				: type_cell_id;
+-- 			control_cell_inverted		: boolean
+-- 			) is
+-- 			n				: type_ptr_net := ptr_net; -- set pointer p at end of net list
+-- 			prog_position	: natural := 0;
+-- 			pin_found		: boolean := false;
+-- 			net_found		: boolean := false;
+-- 		begin
+-- 			if debug_level >= 20 then
+-- 				put(" - class: " & type_net_class'image(class) & " level: " & type_net_level'image(level) & " net: " & 
+-- 					to_string(net) & " dev: " & to_string(device) & " pin: " & to_string(pin));
+-- 				if controlled_by_control_cell then
+-- 					put_line(" control cell id:" & type_cell_id'image(control_cell_id) & " inverted: " & boolean'image(control_cell_inverted));
+-- 				else
+-- 					put_line(" output cell id:" & type_cell_id'image(control_cell_id));
+-- 				end if;
+-- 			end if;
+-- 
+-- 			prog_position := 10;
+-- 			while n /= null loop
+-- 				if n.name = net then
+-- 					net_found := true;
+-- 
+-- 					prog_position := 100;
+-- 					if not n.bs_capable then
+-- 						cell_list_put_error_on_non_scan_net (net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 200;
+-- 					if n.class /= class then
+-- 						cell_list_put_error_on_contradicting_net_class(net => net, class => n.class);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 300;
+-- 					if n.level /= level then
+-- 						cell_list_put_error_on_contradicting_net_level(net => net, level => n.level);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 400;
+-- 					for p in 1..n.part_ct loop
+-- 						-- on device and pin match
+-- 						if n.pin(p).device_name = device and n.pin(p).device_pin_name = pin then
+-- 							pin_found := true;
+-- 							mark_bic_as_having_dynamic_drive_cell(device);
+-- 							prog_position := 410;
+-- 							-- depending on the way the pin is controlled (either by output cell directly or indirectly by control cell):
+-- 							if controlled_by_control_cell then -- controlled by control cell:
+-- 
+-- 								-- verify given control cell against specification in net list
+-- 								if n.pin(p).cell_info.control_cell_id /= control_cell_id then
+-- 									prog_position := 420;
+-- 									cell_list_put_error_on_invalid_control_cell;
+-- 									raise constraint_error;
+-- 								else
+-- 									-- if cell already in any cell list, print error, otherwise mark cell as "appears in cell list"
+-- 									if n.pin(p).cell_info.control_cell_appears_in_cell_list then
+-- 										--put_line("ERROR: Control cell with ID " & natural'image(control_cell_id) & " already in use !");
+-- 										put_line("ERROR: Device '" & to_string(device) & "' pin '" 
+-- 											& to_string(pin) & "' control cell" 
+-- 											& type_cell_id'image(control_cell_id) & " already in cell list !");
+-- 										raise constraint_error;
+-- 									else
+-- 										-- mark this cell as "appears in cell list"
+-- 										n.pin(p).cell_info.control_cell_appears_in_cell_list := true;
+-- 									end if;
+-- 								end if;
+-- 								-- mark control cell as target for atg
+-- 								n.pin(p).cell_info.control_cell_drive_atg := true;
+-- 
+-- 								-- verify "inverted yes/no" flag against net class and disable value
+-- 								case n.class is
+-- 									when PD => -- when pull down net class
+-- 										prog_position := 430;
+-- 										case n.pin(p).cell_info.disable_value is
+-- 											when '0' => -- a disable value of 0, causes the pin to go L
+-- 												prog_position := 440;
+-- 												if control_cell_inverted = false then -- so in the cell list we expect a "inverted no" entry
+-- 													n.pin(p).cell_info.control_cell_inverted := false; -- fine, inversion NOT required
+-- 												else
+-- 													put_line("ERROR: Expected " & type_cell_list_control_cell_inverted_identifier'image(inverted) & " '" 
+-- 														& type_cell_list_control_cell_inverted'image(no) & "' or '"
+-- 														& type_cell_list_control_cell_inverted'image(false) & "' for the control cell of this pin !"); 
+-- 													--put_line("        In the net list, a disable result of '" 
+-- 													--	& type_disable_result'image(n.pin(p).cell_info.disable_result) & "' was specified
+-- 													raise constraint_error;
+-- 												end if;
+-- 											when '1' => -- a disable value of 1, causes the pin to go L
+-- 												prog_position := 450;
+-- 												if control_cell_inverted = true then -- so in the cell list we expect a "inverted yes" entry
+-- 													n.pin(p).cell_info.control_cell_inverted := true; -- fine, inversion IS required
+-- 												else
+-- 													put_line("ERROR: Expected " & type_cell_list_control_cell_inverted_identifier'image(inverted) & " '" 
+-- 														& type_cell_list_control_cell_inverted'image(yes) & "' or '"
+-- 														& type_cell_list_control_cell_inverted'image(true) & "' for the control cell of this pin !"); 
+-- 													--put_line("        In the net list, a disable result of '" 
+-- 													--	& type_disable_result'image(n.pin(p).cell_info.disable_result) & "' was specified
+-- 													raise constraint_error;
+-- 												end if;
+-- 										end case;
+-- 									when PU => -- when pull up net class
+-- 										prog_position := 460;
+-- 										case n.pin(p).cell_info.disable_value is
+-- 											when '0' => -- a disable value of 0, causes the pin to go H
+-- 												prog_position := 470;
+-- 												if control_cell_inverted = true then -- so in the cell list we expect a "inverted yes" entry
+-- 													n.pin(p).cell_info.control_cell_inverted := true; -- fine, inversion IS required
+-- 												else
+-- 													put_line("ERROR: Expected " & type_cell_list_control_cell_inverted_identifier'image(inverted) & " '" 
+-- 														& type_cell_list_control_cell_inverted'image(yes) & "' or '"
+-- 														& type_cell_list_control_cell_inverted'image(true) & "' for the control cell of this pin !"); 
+-- 													--put_line("        In the net list, a disable result of '" 
+-- 													--	& type_disable_result'image(n.pin(p).cell_info.disable_result) & "' was specified
+-- 													raise constraint_error;
+-- 												end if;
+-- 											when '1' => -- a disable value of 1, causes the pin to go H
+-- 												prog_position := 480;
+-- 												if control_cell_inverted = false then -- so in the cell list we expect a "inverted no" entry
+-- 													n.pin(p).cell_info.control_cell_inverted := false; -- fine, inversion NOT required
+-- 												else
+-- 													put_line("ERROR: Expected " & type_cell_list_control_cell_inverted_identifier'image(inverted) & " '" 
+-- 														& type_cell_list_control_cell_inverted'image(no) & "' or '"
+-- 														& type_cell_list_control_cell_inverted'image(false) & "' for the control cell of this pin !"); 
+-- 													--put_line("        In the net list, a disable result of '" 
+-- 													--	& type_disable_result'image(n.pin(p).cell_info.disable_result) & "' was specified
+-- 													raise constraint_error;
+-- 												end if;
+-- 										end case;
+-- 									when others => -- this should never happen, as the net class check has been done earlier
+-- 										prog_position := 490;
+-- 										cell_list_put_error_on_contradicting_net_class(net => net, class => n.class);
+-- 										raise constraint_error;
+-- 								end case;
+-- 
+-- 
+-- 							else -- controlled by output cell:
+-- 								-- verify given output cell against specification in net list
+-- 								if n.pin(p).cell_info.output_cell_id /= output_cell_id then
+-- 									prog_position := 417;
+-- 									cell_list_put_error_on_invalid_output_cell;
+-- 									raise constraint_error;
+-- 								else
+-- 									-- if cell already in any cell list, print error, otherwise mark cell as "appears in cell list"
+-- 									if n.pin(p).cell_info.output_cell_appears_in_cell_list then
+-- 										--put_line("ERROR: Output cell with ID " & natural'image(output_cell_id) & " already in use !");
+-- 										put_line("ERROR: Device '" & to_string(device) & "' pin '" 
+-- 											& to_string(pin) & "' output cell" 
+-- 											& type_cell_id'image(output_cell_id) & " already in cell list !");
+-- 										raise constraint_error;
+-- 									else
+-- 										-- mark this cell as "appears in cell list"
+-- 										n.pin(p).cell_info.output_cell_appears_in_cell_list := true;
+-- 									end if;
+-- 								end if;
+-- 								-- mark output cell as target for atg
+-- 								n.pin(p).cell_info.output_cell_drive_atg := true;
+-- 							end if;
+-- 
+-- 							exit; -- no more pin searching required
+-- 						end if;
+-- 					end loop;
+-- 
+-- 					prog_position := 420;
+-- 					if not pin_found then
+-- 						cell_list_put_error_on_pin_not_found(device => device, pin => pin, net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					exit; -- no more net searching required
+-- 				end if;
+-- 				n := n.next;
+-- 			end loop;
+-- 
+-- 			-- if net not found in net list
+-- 			if not net_found then 
+-- 				cell_list_put_error_on_net_not_found(net => net);
+-- 				raise constraint_error;
+-- 			end if;
+-- 
+-- 			exception
+-- 				when constraint_error => 
+-- 					case prog_position is 
+-- 						when 0 => null;
+-- 						when others => null;
+-- 					end case;
+-- 					put_line("prog position: Assign output/control cell in atg net : " & trim(natural'image(prog_position),left));
+-- 					raise;
+-- 		end assign_output_control_cell_atg_drive;
+
+
+-- 		procedure assign_input_cell_unclassified_net(
+-- 			-- The pin and cell data extracted from the cell list is verified against the net list.
+-- 			-- If valid, the cell info will be filled with those values.
+-- 			class 			: type_net_class;
+-- 			level 			: type_net_level;
+-- 			net				: universal_string_type.bounded_string;
+-- 			device			: universal_string_type.bounded_string;
+-- 			pin				: universal_string_type.bounded_string;
+-- 			input_cell_id	: type_cell_id;
+-- 			primary_net_is	: universal_string_type.bounded_string
+-- 			) is
+-- 			n				: type_ptr_net := ptr_net; -- set pointer p at end of net list
+-- 			prog_position	: natural := 0;
+-- 			pin_found		: boolean := false;
+-- 			net_found		: boolean := false;
+-- 		begin
+-- 			if debug_level >= 20 then
+-- 				put(" - class: " & type_net_class'image(class) & " level: " & type_net_level'image(level) & " net: " & 
+-- 					to_string(net) & " dev: " & to_string(device) & " pin: " & to_string(pin) & " input cell id:" &
+-- 					type_cell_id'image(input_cell_id));
+-- 				if level = secondary then
+-- 					put_line(" primary_net_is : " & to_string(primary_net_is));
+-- 				else
+-- 					new_line;
+-- 				end if;
+-- 			end if;
+-- 
+-- 			prog_position := 10;
+-- 			while n /= null loop
+-- 				if n.name = net then
+-- 					net_found := true;
+-- 
+-- 					prog_position := 100;
+-- 					if not n.bs_capable then
+-- 						cell_list_put_error_on_non_scan_net (net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 200;
+-- 					if n.class /= class then
+-- 						cell_list_put_error_on_contradicting_net_class(net => net, class => n.class);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 300;
+-- 					if n.level /= level then
+-- 						cell_list_put_error_on_contradicting_net_level(net => net, level => n.level);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					prog_position := 400;
+-- 					for p in 1..n.part_ct loop
+-- 						if n.pin(p).device_name = device and n.pin(p).device_pin_name = pin then
+-- 							pin_found := true;
+-- 							prog_position := 410;
+-- 							if n.pin(p).cell_info.input_cell_id /= input_cell_id then
+-- 								cell_list_put_error_on_invalid_input_cell;
+-- 								raise constraint_error;
+-- 							else
+-- 								-- if cell already in any cell list, print error, otherwise mark cell as "appears in cell list"
+-- 								if n.pin(p).cell_info.input_cell_appears_in_cell_list then
+-- 									--put_line("ERROR: Input cell with ID " & natural'image(input_cell_id) & " already in use !");
+-- 									put_line("ERROR: Device '" & to_string(device) & "' pin '" 
+-- 										& to_string(pin) & "' input cell" 
+-- 										& type_cell_id'image(input_cell_id) & " already in cell list !");
+-- 									raise constraint_error;
+-- 								else
+-- 									-- mark this cell as "appears in cell list"
+-- 									n.pin(p).cell_info.input_cell_appears_in_cell_list := true;
+-- 								end if;
+-- 							end if;
+-- 							
+-- 							exit; -- no more pin searching required
+-- 						end if;
+-- 					end loop;
+-- 					prog_position := 420;
+-- 					if not pin_found then
+-- 						cell_list_put_error_on_pin_not_found(device => device, pin => pin, net => net);
+-- 						raise constraint_error;
+-- 					end if;
+-- 
+-- 					-- check name of given primary net
+-- 					if n.level = secondary then
+-- 						if n.name_of_primary_net = primary_net_is then
+-- 							null; -- primary net name given in cell list matches primary net name defined in netlist
+-- 						else
+-- 							cell_list_put_error_on_primary_net_name_mismatch;
+-- 							raise constraint_error;
+-- 						end if;
+-- 					end if;
+-- 
+-- 					exit; -- no more net searching required
+-- 				end if;
+-- 				n := n.next;
+-- 			end loop;
+-- 
+-- 			-- if net not found in net list
+-- 			if not net_found then 
+-- 				cell_list_put_error_on_net_not_found(net => net);
+-- 				raise constraint_error;
+-- 			end if;
+-- 
+-- 			exception
+-- 				when constraint_error => 
+-- 					case prog_position is 
+-- 						when 0 => null;
+-- 						when others => null;
+-- 					end case;
+-- 					put_line("prog position: Assign input cell in unclassified net : " & trim(natural'image(prog_position),left));
+-- 					raise;
+-- 		end assign_input_cell_unclassified_net;
+-- 
+-- 		-- PROCESSING CELL LISTS END
+
+
+
+
+
+
+-- 		procedure check_cells_are_in_cell_list is
+-- 			n				: type_ptr_net := ptr_net; -- set pointer p at end of net list
+-- 			prog_position	: natural := 0;
+-- 		begin
+-- 
+-- 			prog_position := 10;
+-- 			while n /= null loop
+-- 
+-- 				-- check bs_capable nets only
+-- 				if n.bs_capable then
+-- 
+-- 					prog_position := 400;
+-- 
+-- 					-- check bs_capable pins of this net only
+-- 					for p in 1..n.part_ct loop
+-- 						if n.pin(p).is_bscan_capable then
+-- 							prog_position := 410;
+-- 
+-- 							-- if there is an input cell, its ID is greater -1
+-- 							if n.pin(p).cell_info.input_cell_id /= -1 then
+-- 								if n.pin(p).cell_info.input_cell_appears_in_cell_list then
+-- 									null; -- fine, cell is in cell list
+-- 								else -- input cell is not in cell list
+-- 									prog_position := 420;
+-- 									put_line("ERROR: Input cell with ID" & type_cell_id'image(n.pin(p).cell_info.input_cell_id) 
+-- 										& " of device " & to_string(n.pin(p).device_name) & " does not appear in any cell list !");
+-- 									put_line("       Cell is specified in class " & type_net_class'image(n.class) & " net " 
+-- 										& to_string(n.name) & " device "
+-- 										& to_string(n.pin(p).device_name) & " pin " & to_string(n.pin(p).device_pin_name)
+-- 									);
+-- 									raise constraint_error;
+-- 								end if;
+-- 							end if;
+-- 
+-- 							-- if there is a control cell, its ID is greater -1
+-- 							if n.pin(p).cell_info.control_cell_id /= -1 then
+-- 								if n.pin(p).cell_info.control_cell_appears_in_cell_list then
+-- 									null; -- fine, cell is in cell list
+-- 								else -- control cell is not in cell list
+-- 									prog_position := 430;
+-- 									put_line("ERROR: Control cell with ID" & type_cell_id'image(n.pin(p).cell_info.control_cell_id) 
+-- 										& " of device " & to_string(n.pin(p).device_name) & " does not appear in any cell list !");
+-- 									put_line("       Cell is specified in class " & type_net_class'image(n.class) & " net " 
+-- 										& to_string(n.name) & " device "
+-- 										& to_string(n.pin(p).device_name) & " pin " & to_string(n.pin(p).device_pin_name)
+-- 									);
+-- 									raise constraint_error;
+-- 								end if;
+-- 							end if;
+-- 
+-- 
+-- 							-- if there is an output cell, its ID is greater -1
+-- 							if n.pin(p).cell_info.output_cell_id /= -1 then
+-- 								if n.pin(p).cell_info.output_cell_appears_in_cell_list then
+-- 									null; -- fine, cell is in cell list
+-- 								else -- output cell is not in cell list
+-- 
+-- 									-- check output cells of primary nets exclusively (in secondary nets, output cells do not matter)
+-- 									if n.level = primary then
+-- 										prog_position := 440;
+-- 										case n.class is
+-- 											when PU | PD => -- in such nets, if the control cell is not target of atg -> it is static,
+-- 															-- if cell is static -> it is in disable state -> output cell does not matter
+-- 												if not n.pin(p).cell_info.control_cell_drive_atg then
+-- 													prog_position := 450;
+-- 												end if;
+-- 											when EL | EH | NA => -- in such nets, the driver pin is in highz, so the output cell does not matter
+-- 													prog_position := 460;
+-- 											when others => 	-- NR, DL, DH nets
+-- 												prog_position := 470;
+-- 												put_line("ERROR: Output cell with ID" & type_cell_id'image(n.pin(p).cell_info.output_cell_id) 
+-- 													& " of device " & to_string(n.pin(p).device_name) & " does not appear in any cell list !");
+-- 												put_line("       Cell is specified in class " & type_net_class'image(n.class) & " net " 
+-- 													& to_string(n.name) & " device "
+-- 													& to_string(n.pin(p).device_name) & " pin " & to_string(n.pin(p).device_pin_name));
+-- 												raise constraint_error;
+-- 										end case;
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 
+-- 						end if;
+-- 					end loop;
+-- 
+-- 				end if;
+-- 				n := n.next;
+-- 			end loop;
+-- 
+-- 
+-- 			exception
+-- 				when constraint_error => 
+-- 					case prog_position is 
+-- 						when 0 => null;
+-- 						when others => null;
+-- 					end case;
+-- 					put_line("prog position: Check cells in cell list : " & trim(natural'image(prog_position),left));
+-- 					raise;
+-- 
+-- 		end check_cells_are_in_cell_list;
+
+
+
+-- 		procedure verify_shared_control_cells is
+-- 			-- this procedure searches for multiple occurences of control cells in net list.
+-- 			-- if a control cell is used by two different pins of the same device (bic), the "control_cell_shared" flag
+-- 			-- is set in the cell_info of both pins
+-- 			n1				: type_ptr_net := ptr_net; -- set net pointer at end of net list
+-- 			control_cell_id	: type_cell_info_cell_id;
+-- 			device			: universal_string_type.bounded_string;
+-- 			pin				: universal_string_type.bounded_string;
+--  			type type_shared_control_cell_status is 
+--  				record
+-- 					net				: universal_string_type.bounded_string;
+-- 					pin				: universal_string_type.bounded_string;
+--  					drive_static	: type_bit_char_class_0;
+--  					drive_atg		: boolean := false; -- true if atg drives something here
+--  				end record;
+-- 			control_cell_b_status : type_shared_control_cell_status;
+-- 
+-- 			function find_shared_control_cell_b return boolean is
+-- 			-- this function searches the net list for the given control cell of the current device
+-- 			-- if the control cell appears with a pin different from the given pin, the cell is marked as "shared"
+-- 				nb						: type_ptr_net := ptr_net; -- set net pointer at end of net list
+-- 			begin
+-- 				while nb /= null loop -- loop though net list
+-- 					if nb.bs_capable then -- if net is bs capable
+-- 						if debug_level >= 80 then
+-- 							put_line("    - shared cc search in net: " & to_string(nb.name) );
+-- 						end if;
+-- 						for p in 1..nb.part_ct loop -- loop though pin list of this net
+-- 							if nb.pin(p).is_bscan_capable then -- if pin is bs capable
+-- 								-- CS: look in boundary register description of bics for shared control cells,
+-- 								-- this could speed up the check.
+-- 								if nb.pin(p).device_name = device then -- on device name match
+-- 									if nb.pin(p).device_pin_name /= pin then -- the pin name must be different,
+-- 									-- because the same pin must not be checked against itself
+-- 										if nb.pin(p).cell_info.control_cell_id = control_cell_id then -- on match of control cell id
+-- 
+-- 											if debug_level >= 100 then
+-- 												put_line("    - shared with pin: " & to_string(nb.pin(p).device_pin_name));
+-- 											end if;
+-- 
+-- 											nb.pin(p).cell_info.control_cell_shared := true; -- mark the control cell of the other pin as shared too
+-- 
+-- 											-- collect some information about the affected cell
+-- 											control_cell_b_status.net			:= nb.name; -- get net name
+-- 											control_cell_b_status.pin			:= nb.pin(p).device_pin_name;
+-- 											control_cell_b_status.drive_static	:= nb.pin(p).cell_info.control_cell_drive_static;
+-- 											control_cell_b_status.drive_atg 	:= nb.pin(p).cell_info.control_cell_drive_atg;
+-- 											return true;
+-- 										end if;
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end loop;
+-- 					end if;
+-- 					nb := nb.next;
+-- 				end loop;
+-- 				return false; -- if given cc_id does not appear in net list, it is not shared by any pin yet
+-- 			end find_shared_control_cell_b;
+-- 
+-- 		begin -- verify_shared_control_cells
+-- 			if debug_level >= 5 then
+-- 				put_line("- checking shared control cells ...");
+-- 			end if;
+-- 
+-- 			while n1 /= null loop
+-- 				if n1.bs_capable then -- if net is bs capable
+-- -- 					if debug_level >= 20 then
+-- -- 						put_line("   - net: " & to_string(n.name));
+-- -- 					end if;
+-- 					for p in 1..n1.part_ct loop -- loop though pin list of this net
+-- 						if n1.pin(p).is_bscan_capable then -- if pin is bs capable
+-- 							-- CS: look in boundary register description of bics for shared control cells,
+-- 							-- this could speed up the check.
+-- 							device 	:= n1.pin(p).device_name; -- get device name
+-- 							pin 	:= n1.pin(p).device_pin_name; -- get pin name
+-- 							control_cell_id := n1.pin(p).cell_info.control_cell_id; -- get control cell id
+-- 							if control_cell_id /= -1 then
+-- 								if debug_level >= 20 then
+-- 									put_line("   - device: " & to_string(device) & " pin: " & to_string(pin) & " cc:" & type_cell_id'image(control_cell_id));
+-- 								end if;
+-- 
+-- 								-- if control cell b is shared with the current control cell, mark the current control cell as "shared" too
+-- 								if find_shared_control_cell_b then
+-- 									n1.pin(p).cell_info.control_cell_shared := true;
+-- 									if debug_level >= 20 then
+-- 										put_line("    -- cc is shared");
+-- 									end if;
+-- 
+-- 									-- verify control cell statuses against each other. on mismatch abort
+-- 
+--  									if n1.pin(p).cell_info.control_cell_drive_static /= control_cell_b_status.drive_static then
+-- 										put_line("ERROR: Shared control cell conflict with device: '" & to_string(device) 
+-- 											& "' cell:" & type_cell_id'image(control_cell_id) & " !");
+-- 
+-- 										put_line("  Net: '" & to_string(n1.name) & "' pin: " & to_string(pin) 
+-- 											& " drive_static: " & type_bit_char_class_0'image(n1.pin(p).cell_info.control_cell_drive_static));
+-- 
+-- 										put_line("  Net: '" & to_string(control_cell_b_status.net) & "' pin: " & to_string(control_cell_b_status.pin)
+-- 											& " drive_static: " & type_bit_char_class_0'image(control_cell_b_status.drive_static));
+--  										raise constraint_error;
+--  									end if;
+-- 
+--  									if n1.pin(p).cell_info.control_cell_drive_atg /= control_cell_b_status.drive_atg then
+-- 										put_line("ERROR: Shared control cell conflict with device: '" & to_string(device) 
+-- 											& "' cell:" & type_cell_id'image(control_cell_id) & " !");
+-- 
+-- 										put_line("  Net: '" & to_string(n1.name) & "' pin: " & to_string(pin) 
+-- 											& " drive_atg: " & boolean'image(n1.pin(p).cell_info.control_cell_drive_atg));
+-- 
+-- 										put_line("  Net: '" & to_string(control_cell_b_status.net) & "' pin: " & to_string(control_cell_b_status.pin)
+-- 											& " drive_atg: " & boolean'image(control_cell_b_status.drive_atg));
+--  										raise constraint_error;
+--  									end if;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+-- 					end loop;
+-- 				end if;
+-- 				n1 := n1.next;
+-- 			end loop;
+-- 		end verify_shared_control_cells;
+
+
+-- 		procedure make_shared_control_cell_journal is
+-- 		-- creates a journal of bics,control_cells and affected nets from the uut data base net list
+-- 			--b			: type_ptr_bscan_ic := ptr_bic;
+-- 			bic_name	: universal_string_type.bounded_string;
+-- 			n			: type_ptr_net;
+-- 			net_name	: universal_string_type.bounded_string;
+-- 			cell_id		: type_cell_id;
+-- 			shared_control_cell_found	: boolean := false;
+-- 
+-- 			procedure add_to_nets_with_shared_control_cell (
+-- 				list			: in out type_ptr_list_of_nets_with_shared_control_cell;
+-- 				net_name_given 	: in universal_string_type.bounded_string;
+-- 				net_class_given	: in type_net_class;
+-- 				net_level_given	: in type_net_level
+-- 				) is
+-- 			begin
+-- 				list := new type_list_of_nets_with_shared_control_cell'(
+-- 					next		=> list,
+-- 					net_name	=> net_name_given,
+-- 					net_class	=> net_class_given,
+-- 					net_level	=> net_level_given
+-- 					);
+-- 			end add_to_nets_with_shared_control_cell;
+-- 
+-- 			procedure add_to_shared_control_cell_with_nets (
+-- 				list			: in out type_ptr_shared_control_cell_with_nets;
+-- 				cell_id_given	: in type_cell_id;
+-- 				net_ptr_given	: in type_ptr_list_of_nets_with_shared_control_cell
+-- 				) is
+-- 				subtype scratch_ptr is not null type_ptr_list_of_nets_with_shared_control_cell;
+-- 				s : scratch_ptr := net_ptr_given;
+-- 			begin
+-- 				s.all := net_ptr_given.all;
+-- 				list := new type_shared_control_cell_with_nets'(
+-- 					next			=> list,
+-- 					cell_id			=> cell_id_given,
+-- 					ptr_net			=> s,
+-- 					ptr_net_last	=> s -- save a copy of s (later required to reset ptr_net at end of list)
+-- 					);
+-- 			end add_to_shared_control_cell_with_nets;
+-- 
+-- 			procedure add_to_shared_control_cell_journal (
+-- 				list			: in out type_ptr_shared_control_cell_journal;
+-- 				bic_name_given	: in universal_string_type.bounded_string;
+-- 				cell_ptr_given	: in type_ptr_shared_control_cell_with_nets
+-- 				) is
+-- 				subtype scratch_ptr is not null type_ptr_shared_control_cell_with_nets;
+-- 				s : scratch_ptr := cell_ptr_given;
+-- 			begin
+-- 				s.all := cell_ptr_given.all;
+-- 				list := new type_shared_control_cell_journal'(
+-- 					next			=> list,
+-- 					bic_name		=> bic_name_given,
+-- 					cell_ptr		=> s,
+-- 					ptr_cell_last 	=> s -- save a copy of s (later required to reset cell_ptr at end of list)
+-- 					);
+-- 			end add_to_shared_control_cell_journal;
+-- 
+-- 			procedure find_other_nets_with_this_control_cell(net_origin : universal_string_type.bounded_string) is
+-- 				n	: type_ptr_net := ptr_net; -- set net pointer at end of net list
+-- 			begin
+-- 				while n /= null loop
+-- 					if n.bs_capable then
+-- 						if n.name /= net_origin then -- do not search in the net you came from
+-- 							for p in 1..n.part_ct loop
+-- 								if n.pin(p).is_bscan_capable then
+-- 									if n.pin(p).device_name = bic_name then -- on match of bic name
+-- 										if n.pin(p).cell_info.control_cell_id = cell_id then -- on match of control cell id
+-- 											add_to_nets_with_shared_control_cell(
+-- 												list 				=> ptr_list_of_nets_with_shared_control_cell,
+-- 												net_name_given 		=> n.name,
+-- 												net_level_given 	=> n.level,
+-- 												net_class_given		=> n.class
+-- 												);
+-- 											n.pin(p).cell_info.control_cell_in_journal := true; -- mark this control cell as processed
+-- 										end if;
+-- 									end if;
+-- 								end if;
+-- 							end loop;
+-- 						end if; -- do not search in the net you came from
+-- 					end if; -- if bs_capable
+-- 					n := n.next;
+-- 				end loop;
+-- 
+-- 			end find_other_nets_with_this_control_cell;
+-- 			
+-- 
+-- 		begin -- make_shared_control_cell_journal
+--             --while b /= null loop -- loop though bic list
+--             for b in 1..length(list_of_bics) loop    
+-- 				bic_name := element(list_of_bics,positive(b)).name; -- get bic name
+-- 				--put_line("bic : " & universal_string_type.to_string(b.name));
+-- 				shared_control_cell_found := false; -- initially, assume there is no shared control cell in this this bic
+-- 
+-- 				-- reset pointer of temporarily list shared_control_cell_with_nets
+-- 				ptr_shared_control_cell_with_nets := null;
+-- 
+-- 				--put_line("bic 1: " & universal_string_type.to_string(b.name));
+-- 				n := ptr_net; -- reset net pointer at end of net list
+-- 				while n /= null loop -- loop though net list
+-- 					--put_line("bic 2: " & universal_string_type.to_string(b.name));
+-- 
+-- 					if n.bs_capable then -- investigate scan capable nets only
+-- 						for p in 1..n.part_ct loop -- loop through part list of that net
+-- 							if n.pin(p).is_bscan_capable then -- investigate scan capable pins only
+-- 								if n.pin(p).device_name = bic_name then -- on match of bic name
+-- 									if n.pin(p).cell_info.control_cell_shared then -- check control cells only
+-- 										-- NOTE: this flag has been set by procedure verify_shared_control_cells earlier
+-- 										-- put_line("bic : " & universal_string_type.to_string(b.name));
+-- 
+-- 										-- if this control cell has not been processed yet:
+-- 										if not n.pin(p).cell_info.control_cell_in_journal then 
+-- 										-- NOTE: the flag cell_info.control_cell_in_journal is set by 
+-- 										-- procedure find_other_nets_with_this_control_cell in order to prevent
+-- 										-- multiple searching for nets connected to that control cell
+-- 
+-- 											--put_line("bic : " & universal_string_type.to_string(b.name));
+-- 
+-- 											shared_control_cell_found := true;
+-- 
+-- 											-- assume this control cell as "master cell". later procedure find_other_nets_with_this_control_cell
+-- 											-- will search for other nets connected to this control cell
+-- 											cell_id := n.pin(p).cell_info.control_cell_id;
+-- 
+-- 											-- reset pointer of temporarily list_of_nets_with_shared_control_cell
+-- 											ptr_list_of_nets_with_shared_control_cell := null;
+-- 											-- place this first net on list list_of_nets_with_shared_control_cell
+-- 											add_to_nets_with_shared_control_cell(
+-- 												list 				=> ptr_list_of_nets_with_shared_control_cell,
+-- 												net_name_given 		=> n.name,
+-- 												net_level_given 	=> n.level,
+-- 												net_class_given		=> n.class
+-- 												);
+-- 											-- attach furhter nets with this control cell to list list_of_nets_with_shared_control_cell
+-- 											find_other_nets_with_this_control_cell(n.name);
+-- 
+-- 											-- attach list list_of_nets_with_shared_control_cell to list shared_control_cell_with_nets
+-- 											add_to_shared_control_cell_with_nets (
+-- 												list				=> ptr_shared_control_cell_with_nets,
+-- 												cell_id_given		=> cell_id,
+-- 												net_ptr_given		=> ptr_list_of_nets_with_shared_control_cell
+-- 												);
+-- 										end if;
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end loop;
+-- 					end if;
+-- 
+-- 
+-- 					n := n.next; -- advance to next net
+-- 				end loop;
+-- 
+-- 				-- add to bic the shared control cell (if there is any shared control cell)
+-- 				-- if no shared control cell of this bic found, nothing is to be added to journal
+-- 				if shared_control_cell_found then
+-- 					--put_line("bic: " & to_string(bic_name));
+-- 					add_to_shared_control_cell_journal (
+-- 						list			=> ptr_shared_control_cell_journal,
+-- 						bic_name_given	=> bic_name,
+-- 						cell_ptr_given	=> ptr_shared_control_cell_with_nets
+-- 						);
+-- 				end if;
+-- 				--b := b.next; -- advance to next bic
+-- 			end loop;
+-- 		end make_shared_control_cell_journal;
+
+-- 		procedure reset_data_base_pointers is
+-- 		begin
+-- -- 			ptr_bsr				:= null;
+-- -- 			ptr_bic_port_io_map	:= null;
+-- -- 			ptr_bic_port_pin_map:= null;
+-- -- 			--ptr_bic_pre			:= null;
+-- -- 			--ptr_bic				:= null;
+-- -- 			ptr_pin				:= null;
+-- -- 			ptr_net 			:= null;
+-- -- 			ptr_sp				:= null;
+-- -- 
+-- -- 			ptr_options_net	:= null;
+-- 			ptr_cell_list_static_control_cells_class_EX_NA				:= null;
+-- 			ptr_cell_list_static_control_cells_class_DX_NR				:= null;
+-- 			ptr_cell_list_static_control_cells_class_PX					:= null;
+-- 			ptr_cell_list_static_output_cells_class_PX					:= null;
+-- 			ptr_cell_list_static_output_cells_class_DX_NR				:= null;
+-- 			ptr_cell_list_static_expect									:= null;
+-- 			ptr_cell_list_atg_expect									:= null;
+-- 			ptr_cell_list_atg_drive										:= null;
+-- 			ptr_cell_list_input_cells_class_NA							:= null;
+-- 
+-- -- 			ptr_list_of_nets_with_shared_control_cell					:= null;
+-- -- 			ptr_shared_control_cell_with_nets							:= null;
+-- -- 			ptr_shared_control_cell_journal								:= null;
+-- 		end reset_data_base_pointers;
+
+
+-- 		procedure mark_active_scanport is
+-- 		-- searches bics in scanport list and sets flag "active" if particular scanport is used by any bic
+-- 			s : type_ptr_scanport;
+-- 			--b : type_ptr_bscan_ic;
+-- 		begin
+-- 			for c in 1..scanport_count_max loop -- set scanport id to search for
+-- 
+-- 				s := ptr_sp; -- reset scanport pointer at end of list
+-- 				loop_through_scanport_list:
+-- 				while s /= null loop -- search scanport with id (set by c) in scan port list
+-- 					if s.id = c then -- on id match
+-- 
+-- 						--b := ptr_bic; -- reset bic pointer at end of list
+--                         --while b /= null loop -- search bic in bic list
+--                         for b in 1..length(list_of_bics) loop    
+-- 							if element(list_of_bics,positive(b)).chain = c then -- if bic is in port set by c
+-- 								s.active := true; -- mark port as active 
+-- 								exit loop_through_scanport_list; -- no furhter search required
+-- 							end if;
+-- 							--b := b.next;
+-- 						end loop;
+-- 
+-- 					end if;
+-- 					s := s.next;
+-- 				end loop loop_through_scanport_list;
+-- 
+-- 			end loop; -- set scanport id to search for
+-- 		end mark_active_scanport;
+
+
+--         bic_pre : type_bscan_ic_pre;
+        
+--    	begin -- read_uut_data_base MAIN LEVEL
+--		reset_data_base_pointers;
+
+-- 		put_line("reading uut data base ...");
+-- 		open(file => file_data_base, name => name_of_data_base_file, mode => in_file);
+-- 		set_input(file_data_base);
+-- 		while not end_of_file
+-- 		loop
+-- 			prog_position := 20000;
+-- 			line_counter := line_counter + 1;
+-- 			line_of_file := to_bounded_string(get_line);
+-- 			line_of_file := remove_comment_from_line(line_of_file);
+
+-- 			if get_field_count(to_string(line_of_file)) > 0 then -- if line contains anything
+-- 				if debug_level >= 80 then
+-- 					put_line("line read : ->" & to_string(line_of_file) & "<-");
+-- 				end if;
+
+				-- read scanpath configuration
+-- 				if section_scan_path_configuration_entered then
+-- 					if index(line_of_file,"EndSection") > 0 then
+-- 						section_scan_path_configuration_entered := false;
+-- 						sections_processed.section_scanpath_configuration := true; -- mark this section as processed
+-- 						udb_summary.line_number_end_of_section_scanpath_configuration := line_counter; -- save line number in summary
+-- 					else
+-- 						if subsection_options_entered then
+-- 							if index(line_of_file,"EndSubSection") > 0 then
+-- 								-- on leaving subsection, gathered scanport parameters will be added to list
+-- 								subsection_options_entered := false;
+-- 								--add_to_scanport(sp, 1.8, 0.8, push_pull, push_pull, push_pull, push_pull);
+-- 								add_to_scanport(
+-- 									list => ptr_sp,
+-- 									id_given => 1,
+-- 									voltage_out_given => scratch_vout1,
+-- 									voltage_threshold_tdi_given => scratch_vtrh1,
+-- 									characteristic_tck_driver_given => scratch_ch_tck1,
+-- 									characteristic_tms_driver_given => scratch_ch_tms1,
+-- 									characteristic_tdo_driver_given => scratch_ch_tdo1,
+-- 									characteristic_trst_driver_given => scratch_ch_trst1
+-- 									);
+-- 
+-- 								add_to_scanport(
+-- 									list => ptr_sp,
+-- 									id_given => 2,
+-- 									voltage_out_given => scratch_vout2,
+-- 									voltage_threshold_tdi_given => scratch_vtrh2,
+-- 									characteristic_tck_driver_given => scratch_ch_tck2,
+-- 									characteristic_tms_driver_given => scratch_ch_tms2,
+-- 									characteristic_tdo_driver_given => scratch_ch_tdo2,
+-- 									characteristic_trst_driver_given => scratch_ch_trst2
+-- 									);
+-- 							else
+-- 								a := to_bounded_string(get_field_from_line(line_of_file,1));
+-- 								--put_line(to_string(a));
+-- 								if length(a) > 0 then
+-- 									--put_line(to_string(a));
+-- 									prog_position := 20100;
+-- 									-- section options
+-- 									case type_scan_path_option'value(to_string(a)) is
+-- 										-- read scanport options global
+-- 										when on_fail => 
+-- 											--put(to_string(a) & " ");
+-- 											a := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 											--put_line("-" & to_string(a));
+-- 											prog_position := 20200;
+-- 											case type_on_fail_action'value(to_string(a)) is
+-- 												when hstrst => scanport_options_global.on_fail_action := type_on_fail_action'value(to_string(a));
+-- 												when power_down => scanport_options_global.on_fail_action := type_on_fail_action'value(to_string(a));
+-- 												when others => scanport_options_global.on_fail_action := power_down;
+-- 											end case;
+-- 										when frequency => -- is missing or 0, the compiler defaults to 33khz
+-- 											scanport_options_global.tck_frequency := type_tck_frequency'value(get_field_from_line(line_of_file,2));
+-- 										when trailer_ir =>
+-- 											a := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 											--put_line(to_string(a));
+-- 											scanport_options_global.trailer_sir := to_binary_class_0(to_binary(to_string(a),length(a),class_0));
+-- 										when trailer_dr =>
+-- 											a := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 											--put_line(to_string(a));
+-- 											scanport_options_global.trailer_sdr := to_binary_class_0(to_binary(to_string(a),length(a),class_0));
+-- 
+-- 										-- read port specific options for port #1
+-- 										when voltage_out_port_1 =>
+-- 											scratch_vout1 := type_voltage_out'value(get_field_from_line(line_of_file,2));
+-- 											-- check if voltage is supported by bsc
+-- 											if not is_voltage_out_discrete(scratch_vout1) then
+-- 												raise constraint_error;
+-- 											end if;
+-- 
+-- 										when threshold_tdi_port_1 =>
+-- 											scratch_vtrh1 := type_threshold_tdi'value(get_field_from_line(line_of_file,2));
+-- 										when tck_driver_port_1 =>
+-- 											scratch_ch_tck1 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+-- 										when tms_driver_port_1 =>
+-- 											scratch_ch_tms1 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+-- 										when tdo_driver_port_1 =>
+-- 											scratch_ch_tdo1 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+-- 										when trst_driver_port_1 =>
+-- 											scratch_ch_trst1 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+-- 
+-- 										-- read port specific options for port #2
+-- 										when voltage_out_port_2 =>
+-- 											scratch_vout2 := type_voltage_out'value(get_field_from_line(line_of_file,2));
+-- 											-- check if voltage is supported by bsc
+-- 											if not is_voltage_out_discrete(scratch_vout2) then
+-- 												raise constraint_error;
+-- 											end if;
+-- 
+-- 										when threshold_tdi_port_2 =>
+-- 											scratch_vtrh2 := type_threshold_tdi'value(get_field_from_line(line_of_file,2));
+-- 										when tck_driver_port_2 =>
+-- 											scratch_ch_tck2 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+-- 										when tms_driver_port_2 =>
+-- 											scratch_ch_tms2 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+-- 										when tdo_driver_port_2 =>
+-- 											scratch_ch_tdo2 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+-- 										when trst_driver_port_2 =>
+-- 											scratch_ch_trst2 := type_driver_characteristic'value(get_field_from_line(line_of_file,2));
+-- 
+-- 										when others => null;
+-- 									end case;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						if subsection_chain_1_entered then
+-- 							if index(line_of_file,"EndSubSection") > 0 then
+-- 								-- on leaving subsection, reset bic_position (position of boundary scan cabpable ic in chain)
+-- 								-- so that on entering the next chain section, the counting starts anew.
+-- 								bic_position := 0;
+-- 								scanpath_counter := scanpath_counter + 1; -- count scanpaths
+-- 								subsection_chain_1_entered := false;
+-- 							else
+-- 								prog_position := 20300;
+-- 								a := to_bounded_string(get_field_from_line(line_of_file,1));
+-- 								if length(a) > 0 then
+-- 									-- every bic found in chain section is to be added to list of scan capable ic's
+-- 									if debug_level >= 1 then
+-- 										put_line(" - " & to_string(a));
+-- 									end if;
+-- 									bic_position := bic_position +1; -- advance bic position counter
+-- 
+-- 									-- collect options if there are any
+-- 									scratch_string := to_bounded_string(""); -- clear scratch
+-- 									if get_field_count(to_string(line_of_file)) > 3 then
+-- 										for f in 4..get_field_count(to_string(line_of_file)) loop
+-- 											scratch_string := trim(scratch_string & " " & get_field_from_line(line_of_file,f),both);
+-- 											--CS: do a detailed options check here !
+-- 										end loop;
+-- 									end if;
+-- 
+-- -- 									add_to_scan_chain_pre(
+-- -- 										list				=> ptr_bic_pre,
+-- -- 										name_given			=> to_bounded_string(get_field_from_line(line_of_file,1)),--CS: check if name syntax ok, check if name is used only once
+-- -- 										housing_given		=> to_bounded_string(get_field_from_line(line_of_file,2)),--CS: check if housing exists
+-- -- 										model_file_given	=> to_bounded_string(get_field_from_line(line_of_file,3)),--CS: check if file exists
+-- -- 										options_given		=> scratch_string,
+-- -- 										chain_given 		=> 1,
+-- -- 										position_given		=> bic_position
+-- --                                         );
+-- 
+--                                     bic_pre.name        := to_bounded_string(get_field_from_line(line_of_file,1));--CS: check if name syntax ok, check if name is used only once
+--                                     bic_pre.housing	    := to_bounded_string(get_field_from_line(line_of_file,2));--CS: check if housing exists
+--                                     bic_pre.model_file  := to_bounded_string(get_field_from_line(line_of_file,3));--CS: check if file exists
+--                                     bic_pre.options     := scratch_string;
+--                                     bic_pre.chain       := 1;
+--                                     bic_pre.position    := bic_position;
+--                                     append(list_of_bics_pre,bic_pre);
+-- 								end if;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						if subsection_chain_2_entered then
+-- 							if index(line_of_file,"EndSubSection") > 0 then
+-- 								-- on leaving subsection, reset bic_position (position of boundary scan cabpable ic in chain)
+-- 								-- so that on entering the next chain section, the counting starts anew.
+-- 								bic_position := 0;
+-- 								scanpath_counter := scanpath_counter + 1; -- count scanpaths
+-- 								subsection_chain_2_entered := false;
+-- 							else
+-- 								prog_position := 20400;
+-- 								a := to_bounded_string(get_field_from_line(line_of_file,1));
+-- 								if length(a) > 0 then
+-- 									-- every bic found in chain section is to be added to list of scan capable ic's
+-- 									if debug_level >= 1 then
+-- 										put_line(" - " & to_string(a));
+-- 									end if;
+-- 									bic_position := bic_position +1; -- advance bic position counter
+-- 
+-- 									-- collect options if there are any
+-- 									scratch_string := to_bounded_string("");
+-- 									if get_field_count(to_string(line_of_file)) > 3 then
+-- 										for f in 4..get_field_count(to_string(line_of_file)) loop
+-- 											scratch_string := trim(scratch_string & " " & get_field_from_line(line_of_file,f),both);
+-- 											--CS: do a detailed options check here !
+-- 										end loop;
+-- 									end if;
+-- 
+-- -- 									add_to_scan_chain_pre(
+-- -- 										list				=> ptr_bic_pre,
+-- -- 										name_given			=> to_bounded_string(get_field_from_line(line_of_file,1)), --CS: check if name syntax ok, check if name is used only once
+-- -- 										housing_given		=> to_bounded_string(get_field_from_line(line_of_file,2)), --CS: check if housing exists
+-- -- 										model_file_given	=> to_bounded_string(get_field_from_line(line_of_file,3)), --CS: check if file exists
+-- -- 										options_given		=> scratch_string,
+-- -- 										chain_given 		=> 2,
+-- -- 										position_given		=> bic_position
+-- -- 										);
+-- 
+--                                     bic_pre.name        := to_bounded_string(get_field_from_line(line_of_file,1));--CS: check if name syntax ok, check if name is used only once
+--                                     bic_pre.housing	    := to_bounded_string(get_field_from_line(line_of_file,2));--CS: check if housing exists
+--                                     bic_pre.model_file  := to_bounded_string(get_field_from_line(line_of_file,3));--CS: check if file exists
+--                                     bic_pre.options     := scratch_string;
+--                                     bic_pre.chain       := 2;
+--                                     bic_pre.position    := bic_position;
+--                                     append(list_of_bics_pre,bic_pre);
+-- 
+-- 								end if;
+-- 							end if;
+-- 						end if;
+-- 
+-- 					end if;
+-- 				end if; -- if section_scan_path_configuration_entered
+-- 
+-- 
+-- 				-- set markers for section entered
+-- 				if index(line_of_file,"Section scanpath_configuration") > 0 then
+-- 					section_scan_path_configuration_entered := true;
+-- 					if debug_level >= 10 then put_line("reading scan path configuraton ..."); end if;
+-- 				end if;
+-- 				if section_scan_path_configuration_entered then
+-- 					if index(line_of_file,"SubSection options") > 0 then
+-- 						subsection_options_entered := true;
+-- 						if debug_level >= 10 then put_line(" - options ..."); end if;
+-- 					end if;
+-- 					if index(line_of_file,"SubSection chain 1") > 0 then
+-- 						subsection_chain_1_entered := true;
+-- 						if debug_level >= 10 then put_line(" - chain 1..."); end if;
+-- 					end if;
+-- 					if index(line_of_file,"SubSection chain 2") > 0 then
+-- 						subsection_chain_2_entered := true;
+-- 						if debug_level >= 10 then put_line(" - chain 2 ..."); end if;
+-- 					end if;
+-- 				end if;
+-- 				-- end of reading scan path configuration
+
+	------------------------------------------------------------------	
+				-- begin read registers
+-- 				prog_position := 21000;
+-- 				if section_registers_entered then
+-- 					-- if end of section registers found, clear marker 
+-- 					if index(line_of_file,"EndSection") > 0 then 
+-- 						section_registers_entered := false;
+-- 						sections_processed.section_registers := true; -- mark this section as processed
+-- 						udb_summary.line_number_end_of_section_registers := line_counter; -- save line number in summary
+-- 					else -- otherwise start processing line 
+-- 						prog_position := 21100;
+-- 						if subsection_bic_entered then -- leaving level 1
+-- 							prog_position := 21200;
+-- 							if 	get_field_from_line(line_of_file,1) = "EndSubSection" and get_field_count(to_string(line_of_file)) = 2 then -- leaving level 2
+-- 								if get_field_from_line(line_of_file,2) = to_string(bic_being_processed) then -- "endsubsection IC300" found
+-- 									prog_position := 21300;
+--                                     subsection_bic_entered := false; -- subsection ends here
+--                                     prog_position := 21305;
+-- 									complete_bic_data(to_string(bic_being_processed));
+-- 									-- add all gathered information to bic_being_processed
+--                                     prog_position := 21310;
+-- 								end if;
+-- 							else -- level 2
+-- 								--put_line(to_string(line_of_file));
+-- 								-- processing level 2
+-- 									prog_position := 21400;
+-- 									if subsection_safebits_entered then -- level 3
+-- 									prog_position := 21500;
+-- 									if get_field_count(to_string(line_of_file)) = 1 and get_field_from_line(line_of_file,1) = "EndSubSection" then -- leaving level 3
+-- 										subsection_safebits_entered := false;
+-- 									else
+-- 										-- processing safebits in level 3
+-- 										--put_line(to_string(line_of_file));
+-- 										a := to_bounded_string(get_field_from_line(line_of_file,1));
+-- 										if a = "safebits" then
+-- 											--put_line(to_string(line_of_file));
+-- 											bic_safebits := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 											--if is_binary(to_string(bic_safebits),bic_boundary_register_length,class_1) then
+-- 											if to_binary_class_1(to_binary(to_string(bic_safebits),bic_boundary_register_length,class_1)) not in type_string_of_bit_characters_class_1 then  
+-- 												raise constraint_error;
+-- 											end if;
+-- 										end if;
+-- 										if a = "total" then
+-- 											--put_line(to_string(line_of_file));
+-- 											b := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 											bic_safebits_total := type_register_length'value(to_string(b));
+-- 											if bic_safebits_total /= bic_boundary_register_length then
+-- 												put_line("ERROR: Value of 'safebits total' differs from boundary register length of" & type_register_length'image(bic_boundary_register_length) & " !");
+-- 												raise constraint_error;
+-- 											end if;
+-- 										end if;
+-- 									end if;
+
+-- 								elsif subsection_instruction_opcodes_entered then -- level 3
+-- 									prog_position := 21600;
+-- 									if get_field_count(to_string(line_of_file)) = 1 and get_field_from_line(line_of_file,1) = "EndSubSection" then -- leaving level 3
+-- 										subsection_instruction_opcodes_entered := false;
+-- 									else
+-- 										-- processing opcodes in level 3
+-- 										--put_line(to_string(line_of_file));
+-- 										a := to_bounded_string(get_field_from_line(line_of_file,1));
+-- 										read_opcode;
+-- 									end if;
+-- 
+-- 								elsif subsection_boundary_register_entered then -- level 3
+-- 									prog_position := 21700;
+-- 									if get_field_count(to_string(line_of_file)) = 1 and get_field_from_line(line_of_file,1) = "EndSubSection" then -- leaving level 3
+-- 										subsection_boundary_register_entered := false;
+-- 									else
+-- 										-- processing boundary register in level 3
+-- 										--put_line(to_string(line_of_file));
+-- 										read_boundary_register; 
+-- 									end if;
+-- 
+-- 								elsif subsection_port_io_map_entered then -- level 3
+-- 									prog_position := 21800;
+-- 									if get_field_count(to_string(line_of_file)) = 1 and get_field_from_line(line_of_file,1) = "EndSubSection" then -- leaving level 3
+-- 										subsection_port_io_map_entered := false;
+-- 									else
+-- 										-- processing port io map in level 3
+-- 										--put_line(to_string(line_of_file));
+-- 										read_port_io_map; 
+-- 									end if;
+-- 
+-- 								elsif subsection_port_pin_map_entered then -- level 3
+-- 									prog_position := 21900;
+-- 									if get_field_count(to_string(line_of_file)) = 1 and get_field_from_line(line_of_file,1) = "EndSubSection" then -- leaving level 3
+-- 										subsection_port_pin_map_entered := false;
+-- 									else
+-- 										-- processing port pin map in level 3
+-- 										--put_line(to_string(line_of_file));
+-- 										read_port_pin_map; 
+-- 										null;
+-- 									end if;
+
+-- 								else -- level 3
+-- 									a := to_bounded_string(get_field_from_line(line_of_file,1));
+-- 									if a = "value" then
+-- 										b := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 										bic_value := to_bounded_string(to_string(b));
+-- 									end if;
+-- 									if a = "instruction_register_length" then
+-- 										b := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 										bic_instruction_register_length := type_register_length'value(to_string(b));
+-- 									end if;
+-- 									if a = "instruction_capture" then
+-- 										b := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 										bic_instruction_capture := to_bounded_string(to_string(b));
+-- 										if to_binary_class_1(to_binary(to_string(bic_instruction_capture),bic_instruction_register_length,class_1)) not in type_string_of_bit_characters_class_1 then
+-- 											raise constraint_error; 
+-- 										end if;
+-- 									end if;
+-- 									if a = "idcode_register" then
+-- 										--put_line("- idcode register ");
+-- 										b := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 										if is_register_present(to_string(b)) then
+-- 											bic_idcode := to_binary_class_1(to_binary(to_string(b),bic_idcode_register_length,class_1));
+-- 										end if;
+-- 									end if;
+-- 									if a = "usercode_register" then
+-- 										--put_line("- usercode register ");
+-- 										b := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 										if is_register_present(to_string(b)) then
+-- 											bic_usercode := to_binary_class_1(to_binary(to_string(b),bic_usercode_register_length,class_1));
+-- 										end if;
+-- 									end if;
+-- 									if a = "boundary_register_length" then
+-- 										b := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 										bic_boundary_register_length := type_register_length'value(to_string(b));
+-- 									end if;
+-- 									if a = "trst_pin" then
+-- 										b := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 										case type_trst_pin_present'value(to_upper(to_string(b))) is
+-- 											when NO | NONE | FALSE => bic_trst_present := false;
+-- 											when others => bic_trst_present := true;
+-- 										end case;
+-- 									end if;
+-- 								end if; -- level 3
+-- 							end if; -- level 2
+-- 						end if; --level 1
+-- 					end if;
+-- 				end if;
+-- 
+-- 
+-- 				-- begin read net list
+-- 				prog_position := 22000;
+-- 				if section_netlist_entered then
+-- 					-- if end of section netlist found, clear marker 
+-- 					if index(line_of_file,"EndSection") > 0 then 
+-- 						section_netlist_entered := false;
+-- 						sections_processed.section_netlist := true; -- mark this section as processed
+-- 						udb_summary.line_number_end_of_section_netlist := line_counter; -- save line number in summary
+-- 					else -- otherwise start processing line 
+-- 						prog_position := 22100;
+-- 
+-- 						-- inside a net section (regardless of primary or secondary net):
+-- 						if subsection_net_entered then
+-- 							-- if net end found, clear subsection_net_entered flag
+-- 							-- then: count secondary nets (if inside a secondary net section) and complete net data
+-- 							if get_field_count(to_string(line_of_file)) = 1 and get_field_from_line(line_of_file,1) = "EndSubSection" then -- end of net found
+-- 								subsection_net_entered := false;
+-- 								prog_position := 22200;
+
+-- 								-- if this is a secondary net, increment secondary net counter
+-- 								if net_level_entered = secondary then
+-- 									secondary_net_ct := secondary_net_ct + 1;
+-- 
+-- 									-- collect names of secondary nets
+-- 									list_of_secondary_net_names(secondary_net_ct) := to_bounded_string(to_string(name_of_net_being_processed));
+-- 								end if;
+
+-- 								case part_count_of_net_being_processed is
+-- 									when 0 =>
+-- 										put_line("ERROR: Net without any pins found ! Net name : " & to_string(name_of_net_being_processed)); 
+-- 										raise constraint_error;
+-- 									when 1 =>
+-- 										if debug_level >= 5 then put_line("WARNING: Net with only one pin found ! Net name : " & to_string(name_of_net_being_processed)); end if;
+-- 										complete_net_data;
+-- 										part_count_of_net_being_processed := 0; -- clear part counter. so that the counting can start anew in next net
+-- 									when others =>
+-- 										complete_net_data;
+-- 										part_count_of_net_being_processed := 0; -- clear part counter. so that the counting can start anew in next net
+-- 								end case;
+-- 							else
+-- 								null;
+-- 							-- otherwise start processing pins here:
+-- 								if debug_level >= 50 then 
+-- 									put("NETLIST.PIN:  ->" & to_string(line_of_file) & "<-"); -- put pin being processed
+-- 									put_line("  -- field count:" & natural'image(get_field_count(to_string(line_of_file))));
+-- 								end if;
+
+								-- get general pin info (to be written to pin_list later):
+
+-- 								-- get name of device
+-- 								prog_position := 22300;
+-- 								device_name_scratch		:= to_bounded_string(get_field_from_line(line_of_file,1));
+-- 
+-- 								-- get class of device
+-- 								prog_position := 22400;
+-- 								if get_field_from_line(line_of_file,2) = "?" then --type_device_class'image('?') then -- if non-classified device
+-- 									device_class_scratch	:= '?';
+-- 									--put_line("WARNING: Non-classified device found : " & to_string(device_name_scratch));
+-- 									-- CS: put warning of non-classified device in file ?
+-- 								else -- if classified device:
+-- 									device_class_scratch	:= type_device_class'value(get_field_from_line(line_of_file,2));
+-- 								end if;
+-- 
+-- 								-- get value of device
+-- 								prog_position := 22500;
+-- 								device_value_scratch	:= to_bounded_string(get_field_from_line(line_of_file,3));
+-- 								-- get package of device
+-- 								device_package_scratch	:= to_bounded_string(get_field_from_line(line_of_file,4));
+-- 								
+-- 								-- add pin to pin list
+-- 								prog_position := 22600;
+-- 								part_count_of_net_being_processed := part_count_of_net_being_processed + 1; -- count pins
+-- 								case get_field_count(to_string(line_of_file)) is
+-- 									when 5 => -- a non-bscan pin was found (example: "RN302 ? 2k7 SIL8 4" )
+-- 										add_to_pin_list(
+-- 											list					=> ptr_pin,
+-- 											device_name_given		=> device_name_scratch,
+-- 											device_class_given		=> device_class_scratch,
+-- 											device_value_given		=> device_value_scratch,
+-- 											device_package_given	=> device_package_scratch,
+-- 											device_pin_name_given	=> to_bounded_string(get_field_from_line(line_of_file,5)),
+-- 											--device_port_name_given defaults to "" here, not provided and not required for non-bscan pins
+-- 											is_bscan_capable_given	=> false
+-- 											-- cell_info_given assumes default values (don't care here) , not provided and not required
+-- 											);
+-- 									when 6 => -- a non-bscan pin of a bic was found 
+-- 										-- (example: "IC301 ? XC9536 PLCC-S44 2 tms" )
+-- 										add_to_pin_list(
+-- 											list					=> ptr_pin,
+-- 											device_name_given		=> device_name_scratch,
+-- 											device_class_given		=> device_class_scratch,
+-- 											device_value_given		=> device_value_scratch,
+-- 											device_package_given	=> device_package_scratch,
+-- 											device_pin_name_given	=> to_bounded_string(get_field_from_line(line_of_file,5)),
+-- 											device_port_name_given	=> to_bounded_string(get_field_from_line(line_of_file,6)), 
+-- 											is_bscan_capable_given	=> false
+-- 											-- cell_info_given assumes default values (don't care here), not provided and not required
+-- 											);
+-- 
+-- 									when 7..19 => -- a bscan pin was found 
+-- 										-- (example: "IC301 ? XC9536 PLCC-S44 2  pb00_00 | 107 bc_1 input x | 106 bc_1 output3 x 105 0 z" )
+-- 										add_to_pin_list(
+-- 											list					=> ptr_pin,
+-- 											device_name_given		=> device_name_scratch,
+-- 											device_class_given		=> device_class_scratch,
+-- 											device_value_given		=> device_value_scratch,
+-- 											device_package_given	=> device_package_scratch,
+-- 											device_pin_name_given	=> to_bounded_string(get_field_from_line(line_of_file,5)),
+-- 											device_port_name_given	=> to_bounded_string(get_field_from_line(line_of_file,6)),
+-- 											is_bscan_capable_given	=> true,
+-- 											cell_info_given			=> build_cell_info(
+-- 																		text_in	=> line_of_file,
+-- 																		device	=> to_string(device_name_scratch),
+-- 																		port	=> get_field_from_line(line_of_file,6),
+-- 																		pin		=> get_field_from_line(line_of_file,5)
+-- 																		)
+-- 											);
+-- 									when others => 
+-- 										put_line("ERROR: Too many fields found in line !");
+-- 										raise constraint_error;
+-- 								end case;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						prog_position := 23000;
+-- 						-- inside a secondary net section, wait until end of section found
+-- 						if net_level_entered = secondary then
+-- 							if get_field_count(to_string(line_of_file)) = 3 then
+-- 								if get_field_from_line(line_of_file,1) = "EndSubSection" and get_field_from_line(line_of_file,2) = "secondary_nets_of" then
+-- 									net_level_entered := primary; -- we are back in a primary net level
+-- -- 									secondary_net_ct := 0; -- clear secondary net counter
+-- 									if debug_level >= 10 then 
+-- 										put_line("  --- secondary nets finished (count :" & positive'image(secondary_net_ct));
+-- 									end if;
+-- 									-- if secondary_nets_of yxz matches current primary net name, section secondary nets is finished properly
+-- 									-- verify the end of section against superordinated primary net name
+-- 									-- then add secondary net count and names of secondary nets to primary net
+-- 									if get_field_from_line(line_of_file,3) = to_string(name_of_current_primary_net) then
+-- 										add_secondary_net_names_to_primary_net;
+-- 									else
+-- 										put_line("ERROR: Expected name of superordinated primary net '" & to_string(name_of_current_primary_net) & "'");
+-- 										raise constraint_error;
+-- 									end if;
+-- 									secondary_net_ct := 0; -- clear secondary net counter
+-- 								end if;
+-- 							end if;
+-- 						end if;
+-- 					end if;
+-- 				end if; -- if section_netlist_entered
+
+
+-- 				-- set "section entered" markers (registers)
+-- 				prog_position := 24000;
+-- 				if index(line_of_file, section_mark.section & row_separator_0 & section_registers) > 0 then
+-- 					section_registers_entered := true;
+-- 					if debug_level >= 10 then put_line("reading registers ..."); end if;
+-- 				end if;
+-- 				prog_position := 24100;
+-- 				if section_registers_entered then
+-- 					prog_position := 24200;
+-- 					if not subsection_bic_entered then
+-- 						-- as long as "subsection IC300" not entered, a line starting with "subsection" and a valid bic is to be found
+-- 						if get_field_from_line(line_of_file,1) = "SubSection" then
+-- 		--				put_line(to_string(line_of_file));
+-- 							a := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 							--put_line(to_string(a));
+-- 							if is_bic(to_string(a)) then -- test if bic is valid
+-- 								--null;
+-- 								bic_being_processed := a;
+-- 								if debug_level >= 10 then put_line(" - " & to_string(a)); end if;
+-- 								subsection_bic_entered := true;
+-- 							else -- if invalid bic found:
+-- 								put_line("ERROR: " & to_string(a) & " is not part of any scan chain !");
+-- 								raise constraint_error;
+-- 							end if;
+-- 						end if;
+-- 					else -- if subsection_bic_entered 
+-- 						prog_position := 24300;
+-- 						if get_field_from_line(line_of_file,1) = "SubSection" then
+-- 							if 		get_field_from_line(line_of_file,2) = "safebits" then
+-- 										subsection_safebits_entered := true;
+-- 										if debug_level >= 10 then put_line("  safebits ..."); end if;
+-- 							elsif	get_field_from_line(line_of_file,2) = "instruction_opcodes" then
+-- 										subsection_instruction_opcodes_entered := true;
+-- 										if debug_level >= 10 then put_line("  instruction opcodes ..."); end if;
+-- 							elsif	get_field_from_line(line_of_file,2) = "boundary_register" then
+-- 										subsection_boundary_register_entered := true;
+-- 										if debug_level >= 10 then put_line("  boundary register ..."); end if;
+-- 										ptr_bsr := null; -- reset boundary register description pointer
+-- 										bic_boundary_register_description_length := 0; -- clear description length counter
+-- 							elsif	get_field_from_line(line_of_file,2) = "port_io_map" then
+-- 										subsection_port_io_map_entered := true;
+-- 										if debug_level >= 10 then put_line("  port io map ..."); end if;
+-- 										ptr_bic_port_io_map := null; -- reset port_io_map pointer
+-- 										bic_port_io_map_length := 0; -- clear port_io_map length counter
+-- 							elsif	get_field_from_line(line_of_file,2) = "port_pin_map" then
+-- 										subsection_port_pin_map_entered := true;
+-- 										if debug_level >= 10 then put_line("  port pin map ..."); end if;
+-- 										ptr_bic_port_pin_map := null; -- reset port_pin_map pointer
+-- 										bic_port_pin_map_length := 0; -- clear port_pin_map length counter
+-- 							end if;
+-- 						end if;
+-- 					end if;
+-- 				end if;
+
+-- 				-- set "section entered" markers (netlist)
+-- 				prog_position := 24400;
+-- 				if index(line_of_file, section_mark.section & row_separator_0 & section_netlist) > 0 then
+-- 					section_netlist_entered := true;
+-- 					if debug_level >= 10 then put_line("reading netlist ..."); end if;
+-- 				end if;
+-- 				if section_netlist_entered then
+-- 					prog_position := 24410;
+-- 
+-- 					-- search for a net subsection (regardless if it is a primary or secondary net)
+-- 					if not subsection_net_entered then
+-- 						prog_position := 24420;
+-- 						if get_field_count(to_string(line_of_file)) > 2 then 
+-- 							-- if a net header found (like "SubSection LED1 class NR")
+-- 							if get_field_from_line(line_of_file,1) = "SubSection" and get_field_from_line(line_of_file,2) /= "secondary_nets_of" then
+-- 								prog_position := 24430;
+-- 								subsection_net_entered := true; -- set flag subsection_net_entered
+-- 								ptr_pin := null; -- reset pin list pointer because this is a new net
+-- 								if debug_level >= 10 then 
+-- 									put_line(" - " & trim(to_string(line_of_file),both)); -- put net header being processed
+-- 								end if;
+-- 								name_of_net_being_processed := to_bounded_string(get_field_from_line(line_of_file,2)); -- get net name
+-- 								verify_net_appears_only_once_in_net_list(to_string(name_of_net_being_processed));
+-- 
+-- 								-- The net name is valid until the next net is found. 
+-- 								-- So it can be used to check a possible secondary net section.
+-- 								if get_field_from_line(line_of_file,3) = "class" then -- check for keyword "class"
+-- 									class_of_net_being_processed := type_net_class'value(get_field_from_line(line_of_file,4)); -- get net class
+-- 								else
+-- 									put_line("ERROR: Keyword 'class' expected !");
+-- 									raise constraint_error;
+-- 								end if;
+-- 
+-- 								-- verify net class of secondary net against class of primary net
+-- 								if net_level_entered = secondary then
+-- 									if class_of_current_primary_net = class_of_net_being_processed then
+-- 										null; -- fine
+-- 									else
+-- 										put_line("ERROR: Net class of secondary net does not match class of superordinated primary net !");
+-- 										put_line("        Secondary nets inherit the class of their parent nets.");
+-- 										raise constraint_error;
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end if; -- if field count > 2
+-- 					end if;
+
+-- 					-- search for a secondary net subsection that may come after the superordinated primar net section
+-- 					--if not subsection_secondary_nets_entered then
+-- 					if net_level_entered = primary then
+-- 						prog_position := 24500;
+-- 						if get_field_count(to_string(line_of_file)) = 3 then 
+-- 							if get_field_from_line(line_of_file,1) = "SubSection" and get_field_from_line(line_of_file,2) = "secondary_nets_of" then
+-- 								-- header of secondary net section found
+-- 								prog_position := 24510;
+-- 								net_level_entered := secondary;
+-- 								if debug_level >= 10 then 
+-- 									put_line("  --- secondary nets follow:");
+-- 								end if;
+-- 								-- if secondary_nets_of xyz matches last net processed, a valid secondary net section header was found
+-- 								-- example: SubSection secondary_nets_of LED00
+-- 								if get_field_from_line(line_of_file,3) = to_string(name_of_net_being_processed) then
+-- 									name_of_current_primary_net 	:= name_of_net_being_processed;  -- save net name as current primary net
+-- 									class_of_current_primary_net	:= class_of_net_being_processed; -- save class as current primary net class
+-- 								else
+-- 									put_line("ERROR: Expected name of superordinated primary net '" & to_string(name_of_net_being_processed) & "'");
+-- 									raise constraint_error;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+-- 					end if;
+-- 				end if;
+
+
+
+				-- begin read cell list sections
+
+				-- the cell lists are parsed separately for class, level, net name, device, pin, input/output/control cell status
+				-- the cell status locked after-wards in the cell info of the individual pin
+
+-- 				if section_static_control_cells_class_EX_NA_entered then
+-- 					-- this section addresses primary and secondary nets
+-- 
+-- 					-- if end of section found, clear marker 
+-- 					if get_field_count(to_string(line_of_file)) = 1 then
+-- 						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_section_mark'image(EndSection) then 
+-- 							section_static_control_cells_class_EX_NA_entered := false;
+-- 							sections_processed.section_static_control_cells_class_EX_NA := true; -- mark this section as processed
+-- 						else
+-- 							put_error_on_endsection_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 					else -- otherwise start processing line 
+-- 						prog_position := 25100;
+-- 						--put_line(to_string(line_of_file));
+-- 						
+-- 						-- get class identifier
+-- 						if to_upper(get_field_from_line(line_of_file,1)) /= type_cell_list_class_identifier'image(class) then
+-- 							cell_list_put_error_on_class_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get net class
+-- 						prog_position := 25200;
+-- 						cell_list_net_class := type_net_class'value(get_field_from_line(line_of_file,2));
+-- 						-- CS: refine error output
+-- 						case cell_list_net_class is
+-- 							when EH | EL | NA => null;
+-- 							when others =>
+-- 								cell_list_put_error_on_invalid_class;
+-- 								raise constraint_error;
+-- 						end case;
+-- 
+-- 						-- get net level
+-- 						prog_position := 25300;
+-- 						if to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(primary_net) then
+-- 							cell_list_net_level := primary;
+-- 						elsif to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(secondary_net) then
+-- 							cell_list_net_level := secondary;
+-- 						else
+-- 							cell_list_put_error_on_invalid_net_level;
+-- 							raise constraint_error;
+-- 						end if;
+-- 						-- CS: refine error output
+-- 
+-- 						-- get net name
+-- 						prog_position := 25400;
+-- 						cell_list_net_name := to_bounded_string(get_field_from_line(line_of_file,4));
+-- 
+-- 						-- get device identifier
+-- 						prog_position := 25500;
+-- 						if to_upper(get_field_from_line(line_of_file,5)) /= type_cell_list_device_identifier'image(device) then
+-- 							cell_list_put_error_on_device_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get device name
+-- 						prog_position := 25600;
+-- 						cell_list_device_name := to_bounded_string(get_field_from_line(line_of_file,6));
+-- 
+-- 						-- get pin identifier
+-- 						prog_position := 25700;
+-- 						if to_upper(get_field_from_line(line_of_file,7)) /= type_cell_list_pin_identifier'image(pin) then
+-- 							cell_list_put_error_on_pin_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get pin name
+-- 						prog_position := 25800;
+-- 						cell_list_pin_name := to_bounded_string(get_field_from_line(line_of_file,8));
+-- 
+-- 						-- get control cell identifier
+-- 						prog_position := 25900;
+-- 						if to_upper(get_field_from_line(line_of_file,9)) /= type_cell_list_control_cell_identifier'image(control_cell) then 
+-- 							cell_list_put_error_on_control_cell_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get control cell id
+-- 						prog_position := 26000;
+-- 						cell_list_control_cell_id := natural'value(get_field_from_line(line_of_file,10)); 
+-- 						-- CS: refine error output
+-- 
+-- 						-- get locked_to identifier
+-- 						prog_position := 26100;
+-- 						if to_upper(get_field_from_line(line_of_file,11)) /= type_cell_list_locked_to_identifier'image(locked_to) then
+-- 							cell_list_put_error_on_cell_locked_to_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get disable_value identifier
+-- 						prog_position := 26200;
+-- 						if to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_disable_value_identifier'image(disable_value) then
+-- 							cell_list_control_cell_in_enable_state := false;
+-- 						else
+-- 							cell_list_put_error_on_disable_value_identifier_expected;
+-- 							put_line("        In a net of class EH, EL or NA, control cells must be locked to disable state !");
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get control cell disable value
+-- 						prog_position := 26300;
+-- 						cell_list_control_cell_value := type_bit_char_class_0'value("'" & get_field_from_line(line_of_file,13) & "'");
+-- 						-- CS: refine error output
+-- 
+-- 						prog_position := 26400;
+-- 						-- write cell status in cell info of that pin
+-- 						lock_control_cell_in_class_EH_EL_NA_net(
+-- 							class			=> cell_list_net_class,
+-- 							level			=> cell_list_net_level,
+-- 							net				=> cell_list_net_name,
+-- 							device			=> cell_list_device_name,
+-- 							pin				=> cell_list_pin_name,
+-- 							control_cell_id					=> cell_list_control_cell_id,
+-- 							control_cell_in_enable_state	=> cell_list_control_cell_in_enable_state,
+-- 							control_cell_value				=> cell_list_control_cell_value
+-- 							);
+-- 
+-- 						-- add cell to cell list
+-- 						ptr_cell_list_static_control_cells_class_EX_NA := new type_cell_list_static_control_cells_class_EX_NA'(
+-- 							next 			=> ptr_cell_list_static_control_cells_class_EX_NA,
+-- 							class			=> cell_list_net_class,
+-- 							level			=> cell_list_net_level,
+-- 							net				=> cell_list_net_name,
+-- 							device			=> cell_list_device_name,
+-- 							pin				=> cell_list_pin_name,
+-- 							cell			=> cell_list_control_cell_id,
+-- 							disable_value	=> cell_list_control_cell_value
+-- 							);
+-- 
+-- 					end if;
+-- 				end if;
+-- 
+-- 				prog_position := 27000;
+-- 				if section_static_control_cells_class_DX_NR_entered then
+-- 					-- this section addresses primary and secondary nets
+-- 
+-- 					-- if end of section found, clear marker 
+-- 					if get_field_count(to_string(line_of_file)) = 1 then
+-- 						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_section_mark'image(EndSection) then 
+-- 							section_static_control_cells_class_DX_NR_entered := false;
+-- 							sections_processed.section_static_control_cells_class_DX_NR := true; -- mark this section as processed	
+-- 						else
+-- 							put_error_on_endsection_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 					else -- otherwise start processing line 
+-- 						prog_position := 27100;
+-- 						--put_line(to_string(line_of_file));
+-- 
+-- 						-- get class identifier
+-- 						if to_upper(get_field_from_line(line_of_file,1)) /= type_cell_list_class_identifier'image(class) then
+-- 							cell_list_put_error_on_class_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get net class
+-- 						prog_position := 27200;
+-- 						cell_list_net_class := type_net_class'value(get_field_from_line(line_of_file,2));
+-- 						-- CS: refine error output
+-- 						case cell_list_net_class is
+-- 							when DH | DL | NR => null;
+-- 							when others =>
+-- 								cell_list_put_error_on_invalid_class;
+-- 								raise constraint_error;
+-- 						end case;
+-- 
+-- 						-- get net level
+-- 						prog_position := 27300;
+-- 						if to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(primary_net) then
+-- 							cell_list_net_level := primary;
+-- 						elsif to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(secondary_net) then
+-- 							cell_list_net_level := secondary;
+-- 						else
+-- 							cell_list_put_error_on_invalid_net_level;
+-- 							raise constraint_error;
+-- 						end if;
+-- 						-- CS: refine error output
+-- 
+-- 						-- get net name
+-- 						prog_position := 27400;
+-- 						cell_list_net_name := to_bounded_string(get_field_from_line(line_of_file,4));
+-- 
+-- 						-- get device identifier
+-- 						prog_position := 27500;
+-- 						if to_upper(get_field_from_line(line_of_file,5)) /= type_cell_list_device_identifier'image(device) then
+-- 							cell_list_put_error_on_device_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get device name
+-- 						prog_position := 27600;
+-- 						cell_list_device_name := to_bounded_string(get_field_from_line(line_of_file,6));
+-- 
+-- 						-- get pin identifier
+-- 						prog_position := 27700;
+-- 						if to_upper(get_field_from_line(line_of_file,7)) /= type_cell_list_pin_identifier'image(pin) then
+-- 							cell_list_put_error_on_pin_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get pin name
+-- 						prog_position := 27800;
+-- 						cell_list_pin_name := to_bounded_string(get_field_from_line(line_of_file,8));
+-- 
+-- 						-- get control cell identifier
+-- 						prog_position := 27900;
+-- 						if to_upper(get_field_from_line(line_of_file,9)) /= type_cell_list_control_cell_identifier'image(control_cell) then 
+-- 							cell_list_put_error_on_control_cell_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get control cell id
+-- 						prog_position := 28000;
+-- 						cell_list_control_cell_id := type_cell_id'value(get_field_from_line(line_of_file,10)); 
+-- 						-- CS: refine error output
+-- 
+-- 						-- get locked_to identifier
+-- 						prog_position := 28100;
+-- 						if to_upper(get_field_from_line(line_of_file,11)) /= type_cell_list_locked_to_identifier'image(locked_to) then
+-- 							cell_list_put_error_on_cell_locked_to_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get enable/disable_value identifier in dependence of net level
+-- 						prog_position := 28200;
+-- 						if cell_list_net_level = secondary then -- if secondary net, control cell must be disabled for this pin
+-- 							if to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_disable_value_identifier'image(disable_value) then
+-- 								cell_list_control_cell_in_enable_state := false;
+-- 							else
+-- 								cell_list_put_error_on_disable_value_identifier_expected;
+-- 								put_line("        In secondary nets of class DH, DL or NR, the control cell of a pin must be locked to disable value !");
+-- 								raise constraint_error;
+-- 							end if;
+-- 						else -- it is a primary net, where control cells may be in enable or disable state
+-- 							prog_position := 28210;
+-- 							if to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_disable_value_identifier'image(disable_value) then
+-- 								cell_list_control_cell_in_enable_state := false;
+--  							elsif to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_enable_value_identifier'image(enable_value) then
+--  								cell_list_control_cell_in_enable_state := true;
+-- 							else -- something other found in this field
+-- 								cell_list_put_error_on_enable_disable_identifier_expected;
+-- 								raise constraint_error;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						-- get control cell value
+-- 						prog_position := 28300;
+-- 						cell_list_control_cell_value := type_bit_char_class_0'value("'" & get_field_from_line(line_of_file,13) & "'");
+-- 						-- CS: refine error output
+-- 
+-- 						prog_position := 28400;
+-- 						lock_control_cell_in_class_DX_NR(
+-- 							class				=> cell_list_net_class,
+-- 							level				=> cell_list_net_level,
+-- 							net					=> cell_list_net_name,
+-- 							device				=> cell_list_device_name,
+-- 							pin					=> cell_list_pin_name,
+-- 							control_cell_id					=> cell_list_control_cell_id,
+-- 							control_cell_in_enable_state	=> cell_list_control_cell_in_enable_state,
+-- 							control_cell_value				=> cell_list_control_cell_value
+-- 							);
+-- 
+-- 						-- add cell to cell list
+-- 						case cell_list_control_cell_in_enable_state is
+-- 							when true =>
+-- 								ptr_cell_list_static_control_cells_class_DX_NR := new type_cell_list_static_control_cells_class_DX_NR'(
+-- 									next 			=> ptr_cell_list_static_control_cells_class_DX_NR,
+-- 									class			=> cell_list_net_class,
+-- 									level			=> cell_list_net_level,
+-- 									net				=> cell_list_net_name,
+-- 									device			=> cell_list_device_name,
+-- 									pin				=> cell_list_pin_name,
+-- 									cell			=> cell_list_control_cell_id,
+-- 									locked_to_enable_state	=> true,
+-- 									enable_value			=> cell_list_control_cell_value
+-- 									);
+-- 							when false =>
+-- 								ptr_cell_list_static_control_cells_class_DX_NR := new type_cell_list_static_control_cells_class_DX_NR'(
+-- 									next 			=> ptr_cell_list_static_control_cells_class_DX_NR,
+-- 									class			=> cell_list_net_class,
+-- 									level			=> cell_list_net_level,
+-- 									net				=> cell_list_net_name,
+-- 									device			=> cell_list_device_name,
+-- 									pin				=> cell_list_pin_name,
+-- 									cell			=> cell_list_control_cell_id,
+-- 									locked_to_enable_state	=> false,
+-- 									disable_value			=> cell_list_control_cell_value
+-- 									);
+-- 						end case;
+-- 
+-- 					end if;
+-- 				end if;
+-- 
+-- 				prog_position := 29000;
+-- 				if section_static_control_cells_class_PX_entered then
+-- 				-- this section addresses primary and secondary nets
+-- 
+-- 					-- if end of section found, clear marker 
+-- 					if get_field_count(to_string(line_of_file)) = 1 then
+-- 						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_section_mark'image(EndSection) then 
+-- 							section_static_control_cells_class_PX_entered := false;
+-- 							sections_processed.section_static_control_cells_class_PX := true; -- mark this section as processed	
+-- 						else
+-- 							put_error_on_endsection_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 					else -- otherwise start processing line 
+-- 						prog_position := 29100;
+-- 						--put_line(to_string(line_of_file));
+-- 						
+-- 						-- get class identifier
+-- 						if to_upper(get_field_from_line(line_of_file,1)) /= type_cell_list_class_identifier'image(class) then
+-- 							cell_list_put_error_on_class_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get net class
+-- 						prog_position := 29200;
+-- 						cell_list_net_class := type_net_class'value(get_field_from_line(line_of_file,2));
+-- 						-- CS: refine error output
+-- 						case cell_list_net_class is
+-- 							when PU | PD => null;
+-- 							when others =>
+-- 								cell_list_put_error_on_invalid_class;
+-- 								raise constraint_error;
+-- 						end case;
+-- 
+-- 						-- get net level
+-- 						prog_position := 29300;
+-- 						if to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(primary_net) then
+-- 							cell_list_net_level := primary;
+-- 						elsif to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(secondary_net) then
+-- 							cell_list_net_level := secondary;
+-- 						else
+-- 							cell_list_put_error_on_invalid_net_level;
+-- 							raise constraint_error;
+-- 						end if;
+-- 						-- CS: refine error output
+-- 
+-- 						-- get net name
+-- 						prog_position := 29400;
+-- 						cell_list_net_name := to_bounded_string(get_field_from_line(line_of_file,4));
+-- 
+-- 						-- get device identifier
+-- 						prog_position := 29500;
+-- 						if to_upper(get_field_from_line(line_of_file,5)) /= type_cell_list_device_identifier'image(device) then
+-- 							cell_list_put_error_on_device_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get device name
+-- 						prog_position := 29600;
+-- 						cell_list_device_name := to_bounded_string(get_field_from_line(line_of_file,6));
+-- 
+-- 						-- get pin identifier
+-- 						prog_position := 29700;
+-- 						if to_upper(get_field_from_line(line_of_file,7)) /= type_cell_list_pin_identifier'image(pin) then
+-- 							cell_list_put_error_on_pin_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get pin name
+-- 						prog_position := 29800;
+-- 						cell_list_pin_name := to_bounded_string(get_field_from_line(line_of_file,8));
+-- 
+-- 						-- get control cell identifier
+-- 						prog_position := 29900;
+-- 						if to_upper(get_field_from_line(line_of_file,9)) /= type_cell_list_control_cell_identifier'image(control_cell) then 
+-- 							cell_list_put_error_on_control_cell_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get control cell id
+-- 						prog_position := 30000;
+-- 						cell_list_control_cell_id := type_cell_id'value(get_field_from_line(line_of_file,10)); 
+-- 						-- CS: refine error output
+-- 
+-- 						-- get locked_to identifier
+-- 						prog_position := 30100;
+-- 						if to_upper(get_field_from_line(line_of_file,11)) /= type_cell_list_locked_to_identifier'image(locked_to) then
+-- 							cell_list_put_error_on_cell_locked_to_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- -- 						-- get enable/disable_value identifier in dependence of net level
+-- -- 						prog_position := "C3120";
+-- -- 						if cell_list_net_level = secondary then -- if secondary net, control cell must be disabled for this pin
+-- -- 							if to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_disable_value_identifier'image(disable_value) then
+-- -- 								cell_list_control_cell_in_enable_state := false;
+-- -- 							else
+-- -- 								cell_list_put_error_on_disable_value_identifier_expected;
+-- -- 								put_line("        In secondary nets of class PU or PD, the control cell of a pin must be locked to disable value !");
+-- -- 								raise constraint_error;
+-- -- 							end if;
+-- -- 						else -- it is a primary net, where control cells may be in enable or disable state
+-- -- 							prog_position := "C3125";
+-- -- 							if to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_disable_value_identifier'image(disable_value) then
+-- -- 								cell_list_control_cell_in_enable_state := false;
+-- --  							elsif to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_enable_value_identifier'image(enable_value) then
+-- --  								cell_list_control_cell_in_enable_state := true;
+-- -- 							else -- something other found in this field
+-- -- 								cell_list_put_error_on_enable_disable_identifier_expected;
+-- -- 								raise constraint_error;
+-- -- 							end if;
+-- -- 						end if;
+-- 
+-- 						-- get disable_value identifier. the net level does not matter here. 
+-- 						-- in pd/pu nets, unused control cells are always in disable state
+-- 						prog_position := 30200;
+-- 						if to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_disable_value_identifier'image(disable_value) then
+-- 							null; --cell_list_control_cell_in_enable_state := false;
+-- 						else
+-- 							cell_list_put_error_on_disable_value_identifier_expected;
+-- 							put_line("        In nets of class PU or PD, the control cell of a unused pin must be locked to disable state !");
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get control cell value
+-- 						prog_position := 30300;
+-- 						cell_list_control_cell_value := type_bit_char_class_0'value("'" & get_field_from_line(line_of_file,13) & "'");
+-- 						-- CS: refine error output
+-- 
+-- 						prog_position := 30400;
+-- 						lock_control_cell_in_class_PU_PD_net(
+-- 							class				=> cell_list_net_class,
+-- 							level				=> cell_list_net_level,
+-- 							net					=> cell_list_net_name,
+-- 							device				=> cell_list_device_name,
+-- 							pin					=> cell_list_pin_name,
+-- 							control_cell_id					=> cell_list_control_cell_id,
+-- 							--control_cell_in_enable_state	=> cell_list_control_cell_in_enable_state,
+-- 							control_cell_value				=> cell_list_control_cell_value
+-- 							);
+-- 
+-- 						-- add cell to cell list
+-- 						ptr_cell_list_static_control_cells_class_PX := new type_cell_list_static_control_cells_class_PX'(
+-- 							next 			=> ptr_cell_list_static_control_cells_class_PX,
+-- 							class			=> cell_list_net_class,
+-- 							level			=> cell_list_net_level,
+-- 							net				=> cell_list_net_name,
+-- 							device			=> cell_list_device_name,
+-- 							pin				=> cell_list_pin_name,
+-- 							cell			=> cell_list_control_cell_id,
+-- 							disable_value	=> cell_list_control_cell_value
+-- 							);
+-- 
+-- 					end if;
+-- 				end if;
+				
+-- 				prog_position := 31000;
+-- 				if section_static_output_cells_class_PX_entered then
+-- 				-- this section addresses primary nets exclusively
+-- 
+-- 					-- if end of section found, clear marker 
+-- 					if get_field_count(to_string(line_of_file)) = 1 then
+-- 						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_section_mark'image(EndSection) then 
+-- 							section_static_output_cells_class_PX_entered := false;
+-- 							sections_processed.section_static_output_cells_class_PX := true; -- mark this section as processed	
+-- 						else
+-- 							put_error_on_endsection_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 					else -- otherwise start processing line 
+-- 						prog_position := 31100;
+-- 						--put_line(to_string(line_of_file));
+-- 						
+-- 						-- get class identifier
+-- 						if to_upper(get_field_from_line(line_of_file,1)) /= type_cell_list_class_identifier'image(class) then
+-- 							cell_list_put_error_on_class_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get net class
+-- 						prog_position := 31200;
+-- 						cell_list_net_class := type_net_class'value(get_field_from_line(line_of_file,2));
+-- 						-- CS: refine error output
+-- 						case cell_list_net_class is
+-- 							when PU | PD => null;
+-- 							when others =>
+-- 								cell_list_put_error_on_invalid_class;
+-- 								raise constraint_error;
+-- 						end case;
+-- 
+-- 						-- get net level
+-- 						prog_position := 31300;
+-- 						if to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(primary_net) then
+-- 							cell_list_net_level := primary;
+-- 						elsif to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(secondary_net) then
+-- 							--cell_list_net_level := secondary; -- in secondary nets, the output cell drive value does not matter
+-- 							put_line("ERROR : This section adresses primary nets exclusively !");
+-- 							raise constraint_error;
+-- 						else
+-- 							cell_list_put_error_on_invalid_net_level;
+-- 							raise constraint_error;
+-- 						end if;
+-- 						-- CS: refine error output
+-- 
+-- 						-- get net name
+-- 						prog_position := 31400;
+-- 						cell_list_net_name := to_bounded_string(get_field_from_line(line_of_file,4));
+-- 
+-- 						-- get device identifier
+-- 						prog_position := 31500;
+-- 						if to_upper(get_field_from_line(line_of_file,5)) /= type_cell_list_device_identifier'image(device) then
+-- 							cell_list_put_error_on_device_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get device name
+-- 						prog_position := 31600;
+-- 						cell_list_device_name := to_bounded_string(get_field_from_line(line_of_file,6));
+-- 
+-- 						-- get pin identifier
+-- 						prog_position := 31700;
+-- 						if to_upper(get_field_from_line(line_of_file,7)) /= type_cell_list_pin_identifier'image(pin) then
+-- 							cell_list_put_error_on_pin_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get pin name
+-- 						prog_position := 31800;
+-- 						cell_list_pin_name := to_bounded_string(get_field_from_line(line_of_file,8));
+-- 
+-- 						-- get output cell identifier
+-- 						prog_position := 31900;
+-- 						if to_upper(get_field_from_line(line_of_file,9)) /= type_cell_list_output_cell_identifier'image(output_cell) then 
+-- 							cell_list_put_error_on_output_cell_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get output cell id
+-- 						prog_position := 32000;
+-- 						cell_list_output_cell_id := type_cell_id'value(get_field_from_line(line_of_file,10)); 
+-- 						-- CS: refine error output
+-- 
+-- 						-- get locked_to identifier
+-- 						prog_position := 32100;
+-- 						if to_upper(get_field_from_line(line_of_file,11)) /= type_cell_list_locked_to_identifier'image(locked_to) then
+-- 							cell_list_put_error_on_cell_locked_to_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get drive_value identifier
+-- 						prog_position := 32200;
+-- 						if to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_drive_value_identifier'image(drive_value) then
+-- 							null;
+-- 						else -- something other found in this field
+-- 							cell_list_put_error_on_drive_value_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get drive value of output cell
+-- 						prog_position := 32300;
+-- 						cell_list_output_cell_drive_value := type_bit_char_class_0'value("'" & get_field_from_line(line_of_file,13) & "'");
+-- 						-- CS: refine error output
+-- 
+-- 						prog_position := 32400;
+-- 						lock_output_cell_in_class_PU_PD_net(
+-- 							class				=> cell_list_net_class,
+-- 							level				=> cell_list_net_level,
+-- 							net					=> cell_list_net_name,
+-- 							device				=> cell_list_device_name,
+-- 							pin					=> cell_list_pin_name,
+-- 							output_cell_id			=> cell_list_output_cell_id,
+-- 							output_cell_drive_value	=> cell_list_output_cell_drive_value
+-- 							);
+-- 
+-- 						-- add cell to cell list
+-- 						ptr_cell_list_static_output_cells_class_PX := new type_cell_list_static_output_cells_class_PX'(
+-- 							next 			=> ptr_cell_list_static_output_cells_class_PX,
+-- 							class			=> cell_list_net_class,
+-- 							net				=> cell_list_net_name,
+-- 							device			=> cell_list_device_name,
+-- 							pin				=> cell_list_pin_name,
+-- 							cell			=> cell_list_output_cell_id,
+-- 							drive_value		=> cell_list_output_cell_drive_value
+-- 							);
+-- 
+-- 					end if;
+-- 				end if;
+
+-- 				prog_position := 33000;
+-- 				if section_static_output_cells_class_DX_NR_entered then
+-- 					-- if end of section found, clear marker 
+-- 					if get_field_count(to_string(line_of_file)) = 1 then
+-- 						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_section_mark'image(EndSection) then 
+-- 							section_static_output_cells_class_DX_NR_entered := false;
+-- 							sections_processed.section_static_output_cells_class_DX_NR := true; -- mark this section as processed	
+-- 						else
+-- 							put_error_on_endsection_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 					else -- otherwise start processing line 
+-- 						prog_position := 33100;
+-- 						--put_line(to_string(line_of_file));
+-- 						
+-- 						-- get class identifier
+-- 						if to_upper(get_field_from_line(line_of_file,1)) /= type_cell_list_class_identifier'image(class) then
+-- 							cell_list_put_error_on_class_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get net class
+-- 						prog_position := 33200;
+-- 						cell_list_net_class := type_net_class'value(get_field_from_line(line_of_file,2));
+-- 						-- CS: refine error output
+-- 						case cell_list_net_class is
+-- 							--when DH | DL => null;
+-- 							when DH | DL | NR => null;
+-- 							when others =>
+-- 								cell_list_put_error_on_invalid_class;
+-- 								raise constraint_error;
+-- 						end case;
+-- 
+-- 						-- get net level
+-- 						prog_position := 33300;
+-- 						if to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(primary_net) then
+-- 							cell_list_net_level := primary;
+-- 						elsif to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(secondary_net) then
+-- 							--cell_list_net_level := secondary;  -- in secondary nets, the output cell drive value does not matter
+-- 							put_line("ERROR : This section adresses primary nets exclusively !");
+-- 							raise constraint_error;
+-- 						else
+-- 							cell_list_put_error_on_invalid_net_level;
+-- 							raise constraint_error;
+-- 						end if;
+-- 						-- CS: refine error output
+-- 
+-- 						-- get net name
+-- 						prog_position := 33400;
+-- 						cell_list_net_name := to_bounded_string(get_field_from_line(line_of_file,4));
+-- 
+-- 						-- get device identifier
+-- 						prog_position := 33500;
+-- 						if to_upper(get_field_from_line(line_of_file,5)) /= type_cell_list_device_identifier'image(device) then
+-- 							cell_list_put_error_on_device_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get device name
+-- 						prog_position := 33600;
+-- 						cell_list_device_name := to_bounded_string(get_field_from_line(line_of_file,6));
+-- 
+-- 						-- get pin identifier
+-- 						prog_position := 33700;
+-- 						if to_upper(get_field_from_line(line_of_file,7)) /= type_cell_list_pin_identifier'image(pin) then
+-- 							cell_list_put_error_on_pin_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get pin name
+-- 						prog_position := 33800;
+-- 						cell_list_pin_name := to_bounded_string(get_field_from_line(line_of_file,8));
+-- 
+-- 						-- get output cell identifier
+-- 						prog_position := 33900;
+-- 						if to_upper(get_field_from_line(line_of_file,9)) /= type_cell_list_output_cell_identifier'image(output_cell) then 
+-- 							cell_list_put_error_on_output_cell_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get output cell id
+-- 						prog_position := 34000;
+-- 						cell_list_output_cell_id := type_cell_id'value(get_field_from_line(line_of_file,10)); 
+-- 						-- CS: refine error output
+-- 
+-- 						-- get locked_to identifier
+-- 						prog_position := 34100;
+-- 						if to_upper(get_field_from_line(line_of_file,11)) /= type_cell_list_locked_to_identifier'image(locked_to) then
+-- 							cell_list_put_error_on_cell_locked_to_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get drive_value identifier
+-- 						prog_position := 34200;
+-- 						if to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_drive_value_identifier'image(drive_value) then
+-- 							null;
+-- 						else -- something other found in this field
+-- 							cell_list_put_error_on_drive_value_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get drive value of output cell
+-- 						prog_position := 34300;
+-- 						cell_list_output_cell_drive_value := type_bit_char_class_0'value("'" & get_field_from_line(line_of_file,13) & "'");
+-- 						-- CS: refine error output
+-- 
+-- 						prog_position := 34400;
+-- 						lock_output_cell_in_class_DX(
+-- 							class				=> cell_list_net_class,
+-- 							level				=> cell_list_net_level,
+-- 							net					=> cell_list_net_name,
+-- 							device				=> cell_list_device_name,
+-- 							pin					=> cell_list_pin_name,
+-- 							output_cell_id			=> cell_list_output_cell_id,
+-- 							output_cell_drive_value	=> cell_list_output_cell_drive_value
+-- 							);
+-- 
+-- 						-- add cell to cell list
+-- 						ptr_cell_list_static_output_cells_class_DX_NR := new type_cell_list_static_output_cells_class_DX_NR'(
+-- 							next 			=> ptr_cell_list_static_output_cells_class_DX_NR,
+-- 							class			=> cell_list_net_class,
+-- 							net				=> cell_list_net_name,
+-- 							device			=> cell_list_device_name,
+-- 							pin				=> cell_list_pin_name,
+-- 							cell			=> cell_list_output_cell_id,
+-- 							drive_value		=> cell_list_output_cell_drive_value
+-- 							);
+-- 
+-- 					end if;
+-- 				end if;
+
+-- 				prog_position := 35000;
+-- 				if section_static_expect_entered then
+-- 					-- if end of section found, clear marker 
+-- 					if get_field_count(to_string(line_of_file)) = 1 then
+-- 						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_section_mark'image(EndSection) then 
+-- 							section_static_expect_entered := false;
+-- 							sections_processed.section_static_expect := true; -- mark this section as processed	
+-- 						else
+-- 							put_error_on_endsection_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 					else -- otherwise start processing line 
+-- 						prog_position := 35100;
+-- 						--put_line(to_string(line_of_file));
+-- 						
+-- 						-- get class identifier
+-- 						if to_upper(get_field_from_line(line_of_file,1)) /= type_cell_list_class_identifier'image(class) then
+-- 							cell_list_put_error_on_class_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get net class
+-- 						prog_position := 35200;
+-- 						cell_list_net_class := type_net_class'value(get_field_from_line(line_of_file,2));
+-- 						-- CS: refine error output
+-- 						case cell_list_net_class is
+-- 							when DH | DL | EH | EL => null;
+-- 							when others =>
+-- 								cell_list_put_error_on_invalid_class;
+-- 								raise constraint_error;
+-- 						end case;
+-- 
+-- 						-- get net level
+-- 						prog_position := 35300;
+-- 						if to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(primary_net) then
+-- 							cell_list_net_level := primary;
+-- 						elsif to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(secondary_net) then
+-- 							cell_list_net_level := secondary;
+-- 						else
+-- 							cell_list_put_error_on_invalid_net_level;
+-- 							raise constraint_error;
+-- 						end if;
+-- 						-- CS: refine error output
+-- 
+-- 						-- get net name
+-- 						prog_position := 35400;
+-- 						cell_list_net_name := to_bounded_string(get_field_from_line(line_of_file,4));
+-- 
+-- 						-- get device identifier
+-- 						prog_position := 35500;
+-- 						if to_upper(get_field_from_line(line_of_file,5)) /= type_cell_list_device_identifier'image(device) then
+-- 							cell_list_put_error_on_device_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get device name
+-- 						prog_position := 35600;
+-- 						cell_list_device_name := to_bounded_string(get_field_from_line(line_of_file,6));
+-- 
+-- 						-- get pin identifier
+-- 						prog_position := 35700;
+-- 						if to_upper(get_field_from_line(line_of_file,7)) /= type_cell_list_pin_identifier'image(pin) then
+-- 							cell_list_put_error_on_pin_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get pin name
+-- 						prog_position := 35800;
+-- 						cell_list_pin_name := to_bounded_string(get_field_from_line(line_of_file,8));
+-- 
+-- 						-- get input cell identifier
+-- 						prog_position := 35900;
+-- 						if to_upper(get_field_from_line(line_of_file,9)) /= type_cell_list_input_cell_identifier'image(input_cell) then 
+-- 							cell_list_put_error_on_input_cell_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get input cell id
+-- 						prog_position := 36000;
+-- 						cell_list_input_cell_id := type_cell_id'value(get_field_from_line(line_of_file,10)); 
+-- 						-- CS: refine error output
+-- 
+-- 						-- get expect_value identifier
+-- 						prog_position := 36100;
+-- 						if to_upper(get_field_from_line(line_of_file,11)) /= type_cell_list_expect_value_identifier'image(expect_value) then
+-- 							cell_list_put_error_on_expect_value_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get expect value of input cell depending on net class
+-- 						prog_position := 36200;
+-- 						cell_list_input_cell_expect_value := type_bit_char_class_0'value("'" & get_field_from_line(line_of_file,12) & "'");
+-- 						case cell_list_net_class is
+-- 							when EH | DH => -- an input cell should read a 1 here 
+-- 								if cell_list_input_cell_expect_value /= '1' then
+-- 									cell_list_put_error_on_invalid_static_expect_value;
+-- 									raise constraint_error;
+-- 								end if;
+-- 							when EL | DL => -- in input cell should read a 0 here
+-- 								if cell_list_input_cell_expect_value /= '0' then
+-- 									cell_list_put_error_on_invalid_static_expect_value;
+-- 									raise constraint_error;
+-- 								end if;
+-- 							when others => -- his should never happen, as the net class check has been conducted earlier
+-- 								cell_list_put_error_on_invalid_class;
+-- 								raise constraint_error;
+-- 						end case;
+-- 						-- CS: refine error output
+-- 
+-- 						-- if secondary net, get primary_net_is identifier and name from fields 13 and 14
+-- 						prog_position := 36300;
+-- 						if cell_list_net_level = secondary then
+-- 							if get_field_count(to_string(line_of_file)) = 14 then -- due to trailing fields "primary_net_is net_abc"
+-- 								if to_upper(get_field_from_line(line_of_file,13)) /= type_cell_list_primary_net_is_identifier'image(primary_net_is) then
+-- 									cell_list_put_error_on_primary_net_is_identifier_expected;
+-- 									raise constraint_error;
+-- 								end if;
+-- 								cell_list_primary_net_is := to_bounded_string(get_field_from_line(line_of_file,14));
+-- 							else -- if there are not 14 fields
+-- 								cell_list_put_error_on_primary_net_is_identifier_expected;
+-- 								raise constraint_error;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						prog_position := 36400;
+-- 						lock_input_cell_static_expect(
+-- 							class				=> cell_list_net_class,
+-- 							level				=> cell_list_net_level,
+-- 							net					=> cell_list_net_name,
+-- 							device				=> cell_list_device_name,
+-- 							pin					=> cell_list_pin_name,
+-- 							input_cell_id			=> cell_list_input_cell_id,
+-- 							input_cell_expect_value	=> cell_list_input_cell_expect_value,
+-- 							primary_net_is			=> cell_list_primary_net_is
+-- 							);
+-- 
+-- 						-- add cell to cell list
+-- 						case cell_list_net_level is
+-- 							when primary =>
+-- 								ptr_cell_list_static_expect := new type_cell_list_static_expect'(
+-- 									next 			=> ptr_cell_list_static_expect,
+-- 									class			=> cell_list_net_class,
+-- 									level			=> primary,
+-- 									net				=> cell_list_net_name,
+-- 									device			=> cell_list_device_name,
+-- 									pin				=> cell_list_pin_name,
+-- 									cell			=> cell_list_input_cell_id,
+-- 									expect_value	=> cell_list_input_cell_expect_value
+-- 									);
+-- 							when secondary =>
+-- 								ptr_cell_list_static_expect := new type_cell_list_static_expect'(
+-- 									next 			=> ptr_cell_list_static_expect,
+-- 									class			=> cell_list_net_class,
+-- 									level			=> secondary,
+-- 									net				=> cell_list_net_name,
+-- 									device			=> cell_list_device_name,
+-- 									pin				=> cell_list_pin_name,
+-- 									cell			=> cell_list_input_cell_id,
+-- 									expect_value	=> cell_list_input_cell_expect_value,
+-- 									primary_net_is	=> cell_list_primary_net_is
+-- 									);
+-- 						end case;
+-- 						
+-- 					end if;
+-- 				end if;
+
+-- 				prog_position := 37000;
+-- 				if section_atg_expect_entered then
+-- 					-- if end of section found, clear marker 
+-- 					if get_field_count(to_string(line_of_file)) = 1 then
+-- 						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_section_mark'image(EndSection) then 
+-- 							section_atg_expect_entered := false;
+-- 							sections_processed.section_atg_expect := true; -- mark this section as processed	
+-- 						else
+-- 							put_error_on_endsection_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 					else -- otherwise start processing line 
+-- 						prog_position := 37100;
+-- 						--put_line(to_string(line_of_file));
+-- 						
+-- 						-- get class identifier
+-- 						if to_upper(get_field_from_line(line_of_file,1)) /= type_cell_list_class_identifier'image(class) then
+-- 							cell_list_put_error_on_class_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get net class
+-- 						prog_position := 37200;
+-- 						cell_list_net_class := type_net_class'value(get_field_from_line(line_of_file,2));
+-- 						-- CS: refine error output
+-- 						case cell_list_net_class is
+-- 							when NR | PU | PD  => null;
+-- 							when others =>
+-- 								cell_list_put_error_on_invalid_class;
+-- 								raise constraint_error;
+-- 						end case;
+-- 
+-- 						-- get net level
+-- 						prog_position := 37300;
+-- 						if to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(primary_net) then
+-- 							cell_list_net_level := primary;
+-- 						elsif to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(secondary_net) then
+-- 							cell_list_net_level := secondary;
+-- 						else
+-- 							cell_list_put_error_on_invalid_net_level;
+-- 							raise constraint_error;
+-- 						end if;
+-- 						-- CS: refine error output
+-- 
+-- 						-- get net name
+-- 						prog_position := 37400;
+-- 						cell_list_net_name := to_bounded_string(get_field_from_line(line_of_file,4));
+-- 
+-- 						-- get device identifier
+-- 						prog_position := 37500;
+-- 						if to_upper(get_field_from_line(line_of_file,5)) /= type_cell_list_device_identifier'image(device) then
+-- 							cell_list_put_error_on_device_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get device name
+-- 						prog_position := 37600;
+-- 						cell_list_device_name := to_bounded_string(get_field_from_line(line_of_file,6));
+-- 
+-- 						-- get pin identifier
+-- 						prog_position := 37700;
+-- 						if to_upper(get_field_from_line(line_of_file,7)) /= type_cell_list_pin_identifier'image(pin) then
+-- 							cell_list_put_error_on_pin_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get pin name
+-- 						prog_position := 37800;
+-- 						cell_list_pin_name := to_bounded_string(get_field_from_line(line_of_file,8));
+-- 
+-- 						-- get input cell identifier
+-- 						prog_position := 37900;
+-- 						if to_upper(get_field_from_line(line_of_file,9)) /= type_cell_list_input_cell_identifier'image(input_cell) then 
+-- 							cell_list_put_error_on_input_cell_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get input cell id
+-- 						prog_position := 38000;
+-- 						cell_list_input_cell_id := type_cell_id'value(get_field_from_line(line_of_file,10)); 
+-- 						-- CS: refine error output
+-- 
+-- 						-- if secondary net, get primary_net_is identifier and name from fields 11 and 12
+-- 						prog_position := 38100;
+-- 						if cell_list_net_level = secondary then
+-- 							if get_field_count(to_string(line_of_file)) = 12 then -- due to trailing fields "primary_net_is net_abc"
+-- 								if to_upper(get_field_from_line(line_of_file,11)) /= type_cell_list_primary_net_is_identifier'image(primary_net_is) then
+-- 									cell_list_put_error_on_primary_net_is_identifier_expected;
+-- 									raise constraint_error;
+-- 								end if;
+-- 								cell_list_primary_net_is := to_bounded_string(get_field_from_line(line_of_file,12));
+-- 							else -- if there are not 14 fields
+-- 								cell_list_put_error_on_primary_net_is_identifier_expected;
+-- 								raise constraint_error;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						prog_position := 38200;
+-- 						assign_input_cell_atg_expect(
+-- 							class				=> cell_list_net_class,
+-- 							level				=> cell_list_net_level,
+-- 							net					=> cell_list_net_name,
+-- 							device				=> cell_list_device_name,
+-- 							pin					=> cell_list_pin_name,
+-- 							input_cell_id			=> cell_list_input_cell_id,
+-- 							primary_net_is			=> cell_list_primary_net_is
+-- 							);
+-- 
+-- 						-- add cell to cell list
+-- 						case cell_list_net_level is
+-- 							when primary =>
+-- 								ptr_cell_list_atg_expect := new type_cell_list_atg_expect'(
+-- 									next 			=> ptr_cell_list_atg_expect,
+-- 									class			=> cell_list_net_class,
+-- 									level			=> primary,
+-- 									net				=> cell_list_net_name,
+-- 									device			=> cell_list_device_name,
+-- 									pin				=> cell_list_pin_name,
+-- 									cell			=> cell_list_input_cell_id
+-- 									);
+-- 							when secondary =>
+-- 								ptr_cell_list_atg_expect := new type_cell_list_atg_expect'(
+-- 									next 			=> ptr_cell_list_atg_expect,
+-- 									class			=> cell_list_net_class,
+-- 									level			=> secondary,
+-- 									net				=> cell_list_net_name,
+-- 									device			=> cell_list_device_name,
+-- 									pin				=> cell_list_pin_name,
+-- 									cell			=> cell_list_input_cell_id,
+-- 									primary_net_is	=> cell_list_primary_net_is
+-- 									);
+-- 						end case;
+-- 
+-- 						net_count_statistics.atg_receivers := net_count_statistics.atg_receivers + 1;
+-- 					end if;
+-- 				end if; -- if atg_expect entered
+
+-- 				prog_position := 39000;
+-- 				if section_atg_drive_entered then
+-- 				-- this section addresses primary nets exclusively
+-- 
+-- 					-- if end of section found, clear marker 
+-- 					if get_field_count(to_string(line_of_file)) = 1 then
+-- 						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_section_mark'image(EndSection) then 
+-- 							section_atg_drive_entered := false;
+-- 							sections_processed.section_atg_drive := true; -- mark this section as processed	
+-- 						else
+-- 							put_error_on_endsection_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 					else -- otherwise start processing line 
+-- 						prog_position := 39100;
+-- 						--put_line(to_string(line_of_file));
+-- 						
+-- 						-- get class identifier
+-- 						if to_upper(get_field_from_line(line_of_file,1)) /= type_cell_list_class_identifier'image(class) then
+-- 							cell_list_put_error_on_class_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get net class
+-- 						prog_position := 39200;
+-- 						cell_list_net_class := type_net_class'value(get_field_from_line(line_of_file,2));
+-- 						-- CS: refine error output
+-- 						case cell_list_net_class is
+-- 							when NR | PU | PD  => null;
+-- 							when others =>
+-- 								cell_list_put_error_on_invalid_class;
+-- 								raise constraint_error;
+-- 						end case;
+-- 
+-- 						-- get net level
+-- 						prog_position := 39300;
+-- 						if to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(primary_net) then
+-- 							cell_list_net_level := primary;
+-- 						elsif to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(secondary_net) then
+-- 							cell_list_net_level := secondary;
+-- 							put_line("ERROR: This section adresses primary nets exclusively ! In a secondary net, no pin must be in drive mode !");
+-- 							raise constraint_error;
+-- 						else
+-- 							cell_list_put_error_on_invalid_net_level;
+-- 							raise constraint_error;
+-- 						end if;
+-- 						-- CS: refine error output
+
+-- 						-- get net name
+-- 						prog_position := 39400;
+-- 						cell_list_net_name := to_bounded_string(get_field_from_line(line_of_file,4));
+-- 
+-- 						-- get device identifier
+-- 						prog_position := 39500;
+-- 						if to_upper(get_field_from_line(line_of_file,5)) /= type_cell_list_device_identifier'image(device) then
+-- 							cell_list_put_error_on_device_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get device name
+-- 						prog_position := 39600;
+-- 						cell_list_device_name := to_bounded_string(get_field_from_line(line_of_file,6));
+-- 
+-- 						-- get pin identifier
+-- 						prog_position := 39700;
+-- 						if to_upper(get_field_from_line(line_of_file,7)) /= type_cell_list_pin_identifier'image(pin) then
+-- 							cell_list_put_error_on_pin_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get pin name
+-- 						prog_position := 39800;
+-- 						cell_list_pin_name := to_bounded_string(get_field_from_line(line_of_file,8));
+
+-- 						-- get output/control cell identifier
+-- 						prog_position := 39900;
+-- 						if to_upper(get_field_from_line(line_of_file,9)) = type_cell_list_output_cell_identifier'image(output_cell) then
+-- 							prog_position := 39910;
+-- 							cell_list_output_cell_id := type_cell_id'value(get_field_from_line(line_of_file,10)); 
+-- 							cell_list_primary_net_controlled_by_control_cell := false;
+-- 						elsif to_upper(get_field_from_line(line_of_file,9)) = type_cell_list_control_cell_identifier'image(control_cell) then 
+-- 							prog_position := 39920;
+-- 							cell_list_control_cell_id := type_cell_id'value(get_field_from_line(line_of_file,10)); 
+-- 							cell_list_primary_net_controlled_by_control_cell := true;
+-- 
+-- 							-- if a control cell is specified here, two extra fields are expected and to evaluate
+-- 							if get_field_count(to_string(line_of_file)) = 12 then -- due to trailing fields "inverted yes/no"
+-- 
+-- 								-- get inverted identifier
+-- 								if to_upper(get_field_from_line(line_of_file,11)) /= type_cell_list_control_cell_inverted_identifier'image(inverted) then
+-- 									prog_position := 39930;
+-- 									cell_list_put_error_on_control_cell_inverted_identifier_expected;
+-- 									raise constraint_error;
+-- 								end if;
+-- 
+-- 								-- get inverted yes/no status
+-- 								if to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_control_cell_inverted'image(yes) or
+-- 									to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_control_cell_inverted'image(true) then
+-- 									cell_list_control_cell_inverted := true;
+-- 								elsif to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_control_cell_inverted'image(no) or
+-- 									to_upper(get_field_from_line(line_of_file,12)) = type_cell_list_control_cell_inverted'image(false) then
+-- 									cell_list_control_cell_inverted := false;
+-- 								else
+-- 									prog_position := 39940;
+-- 									cell_list_put_error_on_control_cell_inverted_identifier_expected;
+-- 									raise constraint_error;
+-- 								end if;
+-- 
+-- 							else -- if there are not 14 fields
+-- 								prog_position := 39950;
+-- 								cell_list_put_error_on_control_cell_inverted_identifier_expected;
+-- 								raise constraint_error;
+-- 							end if;
+-- 						else
+-- 							prog_position := 39960;
+-- 							cell_list_put_error_on_control_cell_inverted_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						prog_position := 39970;
+--  						assign_output_control_cell_atg_drive(
+-- 							class						=> cell_list_net_class,
+-- 							level						=> cell_list_net_level,
+-- 							net							=> cell_list_net_name,
+-- 							device						=> cell_list_device_name,
+-- 							pin							=> cell_list_pin_name,
+-- 							controlled_by_control_cell	=> cell_list_primary_net_controlled_by_control_cell,
+-- 							output_cell_id				=> cell_list_output_cell_id,
+-- 							control_cell_id				=> cell_list_control_cell_id,
+-- 							control_cell_inverted		=> cell_list_control_cell_inverted
+-- 							);
+
+-- 						-- add cell to cell list
+-- 						case cell_list_primary_net_controlled_by_control_cell is
+-- 							when true =>
+-- 								ptr_cell_list_atg_drive := new type_cell_list_atg_drive'(
+-- 									next 			=> ptr_cell_list_atg_drive,
+-- 									class			=> cell_list_net_class,
+-- 									net				=> cell_list_net_name,
+-- 									device			=> cell_list_device_name,
+-- 									pin				=> cell_list_pin_name,
+-- 									cell						=> cell_list_control_cell_id,
+-- 									controlled_by_control_cell	=> true,
+-- 									inverted					=> cell_list_control_cell_inverted
+-- 									);
+-- 							when false =>
+-- 								ptr_cell_list_atg_drive := new type_cell_list_atg_drive'(
+-- 									next 			=> ptr_cell_list_atg_drive,
+-- 									class			=> cell_list_net_class,
+-- 									net				=> cell_list_net_name,
+-- 									device			=> cell_list_device_name,
+-- 									pin				=> cell_list_pin_name,
+-- 									cell						=> cell_list_output_cell_id,
+-- 									controlled_by_control_cell	=> false
+-- 									);
+-- 						end case;
+
+
+-- 						net_count_statistics.atg_drivers := net_count_statistics.atg_drivers + 1;
+-- 					end if;
+-- 				end if; -- if atg_drive entered
+
+-- 				prog_position := 40000;
+-- 				if section_input_cells_in_class_NA_nets_entered then
+-- 				-- this section addresses primary and secondary nets of class NA exclusively
+-- 
+-- 					-- if end of section found, clear marker 
+-- 					if get_field_count(to_string(line_of_file)) = 1 then
+-- 						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_section_mark'image(EndSection) then 
+-- 							section_input_cells_in_class_NA_nets_entered := false;
+-- 							sections_processed.section_input_cells_class_NA := true; -- mark this section as processed	
+-- 						else
+-- 							put_error_on_endsection_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 					else -- otherwise start processing line 
+-- 						prog_position := 40100;
+-- 						--put_line(to_string(line_of_file));
+-- 						
+-- 						-- get class identifier
+-- 						if to_upper(get_field_from_line(line_of_file,1)) /= type_cell_list_class_identifier'image(class) then
+-- 							cell_list_put_error_on_class_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get net class
+-- 						prog_position := 40200;
+-- 						cell_list_net_class := type_net_class'value(get_field_from_line(line_of_file,2));
+-- 						-- CS: refine error output
+-- 						case cell_list_net_class is
+-- 							when NA => null;
+-- 							when others =>
+-- 								cell_list_put_error_on_invalid_class;
+-- 								raise constraint_error;
+-- 						end case;
+-- 
+-- 						-- get net level
+-- 						prog_position := 40300;
+-- 						if to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(primary_net) then
+-- 							cell_list_net_level := primary;
+-- 						elsif to_upper(get_field_from_line(line_of_file,3)) = type_cell_list_net_level'image(secondary_net) then
+-- 							cell_list_net_level := secondary;
+-- 						else
+-- 							cell_list_put_error_on_invalid_net_level;
+-- 							raise constraint_error;
+-- 						end if;
+-- 						-- CS: refine error output
+
+-- 						-- get net name
+-- 						prog_position := 40400;
+-- 						cell_list_net_name := to_bounded_string(get_field_from_line(line_of_file,4));
+-- 
+-- 						-- get device identifier
+-- 						prog_position := 40500;
+-- 						if to_upper(get_field_from_line(line_of_file,5)) /= type_cell_list_device_identifier'image(device) then
+-- 							cell_list_put_error_on_device_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get device name
+-- 						prog_position := 40600;
+-- 						cell_list_device_name := to_bounded_string(get_field_from_line(line_of_file,6));
+-- 
+-- 						-- get pin identifier
+-- 						prog_position := 40700;
+-- 						if to_upper(get_field_from_line(line_of_file,7)) /= type_cell_list_pin_identifier'image(pin) then
+-- 							cell_list_put_error_on_pin_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 
+-- 						-- get pin name
+-- 						prog_position := 40800;
+-- 						cell_list_pin_name := to_bounded_string(get_field_from_line(line_of_file,8));
+
+-- 						-- get input cell identifier
+-- 						prog_position := 40900;
+-- 						if to_upper(get_field_from_line(line_of_file,9)) /= type_cell_list_input_cell_identifier'image(input_cell) then
+-- 							cell_list_put_error_on_input_cell_identifier_expected;
+-- 							raise constraint_error;
+-- 						end if;
+
+-- 						-- get input cell id
+-- 						prog_position := 41000;
+-- 						cell_list_input_cell_id := type_cell_id'value(get_field_from_line(line_of_file,10)); 
+-- 						-- CS: refine error output
+
+						-- if secondary net, get primary_net_is identifier and name from fields 11 and 12
+-- 						prog_position := 41100;
+-- 						if cell_list_net_level = secondary then
+-- 							if get_field_count(to_string(line_of_file)) = 12 then -- due to trailing fields "primary_net_is net_abc"
+-- 								if to_upper(get_field_from_line(line_of_file,11)) /= type_cell_list_primary_net_is_identifier'image(primary_net_is) then
+-- 									cell_list_put_error_on_primary_net_is_identifier_expected;
+-- 									raise constraint_error;
+-- 								end if;
+-- 								cell_list_primary_net_is := to_bounded_string(get_field_from_line(line_of_file,12));
+-- 							else -- if there are not 14 fields
+-- 								cell_list_put_error_on_primary_net_is_identifier_expected;
+-- 								raise constraint_error;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						prog_position := 41200;
+-- 						assign_input_cell_unclassified_net(
+-- 							class				=> cell_list_net_class,
+-- 							level				=> cell_list_net_level,
+-- 							net					=> cell_list_net_name,
+-- 							device				=> cell_list_device_name,
+-- 							pin					=> cell_list_pin_name,
+-- 							input_cell_id		=> cell_list_input_cell_id,
+-- 							primary_net_is		=> cell_list_primary_net_is
+-- 							);
+-- 
+-- 						-- add cell to cell list
+-- 						case cell_list_net_level is
+-- 							when primary =>
+-- 								ptr_cell_list_input_cells_class_NA := new type_cell_list_input_cells_class_NA'(
+-- 									next 			=> ptr_cell_list_input_cells_class_NA,
+-- 									level			=> primary,
+-- 									net				=> cell_list_net_name,
+-- 									device			=> cell_list_device_name,
+-- 									pin				=> cell_list_pin_name,
+-- 									cell			=> cell_list_input_cell_id
+-- 									);
+-- 							when secondary =>
+-- 								ptr_cell_list_input_cells_class_NA := new type_cell_list_input_cells_class_NA'(
+-- 									next 			=> ptr_cell_list_input_cells_class_NA,
+-- 									level			=> secondary,
+-- 									net				=> cell_list_net_name,
+-- 									device			=> cell_list_device_name,
+-- 									pin				=> cell_list_pin_name,
+-- 									cell			=> cell_list_input_cell_id,
+-- 									primary_net_is	=> cell_list_primary_net_is
+-- 									);
+-- 						end case;
+-- 
+-- 
+-- 
+-- 					end if;
+-- 				end if;
+
+-- 				-- read statistics
+-- 				prog_position := 50000;
+-- 				if section_statistics_entered then
+-- 					-- if end of section found, clear marker 
+-- 					if get_field_count(to_string(line_of_file)) = 1 then
+-- 						if to_upper(get_field_from_line(line_of_file,1)) = type_end_of_section_mark'image(EndSection) then 
+-- 							section_statistics_entered := false;
+-- 							sections_processed.section_statistics := true; -- mark this section as processed	
+-- 						else
+-- 							put_error_on_endsection_expected;
+-- 							raise constraint_error;
+-- 						end if;
+-- 					else -- otherwise start processing line 
+-- 						prog_position := 50100;
+-- 
+-- 						if debug_level >= 40 then
+-- 							put_line("   statistics: " & to_string(line_of_file));
+-- 						end if;
+
+-- 						-- CS: use markers for every processed entry here. "and" them in order to get
+-- 						-- an overall result of completed statistics 
+-- 
+-- 						-- pull up nets
+-- 						if get_field_from_line(line_of_file,1) = statistics_identifier_pull_up then
+-- 							if get_field_from_line(line_of_file,2) = statistics_identifier_nets then
+-- 								if get_field_from_line(line_of_file,3) = "(" & type_net_class'image(PU) & "):" then
+-- 									if debug_level >= 30 then 
+-- 										put_line("  PU ct : " & get_field_from_line(line_of_file,4));
+-- 									end if;
+-- 									if net_count_statistics.pu /= natural'value(get_field_from_line(line_of_file,4)) then
+-- 										put_line("WARNING: Count of class " & type_net_class'image(PU) & " nets invalid !" &
+-- 										" Processing of net list yielded" & natural'image(net_count_statistics.pu) & " nets.");
+-- 										--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 										-- because chkpsn does not take secondary nets into account
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+
+-- 						-- pull down nets
+-- 						if get_field_from_line(line_of_file,1) = statistics_identifier_pull_down then
+-- 							if get_field_from_line(line_of_file,2) = statistics_identifier_nets then
+-- 								if get_field_from_line(line_of_file,3) = "(" & type_net_class'image(PD) & "):" then
+-- 									if debug_level >= 30 then 
+-- 										put_line("  PD ct : " & get_field_from_line(line_of_file,4));
+-- 									end if;
+-- 									if net_count_statistics.pd /= natural'value(get_field_from_line(line_of_file,4)) then
+-- 										put_line("WARNING: Count of class " & type_net_class'image(PD) & " nets invalid !" &
+-- 										" Processing of net list yielded" & natural'image(net_count_statistics.pd) & " nets.");
+-- 										--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 										-- because chkpsn does not take secondary nets into account
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+
+-- 						-- drive high nets
+-- 						if get_field_from_line(line_of_file,1) = statistics_identifier_drive_high then
+-- 							if get_field_from_line(line_of_file,2) = statistics_identifier_nets then
+-- 								if get_field_from_line(line_of_file,3) = "(" & type_net_class'image(DH) & "):" then
+-- 									if debug_level >= 30 then 
+-- 										put_line("  DH ct : " & get_field_from_line(line_of_file,4));
+-- 									end if;
+-- 									if net_count_statistics.dh /= natural'value(get_field_from_line(line_of_file,4)) then
+-- 										put_line("WARNING: Count of class " & type_net_class'image(DH) & " nets invalid !" &
+-- 										" Processing of net list yielded" & natural'image(net_count_statistics.dh) & " nets.");
+-- 										--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 										-- because chkpsn does not take secondary nets into account
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+
+-- 						-- drive low nets
+-- 						if get_field_from_line(line_of_file,1) = statistics_identifier_drive_low then
+-- 							if get_field_from_line(line_of_file,2) = statistics_identifier_nets then
+-- 								if get_field_from_line(line_of_file,3) = "(" & type_net_class'image(DL) & "):" then
+-- 									if debug_level >= 30 then 
+-- 										put_line("  DL ct : " & get_field_from_line(line_of_file,4));
+-- 									end if;
+-- 									if net_count_statistics.dl /= natural'value(get_field_from_line(line_of_file,4)) then
+-- 										put_line("WARNING: Count of class " & type_net_class'image(DL) & " nets invalid !" &
+-- 										" Processing of net list yielded" & natural'image(net_count_statistics.dl) & " nets.");
+-- 										--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 										-- because chkpsn does not take secondary nets into account
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+
+-- 						-- expect high nets
+-- 						if get_field_from_line(line_of_file,1) = statistics_identifier_expect_high then
+-- 							if get_field_from_line(line_of_file,2) = statistics_identifier_nets then
+-- 								if get_field_from_line(line_of_file,3) = "(" & type_net_class'image(EH) & "):" then
+-- 									if debug_level >= 30 then 
+-- 										put_line("  EH ct : " & get_field_from_line(line_of_file,4));
+-- 									end if;
+-- 									if net_count_statistics.eh /= natural'value(get_field_from_line(line_of_file,4)) then
+-- 										put_line("WARNING: Count of class " & type_net_class'image(EH) & " nets invalid !" &
+-- 										" Processing of net list yielded" & natural'image(net_count_statistics.eh) & " nets.");
+-- 										--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 										-- because chkpsn does not take secondary nets into account
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+
+-- 						-- expect low nets
+-- 						if get_field_from_line(line_of_file,1) = statistics_identifier_expect_low then
+-- 							if get_field_from_line(line_of_file,2) = statistics_identifier_nets then
+-- 								if get_field_from_line(line_of_file,3) = "(" & type_net_class'image(EL) & "):" then
+-- 									if debug_level >= 30 then 
+-- 										put_line("  EL ct : " & get_field_from_line(line_of_file,4));
+-- 									end if;
+-- 									if net_count_statistics.el /= natural'value(get_field_from_line(line_of_file,4)) then
+-- 										put_line("WARNING: Count of class " & type_net_class'image(EL) & " nets invalid !" &
+-- 										" Processing of net list yielded" & natural'image(net_count_statistics.el) & " nets.");
+-- 										--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 										-- because chkpsn does not take secondary nets into account
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+
+-- 						-- unrestricted nets
+-- 						if get_field_from_line(line_of_file,1) = statistics_identifier_unrestricted then
+-- 							if get_field_from_line(line_of_file,2) = statistics_identifier_nets then
+-- 								if get_field_from_line(line_of_file,3) = "(" & type_net_class'image(NR) & "):" then
+-- 									if debug_level >= 30 then 
+-- 										put_line("  NR ct : " & get_field_from_line(line_of_file,4));
+-- 									end if;
+-- 									if net_count_statistics.nr /= natural'value(get_field_from_line(line_of_file,4)) then
+-- 										put_line("WARNING: Count of class " & type_net_class'image(NR) & " nets invalid !" &
+-- 										" Processing of net list yielded" & natural'image(net_count_statistics.nr) & " nets.");
+-- 										--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 										-- because chkpsn does not take secondary nets into account
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+
+-- 						-- unclassified nets
+-- 						if get_field_from_line(line_of_file,1) = statistics_identifier_not then
+-- 							if get_field_from_line(line_of_file,2) = statistics_identifier_classified then
+-- 								if get_field_from_line(line_of_file,3) = statistics_identifier_nets then
+-- 									if get_field_from_line(line_of_file,4) = "(" & type_net_class'image(NA) & "):" then
+-- 										if debug_level >= 30 then 
+-- 											put_line("  NA ct : " & get_field_from_line(line_of_file,5));
+-- 										end if;
+-- 										if net_count_statistics.na /= natural'value(get_field_from_line(line_of_file,5)) then
+-- 											put_line("WARNING: Count of class " & type_net_class'image(NA) & " nets invalid !" &
+-- 											" Processing of net list yielded" & natural'image(net_count_statistics.na) & " nets.");
+-- 											--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 											-- because chkpsn does not take secondary nets into account
+-- 										end if;
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+
+-- 						-- total
+-- 						if get_field_from_line(line_of_file,1) = statistics_identifier_total then
+-- 							if get_field_from_line(line_of_file,2) = statistics_colon then
+-- 								if debug_level >= 30 then 
+-- 									put_line("  total : " & get_field_from_line(line_of_file,3));
+-- 								end if;
+-- 								if net_count_statistics.total /= natural'value(get_field_from_line(line_of_file,3)) then
+-- 									put_line("WARNING: Total net count invalid !" &
+-- 									" Processing of net list yielded" & natural'image(net_count_statistics.total) & " nets.");
+-- 									--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 									-- because chkpsn does not take secondary nets into account
+-- 								end if;
+-- 							end if;
+-- 						end if;
+
+-- 						-- bs-nets static
+-- 						if get_field_from_line(line_of_file,1) = statistics_identifier_bs_nets then
+-- 							if get_field_from_line(line_of_file,2) = statistics_identifier_static then
+-- 								if get_field_from_line(line_of_file,3) = statistics_colon then
+-- 									if debug_level >= 30 then 
+-- 										put_line("  bs static : " & get_field_from_line(line_of_file,4));
+-- 									end if;
+-- 									if net_count_statistics.bs_static /= natural'value(get_field_from_line(line_of_file,4)) then
+-- 										put_line("WARNING: Net count of static nets invalid !" &
+-- 										" Processing of net list yielded" & natural'image(net_count_statistics.bs_static) & " nets.");
+-- 										--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 										-- because chkpsn does not take secondary nets into account
+-- 									end if;
+-- 
+-- 								end if;
+-- 							end if;
+-- 						end if;
+
+-- 						-- thereof
+-- 						if get_field_from_line(line_of_file,1) = statistics_identifier_thereof then
+-- 							if get_field_from_line(line_of_file,2) = statistics_colon then
+-- 								if debug_level >= 30 then 
+-- 									put_line("  thereof : ");
+-- 								end if;
+-- 							end if;
+-- 						end if;
+
+-- 						-- bs-nets static L / H
+-- 						if get_field_from_line(line_of_file,1) = statistics_identifier_bs_nets then
+-- 							if get_field_from_line(line_of_file,2) = statistics_identifier_static then
+-- 								if get_field_from_line(line_of_file,3) = statistics_identifier_L then
+-- 									if get_field_from_line(line_of_file,4) = statistics_colon then
+-- 										if debug_level >= 30 then 
+-- 											put_line("  bs static L : " & get_field_from_line(line_of_file,5));
+-- 										end if;
+-- 										if net_count_statistics.bs_static_l /= natural'value(get_field_from_line(line_of_file,5)) then
+-- 											put_line("WARNING: Net count of static LOW nets invalid !" &
+-- 											" Processing of net list yielded" & natural'image(net_count_statistics.bs_static_l) & " nets.");
+-- 											--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 											-- because chkpsn does not take secondary nets into account
+-- 										end if;
+-- 									end if;
+-- 								elsif get_field_from_line(line_of_file,3) = statistics_identifier_H then
+-- 									if get_field_from_line(line_of_file,4) = statistics_colon then
+-- 										if debug_level >= 30 then 
+-- 											put_line("  bs static H : " & get_field_from_line(line_of_file,5));
+-- 										end if;
+-- 										if net_count_statistics.bs_static_h /= natural'value(get_field_from_line(line_of_file,5)) then
+-- 											put_line("WARNING: Net count of static HIGH nets invalid !" &
+-- 											" Processing of net list yielded" & natural'image(net_count_statistics.bs_static_h) & " nets.");
+-- 											--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 											-- because chkpsn does not take secondary nets into account
+-- 										end if;
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+
+-- 						-- bs-nets dynamic / testable
+-- 						if get_field_from_line(line_of_file,1) = statistics_identifier_bs_nets then
+-- 							if get_field_from_line(line_of_file,2) = statistics_identifier_dynamic then
+-- 								if get_field_from_line(line_of_file,3) = statistics_colon then
+-- 									if debug_level >= 30 then 
+-- 										put_line("  bs dynamic  : " & get_field_from_line(line_of_file,4));
+-- 									end if;
+-- 									if net_count_statistics.bs_dynamic /= natural'value(get_field_from_line(line_of_file,4)) then
+-- 										put_line("WARNING: Net count of dynamic nets invalid !" &
+-- 										" Processing of net list yielded" & natural'image(net_count_statistics.bs_dynamic) & " nets.");
+-- 										--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 										-- because chkpsn does not take secondary nets into account
+-- 									end if;
+-- 								end if;
+-- 							elsif get_field_from_line(line_of_file,2) = statistics_identifier_testable then
+-- 								if get_field_from_line(line_of_file,3) = statistics_colon then
+-- 									if debug_level >= 30 then 
+-- 										put_line("  bs testable : " & get_field_from_line(line_of_file,4));
+-- 									end if;
+-- 									if net_count_statistics.bs_testable /= natural'value(get_field_from_line(line_of_file,4)) then
+-- 										put_line("WARNING: Net count of testable nets invalid !" &
+-- 										" Processing of net list yielded" & natural'image(net_count_statistics.bs_testable) & " nets.");
+-- 										--raise constraint_error; -- CS: for the time being this will not regarded as error
+-- 										-- because chkpsn does not take secondary nets into account
+-- 									end if;
+-- 								end if;
+-- 							end if;
+-- 						end if;
+
+
+-- 					end if;
+-- 				end if;
+
+				-- set "cell list entered" and "statistics entered" markers
+-- 				if to_upper(get_field_from_line(line_of_file,1)) = type_start_of_section_mark'image(Section) then 
+-- 					section_name_scratch := to_bounded_string(get_field_from_line(line_of_file,2));
+-- 					if debug_level >= 60 then
+-- 						put_line("---> " & to_string(line_of_file));
+-- 						put_line("----> " & to_string(section_name_scratch));
+-- 					end if;
+
+
+-- 					if section_name_scratch = section_static_control_cells_class_EX_NA then
+-- 						section_static_control_cells_class_EX_NA_entered := true;
+-- 						if debug_level >= 10 then
+-- 							put_line("- " & section_static_control_cells_class_EX_NA);
+-- 						end if;
+-- 					end if;
+
+-- 					if section_name_scratch = section_static_control_cells_class_DX_NR then
+-- 						section_static_control_cells_class_DX_NR_entered := true;
+-- 						if debug_level >= 10 then
+-- 							put_line("- " & section_static_control_cells_class_DX_NR);
+-- 						end if;
+-- 					end if;
+-- 
+-- 					if section_name_scratch = section_static_control_cells_class_PX then
+-- 						section_static_control_cells_class_PX_entered := true;
+-- 						if debug_level >= 10 then
+-- 							put_line("- " & section_static_control_cells_class_PX);
+-- 						end if;
+-- 					end if;
+-- 
+-- 					if section_name_scratch = section_static_output_cells_class_PX then
+-- 						section_static_output_cells_class_PX_entered := true;
+-- 						if debug_level >= 10 then
+-- 							put_line("- " & section_static_output_cells_class_PX);
+-- 						end if;
+-- 					end if;
+-- 
+-- 					if section_name_scratch = section_static_output_cells_class_DX_NR then
+-- 						section_static_output_cells_class_DX_NR_entered := true;
+-- 						if debug_level >= 10 then
+-- 							put_line("- " & section_static_output_cells_class_DX_NR);
+-- 						end if;
+-- 					end if;
+-- 
+-- 					if section_name_scratch = section_static_expect then
+-- 						section_static_expect_entered := true;
+-- 						if debug_level >= 10 then
+-- 							put_line("- " & section_static_expect);
+-- 						end if;
+-- 					end if;
+-- 
+-- 					if section_name_scratch = section_atg_expect then
+-- 						section_atg_expect_entered := true;
+-- 						if debug_level >= 10 then
+-- 							put_line("- " & section_atg_expect);
+-- 						end if;
+-- 					end if;
+-- 
+-- 					if section_name_scratch = section_atg_drive then
+-- 						section_atg_drive_entered := true;
+-- 						if debug_level >= 10 then
+-- 							put_line("- " & section_atg_drive);
+-- 						end if;
+-- 					end if;
+-- 
+-- 					if section_name_scratch = section_input_cells_class_NA then 
+-- 						section_input_cells_in_class_NA_nets_entered := true;
+-- 						if debug_level >= 10 then
+-- 							put_line("- " & section_input_cells_class_NA);
+-- 						end if;
+-- 					end if;
+-- 
+-- 					if section_name_scratch = section_statistics then
+-- 						section_statistics_entered := true;
+-- 						if debug_level >= 10 then
+-- 							put_line("- " & section_statistics);
+-- 						end if;
+-- 					end if;
+
+-- 				end if;
+-- 			end if; -- if line contains anything
+--  		end loop;
+
+
+-- 		verify_net_classes;
+
+-- 		-- If the database is complete, check if there are cells that do not appear in cell lists.
+-- 		--  1. After chkpsn, this check is performed on the preliminary database.
+-- 		--  2. For other units that read the database, this is just a formal matter. In case someone messed around in the database,
+-- 		--     the check is useful.
+-- 		prog_position := 60000;
+-- 		if sections_processed.section_registers
+-- 			and sections_processed.section_netlist
+-- 			and sections_processed.section_static_control_cells_class_EX_NA 
+-- 			and sections_processed.section_static_control_cells_class_DX_NR
+-- 			and sections_processed.section_static_control_cells_class_PX
+-- 			and sections_processed.section_static_output_cells_class_PX
+-- 			and sections_processed.section_static_output_cells_class_DX_NR
+-- 			and sections_processed.section_static_expect
+-- 			and sections_processed.section_atg_expect
+-- 			and sections_processed.section_atg_drive
+-- 			and sections_processed.section_input_cells_class_NA then
+-- 				check_cells_are_in_cell_list; -- works only if cell lists are there
+-- 				--verify_shared_control_cells; -- find and check shared control cells
+-- 		end if;
+
+-- 		prog_position := 60100;
+-- 		verify_shared_control_cells; -- find and check shared control cells
+-- 		prog_position := 60200;
+-- 		make_shared_control_cell_journal;
+		--verify_net_classes;
+
+		--verify_shared_control_cells; -- find and check shared control cells
+
+-- 		prog_position := 60300;
+-- 		udb_summary.net_count_statistics := net_count_statistics;
+-- 		sections_processed.all_sections := sections_processed.section_scanpath_configuration 
+-- 										and sections_processed.section_registers
+-- 										and sections_processed.section_netlist
+-- 										and sections_processed.section_static_control_cells_class_EX_NA 
+-- 										and sections_processed.section_static_control_cells_class_DX_NR
+-- 										and sections_processed.section_static_control_cells_class_PX
+-- 										and sections_processed.section_static_output_cells_class_PX
+-- 										and sections_processed.section_static_output_cells_class_DX_NR
+-- 										and sections_processed.section_static_expect
+-- 										and sections_processed.section_atg_expect
+-- 										and sections_processed.section_atg_drive
+-- 										and sections_processed.section_input_cells_class_NA
+-- 										and sections_processed.section_statistics;
+-- 		udb_summary.sections_processed := sections_processed;
+
+-- 		prog_position := 60400;
+-- 		udb_summary.scanpath_ct		:= scanpath_counter;
+-- 		prog_position := 60500;
+--         --udb_summary.bic_ct			:= bic_counter;
+--         udb_summary.bic_ct			:= natural(length(list_of_bics));
+
+-- 		prog_position := 60600;
+-- 		mark_active_scanport;
+-- 		
+-- 		prog_position := 60700;
+-- 		close(file_data_base);
+-- 		set_input(previous_input);
+
+--   		return udb_summary;
+
+-- 	exception
+-- 		when others =>
+-- 			put_line("ERROR in data base in line :" & natural'image(line_counter));
+-- 			put_line("affected line reads        : " & trim(to_string(line_of_file),both));
+-- 			put_line("ERROR at program position  :" & natural'image(prog_position));
+-- 
+-- 			case prog_position is
+-- 				when 60400 =>
+-- 					--put_line("ERROR: Currently maximal" & type_scanpath_id'image(scanport_count_max) & " scanpath(s) supported !");
+-- 					put_line("ERROR: Currently maximal" & type_scanport_id'image(scanport_count_max) & " scanpath(s) supported !");
+-- 				when others => null;
+-- 			end case;
+-- 			raise;
+--    	end read_uut_data_base;
+
+
+-- 	function test_compiled (name_test : string) return boolean is
+-- 	-- Returns true if given test directory contains a vector file.
+-- 	-- name_test is assumed as absolute path !
+-- 	begin
+-- 		--put_line(name_test & row_separator_0 & simple_name(name_test) & row_separator_0 & file_extension_vector);
+-- 		if exists (compose (name_test, simple_name(name_test), file_extension_vector)) then
+-- 			return true;
+-- 		end if;
+-- 		return false;
+-- 	end test_compiled;
+
+-- 	function valid_script (name_script : string) return boolean is
+-- 	-- Returns true if given script is valid.
+-- 	begin
+-- 		if extension(name_script) = file_extension_script then
+-- 			-- CS: check more criteria
+-- 			return true;
+-- 		end if;
+-- 		return false;
+-- 	end valid_script;
+
+-- 	function valid_project (name_project : string) return boolean is
+-- 	-- Returns true if given project is valid.
+-- 	-- name_project is assumed as absolute path !
+-- 	begin
+-- 		if exists(compose (name_project, name_file_project_description)) then
+-- 			-- CS: check more criteria
+-- 			return true;
+-- 		end if;
+-- 		return false;
+-- 	end valid_project;
+
+
+-- 	procedure put_warning_on_too_many_parameters(line_number : positive) is
+-- 	begin
+-- 		put_line(standard_output,"WARNING: Too many parameters in line" & positive'image(line_number) & " ! Excessive parameters may be ignored !");
+-- 	end put_warning_on_too_many_parameters;
+
+
+-- 	procedure create_test_directory
+-- 		-- checks if test directory already exists
+-- 		-- asks user for confirmation to overwrite existing files residing therein
+-- 		-- creates test directory with readme.txt
+-- 		(
+-- 		test_name			: string;
+-- 		warnings_enabled	: boolean := true
+-- 		) is
+-- 		file_output 		: ada.text_io.file_type;
+-- 	begin
+-- 		-- check if test exists 
+-- 		if warnings_enabled then
+-- 			new_line;
+-- 			put_line("checking if test directory exists already ...");
+-- 			new_line;
+-- 		end if;
+-- 
+-- 		if exists (test_name) then -- if test directory exists
+-- 			if exists (compose (test_name,test_name,"seq")) then -- if seq file exists
+-- 
+-- 				if warnings_enabled then
+-- 					put_line("WARNING: Specified test already exists !");
+-- 					put_line("         All test data will be overwritten !");
+-- 
+-- 					-- CS: retain description file ?
+-- 					if m1.request_user_confirmation(question_form => 0, show_confirmation_dialog => true) then
+-- 						delete_tree(test_name);
+-- 					else
+-- 						raise program_error;
+-- 					end if;
+-- 				else
+-- 					if m1.request_user_confirmation(question_form => 0, show_confirmation_dialog => false) then
+-- 						delete_tree(test_name);
+-- 					else
+-- 						raise program_error;
+-- 					end if;
+-- 				end if; -- if warnings_enabled
+-- 
+-- 			else -- directory exists, but no seq file
+-- 
+-- 				if warnings_enabled then
+-- 
+-- 					put_line("WARNING: Specified directory does not contain test data !");
+-- 					put_line("         All contents will be deleted !");
+-- 
+-- 					if m1.request_user_confirmation(question_form => 0, show_confirmation_dialog => true) then
+-- 						delete_tree(test_name);
+-- 					else
+-- 						raise program_error;
+-- 					end if;
+-- 				else
+-- 					if m1.request_user_confirmation(question_form => 0, show_confirmation_dialog => true) then
+-- 						delete_tree(test_name);
+-- 					else
+-- 						raise program_error;
+-- 					end if;
+-- 				end if;
+-- 
+-- 			end if;
+-- 		end if;  -- if test directory exists
+-- 
+-- 		-- create directory and description file
+-- 		put_line("creating test directory ...");
+-- 		create_directory(test_name);
+-- 		create( file_output, name => (compose (test_name,"readme","txt"))); 
+-- 		put (file_output,"Test description: write your info here ... ");
+-- 		close(file_output);
+-- 	end create_test_directory;
+
+-- 	procedure write_diagnosis_netlist
+-- 		(
+-- 		-- Creates a netlist file in test directory.
+-- 		-- The fail diagnosis bases on this netlist.
+-- 		data_base : string;
+-- 		test_name : string
+-- 		) is
+-- 		previous_input	: ada.text_io.file_type renames current_input;
+-- 		previous_output	: ada.text_io.file_type renames current_output;
+-- 		line_of_file	: extended_string.bounded_string;
+-- 		section_entered	: boolean := false;
+-- 	begin
+-- 	 	put_line("writing netlist ...");
+-- 		create( file_test_netlist, name => compose (test_name, name_file_test_netlist));
+-- 		set_output(file_test_netlist);
+-- 		open(file => file_database, name => data_base, mode => in_file);
+-- 		set_input(file_database);
+-- 
+-- 		while not end_of_file 
+-- 			loop
+-- 				line_of_file := to_bounded_string(get_line);
+-- 				line_of_file := remove_comment_from_line(line_of_file);
+-- 				if get_field_count(to_string(line_of_file)) > 0 then -- if line contains anything
+-- 					if section_entered then
+-- 						-- inside section, look for EndSection mark to clear section_entered flag
+-- 						if index(line_of_file,section_mark.endsection) > 0 then
+-- 							section_entered := false;
+-- 							put_line(to_string(line_of_file)); -- section header should also go into the netlist
+-- 						else
+-- 							-- write line in netlist
+-- 							put_line(to_string(line_of_file));
+-- 						end if;
+-- 					else
+-- 						-- if "Section netlist" found, set section_entered flag
+-- 						if index(line_of_file,section_mark.section & row_separator_0 & section_netlist) > 0 then
+-- 							section_entered := true;
+-- 							put_line(to_string(line_of_file)); -- section footer should also go into the netlist
+-- 						end if;
+-- 					end if;
+-- 				end if;
+-- 			end loop;
+-- 
+-- 		set_output(previous_output); 
+-- 		set_input(previous_input);
+-- 	end write_diagnosis_netlist;
+
+-- 
+-- 	procedure write_test_section_options is
+-- 	-- writes section for options of test
+-- 		sp : type_ptr_scanport;
+-- 
+-- 		function trailer_to_string (trailer_in : type_trailer_sxr) return string is
+-- 			-- converts given trailer character wise to a string
+-- 			trailer_out : string (1..trailer_length);
+-- 		begin
+-- 			for t in 1..trailer_length loop
+-- 				case trailer_in(t) is
+-- 					when '0' => trailer_out(t) := type_bit_char_class_0'image('0')(2); -- (2) strips delimiters
+-- 					when '1' => trailer_out(t) := type_bit_char_class_0'image('1')(2);
+-- 				end case;
+-- 			end loop;
+-- 			return trailer_out;
+-- 		end trailer_to_string;
+-- 
+-- 	begin
+-- 		--put_line("SubSection options");
+-- 		put_line(section_mark.section & " options");
+-- 		put_line(" on_fail " & to_lower(type_on_fail_action'image(scanport_options_global.on_fail_action)));
+-- 		put_line(" frequency" & type_tck_frequency'image(scanport_options_global.tck_frequency)); 
+-- 		put_line(" trailer_ir " & trailer_to_string(scanport_options_global.trailer_sir));
+-- 		put_line(" trailer_dr " & trailer_to_string(scanport_options_global.trailer_sdr));
+-- 
+-- 		-- put scanport options for active/used scanports only
+-- 		for s in 1..scanport_count_max loop -- start search with port 1
+-- 			sp := ptr_sp;
+-- 			while sp /= null loop
+-- 				-- scanport must be active and id must match s
+-- 				if sp.active and sp.id = s then
+-- 					put_line(" voltage_out_port_" & trim(positive'image(s),left) & type_voltage_out'image(sp.voltage_out));
+-- 					put_line(" tck_driver_port_" & trim(positive'image(s),left) & row_separator_0 & to_lower(type_driver_characteristic'image(sp.characteristic_tck_driver)));
+-- 					put_line(" tms_driver_port_" & trim(positive'image(s),left) & row_separator_0 & to_lower(type_driver_characteristic'image(sp.characteristic_tms_driver))); 
+-- 					put_line(" tdo_driver_port_" & trim(positive'image(s),left) & row_separator_0 & to_lower(type_driver_characteristic'image(sp.characteristic_tdo_driver))); 
+-- 					put_line(" trst_driver_port_" & trim(positive'image(s),left) & row_separator_0 & to_lower(type_driver_characteristic'image(sp.characteristic_trst_driver)));
+-- 					put_line(" threshold_tdi_port_" & trim(positive'image(s),left) & type_threshold_tdi'image(sp.voltage_threshold_tdi));
+-- 				end if;
+-- 				sp := sp.next;
+-- 			end loop;
+-- 		end loop;
+-- 		--put_line("EndSubSection"); new_line(2);
+-- 		put_line(section_mark.endsection); new_line(2);
+-- 	end write_test_section_options;
+
+
+-- 	procedure write_test_init is
+-- 	-- append test init template file line by line to seq file
+-- 		previous_input	: file_type renames current_input;
+-- 		line			: extended_string.bounded_string;
+-- 	begin
+-- 		--put_line("Section sequence 1");
+-- 		put_line(section_mark.section & " sequence 1"); -- because the init sequence is always sequence 1
+-- 
+-- 		-- look which test init templates are available
+-- 		-- first, look for the customized template
+-- 		if exists(compose (name_directory_setup_and_templates, name_file_test_init_template)) then
+-- 			open( 
+-- 				file => file_test_init_template, 
+-- 				name => compose (name_directory_setup_and_templates, name_file_test_init_template),
+-- 				mode => in_file
+-- 				);
+-- 		else 
+-- 			put_line(standard_output, "WARNING: No customized test init template found in directory '" & name_directory_setup_and_templates & "'! Using default ...");
+-- 			if exists( compose (name_directory_setup_and_templates, name_file_test_init_template_default)) then
+-- 				open( 
+-- 					file => file_test_init_template, 
+-- 					name => (compose (name_directory_setup_and_templates, name_file_test_init_template_default)),
+-- 					mode => in_file
+-- 					);
+-- 			else
+-- 				put_line(standard_output, "ERROR: No test init template found !");
+-- 				raise constraint_error;
+-- 			end if;
+-- 		end if;
+-- 
+-- 		set_input(file_test_init_template);
+-- 
+-- 		while not end_of_file loop
+-- 			line := extended_string.to_bounded_string(get_line);
+-- 			put_line(extended_string.to_string(line));
+-- 		end loop;
+-- 
+-- 		set_input(previous_input);
+-- 	end write_test_init;
+
+-- 	procedure write_sir (with_new_line : boolean := true) is
+-- 	-- writes something like "sir id 6", increments sxr_ct, by default adds a line break
+-- 	begin
+-- 		-- write sir instruction -- example: "sir id 6"
+-- 		put(row_separator_0 & sequence_instruction_set.sir & sxr_id_identifier.id & type_vector_id'image(sxr_ct));
+-- 		if with_new_line then
+-- 			new_line;
+-- 		end if;
+-- 		sxr_ct := sxr_ct + 1;
+-- 	end write_sir;
+-- 
+-- 	procedure write_sdr (with_new_line : boolean := true) is
+-- 	-- writes something like "sdr id 6", increments sxr_ct, by default adds a line break
+-- 	begin
+-- 		-- write sdr instruction -- example: "sdr id 6"
+-- 		put(row_separator_0 & sequence_instruction_set.sdr & sxr_id_identifier.id & type_vector_id'image(sxr_ct));
+-- 		if with_new_line then
+-- 			new_line;
+-- 		end if;
+-- 		sxr_ct := sxr_ct + 1;
+-- 	end write_sdr;
+-- 
+-- 	procedure all_in(instruction : type_bic_instruction) is
+-- 	-- writes something like "set IC301 drv ir 7 downto 0 = 00000001 sample" for all bics
+-- 	-- if the desired instruction/mode does not exists, it aborts
+-- 		--b : type_ptr_bscan_ic;
+-- 
+-- 		procedure error_on_invalid_instruction(bic_name : universal_string_type.bounded_string; instruction : type_bic_instruction) is
+-- 		begin
+-- 			put_line(standard_output,"ERROR: IC '" & universal_string_type.to_string(bic_name) & "' does not support mode '" & type_bic_instruction'image(instruction) & "' !");
+-- 			raise constraint_error;
+-- 		end error_on_invalid_instruction;
+-- 
+-- 	begin
+-- 		put_line(" -- set all in mode '" & type_bic_instruction'image(instruction) & "'");
+-- 		--for position in 1..summary.bic_ct loop -- process as much as bics are in udb
+-- 
+-- 			--b := ptr_bic; -- reset bic pointer b
+--             --while b /= null loop
+--             for b in 1..length(list_of_bics) loop                
+-- 				--if element(list_of_bics,positive(b)).id = position then -- if bic id matches p:
+-- 
+-- 					-- if desired instruction does not exist, abort
+-- 					case instruction is
+-- 						when bypass		=> if not instruction_present(element(list_of_bics,positive(b)).opc_bypass) then error_on_invalid_instruction(element(list_of_bics,positive(b)).name,instruction); end if;
+-- 						when idcode		=> if not instruction_present(element(list_of_bics,positive(b)).opc_idcode) then error_on_invalid_instruction(element(list_of_bics,positive(b)).name,instruction); end if; 
+-- 						when usercode	=> if not instruction_present(element(list_of_bics,positive(b)).opc_usercode) then error_on_invalid_instruction(element(list_of_bics,positive(b)).name,instruction); end if;
+-- 						when preload	=> if not instruction_present(element(list_of_bics,positive(b)).opc_preload) then error_on_invalid_instruction(element(list_of_bics,positive(b)).name,instruction); end if;
+-- 						when intest		=> if not instruction_present(element(list_of_bics,positive(b)).opc_intest) then error_on_invalid_instruction(element(list_of_bics,positive(b)).name,instruction); end if;
+-- 						when clamp		=> if not instruction_present(element(list_of_bics,positive(b)).opc_clamp) then error_on_invalid_instruction(element(list_of_bics,positive(b)).name,instruction); end if;
+-- 						when highz		=> if not instruction_present(element(list_of_bics,positive(b)).opc_highz) then error_on_invalid_instruction(element(list_of_bics,positive(b)).name,instruction); end if;
+-- 						when sample		=> if not instruction_present(element(list_of_bics,positive(b)).opc_sample) then error_on_invalid_instruction(element(list_of_bics,positive(b)).name,instruction); end if;
+-- 						when extest		=> if not instruction_present(element(list_of_bics,positive(b)).opc_extest) then error_on_invalid_instruction(element(list_of_bics,positive(b)).name,instruction); end if;
+-- 					end case;
+-- 					-- instruction exists
+-- 
+-- 					-- write instruction drive (default part)
+-- 					-- example: "set IC301 drv ir 7 downto 0 := "
+-- 					put(row_separator_0 
+-- 						& sequence_instruction_set.set & row_separator_0
+-- 						& universal_string_type.to_string(element(list_of_bics,positive(b)).name) & row_separator_0
+-- 						& sxr_io_identifier.drive & row_separator_0
+-- 						& sir_target_register.ir
+-- 						& type_register_length'image(element(list_of_bics,positive(b)).len_ir - 1) & row_separator_0
+-- 						& sxr_vector_orientation.downto & row_separator_0 & "0" & row_separator_0
+-- 						& sxr_assignment_operator.assign & row_separator_0
+-- 						);
+-- 
+-- 					-- write instruction depended part
+-- 					case instruction is
+-- 						when idcode 	=> put_binary_class_1(element(list_of_bics,positive(b)).opc_idcode); -- example: "11111110 idcode"
+-- 						when usercode 	=> put_binary_class_1(element(list_of_bics,positive(b)).opc_usercode);
+-- 						when sample 	=> put_binary_class_1(element(list_of_bics,positive(b)).opc_sample);
+-- 						when preload 	=> put_binary_class_1(element(list_of_bics,positive(b)).opc_preload);
+-- 						when clamp 		=> put_binary_class_1(element(list_of_bics,positive(b)).opc_clamp);
+-- 						when highz 		=> put_binary_class_1(element(list_of_bics,positive(b)).opc_highz);
+-- 						when intest 	=> put_binary_class_1(element(list_of_bics,positive(b)).opc_intest);
+-- 						when extest 	=> put_binary_class_1(element(list_of_bics,positive(b)).opc_extest);
+-- 						when bypass 	=> put_binary_class_1(element(list_of_bics,positive(b)).opc_bypass);
+-- 					end case;
+-- 					put_line(row_separator_0 & to_lower(type_bic_instruction'image(instruction)));
+-- 
+-- 				--end if;
+-- 				--b := b.next;
+-- 			end loop;
+-- 		--end loop;
+-- 	end all_in;
+-- 
+-- 	procedure write_ir_capture is
+-- 	-- writes something like "set IC301 exp ir 7 downto 0 = 000XXX01" for all bics
+-- 		--b : type_ptr_bscan_ic;
+-- 	begin
+-- 		put_line(" -- set instruction capture pattern");
+-- 		--for position in 1..summary.bic_ct loop -- process as much as bics are in udb
+-- 
+-- 			--b := ptr_bic; -- reset bic pointer b
+--             --while b /= null loop
+--             for b in 1..length(list_of_bics) loop                
+-- 				--if element(list_of_bics,positive(b)).id = position then -- if bic id matches p:
+-- 					put(row_separator_0 
+-- 						& sequence_instruction_set.set & row_separator_0
+-- 						& universal_string_type.to_string(element(list_of_bics,positive(b)).name) & row_separator_0
+-- 						& sxr_io_identifier.expect & row_separator_0
+-- 						& sir_target_register.ir
+-- 						& type_register_length'image(element(list_of_bics,positive(b)).len_ir - 1) & row_separator_0
+-- 						& sxr_vector_orientation.downto & row_separator_0 & "0" & row_separator_0
+-- 						& sxr_assignment_operator.assign & row_separator_0
+-- 						);
+-- 					put_binary_class_1(element(list_of_bics,positive(b)).capture_ir);
+-- 					new_line;
+-- 				--end if;
+-- 				--b := b.next;
+-- 			end loop;
+-- 
+-- 		--end loop;
+-- 	end write_ir_capture;
+-- 
+-- 	procedure load_safe_values is
+-- 	-- writes something like "set IC303 drv boundary 17 downto 0 = X1XXXXXXXXXXXXXXXX"
+-- 	-- writes something like "set IC303 exp boundary 17 downto 0 = X"
+-- 		--b : type_ptr_bscan_ic;
+-- 	begin
+-- 		put_line(" -- load safe values");
+-- 		--for position in 1..summary.bic_ct loop -- process as much as bics are in udb
+-- 
+-- 			-- drive pattern
+-- 			--b := ptr_bic; -- reset bic pointer b
+--             --while b /= null loop
+--             for b in 1..length(list_of_bics) loop                
+-- 				--if element(list_of_bics,positive(b)).id = position then -- if bic id matches p:
+-- 
+-- 					-- WRITE DATA DRIVE (default part)
+-- 					-- example: "set IC300 drv"
+-- 					put(row_separator_0 
+-- 						& sequence_instruction_set.set & row_separator_0
+-- 						& universal_string_type.to_string(element(list_of_bics,positive(b)).name) & row_separator_0
+-- 						& sxr_io_identifier.drive & row_separator_0
+-- 						);
+-- 
+-- 					-- example: "boundary 5 downto 0 := XXX11"
+-- 					put(sdr_target_register.boundary
+-- 						& natural'image(element(list_of_bics,positive(b)).len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto 
+-- 						& " 0 "
+-- 						& sxr_assignment_operator.assign & row_separator_0
+-- 						);
+-- 					put_binary_class_1(element(list_of_bics,positive(b)).safebits);
+-- 					new_line;
+-- 
+-- 				--end if;
+-- 				--b := b.next;
+-- 			end loop;
+-- 		--end loop;
+-- 
+-- 		put_line(" -- nothing meaningful to expect here");
+-- 		--for position in 1..summary.bic_ct loop -- process as much as bics are in udb
+-- 
+-- 			-- expect pattern
+-- 			--b := ptr_bic; -- reset bic pointer b
+--             --while b /= null loop
+--             for b in 1..length(list_of_bics) loop                
+-- 				--if element(list_of_bics,positive(b)).id = position then -- if bic id matches p:
+-- 
+-- 					-- WRITE DATA EXPECT (default part)
+-- 					-- example: "set IC300 exp"
+-- 					put(row_separator_0 
+-- 						& sequence_instruction_set.set & row_separator_0
+-- 						& universal_string_type.to_string(element(list_of_bics,positive(b)).name) & row_separator_0
+-- 						& sxr_io_identifier.expect & row_separator_0
+-- 						);
+-- 
+-- 					-- example: "boundary 5 downto 0 := X"
+-- 					put(sdr_target_register.boundary
+-- 						& natural'image(element(list_of_bics,positive(b)).len_bsr - 1) & row_separator_0 & sxr_vector_orientation.downto 
+-- 						& " 0 "
+-- 						& sxr_assignment_operator.assign & row_separator_0
+-- 						& "X"
+-- 						);
+-- 					new_line;
+-- 
+-- 				--end if;
+-- 				--b := b.next;
+-- 			end loop;
+-- 
+-- 		--end loop;
+-- 	end load_safe_values;
+-- 
+-- 
+-- 	procedure load_static_drive_values is
+-- 	-- writes something like "set IC303 drv boundary 16=0 16=0 16=0 16=0 17=0 17=0 17=0 17=0"
+-- 		--b : type_ptr_bscan_ic;
+-- 
+-- 		-- definition of an object consisting of bic_name and cell_id. the object is part of a list which
+-- 		-- contains shared control cells already placed in the line.
+-- 		type type_shared_control_cells_already_placed;
+-- 		type type_ptr_shared_control_cells_already_placed is access type_shared_control_cells_already_placed;
+-- 		type type_shared_control_cells_already_placed is
+-- 			record
+-- 				next		: type_ptr_shared_control_cells_already_placed;
+-- 				bic_name	: universal_string_type.bounded_string;
+-- 				cell_id		: type_cell_id;
+-- 			end record;
+-- 		ptr_scp	: type_ptr_shared_control_cells_already_placed;
+-- 
+-- 		function cell_already_written (bic_name : universal_string_type.bounded_string; cell_id : type_cell_id) return boolean is
+-- 		-- some cells are shared control cells and must be written only once
+-- 		-- so we first check if the cell is shared. if yes, it must be checked if it has been written already
+-- 		-- if not written already it gets added to a list of "already placed shared control cells"
+-- 			s : type_ptr_shared_control_cells_already_placed := ptr_scp; -- set pointer s at end of list of "already placed shared control cells"
+-- 			cell_already_written : boolean := false; -- initial assumption is that the current cell has not been written yet
+-- 		begin
+-- 			if is_shared(bic_name, cell_id) then -- if is_shared
+-- 
+-- 				-- search in list of "already placed shared control cells"
+-- 				-- if cell found, set flag cell_already_written
+-- 				while s /= null loop
+-- 					if s.bic_name = bic_name and s.cell_id = cell_id then -- cell already written
+-- 						return true; -- once cell found, no more searching required
+-- 					end if;
+-- 					s := s.next; -- advance to next member in list
+-- 				end loop;
+-- 
+-- 				-- because this code is reached, the cell has not been written
+-- 				-- add bic and cell id to "list of already placed shared control cells"
+-- 				ptr_scp := new type_shared_control_cells_already_placed'(
+-- 					next		=> ptr_scp,
+-- 					bic_name	=> bic_name,
+-- 					cell_id		=> cell_id
+-- 					);
+-- 				return false;
+-- 			else
+-- 				return false;
+-- 			end if;  -- if is_shared
+-- 		end cell_already_written;
+-- 
+-- 		procedure look_up_locked_control_cells_in_class_EH_EL_NA_nets(bic_name : universal_string_type.bounded_string) is
+-- 		-- for the given bic_name, extracts all cell ids and drive values from a list of lines like: 
+-- 		-- class NA primary_net /CS_000-800H device IC300 pin 2 control_cell 105 locked_to disable_value 0
+-- 			c : type_ptr_cell_list_static_control_cells_class_EX_NA := ptr_cell_list_static_control_cells_class_EX_NA;
+-- 		begin
+-- 			while c /= null loop -- loop through cell list
+-- 				if c.device = bic_name then -- if bic found in cell list
+-- 
+-- 					if not cell_already_written(c.device, c.cell) then
+-- 						put(type_cell_id'image(c.cell) & sxr_assignment_operator.assign
+-- 						& type_bit_char_class_0'image(c.disable_value)(2)); -- strip delimiters
+-- 					end if;
+-- 
+-- 				end if; -- if bic found in cell list
+-- 				c := c.next;
+-- 			end loop;  -- loop through cell list
+-- 		end look_up_locked_control_cells_in_class_EH_EL_NA_nets;
+-- 
+-- 		procedure look_up_locked_control_cells_in_class_DX_NR(bic_name : universal_string_type.bounded_string) is
+-- 		-- extracts cell id and drive value from a line like: 
+-- 		-- class NR secondary_net LED0_R device IC301 pin 2 control_cell 105 locked_to disable_value 0
+-- 		-- class NR primary_net LED0 device IC303 pin 10 control_cell 16 locked_to enable_value 0
+-- 			c : type_ptr_cell_list_static_control_cells_class_DX_NR := ptr_cell_list_static_control_cells_class_DX_NR;
+-- 		begin
+-- 			while c /= null loop
+-- 				if c.device = bic_name then -- bic found in cell list
+-- 
+-- 					-- shared control cells must be written only once					
+-- 					if not cell_already_written(c.device, c.cell) then
+-- 						put(type_cell_id'image(c.cell) & sxr_assignment_operator.assign);
+-- 						case c.locked_to_enable_state is
+-- 							when true  => put(type_bit_char_class_0'image(c.enable_value)(2)); -- strip delimiters
+-- 							when false => put(type_bit_char_class_0'image(c.disable_value)(2)); -- strip delimiters
+-- 						end case;
+-- 					end if;
+-- 
+-- 				end if; -- if bic found in cell list
+-- 				c := c.next; 
+-- 			end loop;
+-- 		end look_up_locked_control_cells_in_class_DX_NR;
+-- 
+-- 		procedure look_up_locked_control_cells_in_class_PU_PD_nets(bic_name : universal_string_type.bounded_string) is
+-- 		-- for the given bic_name, extracts all cell ids and drive values from a list of lines like: 
+-- 		-- class PU primary_net PU1 device IC300 pin 42 control_cell 45 locked_to disable_value 0
+-- 			c : type_ptr_cell_list_static_control_cells_class_PX := ptr_cell_list_static_control_cells_class_PX;
+-- 		begin
+-- 			while c /= null loop -- loop through cell list
+-- 				if c.device = bic_name then -- if bic found in cell list
+-- 
+-- 					if not cell_already_written(c.device, c.cell) then
+-- 						put(type_cell_id'image(c.cell) & sxr_assignment_operator.assign
+-- 						& type_bit_char_class_0'image(c.disable_value)(2)); -- strip delimiters
+-- 					end if;
+-- 
+-- 				end if; -- if bic found in cell list
+-- 				c := c.next;
+-- 			end loop;  -- loop through cell list
+-- 		end look_up_locked_control_cells_in_class_PU_PD_nets;
+-- 
+-- 		procedure look_up_locked_output_cells_in_class_PU_PD_nets(bic_name : universal_string_type.bounded_string) is
+-- 		-- for the given bic_name, extracts all cell ids and drive values from a list of lines like: 
+-- 		-- class PU primary_net A14 device IC300 pin 33 output_cell 19 locked_to drive_value 0
+-- 			c : type_ptr_cell_list_static_output_cells_class_PX := ptr_cell_list_static_output_cells_class_PX;
+-- 		begin
+-- 			while c /= null loop -- loop through cell list
+-- 				if c.device = bic_name then -- if bic found in cell list
+-- 
+-- 					if not cell_already_written(c.device, c.cell) then
+-- 						put(type_cell_id'image(c.cell) & sxr_assignment_operator.assign
+-- 						& type_bit_char_class_0'image(c.drive_value)(2)); -- strip delimiters
+-- 					end if;
+-- 
+-- 				end if; -- if bic found in cell list
+-- 				c := c.next;
+-- 			end loop;  -- loop through cell list
+-- 		end look_up_locked_output_cells_in_class_PU_PD_nets;
+-- 
+-- 		procedure look_up_static_output_cells_class_DX_NR(bic_name : universal_string_type.bounded_string) is
+-- 		-- for the given bic_name, extracts all cell ids and drive values from a list of lines like: 
+-- 		-- class DL primary_net RST device IC300 pin 25 output_cell 4 locked_to drive_value 0
+-- 			c : type_ptr_cell_list_static_output_cells_class_DX_NR := ptr_cell_list_static_output_cells_class_DX_NR;
+-- 		begin
+-- 			while c /= null loop -- loop through cell list
+-- 				if c.device = bic_name then -- if bic found in cell list
+-- 
+-- 					if not cell_already_written(c.device, c.cell) then
+-- 						put(type_cell_id'image(c.cell) & sxr_assignment_operator.assign
+-- 						& type_bit_char_class_0'image(c.drive_value)(2)); -- strip delimiters
+-- 					end if;
+-- 
+-- 				end if; -- if bic found in cell list
+-- 				c := c.next;
+-- 			end loop;  -- loop through cell list
+-- 		end look_up_static_output_cells_class_DX_NR;
+-- 
+-- 
+-- 	begin
+-- 		put_line(" -- load static drive values");
+-- 		--for position in 1..summary.bic_ct loop -- process as much as bics are in udb
+-- 
+-- 			-- drive pattern
+-- 			--b := ptr_bic; -- reset bic pointer b
+--             --while b /= null loop
+--             for b in 1..length(list_of_bics) loop    
+-- 				--if element(list_of_bics,positive(b)).id = position then -- if bic id matches p:
+-- 
+-- 					-- look ahead in cell lists if bic is listed there at all
+-- 					-- if bic is not in cell any list, the particular bic can be skipped
+-- 					--if bic_has_static_drive_values(b.name) then
+-- 					if element(list_of_bics,positive(b)).has_static_drive_cell then
+-- 
+-- 						-- WRITE DATA DRIVE (default part)
+-- 						-- example: "set IC300 drv boundary"
+-- 						put(row_separator_0 
+-- 							& sequence_instruction_set.set & row_separator_0
+-- 							& universal_string_type.to_string(element(list_of_bics,positive(b)).name) & row_separator_0
+-- 							& sxr_io_identifier.drive & row_separator_0
+-- 							);
+-- 						put(sdr_target_register.boundary);
+-- 
+-- 						-- WRITE DATA DRIVE (bic and cell depended part)
+-- 						look_up_locked_control_cells_in_class_EH_EL_NA_nets(element(list_of_bics,positive(b)).name);
+-- 						look_up_locked_control_cells_in_class_DX_NR(element(list_of_bics,positive(b)).name);
+-- 						look_up_locked_control_cells_in_class_PU_PD_nets(element(list_of_bics,positive(b)).name);
+-- 						look_up_locked_output_cells_in_class_PU_PD_nets(element(list_of_bics,positive(b)).name);
+-- 						look_up_static_output_cells_class_DX_NR(element(list_of_bics,positive(b)).name);
+-- 						new_line;
+-- 
+-- 					end if;
+-- 				--end if;
+-- 				--b := b.next;
+-- 			end loop;
+-- 		--end loop;
+-- 	end load_static_drive_values;
+-- 
+-- 
+-- 	procedure load_static_expect_values is
+-- 	-- writes something like " set IC300 exp boundary 14=0 11=1 5=0"
+-- 		--b : type_ptr_bscan_ic;
+-- 
+-- 		procedure look_up_static_expect(bic_name : universal_string_type.bounded_string) is
+-- 		-- for the given bic_name, extracts all cell ids and expect values from the static_expect cell list of lines like: 
+-- 		-- example 1 : class DL primary_net /CPU_MREQ device IC300 pin 28 input_cell 14 expect_value 0
+-- 		-- example 2 : class DH secondary_net MREQ device IC300 pin 28 input_cell 14 expect_value 1 primary_net_is MR45
+-- 			c : type_ptr_cell_list_static_expect := ptr_cell_list_static_expect;
+-- 		begin
+-- 			while c /= null loop -- loop through cell list
+-- 				if c.device = bic_name then -- if bic found in cell list
+-- 
+-- 					put(type_cell_id'image(c.cell) & sxr_assignment_operator.assign
+-- 						& type_bit_char_class_0'image(c.expect_value)(2)); -- strip delimiters
+-- 
+-- 				end if; -- if bic found in cell list
+-- 				c := c.next;
+-- 			end loop;  -- loop through cell list
+-- 		end look_up_static_expect;
+-- 
+-- 	begin
+-- 		put_line(" -- load static expect values");
+-- 		--for position in 1..summary.bic_ct loop -- process as much as bics are in udb
+-- 
+-- 			-- drive pattern
+--             --b := ptr_bic; -- reset bic pointer b
+-- 			--while b /= null loop
+--             for b in 1..length(list_of_bics) loop    
+-- 				--if element(list_of_bics,positive(b)).id = position then -- if bic id matches p:
+-- 
+-- 					-- look ahead in cell list static_expect if bic is listed there at all
+-- 					-- if bic is not in cell list, the particular bic can be skipped
+-- 					--if bic_has_static_expect_values(b.name) then
+-- 					if element(list_of_bics,positive(b)).has_static_expect_cell then
+-- 
+-- 						-- WRITE DATA EXPECT (default part)
+-- 						-- example: "set IC300 exp boundary"
+-- 						put(row_separator_0 
+-- 							& sequence_instruction_set.set & row_separator_0
+-- 							& universal_string_type.to_string(element(list_of_bics,positive(b)).name) & row_separator_0
+-- 							& sxr_io_identifier.expect & row_separator_0
+-- 							);
+-- 						put(sdr_target_register.boundary);
+-- 
+-- 						-- WRITE DATA EXPECT (bic and cell depended part)
+-- 						look_up_static_expect(element(list_of_bics,positive(b)).name);
+-- 						new_line;
+-- 
+-- 					end if;
+-- 				--end if;
+-- 				--b := b.next;
+-- 			end loop;
+-- 		--end loop;
+-- 	end load_static_expect_values;
+
+
+-- 	procedure write_end_of_test is
+-- 	begin
+-- 		new_line;
+-- 		put_line("-- finish test (uncomment commands if required)");
+-- 		put_line(row_separator_0 & sequence_instruction_set.trst);
+-- 		put_line(comment & row_separator_0 & sequence_instruction_set.power
+-- 			& row_separator_0 & power_cycle_identifier.down
+-- 			& row_separator_0 & power_channel_name.all_channels);
+-- 
+-- 		for s in 1..scanport_count_max loop
+-- 			put_line(comment & row_separator_0 & sequence_instruction_set.disconnect & row_separator_0
+-- 				& scanport_identifier.port
+-- 				& positive'image(s));
+-- 		end loop;
+-- 		put_line(section_mark.endsection);
+-- 	end write_end_of_test;
+
+
+
+-- 	function is_scanport_active (id : type_scanport_id) return boolean is
+-- 	-- returns true if scanport with given id is maked active
+-- 		s	: type_ptr_scanport := ptr_sp;
+-- 	begin
+-- 		while s /= null loop
+-- 			if s.id = id then
+-- 				if s.active = true then
+-- 					return true;
+-- 				end if;
+-- 			end if;
+-- 			s := s.next;
+-- 		end loop;
+-- 		return false;
+-- 	end is_scanport_active;
+
+
+--     --function get_bic_coordinates (bic_name : universal_string_type.bounded_string) return type_ptr_bscan_ic is
+-- 	-- returns a pointer to the bic (pointer is null, if given bic does not exist)    
+--     function get_bic_coordinates (bic_name : universal_string_type.bounded_string) return natural is
+--     -- returns the bic id. returns zero if bic does not exist.
+--         --b	: type_ptr_bscan_ic := ptr_bic;
+--     begin
+--         --while b /= null loop
+--         for b in 1..length(list_of_bics) loop    
+-- 			if element(list_of_bics,positive(b)).name = bic_name then
+--             --exit;
+--                 return positive(b);
+-- 			end if;
+-- 			--b := b.next;
+-- 		end loop;
+-- 		return 0;
+-- 	end get_bic_coordinates;
+
+
+-- 	function get_cell_assignment (text_in : string) return type_set_cell_assignment is
+-- 	-- fractions a given string like 102=1 into cell id and value
+-- 		ca			: type_set_cell_assignment;
+-- 		ifs_pos		: natural;
+-- 		ifs_ct		: natural;
+-- 		ifs_length	: natural := sxr_assignment_operator.assign'last;
+-- 
+-- 		procedure put_example is
+-- 		begin
+-- 			put_line(standard_output,"       Note: Whitespace not allowed in cell assignments !");
+-- 			put_line(standard_output,"       Example: set IC1 drv boundary 16" & sxr_assignment_operator.assign & "1"
+-- 										& " 17" & sxr_assignment_operator.assign & "x"
+-- 										& " 77" & sxr_assignment_operator.assign & "0");
+-- 			raise constraint_error;
+-- 		end put_example;
+-- 	begin
+-- 		-- count occurences of ifs
+-- 		-- it must occur only once, otherwise abort
+-- 		ifs_ct	:= ada.strings.fixed.count(text_in,sxr_assignment_operator.assign);
+-- 		if ifs_ct = 1 then
+-- 			-- ifs must not be at the start of the field.
+-- 			-- ifs must not be at the end of the field (length of ifs matters here !).
+-- 			ifs_pos := index(text_in,sxr_assignment_operator.assign);
+-- 			if ifs_pos > 1 and ifs_pos < text_in'last-(ifs_length-1) then
+-- 				-- extract cell id
+-- 				ca.cell_id := type_cell_id'value(text_in(text_in'first..ifs_pos-1));
+-- 
+-- 				-- there must be only one character after ifs
+-- 				if text_in'last - (ifs_pos + ifs_length) = 0 then
+-- 					-- extract value
+-- 					case text_in(text_in'last) is
+-- 						when '0' 		=> ca.value := '0';
+-- 						when '1' 		=> ca.value := '1';
+-- 						when 'x' | 'X'	=> ca.value := 'x';
+-- 						when others =>
+-- 							put_line(standard_output,"ERROR: Expected a 0,1 or x. Found '" & text_in(text_in'last) & "' !");
+-- 							put_example;
+-- 					end case;
+-- 				else
+-- 					--put_line(standard_output,text_in & natural'image(text_in'last) & natural'image(ifs_pos) & natural'image(ifs_length));
+-- 					put_line(standard_output,"ERROR: Field separator '" & sxr_assignment_operator.assign & "' must be followed by a single character like 0,1 or x !");
+-- 					put_example;
+-- 				end if;
+-- 			else
+-- 				put_line(standard_output,"ERROR: Field separator '" & sxr_assignment_operator.assign & "' must be preceeded by a cell id and followed by the value !");
+-- 				put_example;
+-- 			end if;
+-- 		else
+-- 			put_line(standard_output,"ERROR: One field separator '" & sxr_assignment_operator.assign & "' allowed/required in cell assigment !");
+-- 			put_example;
+-- 		end if;
+-- 
+-- 		return ca;
+-- 	end get_cell_assignment;
+
+
+
+-- 	function get_test_base_address 
+-- 		-- version 001 / MBL
+-- 		( test_name : string) return string is
+-- 		previous_input	: Ada.Text_IO.File_Type renames current_input;
+-- 		input_file 		: Ada.Text_IO.File_Type;
+-- 		line			: unbounded_string;
+-- 		--base_address	: hex_number_32bit := "FFFFFFFF"; -- this default address is regarded as illegal for the calling program
+-- 		base_address	: string (1..8) := "FFFFFFFF"; -- this default address is regarded as illegal for the calling program
+-- 		-- cs: base_address should be a type hex_number_32bit
+-- 	begin
+-- 		-- check if journal file exists	
+-- 		if not exists ( "setup/journal.txt" ) then 
+-- 			put_line("ERROR ! No journal found ! Please compile test '" & test_name & "' first !");
+-- 			raise constraint_error;
+-- 		else
+-- 			-- read journal file
+-- 			Open(
+-- 				file => input_file,
+-- 				Mode => in_file,
+-- 				Name => "setup/journal.txt"
+-- 				);
+-- 			set_input(input_file);
+-- 
+-- 			-- search for latest entry of test
+-- 			while not end_of_file
+-- 			loop
+-- 				line := m1.remove_comment_from_line(get_line);
+-- 				if m1.get_field(line,1) = test_name then -- on match
+-- 					--base_address := hex_number_32bit(m1.get_field(line,2)); -- updated base_address until last matching entry found
+-- 					--base_address := m1.get_field(line,2); -- updated base_address until last matching entry found
+-- 					base_address := m1.get_field(line,2)(1..8); -- leave off format indicator
+-- 				end if;
+-- 			end loop;
+-- 
+-- 			--put_line(hex_number'(base_address));
+-- 			-- if test entry not found
+-- 			if base_address = "FFFFFFFF" then -- if base_address still default
+-- 				put_line("ERROR ! No compilation found ! Please compile test '" & test_name & "' first !");
+-- 				raise constraint_error;
+-- 			end if;
+-- 
+-- 		end if;
+-- 
+-- 		close(input_file);
+-- 		set_input(previous_input);
+-- 
+-- 		return base_address;
+-- 	end get_test_base_address;
+
+
+-- 	procedure find_net_in_netlist
+-- 		(
+-- 		test_name	: string;
+-- 		device		: string;
+-- 		bit_pos		: string;
+-- 		expect_value: type_logic_level_as_word
+-- 		) is
+-- 		previous_input		: ada.text_io.file_type renames current_input;
+-- 		previous_output		: ada.text_io.file_type renames current_output;
+-- 		input_file 			: Ada.Text_IO.File_Type;
+-- 		line				: unbounded_string;
+-- 		netlist_file_name	: unbounded_string;
+-- 		--net_count			: natural := 0;
+-- 		net_name			: unbounded_string;
+-- 		net_name_primary	: unbounded_string;
+-- 		net_class			: type_net_class;
+-- 		net_section_entered				: boolean := false;
+-- 		secondary_net_section_entered 	: boolean := false;
+-- 		primary_net_section_entered 	: boolean := false;
+-- 		secondary_net_entered 			: boolean := false;
+-- 		primary_net 					: boolean 	:= false;
+-- 	begin
+-- 		prog_position := "FN001";
+-- 		set_output(standard_output);
+-- 		netlist_file_name := to_unbounded_string(test_name & "/netlist.txt"); -- compose name of netlist file
+-- 		--put_line("---0---> ");
+-- 		if exists(to_string(netlist_file_name)) then
+-- 			-- read netlist
+-- 			open(
+-- 				file => input_file,
+-- 				mode => in_file,
+-- 				name => to_string(netlist_file_name)
+-- 				);
+-- 			set_input(input_file);
+-- 
+-- 			-- step 1:
+-- 			-- find affected receiver pin in net list
+-- 			-- once found, the last net name found must be saved
+-- 			prog_position := "FN010";
+-- 			while not end_of_file
+-- 			loop
+-- 				line := get_line;
+-- 				if get_field_count(to_string(line)) > 0 then -- if line contains anything
+-- 
+-- 					if m1.get_field(line,1) = "SubSection" and m1.get_field(line,2) /= "secondary_nets_of" then
+-- 						--net_count := net_count + 1; -- count nets
+-- 						net_name := to_unbounded_string(m1.get_field(line,2));
+-- 						net_class := type_net_class'value(m1.get_field(line,4));
+-- 					end if;
+-- 
+-- 					if m1.get_field(line,1) = device then
+-- 						--put_line(line);
+-- 						if 	(to_lower(m1.get_field(line,10)) = "input" and m1.get_field(line,8) = bit_pos) or
+-- 							(to_lower(m1.get_field(line,18)) = "input" and m1.get_field(line,16) = bit_pos) then
+-- 							-- cs: add more possible fields for input cell, self monitoring cells, ...
+-- 	-- 						new_line;
+-- 	-- 						if secondary_net then
+-- 	-- 							put_line("secondary net : " & net_name);
+-- 	-- 						else
+-- 	-- 							put_line("primary net   : " & net_name);
+-- 	-- 							net_name_primary := net_name;
+-- 	-- 						end if;
+-- 							--put_line("---2---> " & to_string(net_name));
+-- 							exit;
+-- 							-- cs: show pins
+-- 							-- cs: show primary/secondary nets
+-- 						end if;
+-- 					end if;
+-- 				end if; -- if line contains anything
+-- 			end loop;
+-- 			put_line("net class         : " & type_net_class'image(net_class));
+-- 			-- now, we know the net name and net class
+-- 
+-- 			-- step 2:
+-- 			-- find net again by the name found before and find out if it is a primary or secondary net
+-- 			prog_position := "FN100";
+-- 			reset(input_file);
+-- 			while not end_of_file loop
+-- 				line := get_line;
+-- 				if get_field_count(to_string(line)) > 0 then -- if line contains anything
+-- 
+-- 					-- if net outside a secondary net section, it is a primary net
+-- 					if not secondary_net_section_entered then
+-- 						if m1.get_field(line,1) = "SubSection" and m1.get_field(line,2) = to_string(net_name) then
+-- 							primary_net := true; -- set primary net flag
+-- 							exit;
+-- 						end if;
+-- 					end if;
+-- 
+-- 					-- if net inside a secondary net section, it is a secondary net
+-- 					if secondary_net_section_entered then
+-- 						if m1.get_field(line,1) = "SubSection" and m1.get_field(line,2) = to_string(net_name) then
+-- 							exit; -- leave primary net flag reset
+-- 						end if;
+-- 					end if;
+-- 
+-- 					if not secondary_net_section_entered then
+-- 						if m1.get_field(line,1) = "SubSection" and m1.get_field(line,2) = "secondary_nets_of" then
+-- 							secondary_net_section_entered := true;
+-- 						end if;
+-- 					end if;
+-- 
+-- 					if secondary_net_section_entered then
+-- 						if m1.get_field(line,1) = "EndSubSection" and m1.get_field(line,2) = "secondary_nets_of" then
+-- 							secondary_net_section_entered := false;
+-- 						end if;
+-- 					end if;
+-- 
+-- 				end if; -- if line contains anything
+-- 			end loop;
+-- 			-- now, we know if it is a primary or secondary net (flag primary_net)
+-- 
+-- 			-- step 3:
+-- 			prog_position := "FN200";
+-- 			new_line;
+-- 			reset(input_file);
+-- 			-- if it is a primary net, show its content
+-- 			if primary_net then
+-- 				put_line("primary net       : " & net_name);
+-- 				new_line;
+-- 				--put_line("check pins :");
+-- 				while not end_of_file loop
+-- 					line := get_line;
+-- 					if get_field_count(to_string(line)) > 0 then -- if line contains anything
+-- 
+-- 						if primary_net_section_entered then
+-- 							if m1.get_field(line,1) = "EndSubSection" then
+-- 								--new_line;
+-- 								exit;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						if primary_net_section_entered then
+-- 							put_line(m1.get_field(line,1) & " pin " & m1.get_field(line,5));
+-- 						end if;
+-- 
+-- 						if not primary_net_section_entered then
+-- 							if m1.get_field(line,1) = "SubSection" and m1.get_field(line,2) = to_string(net_name) then
+-- 								primary_net_section_entered := true;
+-- 							end if;
+-- 						end if;
+-- 
+-- 					end if; -- if line contains anything
+-- 				end loop;
+-- 
+-- 				-- find secondary nets belonging to this primary net
+-- 				-- and show their content
+-- 				prog_position := "FN300";
+-- 				reset(input_file);
+-- 				secondary_net_section_entered := false;
+-- 				while not end_of_file loop
+-- 					line := get_line;
+-- 					if get_field_count(to_string(line)) > 0 then -- if line contains anything
+-- 
+-- 						if secondary_net_section_entered then
+-- 							if m1.get_field(line,1) = "EndSubSection" and m1.get_field(line,2) = "secondary_nets_of" and m1.get_field(line,3) = to_string(net_name) then
+-- 								secondary_net_section_entered := false;
+-- 								exit;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						if secondary_net_section_entered then
+-- 							prog_position := "FN350";
+-- 							if secondary_net_entered then
+-- 								if m1.get_field(line,1) = "EndSubSection" then
+-- 									secondary_net_entered := false;
+-- 									new_line;
+-- 								end if;
+-- 							end if;
+-- 
+-- 							if secondary_net_entered then
+-- 								put_line(m1.get_field(line,1) & " pin " & m1.get_field(line,5));
+-- 							end if;
+-- 
+-- 							if m1.get_field(line,1) = "SubSection" then
+-- 								secondary_net_entered := true;
+-- 								put_line("secondary net     : " & m1.get_field(line,2));
+-- 								--put_line("check :");
+-- 								new_line;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						if not secondary_net_section_entered then
+-- 							if m1.get_field(line,1) = "SubSection" and m1.get_field(line,2) = "secondary_nets_of" and m1.get_field(line,3) = to_string(net_name) then
+-- 								secondary_net_section_entered := true;
+-- 								--put_line("secondary net : " & net_name);
+-- 								--new_line;
+-- 								--put_line("check :");
+-- 								new_line;
+-- 							end if;
+-- 						end if;
+-- 
+-- 					end if; -- if line contains anything
+-- 				end loop;
+-- 
+-- 			else -- it is a secondary net
+-- 
+-- 				-- find this secondary net
+-- 				-- and show its content
+-- 				prog_position := "FN400";
+-- 				reset(input_file);
+-- 				secondary_net_entered := false;
+-- 				while not end_of_file loop
+-- 					line := get_line;
+-- 					if get_field_count(to_string(line)) > 0 then -- if line contains anything
+-- 
+-- 						if secondary_net_entered then
+-- 							if m1.get_field(line,1) = "EndSubSection" then
+-- 								secondary_net_entered := false;
+-- 								exit;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						if secondary_net_entered then
+-- 							--put_line(line);
+-- 							put_line(m1.get_field(line,1) & " pin " & m1.get_field(line,5));
+-- 						end if;
+-- 
+-- 						-- remember the most recent primary net name
+-- 						if m1.get_field(line,1) = "SubSection" and m1.get_field(line,2) = "secondary_nets_of" then
+-- 							net_name_primary := to_unbounded_string(m1.get_field(line,3));
+-- 						end if;
+-- 
+-- 						if not secondary_net_entered then
+-- 							if m1.get_field(line,1) = "SubSection" and m1.get_field(line,2) = to_string(net_name) then
+-- 								secondary_net_entered := true;
+-- 								put_line("secondary net     : " & net_name);
+-- 								--new_line;
+-- 								--put_line("check :");
+-- 								new_line;
+-- 							end if;
+-- 						end if;
+-- 					
+-- 					end if; -- if line contains anything
+-- 				end loop;
+-- 
+-- 				-- find primary net belonging to this secondary net 
+-- 				-- and show its content
+-- 				prog_position := "FN500";
+-- 				reset(input_file);
+-- 				primary_net_section_entered := false;
+-- 				new_line;
+-- 				while not end_of_file loop
+-- 					line := get_line;
+-- 					if get_field_count(to_string(line)) > 0 then -- if line contains anything
+-- 
+-- 						if primary_net_section_entered then
+-- 							if m1.get_field(line,1) = "EndSubSection" then
+-- 								primary_net_section_entered := false;
+-- 								exit;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						if primary_net_section_entered then
+-- 							put_line(m1.get_field(line,1) & " pin " & m1.get_field(line,5));
+-- 						end if;
+-- 
+-- 						if not primary_net_section_entered then
+-- 							if m1.get_field(line,1) = "SubSection" and m1.get_field(line,2) = to_string(net_name_primary) then
+-- 								primary_net_section_entered := true;
+-- 								put_line("primary net       : " & net_name_primary);
+-- 								--new_line;
+-- 								--put_line("check :");
+-- 								new_line;
+-- 							end if;
+-- 						end if;
+-- 
+-- 					end if; -- if line contains anything
+-- 				end loop;
+-- 
+-- 				-- show remaining secondary nets
+-- 				-- find secondary nets belonging to this primary net
+-- 				-- and show their content
+-- 				prog_position := "FN600";
+-- 				reset(input_file);
+-- 				new_line;
+-- 				secondary_net_section_entered := false;
+-- 				while not end_of_file loop
+-- 					line := get_line;
+-- 					if get_field_count(to_string(line)) > 0 then -- if line contains anything
+-- 
+-- 						if secondary_net_section_entered then
+-- 							if m1.get_field(line,1) = "EndSubSection" and m1.get_field(line,2) = "secondary_nets_of" and m1.get_field(line,3) = to_string(net_name_primary) then
+-- 								secondary_net_section_entered := false;
+-- 								exit;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						if secondary_net_section_entered then
+-- 
+-- 							prog_position := "FN650";
+-- 							if secondary_net_entered then
+-- 								if m1.get_field(line,1) = "EndSubSection" then
+-- 									secondary_net_entered := false;
+-- 									new_line;
+-- 								end if;
+-- 							end if;
+-- 
+-- 							if secondary_net_entered then
+-- 								put_line(m1.get_field(line,1) & " pin " & m1.get_field(line,5));
+-- 							end if;
+-- 
+-- 							-- skip the secondary net already displayed (see above)
+-- 							if m1.get_field(line,1) = "SubSection" and m1.get_field(line,2) /= to_string(net_name) then
+-- 								secondary_net_entered := true;
+-- 								put_line("secondary net : " & m1.get_field(line,2));
+-- 								--put_line("check :");
+-- 								new_line;
+-- 							end if;
+-- 						end if;
+-- 
+-- 						if not secondary_net_section_entered then
+-- 							if m1.get_field(line,1) = "SubSection" and m1.get_field(line,2) = "secondary_nets_of" and m1.get_field(line,3) = to_string(net_name_primary) then
+-- 								secondary_net_section_entered := true;
+-- 								--put_line("secondary nets affected further-on:");
+-- 								--new_line;
+-- 							end if;
+-- 						end if;
+-- 				
+-- 					end if; -- if line contains anything
+-- 				end loop;
+-- 
+-- 
+-- 			end if; -- if it is a primary net
+-- 			prog_position := "FN700";
+-- 
+-- 			-- DIAGNOSIS ON STUCK-AT AND MISSING PULL-RESISTORS
+-- 			new_line;
+-- 			put("stuck at ");
+-- 			case net_class is
+-- 				when EL | DL => put_line(type_logic_level_as_word'image(HIGH));
+-- 				when EH | DH => put_line(type_logic_level_as_word'image(LOW));
+-- 				when NR => 
+-- 					case expect_value is
+-- 						when LOW => put_line(type_logic_level_as_word'image(HIGH));
+-- 						when HIGH => put_line(type_logic_level_as_word'image(LOW));
+-- 					end case;
+-- 				when PU =>
+-- 					case expect_value is
+-- 						when LOW => put_line(type_logic_level_as_word'image(HIGH));
+-- 						when HIGH => put_line(type_logic_level_as_word'image(LOW) & " or Pull-Up resistor missing !");
+-- 					end case;
+-- 				when PD =>
+-- 					case expect_value is
+-- 						when HIGH => put_line(type_logic_level_as_word'image(LOW));
+-- 						when LOW => put_line(type_logic_level_as_word'image(HIGH) & " or Pull-Down resistor missing !");
+-- 					end case;
+-- 				when others => null;
+-- 			end case;
+-- 
+-- 
+-- 			close(input_file);
+-- 
+-- 		else -- if netlist exists
+-- 			prog_position := "FN750";
+-- 			put_line("WARNING: Netlist file " & netlist_file_name & "' not found !");
+-- 			put_line("         More detailled diagnosis not possible !");
+-- 		end if;
+-- 		prog_position := "FN800";
+-- 		set_input(previous_input);
+-- 		prog_position := "FN810";
+-- 		set_output(previous_output);
+-- 		prog_position := "FN820";
+-- 
+-- 	exception
+-- 		when Constraint_Error => 
+-- 				put_line("constraint_error at position :" & prog_position);
+-- 		when others => 
+-- 				put_line("exception at position :" & prog_position);
+-- 
+-- 	end find_net_in_netlist;
+
+
+
+
+-- 	
+-- 	procedure locate_fail -- locates fail by test_name, failed_scanpath, sxr_id, sxr_length and sxr_fail_pos
+-- 		( 
+-- 		test_name		: string; -- test_name indicates where to look for the register files (that is the test directory)
+-- 		failed_scanpath	: type_scanport_id;
+-- 		sxr_id			: type_vector_id;
+-- 		sxr_length		: type_vector_length;
+-- 		sxr_fail_pos	: type_sxr_fail_position; --zero-based !
+-- 		expect_value	: type_logic_level_as_word
+-- 		)
+-- 		is
+-- 		previous_input	: ada.text_io.file_type renames current_input;
+-- 		previous_output	: ada.text_io.file_type renames current_output;
+-- 		input_file 		: ada.text_io.file_type;
+-- 		line			: extended_string.bounded_string;
+-- 		reg_file_name	: extended_string.bounded_string;
+-- 		device_count	: natural := 0;
+--  		fail_pos_temp	: type_sxr_fail_position;  --zero-based !
+-- 		sxr				: type_scan; -- SIR or SDR
+-- 
+-- 		procedure show_failed_device
+-- 			(
+-- 			position	: string;
+-- 			name		: string;
+-- 			register	: string;
+-- 			bit_pos 	: string
+-- 			) is
+-- 		begin
+-- 			put_line("device position   :" & position);
+-- 			put_line("device name       : " & name);
+-- 			put_line("register          : " & register);
+-- 			put_line("failed bit pos.   :" & bit_pos & " (zero-based)");
+-- 			put_line("expected          : " & type_logic_level_as_word'image(expect_value));
+-- 		end show_failed_device;
+-- 
+-- 		scanpath_device_count_max : natural := 100; -- CS: should be dynamic
+-- 		type scanpath_device_type is 
+-- 			record
+-- 				name						: universal_string_type.bounded_string;
+-- 				length_register_instruction	: type_vector_length;
+-- 				length_register_boundary	: type_vector_length;
+-- 				data_register_selected		: type_bic_data_register;
+-- 				-- CS: add more (manufacturer specific) registers and properties here
+-- 			end record;
+-- 		type scanpath_device_array_type is array (natural range <>) of scanpath_device_type;
+-- 		subtype scanpath_device_array_type_sized is scanpath_device_array_type (1..scanpath_device_count_max);
+-- 		scanpath_device 	: scanpath_device_array_type_sized; -- contains as much devices as given in scanpath_device_count_max
+-- 
+-- 	begin
+-- 		prog_position := "LF100";
+-- 		set_output(standard_output);
+-- 
+-- 				-- compose name of affected register file
+-- 				reg_file_name := to_bounded_string(
+-- 									test_name & "/" &
+-- 									register_file_prefix &
+-- 									trim( natural'image(failed_scanpath) ,left) &
+-- 									register_file_suffix
+-- 									);
+-- 				--put_line(standard_output,reg_file_name);
+-- 				if exists(to_string(reg_file_name)) then
+-- 					-- read register file
+-- 					open(
+-- 						file => input_file,
+-- 						mode => in_file,
+-- 						name => to_string(reg_file_name)
+-- 					);
+-- 					set_input(input_file);
+-- 					prog_position := "LF110";
+-- 					loop_through_register_file:
+-- 					while not end_of_file -- loop through register file
+-- 					loop
+-- 						line := extended_string.to_bounded_string(get_line);
+-- 						prog_position := "LF120";
+-- 
+-- 						-- find line that starts with "device" and collect register lengths
+-- 						if get_field_from_line(text_in => line, position => 1) = "device" then
+-- 
+-- 							-- count devices in chain
+-- 							-- NOTE: the first device (number 1) found is closest to scan master TDO
+-- 							device_count := device_count + 1;    
+-- 
+-- 							-- fill register information fields
+-- 
+-- 							-- device name
+-- 							scanpath_device(device_count).name := to_bounded_string(get_field_from_line(text_in => line, position => 3));
+-- 
+-- 							-- instruction register length
+-- 							scanpath_device(device_count).length_register_instruction := 
+-- 											string_to_natural(
+-- 												get_field_from_line(text_in => line, position => 5) & "d"
+-- 												);
+-- 
+-- 							-- boundary register length
+--  							scanpath_device(device_count).length_register_boundary :=
+-- 											string_to_natural(
+-- 												get_field_from_line(text_in => line, position => 7) & "d"
+-- 												);
+--  						end if;  -- if device found
+-- 
+-- 						-- find failed step by step_id
+-- 						prog_position := "LF130";
+-- 						--if m1.get_field(line,1) = "step" and natural_32bit_type'value(trim(m1.get_field(line,2),left)) = scanpath(s).step_id then
+-- 						if get_field_from_line(text_in => line, position => 1) = "step" and -- CS: declare "step" in m1_internal.ads
+-- 							string_to_natural(get_field_from_line(text_in => line, position => 2) & "d") = sxr_id then
+-- 
+-- 							fail_pos_temp := sxr_fail_pos; --load fail_pos_temp with start value. it will be used for locating the failed device
+-- 
+-- 							--put_line(line);
+-- 							-- figure out if the fail occured in an SIR or SDR
+-- 							-- if m1.get_field(line,5) = "ir" then -- cs: we assume all other devices are also in SIR mode
+-- 							if get_field_from_line(text_in => line, position => 5) = "ir" then -- CS: declare "ir" in m1_internal.ads
+-- 								--scanpath(s).scan_type := SIR; -- so it is now clear that the fail occured during an SIR
+-- 								sxr := SIR; -- so it is now clear that the fail occured during an SIR
+-- 								put_line("scan type         : " & type_scan'image(sxr));
+-- 
+-- 								-- start fail bit search with device closest to BSC_TDI in given regfile, that is device with higest number
+-- 								-- the UUT LSB is at the scan master TDI
+-- 								prog_position := "LF140";
+-- 								--for d in reverse 1..scanpath(s).device_count
+-- 								for d in reverse 1..device_count
+-- 								loop
+-- 									-- since this is an SIR we assume all devices are in ir mode. so we address only the ir registers
+-- 									if fail_pos_temp >= scanpath_device(d).length_register_instruction then -- fail pos outside current ir register
+-- 										-- update fail_pos_tmp
+-- 										fail_pos_temp := fail_pos_temp - scanpath_device(d).length_register_instruction;
+-- 										--put_line("bit pos. tmp  :" & natural_32bit_type'image(fail_pos_temp));
+-- 									else
+-- 										show_failed_device
+-- 											(
+-- 											position => natural'image(d),
+-- 											name => to_string(scanpath_device(d).name),
+-- 											register => "IR",
+-- 											bit_pos => type_vector_length'image(fail_pos_temp)
+-- 											);
+-- 										exit loop_through_register_file;
+-- 									end if;
+-- 								end loop;
+-- 
+-- 								-- if fail bit not in any device, it is a trailer failure 
+-- 								put_line("trailer failure at bit position :" & type_vector_length'image(fail_pos_temp) & " (zero-based)");
+-- 
+-- 							else -- cs: we assume all other scan types are data scans (SDR)
+-- 								 -- cs: if at least one field 5 is a data register name, assume all remaining devices also in SDR mode
+-- 								prog_position := "LF150";
+-- 								--scanpath(s).scan_type := SDR; -- so it is now clear that the fail occured during an SDR
+-- 								sxr := SDR; -- so it is now clear that the fail occured during an SDR
+-- 								--put_line("scan type     : SDR");
+-- 								put_line("scan type         : " & type_scan'image(sxr));
+-- 
+-- 								-- read selected data registers selected in devices. 
+-- 								-- read lines ahead to get data registers of all devices belonging to this step
+-- 								-- for d in 1..scanpath(s).device_count
+-- 								--for d in reverse 1..scanpath(s).device_count -- CS: assume device closest to BSC TDI appears first (highest pos.)
+-- 								for d in reverse 1..device_count -- CS: assume device closest to BSC TDI appears first (highest pos.)
+-- 								loop
+-- 									--if d > 1 then -- the current line is to be skipped as we are already there
+-- 									--if d < scanpath(s).device_count then -- the current line is to be skipped as we are already there
+-- 									if d < device_count then -- the current line is to be skipped as we are already there
+-- 										line := extended_string.to_bounded_string(get_line);
+-- 									end if;
+-- 									--put_line(line);
+-- 									--if m1.get_field(line,5) = "bypass" then
+-- 									if get_field_from_line(text_in => line, position => 5) = to_lower(type_bic_data_register'image(BYPASS)) then
+-- 										scanpath_device(d).data_register_selected := BYPASS;
+-- 									end if;
+-- 
+-- 									--if m1.get_field(line,5) = "idcode" then
+-- 									if get_field_from_line(text_in => line, position => 5) = to_lower(type_bic_data_register'image(IDCODE)) then
+-- 										scanpath_device(d).data_register_selected := IDCODE;
+-- 									end if;
+-- 
+-- 									--if m1.get_field(line,5) = "usercode" then
+-- 									if get_field_from_line(text_in => line, position => 5) = to_lower(type_bic_data_register'image(USERCODE)) then
+-- 										scanpath_device(d).data_register_selected := USERCODE;
+-- 									end if;
+-- 
+-- 									--if m1.get_field(line,5) = "boundary" then
+-- 									if get_field_from_line(text_in => line, position => 5) = to_lower(type_bic_data_register'image(BOUNDARY)) then
+-- 										scanpath_device(d).data_register_selected := BOUNDARY;
+-- 										--put_line(line);
+-- 									end if;
+-- 								end loop;
+-- 								-- now we know: which device of this scanpath had which data register selected
+-- 	
+-- 								-- start fail bit search with device closest to BSC_TDI in given regfile, that is device with higest number
+-- 								-- the UUT LSB is at the scan master TDI
+-- 								prog_position := "LF160";
+-- 								--for d in reverse 1..scanpath(s).device_count
+-- 								for d in reverse 1..device_count
+-- 								loop
+-- 									case scanpath_device(d).data_register_selected is
+-- 														-- if fail pos outside selected data register, updating fail_pos_temp required
+-- 										when BYPASS => 
+-- 													if fail_pos_temp >= bic_bypass_register_length then 
+-- 														fail_pos_temp := fail_pos_temp - bic_bypass_register_length;
+-- 													else
+-- 														show_failed_device
+-- 															(
+-- 															position => natural'image(d),
+-- 															name => to_string(scanpath_device(d).name),
+-- 															register => type_bic_data_register'image(scanpath_device(d).data_register_selected),
+-- 															bit_pos => type_vector_length'image(fail_pos_temp)
+-- 															);
+-- 														exit loop_through_register_file;
+-- 													end if;
+-- 										when IDCODE => 
+-- 													if fail_pos_temp >= bic_idcode_register_length then
+-- 														fail_pos_temp := fail_pos_temp - bic_idcode_register_length;
+-- 													else
+-- 														show_failed_device
+-- 															(
+-- 															position => natural'image(d),
+-- 															name => to_string(scanpath_device(d).name),
+-- 															register => type_bic_data_register'image(scanpath_device(d).data_register_selected),
+-- 															bit_pos => type_vector_length'image(fail_pos_temp)
+-- 															);
+-- 														exit loop_through_register_file;
+-- 													end if;
+-- 										when USERCODE => 
+-- 													if fail_pos_temp >= bic_usercode_register_length then
+-- 														fail_pos_temp := fail_pos_temp - bic_usercode_register_length;
+-- 													else
+-- 														show_failed_device
+-- 															(
+-- 															position => natural'image(d),
+-- 															name => to_string(scanpath_device(d).name),
+-- 															register => type_bic_data_register'image(scanpath_device(d).data_register_selected),
+-- 															bit_pos => type_vector_length'image(fail_pos_temp)
+-- 															);
+-- 														exit loop_through_register_file;
+-- 													end if;
+-- 										when BOUNDARY =>
+-- 													--put_line("device    : " & natural'image(d));
+-- 													prog_position := "LF170";
+-- 													if fail_pos_temp >= scanpath_device(d).length_register_boundary then
+-- 														fail_pos_temp := fail_pos_temp - scanpath_device(d).length_register_boundary;
+-- 														--put_line("fail pos. : " & natural_32bit_type'image(fail_pos_temp));
+-- 													else
+-- 														show_failed_device
+-- 															(
+-- 															position => natural'image(d),
+-- 															name => to_string(scanpath_device(d).name),
+-- 															register => type_bic_data_register'image(scanpath_device(d).data_register_selected),
+-- 															bit_pos => type_vector_length'image(fail_pos_temp)
+-- 															);
+-- 														prog_position := "LF175";
+-- 														find_net_in_netlist(
+-- 															test_name => test_name,
+-- 															device => to_string(scanpath_device(d).name),
+-- 															bit_pos => trim(type_vector_length'image(fail_pos_temp),left),
+-- 															expect_value => expect_value
+-- 															);
+-- 														prog_position := "LF176";
+-- 														exit loop_through_register_file;
+-- 													end if;
+-- 									end case;	
+-- 									
+-- 								end loop;
+-- 
+-- 								-- if fail bit not in any device, it is a trailer failure 
+-- 								prog_position := "LF180";
+-- 								put_line("trailer failure at bit position :" & type_vector_length'image(fail_pos_temp) & " (zero-based)");
+-- 							end if;
+-- 
+-- 
+-- 							exit; -- no further register file scan required, cs: remove if more fails are to be located
+-- 						end if;
+-- 					end loop loop_through_register_file;
+-- 					prog_position := "LF190";
+-- 					--put_line(standard_output,"-------------------------");
+-- 					close(input_file);
+-- 
+-- 				else
+-- 					put_line("WARNING: Scan path #" & type_scanport_id'image(failed_scanpath) & " register file not found !");
+-- 					put_line("         More detailled diagnosis not possible !");
+-- 				end if;
+-- -- 			end if;  -- if failed scan path found
+-- -- 		end loop;
+-- 		prog_position := "LF300";
+-- 		set_input(previous_input);
+-- 		prog_position := "LF310";
+-- 		set_output(previous_output);
+-- 		prog_position := "LF320";
+-- 	exception
+-- 		when Constraint_Error => 
+-- 				put_line("constraint_error at position :" & prog_position);
+-- 		when others => 
+-- 				put_line("exception at position :" & prog_position);
+-- 	end locate_fail;
+
+
+-- 	procedure message_on_scan_master_not_preset is
+-- 	begin
+-- 		put_line(message_error & "No " & name_bsc & " connected or invalid firmware !");
+-- 	end message_on_scan_master_not_preset;
+
+-- 	function set_breakpoint
+-- 		(
+-- 		interface_to_scan_master	: string;
+-- 		vector_id_breakpoint		: type_vector_id_breakpoint;
+-- 		bit_position				: type_sxr_break_position
+-- 		) return boolean is
+-- 		result_action	: boolean := false;
+-- 	begin
+-- 		if scan_master_present then
+-- 			interface_init(interface_name => interface_to_scan_master);
+-- 
+-- 			-- set sxr id
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_breakpoint_sxr_a); -- lowbyte
+-- 			interface_write(get_byte_from_word(word_in => unsigned_16(vector_id_breakpoint), position => 0));
+-- 			
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_breakpoint_sxr_b); -- highbyte
+-- 			interface_write(get_byte_from_word(word_in => unsigned_16(vector_id_breakpoint), position => 1));
+-- 
+-- 			-- bit position
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_breakpoint_bit_pos_a); -- lowbyte
+-- 			interface_write(get_byte_from_doubleword(word_in => unsigned_32(bit_position), position => 0));
+-- 			
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_breakpoint_bit_pos_b);
+-- 			interface_write(get_byte_from_doubleword(word_in => unsigned_32(bit_position), position => 1));
+-- 
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_breakpoint_bit_pos_c);
+-- 			interface_write(get_byte_from_doubleword(word_in => unsigned_32(bit_position), position => 2));
+-- 
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_breakpoint_bit_pos_d); -- highbyte
+-- 			interface_write(get_byte_from_doubleword(word_in => unsigned_32(bit_position), position => 3));
+-- 			
+-- 			interface_close;
+-- 
+-- 			-- CS: read back breakpoint data and verify. use read_bsc_status_registers
+-- 
+-- 			-- read bsc status to get rx/tx errors
+-- 			read_bsc_status_registers(interface_to_scan_master,display => false);
+-- 			
+-- 			result_action := true;
+-- 		else
+-- 			message_on_scan_master_not_preset;
+-- 		end if;
+-- 
+-- 		return result_action;
+-- 
+-- 		exception
+-- 			when others =>
+-- 				result_action := false;
+-- 				return result_action;
+-- 	end set_breakpoint;
+
+
+-- 	function execute_test
+-- 		(
+-- 		test_name					: string;
+-- 		interface_to_scan_master	: string;
+-- 		step_mode					: type_step_mode -- step width
+-- 		) return result_test_type is
+-- 		test_step_done	: boolean := false;
+-- 		expect_value	: type_logic_level_as_word;
+-- 
+-- 		base_address	: type_mem_address_byte;
+-- 		previous_output	: ada.text_io.file_type renames current_output;
+-- 
+-- 		procedure display_scanport_bits (sp : type_scanport_id) is
+-- 			scratch : unsigned_8;
+-- 		begin
+-- 			scratch := get_byte_from_word(word_in => bsc_register_scanport_bits_1_2, position => sp-1); -- position 0 addresses lowbyte	
+-- 			new_line;			
+-- 			-- position 7    6    5    4    3    2    1    0
+-- 			put_line(" TDI  EXP  MASK FAIL TRST TDO  TMS  TCK"); put(row_separator_0);
+-- 			for b in reverse 0..7 loop -- start with bit 7 (MSB, on the left)
+-- 				if test_bit_unsigned_8(byte_in => scratch, position => b) then
+-- 					put(" H   ");
+-- 				else
+-- 					put(" L   ");
+-- 				end if;
+-- 			end loop;
+-- 			new_line(2);
+-- --			put_line(" --------------------------------------"); new_line;
+-- 			--put_line(scanport_bits(char_position..char_position+1));
+-- 		end display_scanport_bits;
+-- 
+-- 	begin
+-- 		set_output(standard_output);		
+-- 		if scan_master_present then		
+-- 			base_address := string_to_natural(m1_internal.get_test_base_address(test_name) & 'h');
+-- 			put_line ("base address   : " & natural_to_string(natural_in => base_address, base => 16, length => 8));
+-- 
+-- 			-- set start address
+-- 			interface_init(interface_name => interface_to_scan_master);
+-- 			
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_addr_start_a);
+-- 			interface_write(get_byte_from_doubleword(word_in => unsigned_32(base_address), position => 0));
+-- 
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_addr_start_b);
+-- 			interface_write(get_byte_from_doubleword(word_in => unsigned_32(base_address), position => 1));
+-- 
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_addr_start_c);
+-- 			interface_write(get_byte_from_doubleword(word_in => unsigned_32(base_address), position => 2));
+-- 
+-- 			-- set path
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_path);
+-- 			interface_write(sercom_path_ex_reads_ram);
+-- 
+-- 			-- clear command
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_cmd);
+-- 			interface_write(sercom_cmd_null);
+-- 			
+-- 			-- issue start command
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_cmd);
+-- 			-- map step_mode given to appropiate start command byte
+-- 			case step_mode is
+-- 				when OFF => 	interface_write(sercom_cmd_step_test);
+-- 				when TCK => 	interface_write(sercom_cmd_step_tck);
+-- 				when SXR => 	interface_write(sercom_cmd_step_sxr);
+-- 				--when others => 	step_width_hex := cmd_step_test; -- CS: should result in an an error !
+-- 			end case;
+-- 
+-- 			-- check if test has been started
+-- 			read_bsc_status_registers(interface_to_scan_master);
+-- 			if bsc_register_state_executor /= ex_state_idle then
+-- 				put_line("Test/step '"& test_name &"' started ...");
+-- 			else
+-- 				put_line(message_error & "Test/step '"& test_name &"' NOT started !");
+-- 				raise constraint_error;
+-- 			end if;
+-- 			
+-- 			-- wait for test/step done by cyclic reading of bsc status registers
+-- 			while not test_step_done
+-- 			loop
+-- 				read_bsc_status_registers(interface_to_scan_master);
+-- 				delay 1.0;
+-- 				put_line("waiting for test/step end ...");
+-- 				case bsc_register_state_executor is
+-- 	-- 				when ex_state_wait_step_sxr => -- test step sxr passed
+-- 	-- 					result_test := pass;
+-- 	-- 					test_step_done := true;
+-- 	-- 					exit; -- no more polling required 
+-- 					when ex_state_end_of_test => -- test finished and passed
+-- 						result_test := pass;
+-- 						test_step_done := true;
+-- 						exit; -- no more polling required 
+-- 					when ex_state_test_fail => -- test failed
+-- 						result_test := fail;
+-- 						test_step_done := true;
+-- 						exit; -- no more polling required 
+-- 					when ex_state_test_abort => -- test aborted
+-- 						result_test := fail;
+-- 						test_step_done := true;
+-- 						exit; -- no more polling required 
+-- 						
+-- 					-- several BSC error states:
+-- 					when ex_state_error_compiler => -- test data invalid or not loaded yet
+-- 						result_test := not_loaded;
+-- 						test_step_done := true;
+-- 						exit;
+-- 					when ex_state_error_frmt => -- test data invalid or not loaded yet
+-- 						result_test := not_loaded;
+-- 						test_step_done := true;
+-- 						exit; -- no more searching required 
+-- 					when ex_state_error_act_scnpth => -- test data invalid or not loaded yet
+-- 						result_test := not_loaded;
+-- 						test_step_done := true;
+-- 						exit; -- no more searching required 
+-- 					when ex_state_error_sxr_type => -- test data invalid or not loaded yet
+-- 						result_test := not_loaded;
+-- 						test_step_done := true;
+-- 						exit; -- no more searching required 
+-- 					when ex_state_error_rd_sxr_sp_id => -- test data invalid or not loaded yet
+-- 						result_test := not_loaded;
+-- 						test_step_done := true;
+-- 						exit; -- no more searching required 
+-- 					when ex_state_wait_step_sxr | ex_state_shift => -- step mode
+-- 						result_test := pass;
+-- 						test_step_done := true;
+-- 						put_line("STEP MODE / WAIT");
+-- 						exit;
+-- 					when others => null;
+-- 				end case;
+-- 			end loop;
+-- 
+-- 			-- if breakpoint set, display properties
+-- 			if bsc_register_breakpoint_sxr_id /= 0 then
+-- 				new_line;
+-- 				put_line("BREAKPOINT after:");
+-- 				put(" sxr :" & type_vector_id_breakpoint'image(type_vector_id_breakpoint(bsc_register_breakpoint_sxr_id)));
+-- 				if bsc_register_breakpoint_sxr_id = bsc_register_step_id then
+-- 					put(" ... reached");
+-- 				end if;
+-- 				if bsc_register_breakpoint_sxr_id < bsc_register_step_id then
+-- 					put(" ... passed");
+-- 				end if;
+-- 				new_line;
+-- 
+-- 				if bsc_register_breakpoint_bit_pos /= 0 then
+-- 					put(" bit :" & type_sxr_break_position'image(type_sxr_break_position(bsc_register_breakpoint_bit_pos)) & " (one-based)");
+-- 					if bsc_register_breakpoint_bit_pos = bsc_register_processed_bits_1 or
+-- 						bsc_register_breakpoint_bit_pos = bsc_register_processed_bits_2 then
+-- 						put(" ... reached");
+-- 					end if;
+-- 					if bsc_register_breakpoint_bit_pos < bsc_register_processed_bits_1 and
+-- 						bsc_register_breakpoint_bit_pos < bsc_register_processed_bits_2 then
+-- 						put(" ... passed");
+-- 					end if;
+-- 					new_line;
+-- 				end if;
+-- 			end if;
+-- 					
+-- 			-- display information on processed sxr if step mode is tck OR a breakpoint at a certain bit pos. is set
+-- 			new_line;
+-- 			if step_mode = SXR or step_mode = TCK or
+-- 				bsc_register_breakpoint_sxr_id /= 0 or bsc_register_breakpoint_bit_pos /= 0 then
+-- 				put_line("DEBUG STATUS:"); new_line;
+-- 				put(" SXR #" & trim(type_vector_id_breakpoint'image(type_vector_id_breakpoint(bsc_register_step_id)),left));
+-- 				if step_mode = TCK then
+-- 					put(" ... in progress");
+-- 				end if;
+-- 				new_line;
+-- 
+-- 				if step_mode = TCK or (bsc_register_breakpoint_sxr_id /= 0 and bsc_register_breakpoint_bit_pos /= 0) then
+-- 
+-- 					-- display tap states
+-- 					new_line(2);
+-- 						for s in 1..scanport_count_max loop
+-- 
+-- 							put_line(" TAP" & positive'image(s) & ":");
+-- 							put_line(" ------");
+-- 							display_scanport_bits(s); -- CS: show active scanpaths only
+-- 
+-- 							case (bsc_register_state_tap_1_2 and 15 * (16**(s-1)) ) is 
+-- 								when m1_firmware.tap_test_logic_reset 	=> put_line(row_separator_0 & m1_internal.tap_test_logic_reset);
+-- 								when m1_firmware.tap_run_test_idle 		=> put_line(row_separator_0 & m1_internal.tap_run_test_idle);
+-- 								when m1_firmware.tap_select_dr_scan 	=> put_line(row_separator_0 & m1_internal.tap_select_dr_scan);
+-- 								when m1_firmware.tap_capture_dr 		=> put_line(row_separator_0 & m1_internal.tap_capture_dr);
+-- 								when m1_firmware.tap_shift_dr 			=> put_line(row_separator_0 & m1_internal.tap_shift_dr);
+-- 								when m1_firmware.tap_exit1_dr 			=> put_line(row_separator_0 & m1_internal.tap_exit1_dr);
+-- 								when m1_firmware.tap_pause_dr 			=> put_line(row_separator_0 & m1_internal.tap_pause_dr);
+-- 								when m1_firmware.tap_exit2_dr 			=> put_line(row_separator_0 & m1_internal.tap_exit2_dr);
+-- 								when m1_firmware.tap_update_dr			=> put_line(row_separator_0 & m1_internal.tap_update_dr);
+-- 								when m1_firmware.tap_select_ir_scan 	=> put_line(row_separator_0 & m1_internal.tap_select_ir_scan);
+-- 								when m1_firmware.tap_capture_ir 		=> put_line(row_separator_0 & m1_internal.tap_capture_ir);
+-- 								when m1_firmware.tap_shift_ir 			=> put_line(row_separator_0 & m1_internal.tap_shift_ir);
+-- 								when m1_firmware.tap_exit1_ir 			=> put_line(row_separator_0 & m1_internal.tap_exit1_ir);
+-- 								when m1_firmware.tap_pause_ir 			=> put_line(row_separator_0 & m1_internal.tap_pause_ir);
+-- 								when m1_firmware.tap_exit2_ir 			=> put_line(row_separator_0 & m1_internal.tap_exit2_ir);
+-- 								when m1_firmware.tap_update_ir			=> put_line(row_separator_0 & m1_internal.tap_update_ir);
+-- 								when others => null; -- CS: ERROR
+-- 							end case;
+-- 
+-- 							put(" processed bits :");
+-- 							case s is
+-- 								when 1 =>
+-- 									put(type_sxr_fail_position'image(type_sxr_fail_position(bsc_register_processed_bits_1)) & "/" &
+-- 										trim(type_sxr_fail_position'image(type_sxr_fail_position(bsc_register_length_sxr_1)),left));
+-- 								when 2 =>
+-- 									put(type_sxr_fail_position'image(type_sxr_fail_position(bsc_register_processed_bits_2)) & "/" &
+-- 										trim(type_sxr_fail_position'image(type_sxr_fail_position(bsc_register_length_sxr_2)),left));
+-- 								when others => null;
+-- 							end case;
+-- 							put_line(" (one-based)");
+-- 							put_line(" --------------------------------------");
+-- 							new_line;
+-- 						end loop;
+-- 				end if;
+-- 				--put_line(column_separator_0);
+-- 			end if;
+-- 
+-- 				
+-- 			-- DIAGNOSIS
+-- 			case bsc_register_state_executor is
+-- 				when ex_state_test_fail => -- test failed
+-- 					put_line("Test" & row_separator_0 & failed & exclamation & " Diagnosis:");
+-- 					put_line("failed scanpath   :" & unsigned_8'image(bsc_register_failed_scanpath));
+-- 					put_line("step id (dec)     :" & type_vector_id'image(type_vector_id(bsc_register_step_id)));
+-- 					put("sxr length (dec)  :");
+-- 					case bsc_register_failed_scanpath is
+-- 						when 1 =>
+-- 							put(type_vector_length'image(type_vector_length(bsc_register_length_sxr_1)));
+-- 						when 2 =>
+-- 							put(type_vector_length'image(type_vector_length(bsc_register_length_sxr_2)));
+-- 						when others => null;
+-- 					end case;
+-- 					put_line(" (one-based)");
+-- 
+-- 					put("sxr fail pos (dec):");
+-- 					case bsc_register_failed_scanpath is
+-- 						when 1 =>
+-- 							put(type_vector_length'image(type_vector_length(bsc_register_processed_bits_1)));
+-- 						when 2 =>
+-- 							put(type_vector_length'image(type_vector_length(bsc_register_processed_bits_2)));
+-- 						when others => null;
+-- 					end case;
+-- 					put_line(" (one-based)");
+-- 
+-- 					--put("expected          : ");
+-- 					case bsc_register_failed_scanpath is
+-- 						when 1 =>
+-- 							if (bsc_register_scanport_bits_1_2 and 64) = 64 then
+-- 								expect_value := high;
+-- 							else
+-- 								expect_value := low;
+-- 							end if;
+-- 						when 2 =>
+-- 							if (bsc_register_scanport_bits_1_2 and 64 * 256) = 64 * 256 then
+-- 								expect_value := high;
+-- 							else
+-- 								expect_value := low;
+-- 							end if;
+-- 						when others => null;
+-- 					end case;
+-- 					--put_line(type_logic_level_as_word'image(expect_value));
+-- 
+-- 					-- locate fail
+-- 					case bsc_register_failed_scanpath is
+-- 						when 1 =>
+-- 							locate_fail(
+-- 								test_name		=> test_name,
+-- 								failed_scanpath	=> type_scanport_id(bsc_register_failed_scanpath),
+-- 								sxr_id			=> type_vector_id(bsc_register_step_id),
+-- 								sxr_length		=> type_vector_length(bsc_register_length_sxr_1),
+-- 								sxr_fail_pos	=> type_sxr_fail_position(bsc_register_processed_bits_1 - 1), 
+-- 										-- since fail bit position is one-base we must subtract 1
+-- 										-- because locate_fail requires zero-based indexing 
+-- 								expect_value	=> expect_value
+-- 								);
+-- 						when 2 =>
+-- 							locate_fail(
+-- 								test_name		=> test_name,
+-- 								failed_scanpath	=> type_scanport_id(bsc_register_failed_scanpath),
+-- 								sxr_id			=> type_vector_id(bsc_register_step_id),
+-- 								sxr_length		=> type_vector_length(bsc_register_length_sxr_2),
+-- 								sxr_fail_pos	=> type_sxr_fail_position(bsc_register_processed_bits_2 - 1), 
+-- 										-- since fail bit position is one-base we must subtract 1
+-- 										-- because locate_fail requires zero-based indexing 
+-- 								expect_value	=> expect_value
+-- 								);
+-- 						when others => null;
+-- 					end case;
+-- 							
+-- 				when ex_state_test_abort => -- test aborted
+-- 					put_line("Test" & row_separator_0 & aborted & row_separator_0 & exclamation);
+-- 
+-- 				when others => null;
+-- 			end case;
+-- 
+-- 
+-- 			interface_close;
+-- 
+-- 			-- read bsc status to get rx/tx errors
+-- 			read_bsc_status_registers(interface_to_scan_master,display => false);
+-- 			
+-- 		else
+-- 			result_test := fail;
+-- 			message_on_scan_master_not_preset;
+-- 		end if;
+-- 
+-- 		set_output(previous_output);		
+-- 		return result_test;
+-- 
+-- 		exception
+-- 			when others =>
+-- 				result_test := fail;
+-- 				raise;
+-- 				return result_test;
+-- 	end execute_test;
+
+
+-- 	function load_test
+-- 	-- Uploads a given test (vector file) in the BSC. Returns true if successful.
+-- 	-- Uses the page write mode when transferring the actual data.
+-- 		(
+-- 		test_name					: string;
+-- 		interface_to_scan_master	: string
+-- 		) return boolean is
+-- 		result_action	: boolean := false;
+-- 		base_address	: type_mem_address_byte; -- the mem address to load the file at
+-- 		previous_output	: ada.text_io.file_type renames current_output;
+-- 		byte_scratch	: unsigned_8;
+-- 		size_of_vec_file	: file_size;
+-- 		page_count			: natural;
+-- 		byte_count_total	: natural;
+-- 		fill_byte_count		: natural;
+-- 	begin
+-- 		set_output(standard_output);		
+-- 		if scan_master_present then		
+-- 			if exists (compose (test_name,test_name, file_extension_vector)) then -- CS: use function test_compiled ?
+-- 				put_line ("test name      : " & test_name);
+-- 				base_address := string_to_natural(m1_internal.get_test_base_address(test_name) & 'h');
+-- 				put_line ("base address   : " & natural_to_string(natural_in => base_address, base => 16, length => 8));
+-- 				size_of_vec_file := size(compose (test_name, test_name, file_extension_vector));
+-- 				put_line ("file size      :" & natural'image(natural(size_of_vec_file))); 
+-- 
+-- 				interface_init(interface_name => interface_to_scan_master);
+-- 
+-- 				-- clear command
+-- 				interface_write(sercom_head_write);
+-- 				interface_write(sercom_addr_cmd);
+-- 				interface_write(sercom_cmd_null);
+-- 
+-- 				-- set path
+-- 				interface_write(sercom_head_write);
+-- 				interface_write(sercom_addr_path);
+-- 				interface_write(sercom_path_rf_writes_ram);
+-- 
+-- 				-- set start address
+-- 				interface_write(sercom_head_write);
+-- 				interface_write(sercom_addr_addr_start_a);
+-- 				interface_write(get_byte_from_doubleword(word_in => unsigned_32(base_address), position => 0));
+-- 
+-- 				interface_write(sercom_head_write);
+-- 				interface_write(sercom_addr_addr_start_b);
+-- 				interface_write(get_byte_from_doubleword(word_in => unsigned_32(base_address), position => 1));
+-- 
+-- 				interface_write(sercom_head_write);
+-- 				interface_write(sercom_addr_addr_start_c);
+-- 				interface_write(get_byte_from_doubleword(word_in => unsigned_32(base_address), position => 2));
+-- 
+-- 				-- SEND FILE
+-- 				-- open vector file
+-- 				seq_io_unsigned_byte.open(file_vector, seq_io_unsigned_byte.in_file, compose(test_name, test_name, file_extension_vector));
+-- 
+-- 				-- If vector file is smaller than a page, the page_count must be set to 1. Because
+-- 				-- we are going to transfer at least one page.
+-- 				-- If vector file is larger than a page, calculate the number of pages required. Round up if nessecariy.
+-- 				if ( natural(size_of_vec_file) < sercom_page_size ) then -- only one page
+-- 					page_count := 1;
+-- 				else -- more than one page
+-- 					page_count := natural(size_of_vec_file) / sercom_page_size;
+-- 					if ( natural(size_of_vec_file) rem sercom_page_size ) > 0 then -- round up
+-- 						page_count := page_count + 1;
+-- 					end if;
+-- 				end if;
+-- 
+-- 				-- Send header with page bit set.
+-- 				interface_write(sercom_head_write + sercom_head_page);
+-- 
+-- 				-- Calculate the number of fill bits required in case the last page is not completely filled 
+-- 				-- with payload data. 
+-- 				-- Calculate the total number of bytes to transfer (incl. fill bytes)
+-- 				fill_byte_count := page_count * sercom_page_size - natural(size_of_vec_file);
+-- 				byte_count_total := natural(size_of_vec_file) + fill_byte_count;
+-- --				put_line("byte count total " & natural'image(byte_count_total));
+-- 
+-- 				-- Send payload bytes one by one. When the actual number of "real" data bytes
+-- 				-- is reached, start sending fill bytes. When a new page is to begin, send header (with page bit set).
+-- 				for b in 1..byte_count_total loop
+-- --					put("byte " & natural'image(b));
+-- 
+-- 					if b <= natural(size_of_vec_file) then -- get real data from vector file
+-- 						seq_io_unsigned_byte.read(file_vector, byte_scratch);
+-- 					else -- set fill byte
+-- 						byte_scratch := sercom_page_fill_byte;
+-- 					end if;
+-- 					
+-- 					interface_write(byte_scratch); -- send data
+-- 
+-- 					-- send header when new page begins (execpt when last byte has been transferred)
+-- 					if b < byte_count_total then
+-- 						if (b rem sercom_page_size) = 0 then
+-- 							-- CS: read rx errors
+-- 							put(".");
+-- 							interface_write(sercom_head_write + sercom_head_page);
+-- 						end if;
+-- 					end if;
+-- 				end loop;
+-- -- 				if page_count > 2 then 
+-- -- 					new_line;
+-- -- 				end if;
+-- 				-- CS: read rx errors
+-- 
+-- 				-- close vector file
+-- 				seq_io_unsigned_byte.close(file_vector);
+-- 
+-- 				-- set path
+-- 				interface_write(sercom_head_write);
+-- 				interface_write(sercom_addr_path);
+-- 				interface_write(sercom_path_null);
+-- 						
+-- 				interface_close;
+-- 
+-- 				-- read bsc status to get rx/tx errors
+-- 				read_bsc_status_registers(interface_to_scan_master,display => false);
+-- 				
+-- 				result_action := true;
+-- 			else
+-- 				put_line("ERROR: Test '"& test_name &"' either does not exist or has not been compiled yet !");
+-- 				put_line("        Please generate/compile test, then try again.");
+-- 				result_action := false;
+-- 			end if;
+-- 		else
+-- 			message_on_scan_master_not_preset;
+-- 		end if;
+-- 		
+-- 		set_output(previous_output);
+-- 		return result_action;
+-- 
+-- 		exception
+-- 			when others =>
+-- 				result_action := false;
+-- 				return result_action;
+-- 	end load_test;
+
+
+-- 	function dump_ram
+-- 		(
+-- 		interface_to_scan_master	: string;
+-- 		mem_addr					: type_mem_address_byte
+-- 		) return boolean is
+-- 		result_action	: boolean := false;
+-- 		previous_output	: ada.text_io.file_type renames current_output;
+-- 		backup_addr_start_a	: unsigned_8;
+-- 		backup_addr_start_b	: unsigned_8;
+-- 		backup_addr_start_c	: unsigned_8;
+-- 		byte_scratch		: unsigned_8;
+-- 		mem_addr_scratch	: type_mem_address_byte := mem_addr;
+-- 	begin
+-- 		set_output(standard_output);
+-- 		if scan_master_present then		
+-- 
+-- 			-- backup current start address
+-- 			interface_init(interface_name => interface_to_scan_master);
+-- 			interface_write(sercom_head_read);
+-- 			interface_write(sercom_addr_addr_start_a);
+-- 			backup_addr_start_a := interface_read; -- lowbyte
+-- 
+-- 			interface_write(sercom_head_read);
+-- 			interface_write(sercom_addr_addr_start_b);
+-- 			backup_addr_start_b := interface_read;
+-- 
+-- 			interface_write(sercom_head_read);
+-- 			interface_write(sercom_addr_addr_start_c);
+-- 			backup_addr_start_c := interface_read; -- highbyte
+-- 
+-- 			-- set path
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_path);
+-- 			interface_write(sercom_path_rf_reads_ram);
+-- 
+-- 			-- set address to read ram content from
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_addr_start_a);
+-- 			byte_scratch := get_byte_from_doubleword( 
+-- 				word_in => unsigned_32(mem_addr),
+-- 				position => 0);
+-- 			interface_write(byte_scratch); -- lowbyte
+-- 			
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_addr_start_b);
+-- 			byte_scratch := get_byte_from_doubleword( 
+-- 				word_in => unsigned_32(mem_addr),
+-- 				position => 1);
+-- 			interface_write(byte_scratch);
+-- 
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_addr_start_c);
+-- 			byte_scratch := get_byte_from_doubleword( 
+-- 				word_in => unsigned_32(mem_addr),
+-- 				position => 2);
+-- 			interface_write(byte_scratch); -- highbyte
+-- 			
+-- 			-- READ DATA
+-- 			-- The RAM dump has 10 rows with 16 bytes each.
+-- 			-- On each read access the BSC increments the address automatically.
+-- 			-- Variable mem_addr_scratch is ouput at the begin of a row and must be incremented 
+-- 			-- on each read access too.
+-- 			for row in 1..10 loop
+-- 
+-- 				-- begin of row
+-- 				put(natural_to_string(natural_in => mem_addr_scratch, base => 16, length => 6));
+-- 
+-- 				for l in 1..16 loop
+-- 					-- read access
+-- 					interface_write(sercom_head_read);
+-- 					interface_write(sercom_addr_data);
+-- 					byte_scratch := interface_read; -- data read
+-- 
+-- 					-- display the byte just read
+-- 					put(row_separator_0 & 
+-- 						natural_to_string(natural_in => natural(byte_scratch), base => 16, length => 2)(1..2)
+-- 					);
+-- 
+-- 					-- increment address (used for displaying only. the bsc has internal ram address which
+-- 					-- increments on every read access.)
+-- 					mem_addr_scratch := mem_addr_scratch + 1;
+-- 				end loop;
+-- 				new_line;
+-- 
+-- 			end loop;
+-- 			
+-- 			-- restore start address
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_addr_start_a);
+-- 			interface_write(backup_addr_start_a); -- lowbyte
+-- 
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_addr_start_b);
+-- 			interface_write(backup_addr_start_b);
+-- 
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_addr_start_c);
+-- 			interface_write(backup_addr_start_c); -- highbyte
+-- 
+-- 			-- set path
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_path);
+-- 			interface_write(sercom_path_null);
+-- 			
+-- 			interface_close;
+-- 
+-- 			-- read bsc status to get rx/tx errors
+-- 			read_bsc_status_registers(interface_to_scan_master,display => false);
+-- 			
+-- 			result_action	:= true;
+-- 		else
+-- 			message_on_scan_master_not_preset;
+-- 		end if;
+-- 		
+-- 		set_output(previous_output);
+-- 		return result_action;
+-- 
+-- 		exception
+-- 			when others =>
+-- 				result_action := false;
+-- 				return result_action;
+-- 
+-- 	end dump_ram;
+
+
+
+-- 	function clear_ram
+-- 		(
+-- 		interface_to_scan_master	: string
+-- 		) return boolean is
+-- 		result_action	: boolean := false;
+-- 		previous_output	: ada.text_io.file_type renames current_output;
+-- 		byte_scratch	: unsigned_8;
+-- 	begin
+-- 		set_output(standard_output);
+-- 		if scan_master_present then		
+-- 			new_line;
+-- 
+-- 			interface_init(interface_name => interface_to_scan_master);
+-- 			
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_cmd);
+-- 			interface_write(sercom_cmd_null);
+-- 
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_cmd);
+-- 			interface_write(sercom_cmd_clear_ram);
+-- 
+-- 			delay 1.0; -- CS: we assume the ram clearing is done within this time. status polling ?
+-- 			
+-- 			interface_write(sercom_head_read); -- head read
+-- 			interface_write(sercom_addr_path_state_mmu_readback);
+-- 			byte_scratch := interface_read; -- data read
+-- 
+-- 			-- status check
+-- 			if byte_scratch = path_null * 16 + mmu_state_rout1 then -- equals F4h or 244d
+-- 				result_action := true;
+-- 			else
+-- 				result_action := false;
+-- 			end if;
+-- 
+-- 			interface_close;
+-- 
+-- 			-- read bsc status to get rx/tx errors
+-- 			read_bsc_status_registers(interface_to_scan_master,display => false);
+-- 		else
+-- 			message_on_scan_master_not_preset;
+-- 		end if;
+-- 
+-- 		set_output(previous_output);
+-- 		return result_action;
+-- 
+-- 		exception
+-- 			when others =>
+-- 				result_action := false;
+-- 				return result_action;
+-- 	end clear_ram;
+		
+
+-- 	function show_firmware
+-- 		(
+-- 		interface_to_scan_master	: string
+-- 		) return boolean is
+-- 		result_action	: boolean := false;
+-- 		previous_output	: ada.text_io.file_type renames current_output;
+-- 	begin
+-- 		set_output(standard_output);		
+-- 
+-- 		if scan_master_present then
+-- 			read_bsc_status_registers(interface_to_scan_master);		
+-- 			put_line(bsc_text_firmware_executor & row_separator_0 &
+-- 					natural_to_string(natural_in => natural(bsc_register_firmware_executor), base => 16, length => 4)(1..4)
+-- 					);
+-- 			result_action := true;
+-- 		else
+-- 			message_on_scan_master_not_preset;
+-- 		end if;
+-- 		
+-- 		set_output(previous_output);
+-- 		return result_action;
+-- 
+-- 		exception
+-- 			when others =>
+-- 				result_action := false;
+-- 				return result_action;
+-- 		
+-- 	end show_firmware;
+
+	
+-- 	procedure read_bsc_status_registers (interface_to_scan_master : string; display : boolean := false) is
+-- 	begin
+-- 		interface_init(interface_name => interface_to_scan_master);
+-- 
+-- 		-- state executor
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_state_executor);
+-- 		bsc_register_state_executor := interface_read;
+-- 
+-- 		-- step id
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_sxr_id_a);
+-- 		bsc_register_step_id := unsigned_16(interface_read); -- lowbyte
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_sxr_id_b);
+-- 		bsc_register_step_id := bsc_register_step_id + 256 * unsigned_16(interface_read); -- highbyte
+-- 		
+-- 		-- failed scanpath
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_failed_scanpath);
+-- 		bsc_register_failed_scanpath := interface_read; -- bit set for every failed scanpath -> display in binary form
+-- 		-- Multiple scanpaths may fail at the same time. We look for the lowest failed scanpath only. All other fail-bits
+-- 		-- are cleared in bsc_register_failed_scanpath :
+-- 		for s in 0..scanport_count_max-1 loop
+-- 			if test_bit_unsigned_8(bsc_register_failed_scanpath,s) then 
+-- 				bsc_register_failed_scanpath := unsigned_8(s+1);
+-- 				exit;
+-- 			end if;
+-- 		end loop;		
+-- 
+-- 		-- sxr length 1
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_length_sxr_1_a);
+-- 		bsc_register_length_sxr_1 := unsigned_32(interface_read); -- lowbyte
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_length_sxr_1_b);
+-- 		bsc_register_length_sxr_1 := bsc_register_length_sxr_1 + 256 * unsigned_32(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_length_sxr_1_c);
+-- 		bsc_register_length_sxr_1 := bsc_register_length_sxr_1 + 256 * 256 * unsigned_32(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_length_sxr_1_d); -- highbyte
+-- 		bsc_register_length_sxr_1 := bsc_register_length_sxr_1 + 256 * 256 * 256 * unsigned_32(interface_read);
+-- 		
+-- 		-- sxr length 2
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_length_sxr_2_a);
+-- 		bsc_register_length_sxr_2 := unsigned_32(interface_read); -- lowbyte
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_length_sxr_2_b);
+-- 		bsc_register_length_sxr_2 := bsc_register_length_sxr_2 + 256 * unsigned_32(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_length_sxr_2_c);
+-- 		bsc_register_length_sxr_2 := bsc_register_length_sxr_2 + 256 * 256 * unsigned_32(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_length_sxr_2_d); -- highbyte
+-- 		bsc_register_length_sxr_2 := bsc_register_length_sxr_2 + 256 * 256 * 256 * unsigned_32(interface_read);
+-- 
+-- 		-- processed bits 1
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_processed_bits_1_a);
+-- 		bsc_register_processed_bits_1 := unsigned_32(interface_read); -- lowbyte
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_processed_bits_1_b);
+-- 		bsc_register_processed_bits_1 := bsc_register_processed_bits_1 + 256 * unsigned_32(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_processed_bits_1_c);
+-- 		bsc_register_processed_bits_1 := bsc_register_processed_bits_1 + 256 * 256 * unsigned_32(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_processed_bits_1_d); -- highbyte
+-- 		bsc_register_processed_bits_1 := bsc_register_processed_bits_1 + 256 * 256 * 256 * unsigned_32(interface_read);
+-- 
+-- 		-- processed bits 2
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_processed_bits_2_a);
+-- 		bsc_register_processed_bits_2 := unsigned_32(interface_read); -- lowbyte
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_processed_bits_2_b);
+-- 		bsc_register_processed_bits_2 := bsc_register_processed_bits_2 + 256 * unsigned_32(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_processed_bits_2_c);
+-- 		bsc_register_processed_bits_2 := bsc_register_processed_bits_2 + 256 * 256 * unsigned_32(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_processed_bits_2_d); -- highbyte
+-- 		bsc_register_processed_bits_2 := bsc_register_processed_bits_2 + 256 * 256 * 256 * unsigned_32(interface_read);
+-- 		
+-- 		-- breakpoint sxr id
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_breakpoint_sxr_a); -- lowbyte
+-- 		bsc_register_breakpoint_sxr_id := unsigned_16(interface_read); -- lowbyte
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_breakpoint_sxr_b); -- highbyte
+-- 		bsc_register_breakpoint_sxr_id := bsc_register_breakpoint_sxr_id + 256 * unsigned_16(interface_read);
+-- 
+-- 		-- breakpoint bit pos
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_breakpoint_bit_pos_a);
+-- 		bsc_register_breakpoint_bit_pos := unsigned_32(interface_read); -- lowbyte
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_breakpoint_bit_pos_b);
+-- 		bsc_register_breakpoint_bit_pos := bsc_register_breakpoint_bit_pos + 256 * unsigned_32(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_breakpoint_bit_pos_c);
+-- 		bsc_register_breakpoint_bit_pos := bsc_register_breakpoint_bit_pos + 256 * 256 * unsigned_32(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_breakpoint_bit_pos_d); -- highbyte
+-- 		bsc_register_breakpoint_bit_pos := bsc_register_breakpoint_bit_pos + 256 * 256 * 256 * unsigned_32(interface_read);
+-- 
+-- 		-- tap state 1 & 2
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_state_tap_1_2);
+-- 		bsc_register_state_tap_1_2 := interface_read;
+-- 
+-- 		-- scanport bits 1 & 2
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_scanport_bits_1); -- lowbyte
+-- 		bsc_register_scanport_bits_1_2 := unsigned_16(interface_read); -- lowbyte
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_scanport_bits_2); -- highbyte
+-- 		bsc_register_scanport_bits_1_2 := bsc_register_scanport_bits_1_2 + 256 * unsigned_16(interface_read);
+-- 
+-- 		-- i2c master
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_state_i2c);
+-- 		bsc_register_state_i2c_master := interface_read;
+-- 
+-- 		-- cmd readback
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_cmd_readback);
+-- 		bsc_register_cmd_readback := interface_read;
+-- 
+-- 		-- state llc processor
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_state_llc);
+-- 		bsc_register_state_llc_processor := interface_read;
+-- 		
+-- 		-- shifter 1
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_add_state_shifter_1);
+-- 		bsc_register_state_shifter_1 := interface_read;
+-- 
+-- 		-- shifter 2
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_add_state_shifter_2);
+-- 		bsc_register_state_shifter_2 := interface_read;
+-- 
+-- 		-- path and mmu state
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_path_state_mmu_readback);
+-- 		bsc_register_state_mmu := interface_read;
+-- 
+-- 		-- RAM address generated by executor
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_addr_ram_a); -- lowbyte
+-- 		bsc_register_ram_address_ex_out := unsigned_32(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_addr_ram_b);
+-- 		bsc_register_ram_address_ex_out := bsc_register_ram_address_ex_out + 256 * unsigned_32(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_addr_ram_c); -- highbyte
+-- 		bsc_register_ram_address_ex_out := bsc_register_ram_address_ex_out + 256 * 256 * unsigned_32(interface_read);
+-- 
+-- 		-- output RAM data
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_data);
+-- 		bsc_register_output_ram_data := interface_read;
+-- 
+-- 		-- CS: input RAM data
+-- 		
+-- 		-- firmware
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_firmware_executor_a); -- lowbyte
+-- 		bsc_register_firmware_executor := unsigned_16(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_firmware_executor_b); -- highbyte
+-- 		bsc_register_firmware_executor := bsc_register_firmware_executor + 256 * unsigned_16(interface_read);
+-- 
+-- 		-- rx error counter
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_rx_error_counter_a); -- lowbyte
+-- 		bsc_register_rx_error_counter := unsigned_16(interface_read);
+-- 
+-- 		interface_write(sercom_head_read);
+-- 		interface_write(sercom_addr_rx_error_counter_b); -- highbyte
+-- 		bsc_register_rx_error_counter := bsc_register_rx_error_counter + 256 * unsigned_16(interface_read);
+-- 		
+-- 		-- if display required as given as parameter
+-- 		if display then
+-- 			put_line(bsc_text_state_mmu & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_state_mmu), base => 16, length => 2));
+-- 			put_line(bsc_text_cmd & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_cmd_readback), base => 16, length => 2));			
+-- 			put_line(bsc_text_state_executor & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_state_executor), base => 16, length => 2));
+-- 			put_line(bsc_text_state_llc_processor & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_state_llc_processor), base => 16, length => 2));			
+-- 			put_line(bsc_text_state_shifter_1 & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_state_shifter_1), base => 16, length => 2));
+-- 			put_line(bsc_text_state_shifter_2 & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_state_shifter_2), base => 16, length => 2));			
+-- 			put_line(bsc_text_processed_step_id & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_step_id), base => 16, length => 4));
+-- 			put_line(bsc_text_failed_scanpath & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_failed_scanpath), base => 2, length => 8));
+-- 			put_line(bsc_text_chain_length_total & " 1" & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_length_sxr_1), base => 16, length => 8));
+-- 			put_line(bsc_text_chain_length_total & " 2" & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_length_sxr_2), base => 16, length => 8));
+-- 			put_line(bsc_text_bits_processed & " 1" & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_processed_bits_1), base => 16, length => 8));			
+-- 			put_line(bsc_text_bits_processed & " 2" & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_processed_bits_2), base => 16, length => 8));
+-- 			put_line(bsc_text_breakpoint_step_id & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_breakpoint_sxr_id), base => 16, length => 4));
+-- 			put_line(bsc_text_breakpoint_bit_position & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_breakpoint_bit_pos), base => 16, length => 8));			
+-- 			put_line(bsc_text_state_tap & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_state_tap_1_2), base => 16, length => 2));	-- CS: decode to human understandable form like RTI or Pause-DR
+-- 			put_line(bsc_text_scanport_bits & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_scanport_bits_1_2), base => 2, length => 16)); -- CS: decode to TDI,EXP,MASK,FAIL,TRST,TDO,TMS,TCK
+-- 			put_line(bsc_text_state_i2c_master & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_state_i2c_master), base => 16, length => 2));
+-- 			put_line(bsc_text_ram_address_ex_out & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_ram_address_ex_out), base => 16, length => 8));
+-- 			put_line(bsc_text_output_ram_data & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_output_ram_data), base => 16, length => 2));
+-- 			put_line(bsc_text_firmware_executor & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_firmware_executor), base => 16, length => 4));
+-- 		end if;
+-- 
+-- 		-- RX AND TX ERRORS ARE DISPLAYED IF ANY OCCURED, REGARDLESS OF PARAMETER "DISPLAY"
+-- 		if bsc_register_rx_error_counter > 0 then
+-- 			-- bsc rx errors are displayed in decimal notation
+-- 			put_line(message_warning & bsc_text_rx_errors & natural'image(natural(bsc_register_rx_error_counter)));
+-- 		end if;
+-- 
+-- 		if interface_rx_error_count > 0 then
+-- 			-- host machine tx errors are displayed in decimal notation
+-- 			put_line(message_warning & bsc_text_tx_errors & natural'image(interface_rx_error_count)); 
+-- 			-- NOTE: read comments in m1_firmware.ads !!
+-- 		end if;
+-- 
+-- 		
+-- 		interface_close;
+-- 
+-- 		exception
+-- 			when others =>
+-- 				raise; -- CS: return false
+-- 
+-- 	end read_bsc_status_registers;
+
+	
+-- 	function query_status
+-- 		(
+-- 		interface_to_scan_master	: string
+-- 		) return boolean is
+-- 		result_action	: boolean := false;
+-- 		previous_output	: ada.text_io.file_type renames current_output;
+-- 	begin
+-- 		set_output(standard_output);
+-- 		if scan_master_present then		
+-- 			read_bsc_status_registers(interface_to_scan_master,display => true);
+-- 
+-- 			case bsc_register_state_executor is
+-- 				when ex_state_end_of_test =>
+-- 					put_line("Test PASSED");
+-- 				when ex_state_test_fail =>
+-- 					put_line("Test FAILED");
+-- 				when ex_state_error_frmt | ex_state_error_act_scnpth | ex_state_error_sxr_type | ex_state_error_rd_sxr_sp_id =>
+-- 					put_line("Test NOT LOADED or INVALID");
+-- 				when ex_state_wait_step_sxr | ex_state_shift =>
+-- 					put_line("STEP MODE / WAIT");
+-- 				when ex_state_test_abort =>
+-- 					put_line("Test ABORTED");
+-- 				when ex_state_idle =>
+-- 					put_line("IDLE/RESET");
+-- 				when others => 
+-- 					put_line("Test RUNNING");
+-- 			end case;
+-- 				
+-- 			result_action := true;
+-- 		else
+-- 			message_on_scan_master_not_preset;
+-- 		end if;
+-- 
+-- 		set_output(previous_output);
+-- 		return result_action;
+-- 
+-- 		exception
+-- 			when others =>
+-- 				result_action := false;
+-- 				return result_action;
+-- 		
+-- 	end query_status;
+
+
+-- 	function shutdown
+-- 		(
+-- 		interface_to_scan_master	: string
+-- 		) return boolean is
+-- 		result_action	: boolean := false;
+-- 		previous_output	: ada.text_io.file_type renames current_output;
+-- 	begin
+-- 		set_output(standard_output);
+-- 
+-- 		if scan_master_present then
+-- 			interface_init(interface_name => interface_to_scan_master);
+-- 
+-- 			-- clear command
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_cmd);
+-- 			interface_write(sercom_cmd_null);
+-- 
+-- 			-- send command "abort"
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_cmd);
+-- 			interface_write(sercom_cmd_test_abort);
+-- 
+-- 			-- break data path
+-- 			interface_write(sercom_head_write);
+-- 			interface_write(sercom_addr_path);
+-- 			interface_write(sercom_path_null);
+-- 
+-- 			read_bsc_status_registers(interface_to_scan_master);
+-- 
+-- 			-- verify executor has aborted test
+-- 			case bsc_register_state_executor is
+-- 				when ex_state_test_abort =>
+-- 					--put_line("Test ABORTED");
+-- 					result_action := true;
+-- 				when others => 
+-- 					result_action := false;
+-- 			end case;
+-- 
+-- 			interface_close;
+-- 
+-- 			-- read bsc status to get rx/tx errors
+-- 			read_bsc_status_registers(interface_to_scan_master,display => false);
+-- 			
+-- 		else
+-- 			message_on_scan_master_not_preset;
+-- 		end if;
+-- 
+-- 		set_output(previous_output);
+-- 		return result_action;
+-- 
+-- 		exception
+-- 			when others =>
+-- 				result_action := false;
+-- 				return result_action;
+-- --				raise;
+-- 
+-- 	end shutdown;
+
+
+-- 	--- string processing
+-- 	function get_field
+-- 	-- Extracts a field separated by ifs at position. If trailer is true, the trailing content untiil trailer_to is also returned.
+-- 			(
+-- 			text_in 	: in string;
+-- 			position 	: in positive;
+-- 			ifs 		: in character := latin_1.space;
+-- 			trailer 	: boolean := false;
+-- 			trailer_to 	: in character := latin_1.semicolon
+-- 			) return string is
+-- 		field			: unbounded_string;				-- field content to return (NOTE: gets converted to string on return) -- CS: use bounded string
+-- 		character_count	: natural := text_in'length;	-- number of characters in given string
+-- 		subtype type_character_pointer is natural range 0..character_count;
+-- 		char_pt			: type_character_pointer;		-- points to character being processed inside the given string
+-- 		field_ct		: natural := 0;					-- field counter (the first field found gets number 1 assigned)
+-- 		inside_field	: boolean := true;				-- true if char_pt points inside a field
+-- 		char_current	: character;					-- holds current character being processed
+-- 		char_last		: character := ifs;				-- holds character processed previous to char_current
+-- 	begin -- get_field
+-- 		if character_count > 0 then
+-- 			char_pt := 1;
+-- 			for char_pt in 1..character_count loop
+-- 			--while char_pt <= character_count loop
+-- 				char_current := text_in(char_pt); 
+-- 				
+-- -- 				if char_current = ifs then
+-- -- 					inside_field := false;
+-- -- 				else
+-- -- 					inside_field := true;
+-- -- 				end if;
+-- 
+-- 				-- CS: if ifs is space and fields are separated by a single ht, they are currently
+-- 				-- not split up. fix it !
+-- 				
+-- 
+-- 				-- if ifs is space, then horizontal tabs must be threated equally
+-- 				if ifs = latin_1.space then
+-- 					if char_current = ifs or char_current = latin_1.ht then
+-- 						inside_field := false;
+-- 					else
+-- 						inside_field := true;
+-- 					end if;
+-- 				else
+-- 					if char_current = ifs then
+-- 						inside_field := false;
+-- 					else
+-- 						inside_field := true;
+-- 					end if;
+-- 				end if;
+-- 				
+-- 
+-- 				-- count fields if ifs is followed by a non-ifs character
+-- 				if (char_last = ifs and char_current /= ifs) then
+-- 					field_ct := field_ct + 1;
+-- 				end if;
+-- 
+-- 				case trailer is
+-- 					when false =>
+-- 						-- if targeted field reached
+-- 						if position = field_ct then
+-- 							if inside_field then -- if inside field
+-- 								field := field & char_current; -- append current character to field
+-- 								--field_pt := field_pt + 1;
+-- 							end if;
+-- 						else
+-- 							-- if next field reached, abort and return field content
+-- 							if field_ct > position then 
+-- 									exit;
+-- 							end if;
+-- 						end if;
+-- 
+-- 					when true =>
+-- 						-- if targeted field reached or passed
+-- 						if position <= field_ct then
+-- 							if char_current = trailer_to then
+-- 								exit;
+-- 							else
+-- 								field := field & char_current; -- append current character to field
+-- 							end if;
+-- 						end if;
+-- 				end case;
+-- 
+-- 				-- save last character
+-- 				char_last := char_current;
+-- 			end loop;
+-- 		else
+-- 			null;
+-- 		end if;
+-- 		return to_string(field);
+-- 	end get_field;
+
+	
+-- 	function strip_quotes (text_in : in string) return string is
+-- 	-- removes heading and trailing quotation from given string		
+-- 	begin
+-- 		return text_in(text_in'first+1..text_in'last-1);
+-- 	end strip_quotes;
+-- 
+-- 	function enclose_in_quotes (text_in : in string; quote : in character := latin_1.apostrophe) return string is
+-- 	-- Adds heading and trailing quotate to given string.
+-- 	begin
+-- 		return quote & text_in & quote;
+-- 	end enclose_in_quotes;
+	
+-- 	function trim_space_in_string (text_in : in string) return string is
+-- 	-- shrinks successive space characters to a single one in given string		
+-- 		text_scratch : string (1..text_in'length) := text_in;
+-- 		s : extended_string.bounded_string;
+-- 		l : natural := text_scratch'length;
+-- 		sc : natural := natural'first;
+-- 	begin
+-- 		for c in 1..l loop
+-- 			case text_scratch(c) is
+-- 				when latin_1.space =>
+-- 					sc := sc + 1;
+-- 				when others =>
+-- 					if sc > 0 then
+-- 						s := extended_string.append(left => s, right => latin_1.space);
+-- 					end if;
+-- 					s := extended_string.append(left => s, right => text_scratch(c));
+-- 					sc := 0;
+-- 			end case;
+-- 			
+-- 		end loop;
+-- 		return extended_string.to_string(s);
+-- 	end trim_space_in_string;
+
+-- 	function Is_Field (
+-- 		Line	: unbounded_string;  	-- given line to examine
+-- 		Value 	: String ; 				-- given value to be tested for
+-- 		Field	: Natural				-- field number to expect value in
+-- 		) return Boolean is 
+-- 
+-- 		R			: 	Boolean := false; 			-- on match return true, else return false
+-- 		line_length	:	Natural;					-- length of given line
+-- 		char_pt		:	Natural := 1;				-- charcter pointer (points to character being processed inside the given line)
+-- 		value_length:	Natural;					-- length of given value
+-- 		IFS1		: 	constant Character := ' '; 				-- field separator space
+-- 		IFS2		: 	constant Character := Character'Val(9); -- field separator tabulator
+-- 		field_ct	:	Natural := 0;				-- field counter (the first field found gets number 1 assigned)
+-- 		field_pt	:	Natural := 1;				-- field pointer (points to the charcter being processed inside the current field)
+-- 		inside_field:	Boolean := true;			-- true if char_pt points inside a field
+-- 		char_current:	Character;					-- holds current character being processed
+-- 		char_last	:	Character := ' ';			-- holds character processed previous to char_current
+-- 	begin
+-- 		line_length:=(Length(Line));
+-- 		value_length:=(Length(To_Unbounded_String(Value)));
+-- 		while char_pt <= line_length
+-- 			loop
+-- 				--put (char_pt);
+-- 				char_current:=(To_String(Line)(char_pt)); 
+-- 				if char_current = IFS1 or char_current = IFS2 then
+-- 					inside_field := false;
+-- 				else
+-- 					inside_field := true;
+-- 				end if;
+-- 
+-- 				-- count fields if character other than IFS found
+-- 				if ((char_last = IFS1 or char_last = IFS2) and (char_current /= IFS1 and char_current /= IFS2)) then
+-- 					field_ct:=field_ct+1;
+-- 				end if;
+-- 
+-- 				if (Field = field_ct) then
+-- 					--put ("target field found"); new_line;
+-- 					if (inside_field = true) then -- if field entered
+-- 						--put ("target field entered"); 
+-- 
+-- 						-- if Value is too short (to avoid constraint error at runtime)
+-- 						if field_pt > value_length then
+-- 							R := false;
+-- 							return R;
+-- 						end if;
+-- 
+-- 						-- if character in value matches
+-- 						if Value(field_pt) = char_current then
+-- 							--put (field_pt); put (Value(field_pt)); new_line;
+-- 							field_pt:=field_pt+1;
+-- 						else
+-- 							-- on first mismatch exit
+-- 							--put ("mismatch"); new_line;
+-- 							R := false;
+-- 							return R;
+-- 						end if;
+-- 
+-- 						-- in case the last field matches
+-- 						if char_pt = line_length then
+-- 							if (field_pt-1) = value_length then
+-- 								--put ("match at line end"); new_line;
+-- 								R := true;
+-- 								return R;
+-- 							end if;
+-- 						end if;
+-- 
+-- 					else -- once field is left
+-- 						if (field_pt-1) = value_length then
+-- 							--put ("field left"); new_line;
+-- 							R := true;
+-- 							return R;
+-- 						end if;
+-- 					end if;
+-- 				end if;
+-- 					
+-- 				-- save last character
+-- 				char_last:=char_current;
+-- 
+-- 				-- advance character pointer by one
+-- 				char_pt:=char_pt+1; 
+-- 
+-- 				--put (char_current); put (" --"); new_line;
+-- 			end loop;
+-- 
+-- 		R:=false;
+-- 		return R;
+-- 	end is_field;
+	
+
+-- 	procedure extract_section (
+-- 		input_file		: in string;
+-- 		output_file		: in string;
+-- 		append			: in boolean := false;
+-- 		section_begin_1	: in string;
+-- 		section_end_1	: in string;
+-- 		section_begin_2	: in string := "";
+-- 		section_end_2 	: in string := "";
+-- 		section_begin_3	: in string := "";
+-- 		section_end_3 	: in string := ""
+-- 		) is
+-- 		line			: unbounded_string;
+-- 		section_entered	: boolean := false;
+-- 		section_left	: boolean := false;
+-- 		search_done		: boolean := false;
+-- 		ExtractInputFile 	: Ada.Text_IO.File_Type;
+-- 		ExtractOutputFile 	: Ada.Text_IO.File_Type;
+-- 		Previous_Output	: File_Type renames Current_Output;
+-- 		Previous_Input	: File_Type renames Current_Input;
+-- 		--len_1_begin		: natural := Length(to_unbounded_string(section_begin_1));
+-- 		len_2_begin		: natural := Length(to_unbounded_string(section_begin_2));
+-- 		len_3_begin		: natural := Length(to_unbounded_string(section_begin_3));
+-- 		--len_1_end		: natural := Length(to_unbounded_string(section_end_1));
+-- 		len_2_end		: natural := Length(to_unbounded_string(section_end_2));
+-- 		len_3_end		: natural := Length(to_unbounded_string(section_end_3));
+-- 	begin
+-- 
+-- 		if append then
+-- 			open( 
+-- 				file => ExtractOutputFile,
+-- 				mode => append_file,
+-- 				name => output_file
+-- 				);
+-- 		else
+-- 			-- create output_file
+-- 			create (ExtractOutputFile, name => output_file);
+-- 		end if;
+-- 		set_output (ExtractOutputFile);
+-- 		
+-- 		-- open input_file
+-- 		Open( 
+-- 			File => ExtractInputFile,
+-- 			Mode => In_File,
+-- 			Name => input_file
+-- 			);
+-- 		Set_Input(ExtractInputFile); -- set data souce
+-- 
+-- 		while not End_Of_File 
+-- 			loop
+-- 				Line:=Get_Line;
+-- 
+-- 				-- as long as start line not found yet
+-- 				if section_entered = false then
+-- 					-- test field 1 for match of section_begin_1
+-- 					if Is_Field(Line,section_begin_1,1) then
+-- 						if len_2_begin = 0 then -- if no section_begin_2 given, set section_entered marker
+-- 							section_entered := true;
+-- 						elsif Is_Field(Line,section_begin_2,2) then -- on section_begin_2 match
+-- 							if len_3_begin = 0 then -- if no section_begin_3 given
+-- 								section_entered := true; -- set section_entered marker
+-- 							elsif Is_Field(Line,section_begin_3,3) then -- on section_begin_3 match
+-- 								section_entered:=true; -- set section_entered marker
+-- 							end if;
+-- 						end if;
+-- 					end if;
+-- 				end if;
+-- 				
+-- 				if section_entered then put (Line); new_line; end if;
+-- 
+-- 				-- once start line found, test for end of section line
+-- 				if section_entered then
+-- 					if Is_Field(Line,section_end_1,1) then -- on section_end_1 match
+-- 						if len_2_end = 0 then  -- if no section_end_2 given
+-- 							search_done := true; -- set search_done flag
+-- 						elsif Is_Field(Line,section_end_2,2) then -- on section_end_2 match
+-- 							if len_3_end = 0 then -- if section_end_3 not given
+-- 								search_done := true; -- set search_done flag
+-- 							elsif Is_Field(Line,section_end_3,3) then -- on section_end_3 match
+-- 								search_done := true; -- set search_done flag
+-- 							end if;
+-- 						end if;
+-- 					end if;
+-- 				end if;
+-- 
+-- 				-- cancel search prematurely 
+-- 				if search_done then
+-- 					Close(ExtractInputFile); Close(ExtractOutputFile);
+-- 					Set_Output(Previous_Output); Set_Input(Previous_Input);
+-- 					return;
+-- 				end if;
+-- 
+-- 			end loop;
+-- 
+-- 		Close(ExtractInputFile); Close(ExtractOutputFile);
+-- 		Set_Output(Previous_Output); Set_Input(Previous_Input);
+-- 
+-- 	end extract_section;
+
+
+-- 	-- MESSAGES
+-- 	procedure write_message (
+-- 		file_handle : in ada.text_io.file_type;
+-- 		identation : in natural := 0;
+-- 		text : in string; 
+-- 		lf   : in boolean := true;		
+-- 		file : in boolean := true;
+-- 		console : in boolean := false) is
+-- 	begin
+-- 		if file then
+-- 			ada.text_io.put(file_handle, identation * ' ' & text);
+-- 			if lf then 
+-- 				new_line(file_handle);
+-- 			end if;
+-- 		end if;
+-- 
+-- 		if console then
+-- 			ada.text_io.put(identation * ' ' & text);
+-- 			if lf then 
+-- 				new_line;
+-- 			end if;
+-- 		end if;
+-- 	end write_message;
+	
+	
+end m1_internal;
+
