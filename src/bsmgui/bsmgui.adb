@@ -233,9 +233,10 @@ procedure bsmgui is
 
 	end read_last_session;
 
-
 begin
 	-- read system configuration file and set variables: name_directory_home, language, name_directory_bin, name_directory_enscript, interface_to_bsc
+	bsmgui_cb.write_log_header(version);
+	set_output(file_gui_messages);
 	check_environment;
 
 --  Initialize GtkAda.

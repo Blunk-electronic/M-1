@@ -2559,6 +2559,13 @@ procedure chkpsn is
 
 						primary_net_section_entered := true;
 						line_number_of_primary_net_header := line_counter; -- backup line number of net header
+
+						write_message (
+							file_handle => file_chkpsn_messages,
+							identation => 2,
+							text => "line" & natural'image(line_number_of_primary_net_header),
+							console => false);
+						
 						-- when adding the net to the net list, this number goes into the list as well
 					else
 						put_line(message_error & "Keyword '" & section_mark.section & "' expected !");

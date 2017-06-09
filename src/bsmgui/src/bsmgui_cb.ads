@@ -45,6 +45,9 @@ with gnat.os_lib;   			use gnat.os_lib;
 
 package bsmgui_cb is
 
+	procedure write_log_header (version : in string);
+	procedure write_log_footer;
+	
 	gui_refresh_rate			: duration := 0.1;
 
 	-- After killing processes, it takes this time for the interface to become free

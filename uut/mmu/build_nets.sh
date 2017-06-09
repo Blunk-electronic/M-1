@@ -20,4 +20,7 @@ bsmcl mknets $database
 
 #bsmcl mkoptions $database
 #bsmcl chkpsn $database 
+
+echo "PASSED" > tmp/test_result.tmp
+
 exit

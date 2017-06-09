@@ -282,19 +282,54 @@ procedure bsmcl is
 			
 	end launch_netlist_importer;	
 
+	procedure write_log_header is
+	begin
+		if not exists (name_directory_messages) then
+			create_directory(name_directory_messages);
+		end if;
+
+		create(
+			file => file_cli_messages,
+			mode => out_file,
+			name => name_file_cli_messages);
+
+		put_line(file_cli_messages, to_upper(name_module_cli) & " version " & version & " LOGFILE");
+		put_line(file_cli_messages, "date " & date_now);
+		put_line(file_cli_messages, column_separator_0);
+	end write_log_header;
+
+	procedure write_log_footer is
+	begin
+		put_line(file_cli_messages, column_separator_0);
+		put_line(file_cli_messages, to_upper(name_module_cli) & " LOGFILE END");
+	end write_log_footer;
+	
 begin
 
 	new_line;
 	put_line(name_system & " Command Line Interface Version "& version);
 	put_line(column_separator_2);
+
+	-- all puts go into the logfile
+	write_log_header;
+	set_output(file_cli_messages);
 	check_environment;
 		
 	prog_position := "CRT00";
 	arg_ct :=  argument_count;
 
 	action := type_action'value(argument(1));
-	put_line ("action         : " & type_action'image(action));
+--	put_line ("action         : " & type_action'image(action));
+	write_message (
+		file_handle => file_cli_messages,
+		text => "action " & type_action'image(action),
+		console => true);
 
+	-- all puts go to standard_output
+	set_output(standard_output); -- CS: when sending more log messages (see below), this command must go
+
+
+	
 	case action is
 
 		when configuration =>
@@ -1328,24 +1363,23 @@ begin
 
 	end case;
    
+	write_log_footer;
+	
+	exception when event: others =>
+		set_exit_status(failure);
+		set_output(standard_output);
 
-	exception
-		when event: 
-			others =>
-				set_exit_status(failure);
-				set_output(standard_output);
+		if prog_position = "ENV10" then
+			put_line(message_error & "No configuration file " & quote_single & name_file_configuration & quote_single &
+			" found" & exclamation);
 
-				if prog_position = "ENV10" then
-					put_line(message_error & "No configuration file " & quote_single & name_file_configuration & quote_single &
-					" found" & exclamation);
-
-				elsif prog_position = "CRT00" then
-					put_line(message_error & "Action missing or invalid" & exclamation & row_separator_0 & "What do you want to do ? Actions available:");
-					for a in 0..type_action'pos(type_action'last) loop
-						put(to_lower(type_action'image(type_action'val(a))));
-						-- CS: add line break after 5 items
-						if a < type_action'pos(type_action'last) then put(" , "); end if;
-					end loop;
+		elsif prog_position = "CRT00" then
+			put_line(message_error & "Action missing or invalid" & exclamation & row_separator_0 & "What do you want to do ? Actions available:");
+			for a in 0..type_action'pos(type_action'last) loop
+				put(to_lower(type_action'image(type_action'val(a))));
+				-- CS: add line break after 5 items
+				if a < type_action'pos(type_action'last) then put(" , "); end if;
+			end loop;
 -- 
 -- 										put ("        - create       (set up a new project)"); new_line;
 -- 										put ("        - import_cad   (import net and part lists from CAD system)"); new_line;
@@ -1368,357 +1402,357 @@ begin
 -- 										put ("        - help         (get examples and assistance)"); new_line;
 -- 										put ("        - udbinfo      (get firmware versions)"); new_line;
 -- 										--put ("        Example: bsmcl" & action_set_breakpoint); new_line;
-									
-				elsif prog_position = "UDQ00" then
-						put_line(message_error & "No database specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(udbinfo)) & row_separator_0 &
-							compose(name => "your_database", extension => file_extension_database));
+							
+		elsif prog_position = "UDQ00" then
+				put_line(message_error & "No database specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(udbinfo)) & row_separator_0 &
+					compose(name => "your_database", extension => file_extension_database));
 
-				elsif prog_position = "UDQ20" then
-						put_line(message_error & "Invalid item specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(udbinfo)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 & 
-							to_lower(type_object_type_in_database'image(bic)));
-						ada.text_io.put(message_error'last * row_separator_0 & "Items to inquire for are:" & row_separator_0);
+		elsif prog_position = "UDQ20" then
+				put_line(message_error & "Invalid item specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(udbinfo)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 & 
+					to_lower(type_object_type_in_database'image(bic)));
+				ada.text_io.put(message_error'last * row_separator_0 & "Items to inquire for are:" & row_separator_0);
 
-						-- show available items to inqure for
-						for i in 0..type_object_type_in_database'pos(type_object_type_in_database'last) loop
-							put(type_object_type_in_database'image(type_object_type_in_database'val(i)));
-							if i < type_object_type_in_database'pos(type_object_type_in_database'last) then put(" , "); end if;
-						end loop;
+				-- show available items to inqure for
+				for i in 0..type_object_type_in_database'pos(type_object_type_in_database'last) loop
+					put(type_object_type_in_database'image(type_object_type_in_database'val(i)));
+					if i < type_object_type_in_database'pos(type_object_type_in_database'last) then put(" , "); end if;
+				end loop;
 
-				elsif prog_position = "UDQ30" then
-						put_line(message_error & "Item name not specified" & exclamation);
-						ada.text_io.put(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(udbinfo)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 & 
-							to_lower(type_object_type_in_database'image(object_type_in_database)) & row_separator_0);
-						case object_type_in_database is
-							when BIC => 		put_line("IC303");
-							--when REGISTER =>	put_line("IC303");
-							when NET =>			put_line("OSC_OUT");
-							--when PIN =>			put_line("IC303#3");
-							when SCC =>			put_line("IC303#4");
-						end case;
+		elsif prog_position = "UDQ30" then
+				put_line(message_error & "Item name not specified" & exclamation);
+				ada.text_io.put(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(udbinfo)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 & 
+					to_lower(type_object_type_in_database'image(object_type_in_database)) & row_separator_0);
+				case object_type_in_database is
+					when BIC => 		put_line("IC303");
+					--when REGISTER =>	put_line("IC303");
+					when NET =>			put_line("OSC_OUT");
+					--when PIN =>			put_line("IC303#3");
+					when SCC =>			put_line("IC303#4");
+				end case;
 
-				elsif prog_position = "UDQ40" then
-						put_line(message_error & "Invalid degree of integrity check provided" & exclamation);
-						ada.text_io.put(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(udbinfo)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 & 
-							to_lower(type_object_type_in_database'image(object_type_in_database)) & row_separator_0);
-						case object_type_in_database is
-							when BIC => 		put("IC303");
-							when NET =>			put("OSC_OUT");
-							when SCC =>			put("IC303#4");
-						end case;
-						put_line(row_separator_0 & type_degree_of_database_integrity_check'image(none)); -- CS: offer more degrees
-						
-				elsif prog_position = "IBL00" then
-						put_line(message_error & "No database specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(import_bsdl)) & row_separator_0 &
-							compose(name => "your_database", extension => file_extension_database));
-	
-				elsif prog_position = "MKN00" then
-						put_line(message_error & "No database specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(mknets)) & row_separator_0 &
-							compose(name => "your_database", extension => file_extension_database));
-	
-				elsif prog_position = "JSM00" then
-					put_line(message_error & "No submodule specified !");
-					ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli &
-						row_separator_0 & to_lower(type_action'image(join_netlist)) & row_separator_0 &
-						compose(name => "skeleton_submodule", extension => file_extension_text));
-	
-				elsif prog_position = "MKO00" then
-						put_line(message_error & "No database specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(mkoptions)) & row_separator_0 &
-							compose(name => "your_database", extension => file_extension_database) & row_separator_0 &
-							compose(name => "[options_file", extension => file_extension_options) & "]");
-	
-				elsif prog_position = "CP100" then
-						put_line(message_error & "No database specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(chkpsn)) & row_separator_0 &
-							compose(name => "your_database", extension => file_extension_database));
-	
-				elsif prog_position = "GEN00" then
-						put_line(message_error & "No database specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(generate)) & row_separator_0 &
-							compose(name => "your_database", extension => file_extension_database));
-					
-				elsif prog_position = "ICD00" then
-						new_line;									
-						put_line(message_error & "CAD format not supported or missing" & exclamation & row_separator_0 & "Supported formats are :");
-						for f in 0..type_format_cad'pos(type_format_cad'last) loop
-							put(to_lower(type_format_cad'image(type_format_cad'val(f))));
-							-- CS: add line break after 5 items
-							if f < type_format_cad'pos(type_format_cad'last) then put(" , "); end if;
-						end loop;
-						new_line;
-						put_line(message_example & name_module_cli &
-							row_separator_0 & to_lower(type_action'image(import_cad)) & row_separator_0 & 
-							to_lower(type_format_cad'image(zuken)));
-	
-				elsif prog_position = "INE00" then
-						put_line(message_error & text_identifier_cad_netlist & " not specified " & exclamation);
-						ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli &
-							row_separator_0 & to_lower(type_action'image(import_cad)) & row_separator_0 & 
-							to_lower(type_format_cad'image(format_cad)) & row_separator_0 &
-							compose(containing_directory => name_directory_cad, name => "board", extension => "net"));
+		elsif prog_position = "UDQ40" then
+				put_line(message_error & "Invalid degree of integrity check provided" & exclamation);
+				ada.text_io.put(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(udbinfo)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 & 
+					to_lower(type_object_type_in_database'image(object_type_in_database)) & row_separator_0);
+				case object_type_in_database is
+					when BIC => 		put("IC303");
+					when NET =>			put("OSC_OUT");
+					when SCC =>			put("IC303#4");
+				end case;
+				put_line(row_separator_0 & type_degree_of_database_integrity_check'image(none)); -- CS: offer more degrees
+				
+		elsif prog_position = "IBL00" then
+				put_line(message_error & "No database specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(import_bsdl)) & row_separator_0 &
+					compose(name => "your_database", extension => file_extension_database));
 
-				elsif prog_position = "INE10" then
-						put_line(message_error & "target module level not specified !");
-						ada.text_io.put_line(message_error'length * row_separator_0 
-							& "Specify level " & type_cad_import_target_module'image(main)
-							& " or " & type_cad_import_target_module'image(sub)
-							& " after netlist !");
+		elsif prog_position = "MKN00" then
+				put_line(message_error & "No database specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(mknets)) & row_separator_0 &
+					compose(name => "your_database", extension => file_extension_database));
 
-				elsif prog_position = "INE20" or prog_position = "INE50" then
-						put_line(message_error & "prefix for submodule not specified !");
-						ada.text_io.put_line(message_error'length * row_separator_0 
-							& "Specify prefix after module level !");
-						
-				elsif prog_position = "INE40" then
-						put_line(message_error & "target module level not specified !");
-						ada.text_io.put_line(message_error'length * row_separator_0 
-							& "Specify level " & type_cad_import_target_module'image(main)
-							& " or " & type_cad_import_target_module'image(sub)
-							& " after partlist !");
-						
-				elsif prog_position = "IPA00" then
-						put_line(message_error & text_identifier_cad_partlist & " not specified " & exclamation);
-						ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli &
-							row_separator_0 & to_lower(type_action'image(import_cad)) & row_separator_0 & 
-							to_lower(type_format_cad'image(format_cad)) & row_separator_0 &
-							compose(
-								containing_directory => containing_directory(to_string(name_file_cad_netlist)),
-								--containing_directory => name_directory_cad,
-								name => base_name(to_string(name_file_cad_netlist)),
-								extension => extension(to_string(name_file_cad_netlist))
-								) &
-							row_separator_0 & -- we assume the partlist lives in the same directory as the netlist:
-							compose(
-								containing_directory => containing_directory(to_string(name_file_cad_netlist)),
-								name => "board", extension => "part"
-								)
-							);
+		elsif prog_position = "JSM00" then
+			put_line(message_error & "No submodule specified !");
+			ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli &
+				row_separator_0 & to_lower(type_action'image(join_netlist)) & row_separator_0 &
+				compose(name => "skeleton_submodule", extension => file_extension_text));
 
-				elsif prog_position = "GEN20" then
-						new_line;
-						put_line(message_error & "Test profile not supported or missing" & exclamation & row_separator_0 & "Supported profiles are :");
-						for p in 0..type_test_profile'pos(type_test_profile'last) loop
-							put(to_lower(type_test_profile'image(type_test_profile'val(p))));
-							-- CS: add line break after 5 items
-							if p < type_test_profile'pos(type_test_profile'last) then put(" , "); end if;
-						end loop;
-						new_line(2);
-						put_line(message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(generate)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 &
-							to_lower(type_test_profile'image(infrastructure))
-							);
-	
-				elsif prog_position = "GEN30" then
-						put_line(message_error & "Name of test not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(generate)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & "name_of_your_test"
-							);
+		elsif prog_position = "MKO00" then
+				put_line(message_error & "No database specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(mkoptions)) & row_separator_0 &
+					compose(name => "your_database", extension => file_extension_database) & row_separator_0 &
+					compose(name => "[options_file", extension => file_extension_options) & "]");
 
-				elsif prog_position = "TDV00" then
-						put_line(message_error & "Target device not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(generate)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
-							row_separator_0 & "IC3"
-							);
+		elsif prog_position = "CP100" then
+				put_line(message_error & "No database specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(chkpsn)) & row_separator_0 &
+					compose(name => "your_database", extension => file_extension_database));
 
-				elsif prog_position = "DVM00" then
-						put_line(message_error & "Device model not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(generate)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
-							row_separator_0 & to_string(device_name) & row_separator_0 &
-							compose(name_directory_models, "MC256", file_extension_text)
-							);
+		elsif prog_position = "GEN00" then
+				put_line(message_error & "No database specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(generate)) & row_separator_0 &
+					compose(name => "your_database", extension => file_extension_database));
+			
+		elsif prog_position = "ICD00" then
+				new_line;									
+				put_line(message_error & "CAD format not supported or missing" & exclamation & row_separator_0 & "Supported formats are :");
+				for f in 0..type_format_cad'pos(type_format_cad'last) loop
+					put(to_lower(type_format_cad'image(type_format_cad'val(f))));
+					-- CS: add line break after 5 items
+					if f < type_format_cad'pos(type_format_cad'last) then put(" , "); end if;
+				end loop;
+				new_line;
+				put_line(message_example & name_module_cli &
+					row_separator_0 & to_lower(type_action'image(import_cad)) & row_separator_0 & 
+					to_lower(type_format_cad'image(zuken)));
 
-				elsif prog_position = "DPC00" then
-						put_line(message_error & "Device package not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(generate)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
-							row_separator_0 & to_string(device_name) & row_separator_0 &
-							to_string(name_file_model_memory) &
-							row_separator_0 & "TSSOP48"
-							);
+		elsif prog_position = "INE00" then
+				put_line(message_error & text_identifier_cad_netlist & " not specified " & exclamation);
+				ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli &
+					row_separator_0 & to_lower(type_action'image(import_cad)) & row_separator_0 & 
+					to_lower(type_format_cad'image(format_cad)) & row_separator_0 &
+					compose(containing_directory => name_directory_cad, name => "board", extension => "net"));
 
-				elsif prog_position = "TPI00" then
-						put_line(message_error & "Receiver pin not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(generate)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
-							row_separator_0 & to_string(device_name) & row_separator_0 & "71"
-							);
+		elsif prog_position = "INE10" then
+				put_line(message_error & "target module level not specified !");
+				ada.text_io.put_line(message_error'length * row_separator_0 
+					& "Specify level " & type_cad_import_target_module'image(main)
+					& " or " & type_cad_import_target_module'image(sub)
+					& " after netlist !");
 
-				elsif prog_position = "TON00" then
-						put_line(message_error & "Target net not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(generate)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
-							row_separator_0 & "COUNTER_INPUT"
-							);
+		elsif prog_position = "INE20" or prog_position = "INE50" then
+				put_line(message_error & "prefix for submodule not specified !");
+				ada.text_io.put_line(message_error'length * row_separator_0 
+					& "Specify prefix after module level !");
+				
+		elsif prog_position = "INE40" then
+				put_line(message_error & "target module level not specified !");
+				ada.text_io.put_line(message_error'length * row_separator_0 
+					& "Specify level " & type_cad_import_target_module'image(main)
+					& " or " & type_cad_import_target_module'image(sub)
+					& " after partlist !");
+				
+		elsif prog_position = "IPA00" then
+				put_line(message_error & text_identifier_cad_partlist & " not specified " & exclamation);
+				ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli &
+					row_separator_0 & to_lower(type_action'image(import_cad)) & row_separator_0 & 
+					to_lower(type_format_cad'image(format_cad)) & row_separator_0 &
+					compose(
+						containing_directory => containing_directory(to_string(name_file_cad_netlist)),
+						--containing_directory => name_directory_cad,
+						name => base_name(to_string(name_file_cad_netlist)),
+						extension => extension(to_string(name_file_cad_netlist))
+						) &
+					row_separator_0 & -- we assume the partlist lives in the same directory as the netlist:
+					compose(
+						containing_directory => containing_directory(to_string(name_file_cad_netlist)),
+						name => "board", extension => "part"
+						)
+					);
 
-				elsif prog_position = "TOC00" then
-						put_line(message_error & "Cycle count not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(generate)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
-							row_separator_0 & to_string(net_name) & row_separator_0 & "10"
-							);
+		elsif prog_position = "GEN20" then
+				new_line;
+				put_line(message_error & "Test profile not supported or missing" & exclamation & row_separator_0 & "Supported profiles are :");
+				for p in 0..type_test_profile'pos(type_test_profile'last) loop
+					put(to_lower(type_test_profile'image(type_test_profile'val(p))));
+					-- CS: add line break after 5 items
+					if p < type_test_profile'pos(type_test_profile'last) then put(" , "); end if;
+				end loop;
+				new_line(2);
+				put_line(message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(generate)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 &
+					to_lower(type_test_profile'image(infrastructure))
+					);
 
+		elsif prog_position = "GEN30" then
+				put_line(message_error & "Name of test not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(generate)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 &
+					to_lower(type_test_profile'image(test_profile)) & row_separator_0 & "name_of_your_test"
+					);
 
-				elsif prog_position = "RYC00" then
-						put_line(message_error & "Max. retry count not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(generate)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
-							row_separator_0 & to_string(device_name) & row_separator_0 & 
-							to_string(device_pin) & row_separator_0 & "10"
-							);
+		elsif prog_position = "TDV00" then
+				put_line(message_error & "Target device not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(generate)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 &
+					to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+					row_separator_0 & "IC3"
+					);
 
-				elsif prog_position = "RDY00" then
-						put_line(message_error & "Retry delay not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(generate)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
-							row_separator_0 & to_string(device_name) & row_separator_0 & 
-							to_string(device_pin) &
-							type_sxr_retries'image(retry_count) & row_separator_0 & "0.1"
-							);
+		elsif prog_position = "DVM00" then
+				put_line(message_error & "Device model not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(generate)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 &
+					to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+					row_separator_0 & to_string(device_name) & row_separator_0 &
+					compose(name_directory_models, "MC256", file_extension_text)
+					);
 
-				elsif prog_position = "TLT00" then
-						put_line(message_error & "Low time (unit is sec) not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(generate)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
-							row_separator_0 & to_string(net_name) &
-							type_cycle_count'image(cycle_count) & row_separator_0 & "2" -- CS: wrong ?
-							);
+		elsif prog_position = "DPC00" then
+				put_line(message_error & "Device package not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(generate)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 &
+					to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+					row_separator_0 & to_string(device_name) & row_separator_0 &
+					to_string(name_file_model_memory) &
+					row_separator_0 & "TSSOP48"
+					);
 
-				elsif prog_position = "THT00" then
-						put_line(message_error & "High time (unit is sec) not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(generate)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 &
-							to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
-							row_separator_0 & to_string(net_name) &
-							type_cycle_count'image(cycle_count) &
-							type_delay_value'image(low_time) & row_separator_0 & "0.2" -- CS: wrong ?
-							);
+		elsif prog_position = "TPI00" then
+				put_line(message_error & "Receiver pin not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(generate)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 &
+					to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+					row_separator_0 & to_string(device_name) & row_separator_0 & "71"
+					);
 
-				elsif prog_position = "PJN00" then
-						put_line(message_error & "Project name not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(create)) & row_separator_0 & "your_new_project"
-							);
+		elsif prog_position = "TON00" then
+				put_line(message_error & "Target net not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(generate)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 &
+					to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+					row_separator_0 & "COUNTER_INPUT"
+					);
 
-				elsif prog_position = "CMP00" then
-						put_line(message_error & "No database specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(compile)) & row_separator_0 &
-							compose(name => "your_database", extension => file_extension_database));
-
-				elsif prog_position = "CMP20" then
-						put_line(message_error & "Test name not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(compile)) & row_separator_0 &
-							to_string(name_file_database) & row_separator_0 &
-							"your_test");
-
-				elsif prog_position = "LD100" then
-						put_line(message_error & "Test name not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(load)) & row_separator_0 &
-							"your_test");
-
-				elsif prog_position = "DP100" then
-						put_line(message_error & "Specified page address invalid or out of range" & exclamation & 
-							row_separator_0 & "(radix missing (d/h/b) ?)");
-
-						ada.text_io.put_line(message_error'last * row_separator_0 & "Range (dec):" & row_separator_0 &
-							trim(type_mem_address_page'image(type_mem_address_page'first),left) & ".." &
-							trim(type_mem_address_page'image(type_mem_address_page'last),left) & dot);
-
-						ada.text_io.put_line(message_error'last * row_separator_0 & "Range (hex):" & row_separator_0 &
-							natural_to_string(natural_in => type_mem_address_page'first, base => 16) & ".." &
-							natural_to_string(natural_in => type_mem_address_page'last, base => 16) & dot);
+		elsif prog_position = "TOC00" then
+				put_line(message_error & "Cycle count not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(generate)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 &
+					to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+					row_separator_0 & to_string(net_name) & row_separator_0 & "10"
+					);
 
 
-				elsif prog_position = "RU100" then
-						put_line(message_error & "Test name not specified" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(run)) & row_separator_0 &
-							"your_test");
+		elsif prog_position = "RYC00" then
+				put_line(message_error & "Max. retry count not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(generate)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 &
+					to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+					row_separator_0 & to_string(device_name) & row_separator_0 & 
+					to_string(device_pin) & row_separator_0 & "10"
+					);
 
-				elsif prog_position = "RU400" then
-						put_line(message_error & "Step mode not supported or invalid" & exclamation);
-						ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(run)) & row_separator_0 &
-							to_string(name_test) & row_separator_0 & "[step_mode]");
-						ada.text_io.put(message_error'last * row_separator_0 & "Supported step modes: ");
-						for p in 0..step_mode_count
-						loop
-							put(type_step_mode'image(type_step_mode'val(p)));
-							if p < step_mode_count then put(" , "); end if;
-						end loop;
-						new_line;
+		elsif prog_position = "RDY00" then
+				put_line(message_error & "Retry delay not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(generate)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 &
+					to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+					row_separator_0 & to_string(device_name) & row_separator_0 & 
+					to_string(device_pin) &
+					type_sxr_retries'image(retry_count) & row_separator_0 & "0.1"
+					);
 
-				elsif prog_position = "ACV00" then
-						new_line;
-						put_line(message_error & "Too little arguments specified !");
-						ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli & row_separator_0 &
-							name_module_mkvmod & row_separator_0 & name_file_skeleton_default & row_separator_0 &
-							"your_verilog_module (without extension");  
+		elsif prog_position = "TLT00" then
+				put_line(message_error & "Low time (unit is sec) not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(generate)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 &
+					to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+					row_separator_0 & to_string(net_name) &
+					type_cycle_count'image(cycle_count) & row_separator_0 & "2" -- CS: wrong ?
+					);
 
-				elsif prog_position = "BP100" then
-						new_line;
-						put_line(message_error & "Breakpoint coordinates missing or out of range !");
-						ada.text_io.put(message_error'last * row_separator_0 & "Example command to set breakpoint after sxr 6 bit 715:");
-						put_line(row_separator_0 & name_module_cli & row_separator_0 &
-							to_lower(type_action'image(break)) & row_separator_0 & "6 715");
-						ada.text_io.put_line(message_error'last * row_separator_0 & "Allowed ranges:");
-						ada.text_io.put_line(message_error'last * row_separator_0 & "sxr id      :" &
-							type_vector_id_breakpoint'image(type_vector_id_breakpoint'first) &
-							".." & trim(type_vector_id_breakpoint'image(type_vector_id_breakpoint'last),left));
-						ada.text_io.put_line(message_error'last * row_separator_0 & "bit position:" &
-							type_sxr_break_position'image(type_sxr_break_position'first) &
-							".." & trim(type_sxr_break_position'image(type_sxr_break_position'last),left));
-						new_line;
-						ada.text_io.put_line(message_error'last * row_separator_0 & "To delete the breakpoint type command: " &
-							name_module_cli & row_separator_0 & to_lower(type_action'image(break)) & row_separator_0 & "0");
-				else
-   
-					--put("unexpected exception: ");
-					put_line(exception_name(event));
-					put(exception_message(event)); new_line;
-					put_line("program error at position " & prog_position);
-				end if;
+		elsif prog_position = "THT00" then
+				put_line(message_error & "High time (unit is sec) not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(generate)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 &
+					to_lower(type_test_profile'image(test_profile)) & row_separator_0 & to_string(name_test) &
+					row_separator_0 & to_string(net_name) &
+					type_cycle_count'image(cycle_count) &
+					type_delay_value'image(low_time) & row_separator_0 & "0.2" -- CS: wrong ?
+					);
 
+		elsif prog_position = "PJN00" then
+				put_line(message_error & "Project name not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(create)) & row_separator_0 & "your_new_project"
+					);
+
+		elsif prog_position = "CMP00" then
+				put_line(message_error & "No database specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(compile)) & row_separator_0 &
+					compose(name => "your_database", extension => file_extension_database));
+
+		elsif prog_position = "CMP20" then
+				put_line(message_error & "Test name not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(compile)) & row_separator_0 &
+					to_string(name_file_database) & row_separator_0 &
+					"your_test");
+
+		elsif prog_position = "LD100" then
+				put_line(message_error & "Test name not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(load)) & row_separator_0 &
+					"your_test");
+
+		elsif prog_position = "DP100" then
+				put_line(message_error & "Specified page address invalid or out of range" & exclamation & 
+					row_separator_0 & "(radix missing (d/h/b) ?)");
+
+				ada.text_io.put_line(message_error'last * row_separator_0 & "Range (dec):" & row_separator_0 &
+					trim(type_mem_address_page'image(type_mem_address_page'first),left) & ".." &
+					trim(type_mem_address_page'image(type_mem_address_page'last),left) & dot);
+
+				ada.text_io.put_line(message_error'last * row_separator_0 & "Range (hex):" & row_separator_0 &
+					natural_to_string(natural_in => type_mem_address_page'first, base => 16) & ".." &
+					natural_to_string(natural_in => type_mem_address_page'last, base => 16) & dot);
+
+
+		elsif prog_position = "RU100" then
+				put_line(message_error & "Test name not specified" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(run)) & row_separator_0 &
+					"your_test");
+
+		elsif prog_position = "RU400" then
+				put_line(message_error & "Step mode not supported or invalid" & exclamation);
+				ada.text_io.put_line(message_error'last * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(run)) & row_separator_0 &
+					to_string(name_test) & row_separator_0 & "[step_mode]");
+				ada.text_io.put(message_error'last * row_separator_0 & "Supported step modes: ");
+				for p in 0..step_mode_count
+				loop
+					put(type_step_mode'image(type_step_mode'val(p)));
+					if p < step_mode_count then put(" , "); end if;
+				end loop;
+				new_line;
+
+		elsif prog_position = "ACV00" then
+				new_line;
+				put_line(message_error & "Too little arguments specified !");
+				ada.text_io.put_line(message_error'length * row_separator_0 & message_example & name_module_cli & row_separator_0 &
+					name_module_mkvmod & row_separator_0 & name_file_skeleton_default & row_separator_0 &
+					"your_verilog_module (without extension");  
+
+		elsif prog_position = "BP100" then
+				new_line;
+				put_line(message_error & "Breakpoint coordinates missing or out of range !");
+				ada.text_io.put(message_error'last * row_separator_0 & "Example command to set breakpoint after sxr 6 bit 715:");
+				put_line(row_separator_0 & name_module_cli & row_separator_0 &
+					to_lower(type_action'image(break)) & row_separator_0 & "6 715");
+				ada.text_io.put_line(message_error'last * row_separator_0 & "Allowed ranges:");
+				ada.text_io.put_line(message_error'last * row_separator_0 & "sxr id      :" &
+					type_vector_id_breakpoint'image(type_vector_id_breakpoint'first) &
+					".." & trim(type_vector_id_breakpoint'image(type_vector_id_breakpoint'last),left));
+				ada.text_io.put_line(message_error'last * row_separator_0 & "bit position:" &
+					type_sxr_break_position'image(type_sxr_break_position'first) &
+					".." & trim(type_sxr_break_position'image(type_sxr_break_position'last),left));
+				new_line;
+				ada.text_io.put_line(message_error'last * row_separator_0 & "To delete the breakpoint type command: " &
+					name_module_cli & row_separator_0 & to_lower(type_action'image(break)) & row_separator_0 & "0");
+		else
+
+			put_line(exception_name(event));
+			put(exception_message(event)); new_line;
+			put_line("program error at position " & prog_position);
+		end if;
+
+		write_log_footer;
 end bsmcl;

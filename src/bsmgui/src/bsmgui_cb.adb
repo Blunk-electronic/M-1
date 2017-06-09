@@ -49,6 +49,29 @@ package body bsmgui_cb is
 	use type_name_script;
 	use type_name_project;
 	use type_name_test;
+
+	procedure write_log_header (version : in string) is
+	begin
+		if not exists (name_directory_messages) then
+			create_directory(name_directory_messages);
+		end if;
+
+		create(
+			file => file_gui_messages,
+			mode => out_file,
+			name => name_file_gui_messages);
+
+		put_line(file_gui_messages, to_upper(name_module_cli) & " version " & version & " LOGFILE");
+		put_line(file_gui_messages, "date " & date_now);
+		put_line(file_gui_messages, column_separator_0);
+	end write_log_header;
+
+	procedure write_log_footer is
+	begin
+		put_line(file_gui_messages, column_separator_0);
+		put_line(file_gui_messages, to_upper(name_module_gui) & " LOGFILE END");
+	end write_log_footer;
+
 	
 	procedure write_session_file_headline is
 	begin
@@ -150,8 +173,9 @@ package body bsmgui_cb is
 		close(file_session);
 
 		put_line (name_module_gui & " terminated");
-
+		
 		gtk.main.main_quit;
+		write_log_footer;		
 	end terminate_main;
 
 
@@ -582,5 +606,6 @@ package body bsmgui_cb is
 		abort_pending := false;
 
 	end abort_shutdown;
+
 
 end bsmgui_cb;
