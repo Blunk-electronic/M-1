@@ -1,16 +1,33 @@
-#PREFIX = /usr/lib/gcc/i586-suse-linux/4.8
-PREFIX = /usr/lib64/gcc/x86_64-suse-linux/4.8
-#usr/local/ada-4.3/lib/gcc/powerpc-apple-darwin8/4.3.0
+# on a 32bit machine uncomment this line:
+PREFIX = /usr/lib/gcc/i586-suse-linux/4.8
+
+# on a 64bit machine uncomment this line:
+#PREFIX = /usr/lib64/gcc/x86_64-suse-linux/4.8
+
 #OPTS = -a -k -gnato -O2
-OPTS = -a -gnato -O2
+OPTS = -a -gnato -O2	# means all options passed to gnat
+
+# here live the source codes (*.ads/*.adb):
 ADAINC = $(PREFIX)/adainclude
+
+# here live the library information files (*.ali)
 ADALIB = $(PREFIX)/adalib
-#SOURCE = $(wildcard *.ad[sb])
+
+
+# we compile only the sercom stuff
 SOURCE = g-sercom.ad[sb]
-#UNITS = $(basename $(wildcard *.ads))
 UNITS = $(basename g-sercom.ads)
+
+# if other source is to be compiled, use these lines:
+#SOURCE = $(wildcard *.ad[sb])
+#UNITS = $(basename $(wildcard *.ads))
+
+
 ALIS = $(addsuffix .ali, $(UNITS))
+# means all *.ali files
+
 OBJS = $(addsuffix .o, $(UNITS))
+# means all object files (*.o)
 
 .PHONY: all install uninstall clean test
 
@@ -18,21 +35,20 @@ all:
 	gnatmake $(OPTS) $(UNITS)
 
 install:
-#	cp $(SOURCE) $(ADAINC)/
-	cp *.ali $(ADALIB)/
-	cp *.o $(ADALIB)/
+# copy g-sercom.ali in directory adalib/
+	cp $(ALIS) $(ADALIB)	
 
 uninstall:
-#	@for file in $(SOURCE); do ${RM} $(ADAINC)/$$file; done
-	@for file in $(ALIS); do ${RM} $(ADALIB)/$$file; done
-	@for file in $(OBJS); do ${RM} $(ADALIB)/$$file; done
+# remove g-sercom.ali from adalib/
+	@for file in $(ALIS); do ${RM} $(ADALIB)/$$file; done	
 
 clean:
-	${RM} *.ali *.o
+# remove ali and o files from current working directory
+	${RM} $(ALIS) $(OBJS)
 
 test:
-	@echo "Source files: $(SOURCE)"
+#	@echo "Source files: $(SOURCE)"
 	@echo "Compilation units: $(UNITS)"
-	@for file in $(SOURCE); do ls $(ADAINC)/$$file; done
+#	@for file in $(SOURCE); do ls $(ADAINC)/$$file; done
 	@for file in $(ALIS); do ls $(ADALIB)/$$file; done
-	@for file in $(OBJS); do ls $(ADALIB)/$$file; done
+#	@for file in $(OBJS); do ls $(ADALIB)/$$file; done
