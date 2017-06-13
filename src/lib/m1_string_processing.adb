@@ -440,6 +440,8 @@ package body m1_string_processing is
 	begin
 		-- direct messages according to action -- CS: add other actions
 		case action is
+			when import_cad =>
+				set_output(file_import_cad_messages);
 			when import_bsdl =>
 				set_output(file_import_bsdl_messages);
 			when join_netlist =>
