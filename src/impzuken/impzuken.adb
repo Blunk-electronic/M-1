@@ -88,66 +88,9 @@ procedure impzuken is
 
 
 
--- 	function make_netlist_array
--- 		(
--- 		line_ct	: natural
--- 		) return natural is
--- 		
--- 		char_current	: character := ' ';
--- 		netlist_array	: netlist_array_type (Natural range 1..line_ct);
--- 		end_marker		: constant character := ';';
--- 		entries_counter : natural := 0;
--- 		scratch			: unbounded_string;
--- 		ct				: natural := 1;
--- 		net_ct			: natural := 0;
--- 
--- 		begin
--- 
--- 			while not end_of_file
--- 				loop
--- 					get(char_current);
--- 					case char_current is
--- 
--- 						when end_marker => 
--- 							entries_counter := entries_counter + 1;
--- 							line := line & Character'Val(10);
--- 							--put_line(line);
--- 
--- 							netlist_array(entries_counter).net := to_unbounded_string(replace_char(trim(replace_char(get_field(line,1,':'),'"',' '), side => both),' ','_'));
--- 							--put_line(netlist_array(entries_counter).net);
--- 
--- 							-- extract package field, replace '"' by ' ', trim sides, replace ' ' by '_'
--- 							netlist_array(entries_counter).packge := to_unbounded_string(replace_char(trim(replace_char(get_field(line,4,':'),'"',' '), side => both),' ','_'));
--- 							if netlist_array(entries_counter).packge = to_unbounded_string("") then netlist_array(entries_counter).packge := to_unbounded_string("package_unknown"); end if; 
--- 							--put_line(netlist_array(entries_counter).packge);
--- 
--- 							-- extract value field, replace '"' by ' ', trim sides, replace ' ' by '_'
--- 							netlist_array(entries_counter).value := to_unbounded_string(replace_char(trim(replace_char(get_field(line,3,':'),'"',' '), side => both),' ','_'));
--- 							--put_line(netlist_array(entries_counter).value);
--- 
--- 							-- extract device field, replace '"' by ' ', trim sides, replace ' ' by '_'
--- 							netlist_array(entries_counter).device := to_unbounded_string(replace_char(trim(replace_char(get_field(line,5,':'),'"',' '), side => both),' ','_'));
--- 							--put_line(netlist_array(entries_counter).device);
--- 
--- 							-- extract pin field, replace '"' by ' ', trim sides, replace ' ' by '_'
--- 							netlist_array(entries_counter).pin := to_unbounded_string(replace_char(trim(replace_char(get_field(line,6,':'),'"',' '), side => both),' ','_'));
--- 							--put_line(netlist_array(entries_counter).pin);
---  							
--- 							--new_line;
--- 							line := to_unbounded_string(""); -- clear line buffer
--- 							--netlist_array(entries_counter).processed := true;
--- 
--- 						when others => -- file line buffer char by char
--- 							line := line & char_current;
--- 					end case;
--- 
--- 
--- 					--pointer:=pointer+1;
--- 					--put_line(get_field(line,2,' '));
--- 					
--- 				end loop;
--- --		put_line(natural'image(entries_counter));
--- 
+	procedure write_skeleton
+	begin
+		null;
 -- 		new_line;
 -- 		put_line("Section netlist_skeleton");
 -- 
@@ -185,7 +128,7 @@ procedure impzuken is
 -- 		return net_ct;
 -- 	end make_netlist_array;
 -- 
-
+	end write_skeleton;
 
 	line_counter : natural := 0;
 
