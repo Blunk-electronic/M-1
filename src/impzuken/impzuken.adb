@@ -61,6 +61,9 @@ procedure impzuken is
 
 	use type_net_name;
 	use type_device_name;
+	use type_device_value;
+	use type_package_name;
+	use type_pin_name;
 	
 	use type_name_file_netlist;
 	use type_universal_string;
@@ -69,9 +72,9 @@ procedure impzuken is
 	type type_line_of_netlist is record		
 		net			: type_net_name.bounded_string;
 		device		: type_device_name.bounded_string;
--- 		value		: type_device_value.bounded_string;
--- 		packge 		: type_package_name.bounded_string;
--- 		pin  		: type_pin_name.bounded_string;
+		value		: type_device_value.bounded_string;
+		packge 		: type_package_name.bounded_string;
+		pin  		: type_pin_name.bounded_string;
 		-- CS: other elements ?
 	--	processed	: Boolean := false;
 	end record;
@@ -186,14 +189,13 @@ procedure impzuken is
 
 	line_counter : natural := 0;
 
-	procedure read_netlist is
-		line : type_fields_of_line;
+	maximum_field_count_per_line : constant count_type := 10;
 
--- 		function to_line_of_netlist return type_line_of_netlist is
--- 		begin
--- 
--- 			
--- 		end to_line_of_netlist;
+	procedure read_netlist is
+	-- Reads the given netlist and stores it in a vector list named "netlist".
+		line : type_fields_of_line;
+		line_bak : type_fields_of_line;
+		complete : boolean := true;
 			
 	begin
 		write_message (
@@ -204,28 +206,72 @@ procedure impzuken is
 		open (file => file_cad_netlist, mode => in_file, name => to_string(name_file_cad_netlist));
 		set_input(file_cad_netlist);
 
+		put_line("NOTE: The line number indicates the line in the given netlist where the last property of a pin has been found in.");
 		while not end_of_file loop
 			line_counter := line_counter + 1;
 			line := read_line(get_line, latin_1.colon);
-			if line.field_count = 10 then -- if line contains anything
-				null;
-				--append(netlist, to_line_of_netlist(line));
+			case line.field_count is
+				when 0 => null; -- empty line. nothing to do
+				when maximum_field_count_per_line => -- Line complete. Alle fields can be appended to netlist right away.
+					
+					append(netlist, ( 
+						net => 		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 1),both))),
+						value =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 3),both))),
+						packge =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 4),both))),
+						device =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 5),both))),
+						pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 6),both)))
+						));
 
--- 					net			: type_net_name.bounded_string;
--- 					device		: type_device_name.bounded_string;
--- 					value		: type_device_value.bounded_string;
--- 					packge 		: type_package_name.bounded_string;
--- 					pin  		: type_pin_name.bounded_string;
+				when 1..9 => -- An incomplete line has been found and must be stored in line_bak.
+					-- The next line is expected to contain the remaining fields and is read in the next spin.
 
- 				put_line(type_net_name.to_string(trim(to_bounded_string(get_field_from_line(line, 1)),both)));
- 				--put_line(get_field_from_line(line, 1));
--- 				append(netlist, ( 
--- 					net => 		trim(to_bounded_string(get_field_from_line(line, 1)),both),
--- 					device =>	trim(to_bounded_string(get_field_from_line(line, 5)),both)
--- 
--- 					));
-			end if;
+					if complete then
+						line_bak := line;
+						complete := false;
+
+					else
+						line := append(line_bak,line); 
+						-- Now, line contains the complete line and should have maximum_field_count_per_line.
+						-- If the two fragments have more than maximum_field_count_per_line the netlist file is
+						-- considered as corrupted.
+						if line.field_count = maximum_field_count_per_line then
+							complete := true;
+
+							-- Every complete line represents a pin:
+							put_line(" line" & positive'image(line_counter) & " pin " & to_string(line));
+							
+							-- Append the complete line to the netlist:
+							append(netlist, ( 
+								net => 		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 1),both))),
+								value =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 3),both))),
+								packge =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 4),both))),
+								device =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 5),both))),
+								pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 6),both)))
+								));
+						else
+							line_bak := line;
+						end if;
+					end if;
+
+				when others => -- If line contains more than maximum_field_count_per_line we have a corrupted netlist.
+					write_message (
+						file_handle => file_import_cad_messages,
+						text => message_error & "too many fields in line " & natural'image(line_counter) & " !",
+						console => true);
+					raise constraint_error;
+			end case;
 		end loop;
+
+		-- Finally the complete-flag must be found set.
+		if not complete then
+			write_message (
+				file_handle => file_import_cad_messages,
+				text => message_error & "too less fields in line" & natural'image(line_counter) & " !" 
+					& " Netlist incomplete !",
+				console => true);
+			raise constraint_error;
+		end if;
+
 	end read_netlist;
 
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------

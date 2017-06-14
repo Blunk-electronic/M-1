@@ -185,7 +185,8 @@ package m1_string_processing is
 		field_count	: count_type; 
 	end record;
 	function read_line ( line : in string; ifs : in character := latin_1.space ) return type_fields_of_line;
-
+	function append (left : in type_fields_of_line; right : in type_fields_of_line) return type_fields_of_line;
+	
 	function get_field_from_line (line : in type_fields_of_line; position : in positive) return string;
 
 	function to_string ( line : in type_fields_of_line) return string;

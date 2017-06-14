@@ -403,6 +403,22 @@ package body m1_string_processing is
 		return ( fields => list, field_count => type_list_of_strings.length(list));
 	end read_line;
 
+	function append (left : in type_fields_of_line; right : in type_fields_of_line) return type_fields_of_line is
+		line : type_fields_of_line;
+		use type_list_of_strings;
+	begin
+--		line.fields := fields);
+--		line.field_count := 0;
+
+		line.fields := left.fields & right.fields;
+		line.field_count := left.field_count + right.field_count;
+-- 		if right.field_count > 0 then
+-- 			null;
+-- 		end if;
+		return line;
+	end append;
+
+
 	-- CS: comments
 	function get_field_from_line (line : in type_fields_of_line; position : in positive) return string is
 		use type_list_of_strings;
@@ -423,9 +439,9 @@ package body m1_string_processing is
 			for i in 1..positive(line.field_count) loop
 				case i is
 					when 1 =>
-						s := to_unbounded_string(get_field_from_line(line, i));
+						s := to_unbounded_string(trim(get_field_from_line(line, i),both));
 					when others =>
-						s := s & ifs & to_unbounded_string(get_field_from_line(line, i));
+						s := s & ifs & to_unbounded_string(trim(get_field_from_line(line, i),both));
 				end case;
 			end loop;
 		end if;
