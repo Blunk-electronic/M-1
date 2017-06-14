@@ -130,6 +130,51 @@ package m1_import is
 	procedure put_message_on_failed_cad_import(format_cad : in type_format_cad);
 
 	procedure write_advise_dos2unix;
-	
+
+	procedure write_statistics (device_count : in natural; net_count : in natural; pin_count : in natural);	
+
+	procedure write_info (
+		module_name : in string;
+		module_version : in string;
+		device_count : in natural;
+		net_count : in natural;
+		pin_count : in natural);
+
+	-- PINS
+	pin_count_mounted : natural := 0; -- for statistics
+	type type_pin is record
+		name_device	: type_device_name.bounded_string;
+		name_pin 	: type_pin_name.bounded_string;		
+		mounted 	: boolean := false;
+	end record;
+	package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin);
+
+	-- DEVICES
+	device_count_mounted : natural := 0; -- for statistics
+    type type_device is record -- CS: tagged
+        name    : type_device_name.bounded_string;
+        packge  : type_package_name.bounded_string;
+		value   : type_device_value.bounded_string;
+		has_variants	: boolean 	:= false; 	-- set by manage_assembly_variants as first action
+		variant_id		: positive 	:= 1;		-- the variant number
+		mounted			: boolean	:= false;
+		processed		: boolean	:= false;
+    end record;
+	-- Procedure detect_assembly_variants sets the flags "has_variants" and "variant_id".
+
+    package type_list_of_devices is new vectors ( index_type => positive, element_type => type_device);
+    use type_list_of_devices;
+	list_of_devices : type_list_of_devices.vector; -- here we list all devices of the design
+
+	-- NETS
+    type type_net is record
+        name    : type_net_name.bounded_string;
+        pins    : type_list_of_pins.vector;
+    end record;
+    package type_list_of_nets is new vectors ( index_type => positive, element_type => type_net);
+	list_of_nets : type_list_of_nets.vector; -- here we collect all nets of the design
+
+
+	procedure write_skeleton (module_name : in string; module_version : in string);
 end m1_import;
 

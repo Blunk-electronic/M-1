@@ -177,7 +177,8 @@ package m1_database is
 	use type_port_io_map;
 	bic_port_io_map_preliminary : type_port_io_map.vector; -- for temporarily storage -- CS: purge befor reading a new bic
 
-	pin_name_length		: constant natural := 5;
+	pin_name_length		: constant natural := 100; -- some netlists store device and pin in one string like IC44-2. in case
+													-- type_pin_name is used to hold such strings this size seems sufficient.
 	package type_pin_name is new generic_bounded_length(pin_name_length); use type_pin_name;
 	device_pin : type_pin_name.bounded_string; -- used for general pin name handling
 	package type_list_of_pin_names is new vectors (index_type => positive, element_type => type_pin_name.bounded_string);  -- for temporarily storage

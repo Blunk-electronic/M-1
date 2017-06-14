@@ -55,6 +55,12 @@ with m1_string_processing; 		use m1_string_processing;
 
 package body m1_import is
 
+	use type_net_name;
+	use type_device_name;
+	use type_pin_name;
+	use type_device_value;
+	use type_list_of_nets;
+
 	procedure put_format_cad is
 	begin
 		put_line(type_format_cad'image(format_cad));
@@ -306,6 +312,181 @@ package body m1_import is
 			text => "Example 2: dos2unix -n " & compose(name_directory_cad, "netlist_dos.net netlist_unix.net"),
 			console => true);
 	end write_advise_dos2unix;
-	
+
+	procedure write_statistics (device_count : in natural; net_count : in natural; pin_count : in natural) is
+	begin
+		new_line(file_import_cad_messages);		
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => "writing statistics ...",
+			identation => 1,			
+			console => true);
+
+		put_line(file_skeleton, " statistics:");
+
+		-- The device_count_mounted was computed when a device was marked as "mounted" 
+		-- by procedure mark_device_as_mounted.
+		put_line(file_skeleton, "  devices :" & natural'image(device_count));
+
+		-- The number of nets can be taken directly from the list_of_nets.
+		put_line(file_skeleton, "  nets    :" & natural'image(net_count));
+
+		-- The pin_count_mounted was computed when a pin was marked as "mounted"
+		-- by procdure mark_pin_as_mounted.
+		put_line(file_skeleton, "  pins    :" & natural'image(pin_count));
+		
+-- 		put_line(file_skeleton,section_mark.endsection);		
+	end write_statistics;
+
+	procedure write_info (
+		module_name : in string;
+		module_version : in string;
+		device_count : in natural;
+		net_count : in natural;
+		pin_count : in natural) 
+		is
+	begin
+-- 		set_output(file_skeleton);
+
+		new_line(file_import_cad_messages);
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => "writing section info ...",
+			identation => 1,
+			console => false);
+		
+		put_line(section_mark.section & row_separator_0 & text_skeleton_section_info);
+-- 		put_line(" netlist skeleton");
+		put_line(" created by " & module_name & " version " & module_version);
+		put_line(" date " & date_now);
+		if cad_import_target_module = m1_import.sub then
+			put_line(" prefix " & to_string(target_module_prefix));
+		end if;
+		write_statistics(device_count, net_count, pin_count);
+		
+		put_line(file_skeleton,section_mark.endsection);
+-- 		set_output(standard_output);
+	end write_info;	
+
+	procedure write_skeleton (module_name : in string; module_version : in string) is
+	-- Writes the skeleton file from the list_of_nets.
+	-- Reads the global flag variants_found in order to care for the "mounted" flag of pins or not.
+		net : m1_import.type_net;
+		pin : type_pin;
+		ld 	: natural := natural(length(list_of_devices));
+		
+		function get_value_and_package(device : in type_device_name.bounded_string) return string is
+		-- returns value and package of a given device
+			device_scratch : type_device;
+		begin
+			for d in 1..ld loop
+				device_scratch := element(list_of_devices,positive(d));
+				if device_scratch.name = device then
+					if device_scratch.mounted then
+						exit;
+					end if;
+				end if;
+			end loop;
+			
+			return type_device_value.to_string(device_scratch.value) & row_separator_0 & type_package_name.to_string(device_scratch.packge);
+		end get_value_and_package;
+		
+	begin -- write_skeleton
+		new_line(file_import_cad_messages);
+
+		-- The skeleton file is named with the standard name or
+		-- with the standard name + prefix:
+		case cad_import_target_module is
+			when m1_import.main => 
+				write_message (
+					file_handle => file_import_cad_messages,
+					text => "creating skeleton for main module ...",
+					console => false);
+
+				create (file => file_skeleton, mode => out_file, name => name_file_skeleton);
+
+			when m1_import.sub => 
+				write_message (
+					file_handle => file_import_cad_messages,
+					text => "creating skeleton for submodule " & to_string(target_module_prefix) & " ...",
+					console => false);
+
+-- 				target_module_prefix := to_bounded_string(argument(3));
+-- 
+-- 				name_file_skeleton_submodule := to_bounded_string(compose( name => 
+-- 					base_name(name_file_skeleton) & "_" & 
+-- 					to_string(target_module_prefix),
+-- 					extension => file_extension_text));
+
+				create (file => file_skeleton, mode => out_file, 
+						name => type_name_file_skeleton_submodule.to_string(name_file_skeleton_submodule));
+		end case;
+
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => "writing skeleton ...",
+			console => true);
+
+		set_output(file_skeleton);
+		
+		write_info(
+			module_name => module_name,
+			module_version => module_version,
+			device_count => device_count_mounted,
+			net_count => natural(type_list_of_nets.length(list_of_nets)),
+			pin_count => pin_count_mounted);
+
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => "writing section netlist ...",
+			identation => 1,
+			console => true);
+		
+		new_line;
+		put_line(section_mark.section & row_separator_0 & text_skeleton_section_netlist); new_line;
+		
+		for n in 1..length(list_of_nets) loop
+			net := element(list_of_nets, positive(n)); -- load a net
+
+			write_message (
+				file_handle => file_import_cad_messages,
+				text => to_string(net.name),
+				identation => 2,
+				console => false);
+			
+			-- write net header like "SubSection CORE_EXT_SRST class NA"
+			put(row_separator_0 & section_mark.subsection & row_separator_0);
+			if cad_import_target_module = m1_import.sub then -- insert module prefix if it is a submodule
+				put(to_string(target_module_prefix) & "_");
+			end if;
+			put_line(to_string(net.name) & row_separator_0 
+				& netlist_keyword_header_class & row_separator_0 & type_net_class'image(net_class_default));
+
+			-- write pins in lines like "R3 ? 270K RESC1005X40N 1"
+			for p in 1..length(net.pins) loop
+				pin := element(net.pins, positive(p)); -- load a pin
+
+				if pin.mounted then -- address only active assembly variants
+					put("  ");
+					if cad_import_target_module = m1_import.sub then -- insert module prefix if it is a submodule
+						put(to_string(target_module_prefix) & "_");
+					end if;
+					put_line(to_string(pin.name_device) 
+						& row_separator_0 & type_device_class'image(device_class_default) 
+						& row_separator_0 & get_value_and_package(pin.name_device) 
+						& row_separator_0 & to_string(pin.name_pin)
+						);
+				end if;
+			end loop;
+
+			put_line(row_separator_0 & section_mark.endsubsection); new_line;
+		end loop;
+		
+		put_line(section_mark.endsection);
+		set_output(standard_output);
+		close(file_skeleton);
+	end write_skeleton;
+
+
 end m1_import;
 
