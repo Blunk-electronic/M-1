@@ -41,6 +41,7 @@ with ada.float_text_io;			use ada.float_text_io;
 
 with ada.containers;			use ada.containers;
 with ada.containers.vectors;
+with ada.containers.ordered_maps;
 with ada.containers.doubly_linked_lists;
 
 
@@ -151,27 +152,39 @@ package m1_import is
 
 	-- DEVICES
 	device_count_mounted : natural := 0; -- for statistics
-    type type_device is record -- CS: tagged
-        name    : type_device_name.bounded_string;
+
+	-- Regular devices (without assembly variants) are stored in a map and accessed by their name:
+    type type_base_device is tagged record
         packge  : type_package_name.bounded_string;
 		value   : type_device_value.bounded_string;
+    end record;
+	use type_device_name;
+	package type_map_of_devices is new ordered_maps ( 
+		key_type => type_device_name.bounded_string,
+		element_type => type_base_device);
+	map_of_devices : type_map_of_devices.map;
+
+	-- Devices which have assembly variants are stored in a vector and accessed by a positive:	
+	type type_device is new type_base_device with record
+        name    : type_device_name.bounded_string;
 		has_variants	: boolean 	:= false; 	-- set by manage_assembly_variants as first action
 		variant_id		: positive 	:= 1;		-- the variant number
 		mounted			: boolean	:= false;
 		processed		: boolean	:= false;
     end record;
-	-- Procedure detect_assembly_variants sets the flags "has_variants" and "variant_id".
-
-    package type_list_of_devices is new vectors ( index_type => positive, element_type => type_device);
+	package type_list_of_devices is new vectors ( 
+		index_type => positive,
+		element_type => type_device);
     use type_list_of_devices;
-	list_of_devices : type_list_of_devices.vector; -- here we list all devices of the design
+	list_of_devices : type_list_of_devices.vector;
+
 
 	-- NETS
     type type_net is record
         name    : type_net_name.bounded_string;
         pins    : type_list_of_pins.vector;
     end record;
-    package type_list_of_nets is new vectors ( index_type => positive, element_type => type_net);
+    package type_list_of_nets is new vectors ( index_type => positive, element_type => type_net); -- CS: map ?
 	list_of_nets : type_list_of_nets.vector; -- here we collect all nets of the design
 
 	procedure write_skeleton (module_name : in string; module_version : in string);

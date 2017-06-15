@@ -879,7 +879,7 @@ procedure impprotel is
 -- 	end write_skeleton;
 
 	procedure read_netlist is
-	-- Appends devices to list_of_devices.
+	-- Appends devices to list_of_devices (even multiple occurences which are assembly variants).
 	-- Appends nets to list_of_nets. Each net has a list of pins.
 		pin_scratch		: m1_import.type_pin;
 		device_entered	: boolean := false;
@@ -931,8 +931,9 @@ procedure impprotel is
 								& " value " & to_string(device_scratch.value)
 								& " package " & to_string(device_scratch.packge),
 							console => false);
-						
-						append(list_of_devices,device_scratch); -- add device to list
+
+						-- add device to list_of_devices (even if it occurs more than once, which indicates an assembly variant)
+						append(list_of_devices,device_scratch); 
 
 						-- purge device contents for next spin
 						device_scratch.name := to_bounded_string(""); 
