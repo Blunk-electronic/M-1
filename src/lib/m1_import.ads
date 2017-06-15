@@ -193,13 +193,13 @@ package m1_import is
 	-- NETS
 
 	-- If we do not deal with assembly variants, a net has regular pins. 
-	-- We store those nets in a vector (CS: map)
+	-- We store those nets in a map:
 	type type_regular_net is record
-        name    : type_net_name.bounded_string;
         pins    : type_list_of_regular_pins.vector;
     end record;
-    package type_list_of_regular_nets is new vectors ( index_type => positive, element_type => type_regular_net); -- CS: map ?
-	list_of_regular_nets : type_list_of_regular_nets.vector; -- here we collect all nets of the design
+	use type_net_name;
+    package type_map_of_regular_nets is new ordered_maps ( key_type => type_net_name.bounded_string, element_type => type_regular_net);
+	map_of_regular_nets : type_map_of_regular_nets.map;
 
 	-- If we deal with assembly variants, a net has pins with the "mounted"-flag:
 	-- We store those nets in a vector (CS: map)
@@ -208,8 +208,9 @@ package m1_import is
         pins    : type_list_of_pins.vector;
     end record;
     package type_list_of_nets is new vectors ( index_type => positive, element_type => type_net); -- CS: map ?
-	list_of_nets : type_list_of_nets.vector; -- here we collect all nets of the design
-
+	list_of_nets : type_list_of_nets.vector;
+-- 	package type_map_of_nets is new ordered_maps ( key_type => type_net_name.bounded_string, element_type => type_net);
+-- 	list_of_nets : type_map_of_nets.map;
 	
 	procedure write_skeleton (
 		module_name : in string;

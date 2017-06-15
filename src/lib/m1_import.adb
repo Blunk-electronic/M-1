@@ -325,7 +325,7 @@ package body m1_import is
 		pin : m1_import.type_pin;
 		--ld 	: natural := natural(length(list_of_devices));
 		use type_map_of_devices;
-		use type_list_of_regular_nets;
+		use type_map_of_regular_nets;
 
 		procedure write_statistics is
 		-- Writes the statistics in the skeleton file.
@@ -350,7 +350,7 @@ package body m1_import is
 			if assembly_variants then
 				put_line(file_skeleton, count_type'image(length(list_of_nets)));
 			else
-				put_line(file_skeleton, count_type'image(length(list_of_regular_nets)));
+				put_line(file_skeleton, count_type'image(length(map_of_regular_nets)));
 			end if;
 
 			put(file_skeleton, "  pins    :");

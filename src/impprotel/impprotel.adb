@@ -77,6 +77,7 @@ procedure impprotel is
 	use type_list_of_devices;
 	use m1_import.type_list_of_pins;
 	use m1_import.type_list_of_nets;
+	--use m1_import.type_map_of_nets;
 
 	
 --     length_of_device_name : constant positive := 10;
