@@ -143,9 +143,16 @@ package m1_import is
 
 	-- PINS
 	pin_count_mounted : natural := 0; -- for statistics
-	type type_pin is record
+
+	-- If we do not deal with assembly variants, this type specifies a regular pin:
+	type type_regular_pin is tagged record
 		name_device	: type_device_name.bounded_string;
 		name_pin 	: type_pin_name.bounded_string;		
+	end record;
+	package type_list_of_regular_pins is new vectors ( index_type => positive, element_type => type_regular_pin);	
+
+	-- If we deal with assembly variants, a pin has the "mounted"-flag:
+	type type_pin is new type_regular_pin with record
 		mounted 	: boolean := false;
 	end record;
 	package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin);
@@ -180,14 +187,30 @@ package m1_import is
 
 
 	-- NETS
-    type type_net is record
+
+	-- If we do not deal with assembly variants, a net has regular pins. 
+	-- We store those nets in a vector (CS: map)
+	type type_regular_net is record
+        name    : type_net_name.bounded_string;
+        pins    : type_list_of_regular_pins.vector;
+    end record;
+    package type_list_of_regular_nets is new vectors ( index_type => positive, element_type => type_regular_net); -- CS: map ?
+	list_of_regular_nets : type_list_of_regular_nets.vector; -- here we collect all nets of the design
+
+	-- If we deal with assembly variants, a net has pins with the "mounted"-flag:
+	-- We store those nets in a vector (CS: map)
+	type type_net is record -- CS: find a better name like type_net_with_variants
         name    : type_net_name.bounded_string;
         pins    : type_list_of_pins.vector;
     end record;
     package type_list_of_nets is new vectors ( index_type => positive, element_type => type_net); -- CS: map ?
 	list_of_nets : type_list_of_nets.vector; -- here we collect all nets of the design
 
-	procedure write_skeleton (module_name : in string; module_version : in string);
+	
+	procedure write_skeleton (
+		module_name : in string;
+		module_version : in string;
+		assembly_variants : in boolean);
 	-- writes the skeleton file from list_of_nets and list_of_devices
 	
 end m1_import;

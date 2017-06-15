@@ -1106,7 +1106,11 @@ begin
 		set_exit_status(failure);
 	else
 		prog_position	:= 90;
-		write_skeleton (name_module_cad_importer_protel, version);
+		write_skeleton (
+			module_name => name_module_cad_importer_protel,
+			module_version => version,
+			assembly_variants => true
+			);
 	end if;
 
 	prog_position	:= 100;

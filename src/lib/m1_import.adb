@@ -315,11 +315,14 @@ package body m1_import is
 	end write_advise_dos2unix;
 
 
-	procedure write_skeleton (module_name : in string; module_version : in string) is
+	procedure write_skeleton (
+		module_name : in string;
+		module_version : in string;
+		assembly_variants : in boolean) is
 	-- Writes the skeleton file from the list_of_nets and list_of_devices..
 		net : m1_import.type_net;
 		pin : m1_import.type_pin;
-		ld 	: natural := natural(length(list_of_devices));
+		--ld 	: natural := natural(length(list_of_devices));
 
 		procedure write_statistics is -- (device_count : in natural; net_count : in natural; pin_count : in natural) is
 		begin
@@ -375,15 +378,20 @@ package body m1_import is
 		function get_value_and_package(device : in type_device_name.bounded_string) return string is
 		-- returns value and package of a given device
 			device_scratch : type_device;
+			--device_cursor : type_map_of_devices.cursor := type_map_of_devices.first(map_of_devices);
 		begin
-			for d in 1..ld loop
-				device_scratch := element(list_of_devices,positive(d));
-				if device_scratch.name = device then
-					if device_scratch.mounted then
-						exit;
+			if assembly_variants then
+				for d in 1..length(list_of_devices) loop
+					device_scratch := element(list_of_devices,positive(d));
+					if device_scratch.name = device then
+						if device_scratch.mounted then
+							exit;
+						end if;
 					end if;
-				end if;
-			end loop;
+				end loop;
+			else
+				device_scratch := element(container => map_of_devices, key => device);
+			end if;
 			
 			return type_device_value.to_string(device_scratch.value) & row_separator_0 & type_package_name.to_string(device_scratch.packge);
 		end get_value_and_package;
