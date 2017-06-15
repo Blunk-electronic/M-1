@@ -141,9 +141,15 @@ package m1_import is
 -- 		net_count : in natural;
 -- 		pin_count : in natural);
 
-	-- PINS
-	pin_count_mounted : natural := 0; -- for statistics
 
+
+	-- STATISTICS
+	pin_count : natural := 0; -- regular pins (if no assembly variants)
+	pin_count_mounted : natural := 0; -- pins of assembly variants
+	device_count : natural := 0; -- regular devices (if no assembly variants)
+	device_count_mounted : natural := 0; -- devices with assembly variants
+
+	-- PINS
 	-- If we do not deal with assembly variants, this type specifies a regular pin:
 	type type_regular_pin is tagged record
 		name_device	: type_device_name.bounded_string;
@@ -158,8 +164,6 @@ package m1_import is
 	package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin);
 
 	-- DEVICES
-	device_count_mounted : natural := 0; -- for statistics
-
 	-- Regular devices (without assembly variants) are stored in a map and accessed by their name:
     type type_base_device is tagged record
         packge  : type_package_name.bounded_string;
