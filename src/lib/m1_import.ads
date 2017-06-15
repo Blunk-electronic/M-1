@@ -131,14 +131,14 @@ package m1_import is
 
 	procedure write_advise_dos2unix;
 
-	procedure write_statistics (device_count : in natural; net_count : in natural; pin_count : in natural);	
+--	procedure write_statistics (device_count : in natural; net_count : in natural; pin_count : in natural);	
 
-	procedure write_info (
-		module_name : in string;
-		module_version : in string;
-		device_count : in natural;
-		net_count : in natural;
-		pin_count : in natural);
+-- 	procedure write_info (
+-- 		module_name : in string;
+-- 		module_version : in string;
+-- 		device_count : in natural;
+-- 		net_count : in natural;
+-- 		pin_count : in natural);
 
 	-- PINS
 	pin_count_mounted : natural := 0; -- for statistics
@@ -174,7 +174,8 @@ package m1_import is
     package type_list_of_nets is new vectors ( index_type => positive, element_type => type_net);
 	list_of_nets : type_list_of_nets.vector; -- here we collect all nets of the design
 
-
 	procedure write_skeleton (module_name : in string; module_version : in string);
+	-- writes the skeleton file from list_of_nets and list_of_devices
+	
 end m1_import;
 

@@ -64,36 +64,32 @@ procedure impzuken is
 	use type_device_value;
 	use type_package_name;
 	use type_pin_name;
+	use m1_import.type_list_of_pins;
+	use m1_import.type_list_of_nets;	
 	
 	use type_name_file_netlist;
 	use type_universal_string;
 	use type_name_file_skeleton_submodule;
 	
-	type type_line_of_netlist is record		
+	type type_line_of_zuken_netlist is record		
 		net			: type_net_name.bounded_string;
 		device		: type_device_name.bounded_string;
 		value		: type_device_value.bounded_string;
 		packge 		: type_package_name.bounded_string;
 		pin  		: type_pin_name.bounded_string;
 		-- CS: other elements ?
-	--	processed	: Boolean := false;
+		processed	: Boolean := false;
 	end record;
 
-	package type_netlist is new vectors ( 
-		element_type => type_line_of_netlist,
+	package type_zuken_netlist is new vectors ( 
+		element_type => type_line_of_zuken_netlist,
 		index_type => positive);
-	use type_netlist;
-	netlist : type_netlist.vector;
+	use type_zuken_netlist;
+	zuken_netlist : type_zuken_netlist.vector; -- when reading the netlist file, everything goes here
 
 
 
 
-	procedure write_skeleton
-	begin
-		null;
--- 		new_line;
--- 		put_line("Section netlist_skeleton");
--- 
 -- 		-- make skeleton netlist from netlist_array
 -- 		entries_counter := 1;
 -- 		while entries_counter <= line_ct 
@@ -128,14 +124,13 @@ procedure impzuken is
 -- 		return net_ct;
 -- 	end make_netlist_array;
 -- 
-	end write_skeleton;
 
 	line_counter : natural := 0;
 
 	maximum_field_count_per_line : constant count_type := 10;
 
 	procedure read_netlist is
-	-- Reads the given netlist and stores it in a vector list named "netlist".
+	-- Reads the given netlist and stores it in a zuken_netlist
 		line : type_fields_of_line;
 		line_bak : type_fields_of_line;
 		complete : boolean := true;
@@ -143,7 +138,7 @@ procedure impzuken is
 	begin
 		write_message (
 			file_handle => file_import_cad_messages,
-			text => "reading netlist file ...",
+			text => "reading zuken netlist file ...",
 			console => true);
 
 		open (file => file_cad_netlist, mode => in_file, name => to_string(name_file_cad_netlist));
@@ -157,12 +152,13 @@ procedure impzuken is
 				when 0 => null; -- empty line. nothing to do
 				when maximum_field_count_per_line => -- Line complete. Alle fields can be appended to netlist right away.
 					
-					append(netlist, ( 
+					append(zuken_netlist, ( 
 						net => 		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 1),both))),
 						value =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 3),both))),
 						packge =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 4),both))),
 						device =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 5),both))),
-						pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 6),both)))
+						pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 6),both))),
+						processed => false
 						));
 
 				when 1..9 => -- An incomplete line has been found and must be stored in line_bak.
@@ -184,12 +180,13 @@ procedure impzuken is
 							put_line(" line" & positive'image(line_counter) & " pin " & to_string(line));
 							
 							-- Append the complete line to the netlist:
-							append(netlist, ( 
+							append(zuken_netlist, ( 
 								net => 		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 1),both))),
 								value =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 3),both))),
 								packge =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 4),both))),
 								device =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 5),both))),
-								pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 6),both)))
+								pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 6),both))),
+								processed => false
 								));
 						else
 							line_bak := line;
@@ -217,6 +214,60 @@ procedure impzuken is
 
 	end read_netlist;
 
+
+	procedure sort_netlist is
+		line_a : type_line_of_zuken_netlist; -- this is an entry within list "zuken_netlist"
+		line_b : type_line_of_zuken_netlist; -- this is an entry within list "zuken_netlist"
+		net : m1_import.type_net;
+
+		procedure set_processed_flag (l : in out type_line_of_zuken_netlist) is
+		begin
+			l.processed := true;
+		end set_processed_flag;
+		
+	begin
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => "sorting netlist ...",
+			console => true);
+
+		for a in 1..positive(length(zuken_netlist)) loop
+			line_a := element(zuken_netlist, a);
+			if not line_a.processed then
+				net.name := line_a.net;
+
+				put_line(" net " & to_string(net.name) & " with pins: ");
+				put_line("  " & to_string(line_a.device) & row_separator_0 & to_string(line_a.pin));
+				append(net.pins, (
+					name_device	=> line_a.device,
+					name_pin	=> line_a.pin,
+					mounted		=> true
+					));
+
+				--append(list_of_devices,device_scratch); -- add device to list
+				
+				for b in a+1 .. positive(length(zuken_netlist)) loop
+					line_b := element(zuken_netlist, b);
+					if line_b.net = line_a.net then
+						append(net.pins, (
+							name_device	=> line_b.device,
+							name_pin 	=> line_b.pin,
+							mounted		=> true
+							));
+
+						put_line("  " & to_string(line_b.device) & row_separator_0 & to_string(line_b.pin));
+
+						update_element(zuken_netlist, b, set_processed_flag'access);
+
+					end if;
+				end loop;
+
+				append(m1_import.list_of_nets,net);
+			end if;
+		end loop;
+		
+	end sort_netlist;
+	
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
@@ -265,7 +316,9 @@ begin
 	prog_position	:= 50;	
 	read_netlist;
 
---	write_skeleton;
+	sort_netlist;
+	
+	write_skeleton (name_module_cad_importer_zuken, version);
 
 	prog_position	:= 100;
 	write_log_footer;	

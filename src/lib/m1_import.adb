@@ -60,6 +60,7 @@ package body m1_import is
 	use type_pin_name;
 	use type_device_value;
 	use type_list_of_nets;
+	use type_list_of_pins;
 
 	procedure put_format_cad is
 	begin
@@ -313,68 +314,64 @@ package body m1_import is
 			console => true);
 	end write_advise_dos2unix;
 
-	procedure write_statistics (device_count : in natural; net_count : in natural; pin_count : in natural) is
-	begin
-		new_line(file_import_cad_messages);		
-		write_message (
-			file_handle => file_import_cad_messages,
-			text => "writing statistics ...",
-			identation => 1,			
-			console => true);
-
-		put_line(file_skeleton, " statistics:");
-
-		-- The device_count_mounted was computed when a device was marked as "mounted" 
-		-- by procedure mark_device_as_mounted.
-		put_line(file_skeleton, "  devices :" & natural'image(device_count));
-
-		-- The number of nets can be taken directly from the list_of_nets.
-		put_line(file_skeleton, "  nets    :" & natural'image(net_count));
-
-		-- The pin_count_mounted was computed when a pin was marked as "mounted"
-		-- by procdure mark_pin_as_mounted.
-		put_line(file_skeleton, "  pins    :" & natural'image(pin_count));
-		
--- 		put_line(file_skeleton,section_mark.endsection);		
-	end write_statistics;
-
-	procedure write_info (
-		module_name : in string;
-		module_version : in string;
-		device_count : in natural;
-		net_count : in natural;
-		pin_count : in natural) 
-		is
-	begin
--- 		set_output(file_skeleton);
-
-		new_line(file_import_cad_messages);
-		write_message (
-			file_handle => file_import_cad_messages,
-			text => "writing section info ...",
-			identation => 1,
-			console => false);
-		
-		put_line(section_mark.section & row_separator_0 & text_skeleton_section_info);
--- 		put_line(" netlist skeleton");
-		put_line(" created by " & module_name & " version " & module_version);
-		put_line(" date " & date_now);
-		if cad_import_target_module = m1_import.sub then
-			put_line(" prefix " & to_string(target_module_prefix));
-		end if;
-		write_statistics(device_count, net_count, pin_count);
-		
-		put_line(file_skeleton,section_mark.endsection);
--- 		set_output(standard_output);
-	end write_info;	
 
 	procedure write_skeleton (module_name : in string; module_version : in string) is
-	-- Writes the skeleton file from the list_of_nets.
-	-- Reads the global flag variants_found in order to care for the "mounted" flag of pins or not.
+	-- Writes the skeleton file from the list_of_nets and list_of_devices..
 		net : m1_import.type_net;
-		pin : type_pin;
+		pin : m1_import.type_pin;
 		ld 	: natural := natural(length(list_of_devices));
-		
+
+		procedure write_statistics is -- (device_count : in natural; net_count : in natural; pin_count : in natural) is
+		begin
+			new_line(file_import_cad_messages);		
+			write_message (
+				file_handle => file_import_cad_messages,
+				text => "writing statistics ...",
+				identation => 1,			
+				console => true);
+
+			put_line(file_skeleton, " statistics:");
+
+			-- The device_count_mounted was computed when a device was marked as "mounted" 
+			-- by procedure mark_device_as_mounted.
+			put_line(file_skeleton, "  devices :" & natural'image(device_count_mounted));
+
+			-- The number of nets can be taken directly from the list_of_nets.
+			put_line(file_skeleton, "  nets    :" & count_type'image(length(list_of_nets)));
+
+			-- The pin_count_mounted was computed when a pin was marked as "mounted"
+			-- by procdure mark_pin_as_mounted.
+			put_line(file_skeleton, "  pins    :" & natural'image(pin_count_mounted));
+			
+	-- 		put_line(file_skeleton,section_mark.endsection);		
+		end write_statistics;
+
+	
+		procedure write_info is
+		begin
+	-- 		set_output(file_skeleton);
+
+			new_line(file_import_cad_messages);
+			write_message (
+				file_handle => file_import_cad_messages,
+				text => "writing section info ...",
+				identation => 1,
+				console => false);
+			
+			put_line(section_mark.section & row_separator_0 & text_skeleton_section_info);
+	-- 		put_line(" netlist skeleton");
+			put_line(" created by " & module_name & " version " & module_version);
+			put_line(" date " & date_now);
+			if cad_import_target_module = m1_import.sub then
+				put_line(" prefix " & to_string(target_module_prefix));
+			end if;
+			write_statistics; --(device_count_mounted, count_type'image(length(list_of_nets)) , pin_count_mounted);
+			
+			put_line(section_mark.endsection);
+	-- 		set_output(standard_output);
+		end write_info;	
+
+	
 		function get_value_and_package(device : in type_device_name.bounded_string) return string is
 		-- returns value and package of a given device
 			device_scratch : type_device;
@@ -429,12 +426,7 @@ package body m1_import is
 
 		set_output(file_skeleton);
 		
-		write_info(
-			module_name => module_name,
-			module_version => module_version,
-			device_count => device_count_mounted,
-			net_count => natural(type_list_of_nets.length(list_of_nets)),
-			pin_count => pin_count_mounted);
+		write_info;
 
 		write_message (
 			file_handle => file_import_cad_messages,
@@ -443,7 +435,8 @@ package body m1_import is
 			console => true);
 		
 		new_line;
-		put_line(section_mark.section & row_separator_0 & text_skeleton_section_netlist); new_line;
+		put_line(section_mark.section & row_separator_0 & text_skeleton_section_netlist); 
+		new_line;
 		
 		for n in 1..length(list_of_nets) loop
 			net := element(list_of_nets, positive(n)); -- load a net
