@@ -64,9 +64,10 @@ procedure impzuken is
 	use type_device_value;
 	use type_package_name;
 	use type_pin_name;
+	use type_map_of_nets;
 	use m1_import.type_list_of_pins;
-	use m1_import.type_list_of_nets;	
-	
+	use type_map_of_devices;
+
 	use type_name_file_netlist;
 	use type_universal_string;
 	use type_name_file_skeleton_submodule;
@@ -134,7 +135,6 @@ procedure impzuken is
 		line : type_fields_of_line;
 		line_bak : type_fields_of_line;
 		complete : boolean := true;
-			
 	begin
 		write_message (
 			file_handle => file_import_cad_messages,
@@ -216,62 +216,107 @@ procedure impzuken is
 
 
 	procedure sort_netlist is
-		line_a : type_line_of_zuken_netlist; -- this is an entry within list "zuken_netlist"
-		line_b : type_line_of_zuken_netlist; -- this is an entry within list "zuken_netlist"
-		net : m1_import.type_net;
+	-- reads the zuken_netlist and builds the map_of_nets
+		line_a		: type_line_of_zuken_netlist; -- this is an entry within list "zuken_netlist"
+		line_b		: type_line_of_zuken_netlist; -- this is an entry within list "zuken_netlist"
+		net 		: m1_import.type_net; -- scratch place to assemble a net before inserting in map_of_nets
+		net_name	: type_net_name.bounded_string;
 
 		procedure set_processed_flag (l : in out type_line_of_zuken_netlist) is
 		begin
 			l.processed := true;
 		end set_processed_flag;
 		
-	begin
+	begin -- sort_netlist
 		write_message (
 			file_handle => file_import_cad_messages,
 			text => "sorting netlist ...",
 			console => true);
 
 		for a in 1..positive(length(zuken_netlist)) loop
-			line_a := element(zuken_netlist, a);
-			if not line_a.processed then
-				net.name := line_a.net;
+			line_a := element(zuken_netlist, a); -- load line
 
-				put_line(" net " & to_string(net.name) & " with pins: ");
+			if not line_a.processed then -- skip already processed lines
+				net_name := line_a.net; -- set the name of the net to be assembled
+
+				-- for the logs:
+				put_line(" net " & to_string(net_name) & " with pins: ");
 				put_line("  " & to_string(line_a.device) & row_separator_0 & to_string(line_a.pin));
+
+				-- append the device and pin name to scratch net
 				append(net.pins, (
 					name_device	=> line_a.device,
-					name_pin	=> line_a.pin,
-					mounted		=> true
+					name_pin	=> line_a.pin
 					));
 
-				--append(list_of_devices,device_scratch); -- add device to list
-				
+				-- count pins for statistics
+				pin_count := pin_count + 1;
+
+				-- search further down the zuken netlist for other appearances of the net_name
 				for b in a+1 .. positive(length(zuken_netlist)) loop
 					line_b := element(zuken_netlist, b);
-					if line_b.net = line_a.net then
+					if line_b.net = net_name then -- net found
+
+						-- append device an pin name to scrach net
 						append(net.pins, (
 							name_device	=> line_b.device,
-							name_pin 	=> line_b.pin,
-							mounted		=> true
+							name_pin 	=> line_b.pin
 							));
 
+						-- count pins for statistics
+						pin_count := pin_count + 1;
+
+						-- for the logs:
 						put_line("  " & to_string(line_b.device) & row_separator_0 & to_string(line_b.pin));
 
+						-- mark line of zuken_netlist as processed so that further spins can ignore it
 						update_element(zuken_netlist, b, set_processed_flag'access);
-
 					end if;
 				end loop;
 
-				append(m1_import.list_of_nets,net);
+				-- now all pins of the net have been collected. net is ready for insertion in map_of_nets
+				insert(container => map_of_nets, key => net_name, new_item => net);
+
+				-- clear pinlist for next spin
+				net.pins := m1_import.type_list_of_pins.empty_vector;
 			end if;
 		end loop;
 		
 	end sort_netlist;
 	
+	procedure make_map_of_devices is
+	-- reads the zuken_netlist and builds the map_of_devices
+		line : type_line_of_zuken_netlist; -- this is an entry within list "zuken_netlist"
+		inserted : boolean;
+		cursor : type_map_of_devices.cursor;
+	begin
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => "building device map ...",
+			console => true);
+
+		for i in 1..positive(length(zuken_netlist)) loop
+			line := element(zuken_netlist, i); -- load line
+
+			-- insert device in map_of_devices
+			type_map_of_devices.insert(
+				container	=> map_of_devices,
+				key			=> line.device,
+				position	=> cursor,
+				new_item	=> (packge => line.packge, value => line.value),
+				inserted	=> inserted);
+
+			if inserted then
+				put_line(row_separator_0 & to_string(line.device));
+			end if;
+		end loop;
+
+	end make_map_of_devices;
+
+
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
-
 	action := import_cad;
 
 	-- create message/log file	
@@ -317,7 +362,8 @@ begin
 	read_netlist;
 
 	sort_netlist;
-	
+	make_map_of_devices;
+
 	write_skeleton (name_module_cad_importer_zuken, version);
 
 	prog_position	:= 100;
