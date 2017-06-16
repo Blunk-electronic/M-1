@@ -143,79 +143,81 @@ package m1_import is
 
 
 
-	-- STATISTICS
-	pin_count : natural := 0; -- regular pins (if no assembly variants)
-	pin_count_mounted : natural := 0; -- pins of assembly variants
-	device_count : natural := 0; -- regular devices (if no assembly variants)
-	device_count_mounted : natural := 0; -- devices with assembly variants
+-- STATISTICS
+	pin_count : natural := 0;
+	-- NOTE: device and net count is to be taken from length of map_of_devices and type_map_of_regular_nets
 
-	-- PINS
-	-- If we do not deal with assembly variants, this type specifies a regular pin:
-	type type_regular_pin is tagged record
+-- PINS
+	-- This type specifies a regular pin. Pins are stored in a vector type_list_of_pins:.
+	type type_pin is tagged record
 		name_device	: type_device_name.bounded_string;
 		name_pin 	: type_pin_name.bounded_string;		
 	end record;
-	package type_list_of_regular_pins is new vectors ( index_type => positive, element_type => type_regular_pin);	
+	package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin);	
 
-	-- If we deal with assembly variants, a pin has the "mounted"-flag:
-	type type_pin is new type_regular_pin with record
+	-- If we deal with assembly variants, a pin has the additional "mounted"-flag.
+	-- Those pins are stored in a vector type_list_of_pins_of_variants:
+	type type_pin_of_variant is new type_pin with record
 		mounted 	: boolean := false;
 	end record;
-	package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin);
+	package type_list_of_pins_of_variants is new vectors (
+		index_type => positive,
+		element_type => type_pin_of_variant);
 
-	-- DEVICES
-	-- Regular devices (without assembly variants) are stored in a map and accessed by their name:
-    type type_base_device is tagged record
+-- NETS
+	-- This type specifies a regular net.
+	-- We store those nets in map_of_nets:
+	type type_net is record
+        pins    : type_list_of_pins.vector;
+    end record;
+	use type_net_name;
+    package type_map_of_nets is new ordered_maps ( key_type => type_net_name.bounded_string, element_type => type_net);
+	map_of_nets : type_map_of_nets.map;
+
+	-- If we deal with assembly variants, a net has pins with the "mounted"-flag:
+	-- We store those nets in a vector (CS: map)
+	type type_net_with_variants is record
+        name    : type_net_name.bounded_string;
+        pins    : type_list_of_pins_of_variants.vector;
+    end record;
+	package type_list_of_nets_with_variants is new vectors ( 
+		index_type => positive, 
+		element_type => type_net_with_variants); -- CS: map ?
+	list_of_nets_with_variants : type_list_of_nets_with_variants.vector;
+
+	
+-- DEVICES
+	-- This type specifies a regular device.
+	-- Regular devices are stored in a map and accessed by their name:
+    type type_device is tagged record
         packge  : type_package_name.bounded_string;
 		value   : type_device_value.bounded_string;
     end record;
 	use type_device_name;
 	package type_map_of_devices is new ordered_maps ( 
 		key_type => type_device_name.bounded_string,
-		element_type => type_base_device);
+		element_type => type_device);
 	map_of_devices : type_map_of_devices.map;
 
 	-- Devices which have assembly variants are stored in a vector and accessed by a positive:	
-	type type_device is new type_base_device with record
-        name    : type_device_name.bounded_string;
+	type type_device_with_variants is new type_device with record
+        name    		: type_device_name.bounded_string;
 		has_variants	: boolean 	:= false; 	-- set by manage_assembly_variants as first action
 		variant_id		: positive 	:= 1;		-- the variant number
 		mounted			: boolean	:= false;
 		processed		: boolean	:= false;
     end record;
-	package type_list_of_devices is new vectors ( 
+	package type_list_of_devices_with_variants is new vectors ( 
 		index_type => positive,
-		element_type => type_device);
-    use type_list_of_devices;
-	list_of_devices : type_list_of_devices.vector;
+		element_type => type_device_with_variants);
+    use type_list_of_devices_with_variants;
+	list_of_devices_with_variants : type_list_of_devices_with_variants.vector;
 
 
-	-- NETS
-
-	-- If we do not deal with assembly variants, a net has regular pins. 
-	-- We store those nets in a map:
-	type type_regular_net is record
-        pins    : type_list_of_regular_pins.vector;
-    end record;
-	use type_net_name;
-    package type_map_of_regular_nets is new ordered_maps ( key_type => type_net_name.bounded_string, element_type => type_regular_net);
-	map_of_regular_nets : type_map_of_regular_nets.map;
-
-	-- If we deal with assembly variants, a net has pins with the "mounted"-flag:
-	-- We store those nets in a vector (CS: map)
-	type type_net is record -- CS: find a better name like type_net_with_variants
-        name    : type_net_name.bounded_string;
-        pins    : type_list_of_pins.vector;
-    end record;
-    package type_list_of_nets is new vectors ( index_type => positive, element_type => type_net); -- CS: map ?
-	list_of_nets : type_list_of_nets.vector;
--- 	package type_map_of_nets is new ordered_maps ( key_type => type_net_name.bounded_string, element_type => type_net);
--- 	list_of_nets : type_map_of_nets.map;
 	
 	procedure write_skeleton (
 		module_name : in string;
-		module_version : in string;
-		assembly_variants : in boolean);
+		module_version : in string);
 	-- writes the skeleton file from list_of_nets and list_of_devices
 	
 end m1_import;

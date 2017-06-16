@@ -55,7 +55,7 @@ with m1_string_processing;		use m1_string_processing;
 
 procedure impprotel is
 
-	version			: constant string (1..3) := "003";
+	version			: constant string (1..3) := "001";
     prog_position	: natural := 0;
 
     length_of_line_in_netlist : constant positive := 200; -- CS: increase if neccesary
@@ -74,75 +74,26 @@ procedure impprotel is
 	use type_pin_name;
 	use type_device_value;
 	use type_package_name;
-	use type_list_of_devices;
+	use type_list_of_devices_with_variants;	
+	use type_map_of_devices;	
+	
 	use m1_import.type_list_of_pins;
-	use m1_import.type_list_of_nets;
-	--use m1_import.type_map_of_nets;
+	use type_list_of_pins_of_variants;
+
+	use type_list_of_nets_with_variants;
+	use type_map_of_nets;
 
 	
---     length_of_device_name : constant positive := 10;
---     package type_device_name is new generic_bounded_length(length_of_device_name);
---     use type_device_name;
-
---     length_of_package_name : constant positive := 100;
---     package type_package_name is new generic_bounded_length(length_of_package_name);
---     use type_package_name;
-
---     length_of_value : constant positive := 100;
---     package type_value is new generic_bounded_length(length_of_value);    
---     use type_value;
-
---     type type_device is record
---         name    : type_device_name.bounded_string;
---         packge  : type_package_name.bounded_string;
--- 		value   : type_value.bounded_string;
--- 		has_variants	: boolean 	:= false; 	-- set by manage_assembly_variants as first action
--- 		variant_id		: positive 	:= 1;		-- the variant number
--- 		mounted			: boolean	:= false;
--- 		processed		: boolean	:= false;
---     end record;
--- 	-- Procedure detect_assembly_variants sets the flags "has_variants" and "variant_id".
--- 	
---     package type_list_of_devices is new vectors ( index_type => positive, element_type => type_device);
---     use type_list_of_devices;
--- 	list_of_devices : type_list_of_devices.vector; -- here we list all devices of the design
-	-- Procedure read_netlist appends devices. 
-                            
-	-- PINS
 	device_pin_separator : constant string (1..1) := "-";
--- 	pin_count_mounted : natural := 0; -- for statistics
---     length_of_pin_name : constant positive := device_name_length + pin_name_length; -- for hold something like R41-1
---     package type_pin_name is new generic_bounded_length(length_of_pin_name);
--- 	use type_pin_name;
--- 	type type_pin is record
--- 		name_device	: type_device_name.bounded_string;
--- 		name_pin 	: type_pin_name.bounded_string;		
--- 		mounted 	: boolean := false;
--- 	end record;
--- 	package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin);
---	use type_list_of_pins;
 
-	function split_device_pin (text_in : type_line.bounded_string) return m1_import.type_pin is
-		pin : m1_import.type_pin;
+	function split_device_pin (text_in : type_line.bounded_string) return m1_import.type_pin_of_variant is
+		pin : m1_import.type_pin_of_variant;
 		ifs_position : positive := index(text_in,device_pin_separator);
 	begin
  		pin.name_device := to_bounded_string(slice(text_in,1,ifs_position-1));
 		pin.name_pin    := to_bounded_string(slice(text_in,ifs_position+1,length(text_in)));
 		return pin;
 	end split_device_pin;
-	
-    -- NETS
---     length_of_net_name : constant positive := 100;
---     package type_net_name is new generic_bounded_length(length_of_net_name);
---     use type_net_name;
-    
---     type type_net is record
---         name    : type_net_name.bounded_string;
---         pins    : m1_import.type_list_of_pins.vector;
---     end record;
---     package type_list_of_nets is new vectors ( index_type => positive, element_type => type_net);
--- 	list_of_nets : type_list_of_nets.vector; -- here we collect all nets of the design
-
 
 	-- ASSEMBLY VARIANTS
 	list_of_variants_created : boolean := false;
@@ -167,24 +118,21 @@ procedure impprotel is
 	-- The operator must edit the file in order to select active variants.
 	-- If variants are set active in file_list_of_assembly_variants they are applied
 	-- to the list_of_nets and list_of_devices.
-		use type_list_of_devices;
-		use m1_database.type_device_name;
-
-		length_list_of_devices	: natural := natural(length(list_of_devices));
-		device_scratch 			: type_device;
+		length_list_of_devices	: natural := natural(length(list_of_devices_with_variants));
+		device_scratch 			: type_device_with_variants;
 		
 		function detect_assembly_variants return boolean is
 		-- Returns true if design has assembly variants.
 			variants_found : boolean := false;
 
-			procedure mark_as_having_variants (device : in out type_device) is
+			procedure mark_as_having_variants (device : in out type_device_with_variants) is
 			begin device.has_variants := true; end mark_as_having_variants;
 			
-			procedure mark_as_processed (device : in out type_device) is
+			procedure mark_as_processed (device : in out type_device_with_variants) is
 			begin device.processed := true; end mark_as_processed;
 
 			variant_id : positive := 1;
-			procedure set_variant_id ( device : in out type_device) is
+			procedure set_variant_id ( device : in out type_device_with_variants) is
 			begin 
 				device.variant_id := variant_id;
 			end set_variant_id;
@@ -203,24 +151,24 @@ procedure impprotel is
 			-- Sets the variant_id of a device according to the occurence of the same device in the list_of_devices.
 			if length_list_of_devices > 0 then -- do that if there are devices at all
 				for dp in 1..length_list_of_devices loop
-					device_scratch := element(list_of_devices,dp); -- load an initial device
+					device_scratch := element(list_of_devices_with_variants, dp); -- load an initial device
 					if not device_scratch.processed then -- skip already processed devices
 						variant_id := 1; -- reset variant id
 						-- incremented on each occurence of device_scratch
 
 						-- Search for same device further down the list_of_devices.
 						for ds in dp+1..length_list_of_devices loop 
-							if element(list_of_devices,ds).name = device_scratch.name then
+							if element(list_of_devices_with_variants, ds).name = device_scratch.name then
 								variant_id := variant_id + 1;
-								update_element(list_of_devices,ds,set_variant_id'access);
-								update_element(list_of_devices,ds,mark_as_having_variants'access);
-								update_element(list_of_devices,ds,mark_as_processed'access);
+								update_element(list_of_devices_with_variants, ds,set_variant_id'access);
+								update_element(list_of_devices_with_variants, ds,mark_as_having_variants'access);
+								update_element(list_of_devices_with_variants, ds,mark_as_processed'access);
 							end if;
 						end loop;
 
 						-- If initial device occured more than once, mark it as "having variants".
 						if variant_id > 1 then
-							update_element(list_of_devices,dp,mark_as_having_variants'access);
+							update_element(list_of_devices_with_variants, dp, mark_as_having_variants'access);
 							
 							write_message (
 								file_handle => file_import_cad_messages,
@@ -245,16 +193,14 @@ procedure impprotel is
 			return variants_found;
 		end detect_assembly_variants;
 		
-		procedure mark_device_as_mounted (device : in out type_device) is
+		procedure mark_device_as_mounted (device : in out type_device_with_variants) is
 		begin 
 			device.mounted := true;
-			device_count_mounted := device_count_mounted + 1; -- count mounted devices for statistics
 		end mark_device_as_mounted;
 
-		procedure mark_pin_as_mounted (pin : in out m1_import.type_pin) is
+		procedure mark_pin_as_mounted (pin : in out type_pin_of_variant) is
 		begin 
 			pin.mounted := true; 
-			pin_count_mounted := pin_count_mounted + 1; -- count pins for statistics
 		end mark_pin_as_mounted;
 
 		procedure read_assembly_variants is
@@ -372,7 +318,7 @@ procedure impprotel is
 			la						: positive := natural(length(list_of_assembly_variants));
 			v						: type_assembly_variant;			
 			active_variant_found	: boolean := false;
-			device_scratch			: type_device;
+			device_scratch			: type_device_with_variants;
 		begin -- apply_assembly_variants_on_device_list
 			write_message(
 				file_handle => file_import_cad_messages,
@@ -381,7 +327,7 @@ procedure impprotel is
 				console => false);
 			
 			for d in 1..length_list_of_devices loop -- loop in device list
-				device_scratch := element(list_of_devices,d); -- load a device
+				device_scratch := element(list_of_devices_with_variants, d); -- load a device
 				if device_scratch.has_variants then -- if device has variants, search in variants list for that device
 
 					-- search current device in list_of_assembly_variants
@@ -410,12 +356,13 @@ procedure impprotel is
 
 								active_variant_found := true;
 								-- put_line(file_skeleton,to_string(device_scratch.name)); -- dbg
-								update_element(list_of_devices,d,mark_device_as_mounted'access);
+								update_element(list_of_devices_with_variants, d, mark_device_as_mounted'access);
 								exit;
 						end if;
 					end loop;
 
-					-- safety measure;
+					-- CS ???
+					--safety measure;
 -- 					if not active_variant_found then
 -- 						write_message(
 -- 							file_handle => file_import_cad_messages,
@@ -427,7 +374,7 @@ procedure impprotel is
 -- 					end if;
 				else
 					-- no variants, device is to be mounted
-					update_element(list_of_devices,d,mark_device_as_mounted'access);
+					update_element(list_of_devices_with_variants, d, mark_device_as_mounted'access);
 				end if;
 			end loop;
 		end apply_assembly_variants_on_device_list;
@@ -440,12 +387,12 @@ procedure impprotel is
 		-- If a device/pin has assembly variants, the position X of the active variant in list_of_assembly_variants
 		-- serves to mark the Xth occurence of the device/pin (in the net) as "mounted".
 		-- If device/pin has assembly variants but none is active, it will NOT be marked as "mounted".
-			ln : positive := natural(length(m1_import.list_of_nets));
+			ln : positive := natural(length(list_of_nets_with_variants));
 			active_variant_position : natural;
 			pin_occurence : positive;
 			
-			net_scratch : m1_import.type_net;
-			pin_scratch : m1_import.type_pin;
+			net_scratch : type_net_with_variants;
+			pin_scratch : m1_import.type_pin_of_variant;
 
 			function device_has_variants ( device : in type_device_name.bounded_string) return boolean is
 			-- Returns true if given device has assembly variants.
@@ -481,7 +428,7 @@ procedure impprotel is
 			function pin_occurence_in_net (
 			-- Returns the occurence of a pin of an assembly variant of given
 			-- device name within the given net.
-				net		: in m1_import.type_net; -- the net of interest
+				net		: in m1_import.type_net_with_variants; -- the net of interest
 				pin_id	: in positive; -- the position of the given pin in the pinlist
 				device	: in type_device_name.bounded_string -- the device of interest
 				) return positive is 
@@ -529,7 +476,7 @@ procedure impprotel is
 				console => false);
 			
 			for n in 1..ln loop -- loop in netlist
-				net_scratch := element(m1_import.list_of_nets,n); -- load a net
+				net_scratch := element(list_of_nets_with_variants, n); -- load a net
 
 				write_message(
 					file_handle => file_import_cad_messages,
@@ -569,7 +516,7 @@ procedure impprotel is
 				end loop;
 
 				-- write modified net back in list_of_nets
-				replace_element(m1_import.list_of_nets,n,net_scratch);
+				replace_element(list_of_nets_with_variants, n, net_scratch);
 			end loop;
 
 		end apply_assembly_variants_on_netlist;
@@ -577,18 +524,18 @@ procedure impprotel is
 
 		procedure mark_all_devices_as_mounted is
 		begin
-			for i in 1..length(list_of_devices) loop
-				update_element(list_of_devices, positive(i), mark_device_as_mounted'access);
+			for i in 1..length(list_of_devices_with_variants) loop
+				update_element(list_of_devices_with_variants, positive(i), mark_device_as_mounted'access);
 			end loop;
 		end mark_all_devices_as_mounted;
 		
 		procedure mark_all_pins_as_mounted is
-			ln	: count_type := length(m1_import.list_of_nets);
+			ln	: count_type := length(list_of_nets_with_variants);
 			lp 	: count_type;
-			net	: m1_import.type_net;
+			net	: m1_import.type_net_with_variants;
 		begin
 			for n in 1..ln loop -- loop in netlist
-				net := element(m1_import.list_of_nets, positive(n)); -- load a net
+				net := element(list_of_nets_with_variants, positive(n)); -- load a net
 				lp := length( net.pins ); -- set number of pins
 				if lp > 0 then -- if there are pins in the net
 					
@@ -600,7 +547,7 @@ procedure impprotel is
 					end loop;
 					
 				end if; -- if there are pins in the net
-				replace_element(m1_import.list_of_nets, positive(n), net);
+				replace_element(list_of_nets_with_variants, positive(n), net);
 			end loop;
 		end mark_all_pins_as_mounted;
 		
@@ -652,7 +599,7 @@ procedure impprotel is
 
 				-- write assembly variants in file_list_of_assembly_variants 
 				for d in 1..length_list_of_devices loop
-					device_scratch := element(list_of_devices,d);
+					device_scratch := element(list_of_devices_with_variants, d);
 					if device_scratch.has_variants then
 
 						put_line(file_variants, 2 * row_separator_0
@@ -707,190 +654,19 @@ procedure impprotel is
 		end if;
     end manage_assembly_variants;
 
--- 	procedure write_statistics is
--- 	begin
--- 		new_line(file_import_cad_messages);		
--- 		write_message (
--- 			file_handle => file_import_cad_messages,
--- 			text => "writing statistics ...",
--- 			identation => 1,			
--- 			console => true);
--- 
--- 		put_line(file_skeleton, " statistics:");
--- 
--- 		-- The device_count_mounted was computed when a device was marked as "mounted" 
--- 		-- by procedure mark_device_as_mounted.
--- 		put_line(file_skeleton, "  devices :" & natural'image(device_count_mounted));
--- 
--- 		-- The number of nets can be taken directly from the list_of_nets.
--- 		put_line(file_skeleton, "  nets    :" & count_type'image(length(list_of_nets)));
--- 
--- 		-- The pin_count_mounted was computed when a pin was marked as "mounted"
--- 		-- by procdure mark_pin_as_mounted.
--- 		put_line(file_skeleton, "  pins    :" & natural'image(pin_count_mounted));
--- 		
--- -- 		put_line(file_skeleton,section_mark.endsection);		
--- 	end write_statistics;
-
--- 	procedure write_info (
--- 		module_name : in string;
--- 		device_count : in natural;
--- 		net_count : in natural;
--- 		pin_count : in natural) 
--- 		is
--- 	begin
--- -- 		set_output(file_skeleton);
--- 
--- 		new_line(file_import_cad_messages);
--- 		write_message (
--- 			file_handle => file_import_cad_messages,
--- 			text => "writing section info ...",
--- 			identation => 1,
--- 			console => false);
--- 		
--- 		put_line(section_mark.section & row_separator_0 & text_skeleton_section_info);
--- -- 		put_line(" netlist skeleton");
--- 		put_line(" created by " & module_name & " version " & version);
--- 		put_line(" date " & date_now);
--- 		if cad_import_target_module = m1_import.sub then
--- 			put_line(" prefix " & to_string(target_module_prefix));
--- 		end if;
--- 		write_statistics(device_count, net_count, pin_count);
--- 		
--- 		put_line(file_skeleton,section_mark.endsection);
--- -- 		set_output(standard_output);
--- 	end write_info;
-	
--- 	procedure write_skeleton is
--- 	-- Writes the skeleton file from the list_of_nets.
--- 	-- Reads the global flag variants_found in order to care for the "mounted" flag of pins or not.
--- 		net : type_net;
--- 		pin : type_pin;
--- 		ld 	: natural := natural(length(list_of_devices));
--- 		
--- 		function get_value_and_package(device : in type_device_name.bounded_string) return string is
--- 		-- returns value and package of a given device
--- 			device_scratch : type_device;
--- 		begin
--- 			for d in 1..ld loop
--- 				device_scratch := element(list_of_devices,positive(d));
--- 				if device_scratch.name = device then
--- 					if device_scratch.mounted then
--- 						exit;
--- 					end if;
--- 				end if;
--- 			end loop;
--- 			
--- 			return to_string(device_scratch.value) & row_separator_0 & to_string(device_scratch.packge);
--- 		end get_value_and_package;
--- 		
--- 	begin -- write_skeleton
--- 		new_line(file_import_cad_messages);
--- 
--- 		-- The skeleton file is named with the standard name or
--- 		-- with the standard name + prefix:
--- 		case cad_import_target_module is
--- 			when m1_import.main => 
--- 				write_message (
--- 					file_handle => file_import_cad_messages,
--- 					text => "creating skeleton for main module ...",
--- 					console => false);
--- 
--- 				create (file => file_skeleton, mode => out_file, name => name_file_skeleton);
--- 
--- 			when m1_import.sub => 
--- 				write_message (
--- 					file_handle => file_import_cad_messages,
--- 					text => "creating skeleton for submodule " & to_string(target_module_prefix) & " ...",
--- 					console => false);
--- 
--- -- 				target_module_prefix := to_bounded_string(argument(3));
--- -- 
--- -- 				name_file_skeleton_submodule := to_bounded_string(compose( name => 
--- -- 					base_name(name_file_skeleton) & "_" & 
--- -- 					to_string(target_module_prefix),
--- -- 					extension => file_extension_text));
--- 
--- 				create (file => file_skeleton, mode => out_file, name => to_string(name_file_skeleton_submodule));
--- 		end case;
--- 
--- 		write_message (
--- 			file_handle => file_import_cad_messages,
--- 			text => "writing skeleton ...",
--- 			console => true);
--- 
--- 		set_output(file_skeleton);
--- 		
--- 		write_info(
--- 			module_name => name_module_cad_importer_protel,
--- 			module_version => version,
--- 			device_count => device_count_mounted,
--- 			net_count => natural(length(list_of_nets)),
--- 			pin_count => pin_count_mounted);
--- 
--- 		write_message (
--- 			file_handle => file_import_cad_messages,
--- 			text => "writing section netlist ...",
--- 			identation => 1,
--- 			console => true);
--- 		
--- 		new_line;
--- 		put_line(section_mark.section & row_separator_0 & text_skeleton_section_netlist); new_line;
--- 		
--- 		for n in 1..length(list_of_nets) loop
--- 			net := element(list_of_nets, positive(n)); -- load a net
--- 
--- 			write_message (
--- 				file_handle => file_import_cad_messages,
--- 				text => to_string(net.name),
--- 				identation => 2,
--- 				console => false);
--- 			
--- 			-- write net header like "SubSection CORE_EXT_SRST class NA"
--- 			put(row_separator_0 & section_mark.subsection & row_separator_0);
--- 			if cad_import_target_module = m1_import.sub then -- insert module prefix if it is a submodule
--- 				put(to_string(target_module_prefix) & "_");
--- 			end if;
--- 			put_line(to_string(net.name) & row_separator_0 
--- 				& netlist_keyword_header_class & row_separator_0 & type_net_class'image(net_class_default));
--- 
--- 			-- write pins in lines like "R3 ? 270K RESC1005X40N 1"
--- 			for p in 1..length(net.pins) loop
--- 				pin := element(net.pins, positive(p)); -- load a pin
--- 
--- 				if pin.mounted then -- address only active assembly variants
--- 					put("  ");
--- 					if cad_import_target_module = m1_import.sub then -- insert module prefix if it is a submodule
--- 						put(to_string(target_module_prefix) & "_");
--- 					end if;
--- 					put_line(to_string(pin.name_device) 
--- 						& row_separator_0 & type_device_class'image(device_class_default) 
--- 						& row_separator_0 & get_value_and_package(pin.name_device) 
--- 						& row_separator_0 & to_string(pin.name_pin)
--- 						);
--- 				end if;
--- 			end loop;
--- 
--- 			put_line(row_separator_0 & section_mark.endsubsection); new_line;
--- 		end loop;
--- 		
--- 		put_line(section_mark.endsection);
--- 		set_output(standard_output);
--- 		close(file_skeleton);
--- 	end write_skeleton;
 
 	procedure read_netlist is
 	-- Appends devices to list_of_devices (even multiple occurences which are assembly variants).
 	-- Appends nets to list_of_nets. Each net has a list of pins.
-		pin_scratch		: m1_import.type_pin;
+		pin_scratch		: type_pin_of_variant;
 		device_entered	: boolean := false;
-		device_scratch	: m1_import.type_device;
+		device_scratch	: type_device_with_variants;
 
 	    type type_device_attribute is (name, packge, value);
 		device_attribute_next : type_device_attribute;
 
 		net_entered : boolean := false;
-		net_scratch : m1_import.type_net;
+		net_scratch : m1_import.type_net_with_variants;
 		
 		type type_net_item is (name, pin);
 		net_item_next : type_net_item;
@@ -934,7 +710,7 @@ procedure impprotel is
 							console => false);
 
 						-- add device to list_of_devices (even if it occurs more than once, which indicates an assembly variant)
-						append(list_of_devices,device_scratch); 
+						append(list_of_devices_with_variants, device_scratch); 
 
 						-- purge device contents for next spin
 						device_scratch.name := to_bounded_string(""); 
@@ -993,7 +769,7 @@ procedure impprotel is
 								console => false);
 						end if;
 						
-						append(m1_import.list_of_nets,net_scratch); -- add net to list
+						append(list_of_nets_with_variants, net_scratch); -- add net to list
 
 						-- purge net contents for next spin
 						net_scratch.name := to_bounded_string(""); -- clear name
@@ -1022,6 +798,69 @@ procedure impprotel is
 
 	end read_netlist;
 
+	procedure make_device_map is
+	-- Copies mounted devices from list_of_devices to map_of_devices.
+		device : type_device_with_variants;
+	begin
+		put_line(" making device map ...");
+		if length(list_of_devices_with_variants) > 0 then -- we do that if there a devices at all
+			for i in 1..positive(length(list_of_devices_with_variants)) loop
+				device := element(list_of_devices_with_variants, i);
+				if device.mounted then
+					insert(
+						container	=> map_of_devices, 
+						key			=> device.name, 
+						new_item	=> ( packge => device.packge, value => device.value)
+						);
+				end if;
+			end loop;
+		end if;
+	end make_device_map;
+
+	procedure make_net_map is
+	-- Copies nets with mounted pins from list_of_nets to map_of_regular_nets.
+		net_in : m1_import.type_net_with_variants;
+		pin_in : m1_import.type_pin_of_variant;
+
+		net_out : m1_import.type_net;
+		
+	begin
+		put_line(" making net map ...");	
+		if length(list_of_nets_with_variants) > 0 then -- we do that if there are nets at all
+			for i in 1..positive(length(list_of_nets_with_variants)) loop
+				net_in := element(list_of_nets_with_variants, i); -- load a net from list_of_nets
+
+				-- copy mounted pins:
+				if length(net_in.pins) > 0 then -- if the net has pins at all
+					for k in 1..positive(length(net_in.pins)) loop
+						pin_in := element(net_in.pins, k); -- load a pin of net from list_of_nets
+						if pin_in.mounted then -- if the pin belongs to a mounted device
+							append( -- build a new pin and append it to the pinlist of net_b
+								container	=> net_out.pins,
+								new_item	=> (
+									name_device	=> pin_in.name_device,
+									name_pin 	=> pin_in.name_pin
+									));
+
+							-- count pins for statistics
+							pin_count := pin_count + 1;
+						end if;
+					end loop;
+				end if;
+
+				-- insert the new net_out in map_of_regular_nets
+				insert(
+					container	=> map_of_nets,
+					key 		=> net_in.name,
+					new_item	=> net_out
+					);
+
+				-- clear pinlist of net_out for next spin
+				net_out.pins := m1_import.type_list_of_pins.empty_vector;
+			end loop;
+		end if;
+	end make_net_map;
+	
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
 begin
@@ -1107,10 +946,14 @@ begin
 		set_exit_status(failure);
 	else
 		prog_position	:= 90;
+
+		-- prepare writing skeleton:
+		make_device_map; 
+		make_net_map;
+		
 		write_skeleton (
 			module_name => name_module_cad_importer_protel,
-			module_version => version,
-			assembly_variants => true
+			module_version => version
 			);
 	end if;
 

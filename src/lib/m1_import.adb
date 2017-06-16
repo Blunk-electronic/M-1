@@ -317,15 +317,12 @@ package body m1_import is
 
 
 	procedure write_skeleton (
+	-- Writes the skeleton file from the map_of_regular_nets and map_of_devices.								 
 		module_name : in string;
-		module_version : in string;
-		assembly_variants : in boolean) is
-	-- Writes the skeleton file from the list_of_nets and list_of_devices..
-		net : m1_import.type_net;
-		pin : m1_import.type_pin;
-		--ld 	: natural := natural(length(list_of_devices));
+		module_version : in string) is
+
 		use type_map_of_devices;
-		use type_map_of_regular_nets;
+		use type_map_of_nets;
 
 		procedure write_statistics is
 		-- Writes the statistics in the skeleton file.
@@ -340,25 +337,13 @@ package body m1_import is
 			put_line(file_skeleton, " statistics:");
 
 			put(file_skeleton, "  devices :");
-			if assembly_variants then
-				put_line(file_skeleton, natural'image(device_count_mounted));
-			else
-				put_line(file_skeleton, count_type'image(length(map_of_devices)));
-			end if;
+			put_line(file_skeleton, count_type'image(length(map_of_devices)));
 
 			put(file_skeleton, "  nets    :");
-			if assembly_variants then
-				put_line(file_skeleton, count_type'image(length(list_of_nets)));
-			else
-				put_line(file_skeleton, count_type'image(length(map_of_regular_nets)));
-			end if;
+			put_line(file_skeleton, count_type'image(length(map_of_nets)));
 
 			put(file_skeleton, "  pins    :");
-			if assembly_variants then
-				put_line(file_skeleton, natural'image(pin_count_mounted));
-			else
-				put_line(file_skeleton, natural'image(pin_count));
-			end if;
+			put_line(file_skeleton, natural'image(pin_count));
 
 	-- 		put_line(file_skeleton,section_mark.endsection);		
 		end write_statistics;
@@ -386,80 +371,65 @@ package body m1_import is
 		end write_info;	
 
 		function get_value_and_package(device : in type_device_name.bounded_string) return string is
-		-- returns value and package of a given device in a single string.
-		-- If we are dealing with assembly variants, it looks up the device in list_of_devices.
-		-- Otherwise it looks up the map_of_devices.
-			device_a : type_device;
-			device_b : type_base_device;
+		-- returns value and package of a given device in a single string separated by space.
+			d : type_device;
 		begin
-			if assembly_variants then
-				for d in 1..length(list_of_devices) loop
-					device_a := element(list_of_devices,positive(d));
-					if device_a.name = device then
-						if device_a.mounted then
-							return to_string(device_a.value) 
-								& row_separator_0 
-								& to_string(device_a.packge);
-							--exit;
-						end if;
-					end if;
-				end loop;
-			else
-				device_b := element(container => map_of_devices, key => device);
-				return to_string(device_b.value) 
-					& row_separator_0 
-					& to_string(device_b.packge);
-			end if;
-			
-			-- This code should never be reached:
-			raise constraint_error;
-			return "";
+			d := element(container => map_of_devices, key => device);
+			return to_string(d.value) & row_separator_0 & to_string(d.packge);
 		end get_value_and_package;
 
-		procedure write_nets_with_variants is
+		procedure write_nets is
+			use type_list_of_pins;
+			net_cursor : type_map_of_nets.cursor := first(map_of_nets);
+			net : type_net;
+			pin : type_pin;
 		begin
-			for n in 1..length(list_of_nets) loop
-				net := element(list_of_nets, positive(n)); -- load a net
+			if length(map_of_nets) > 0 then -- if there are nets at all
 
-				write_message (
-					file_handle => file_import_cad_messages,
-					text => to_string(net.name),
-					identation => 2,
-					console => false);
-				
-				-- write net header like "SubSection CORE_EXT_SRST class NA"
-				put(row_separator_0 & section_mark.subsection & row_separator_0);
-				if cad_import_target_module = m1_import.sub then -- insert module prefix if it is a submodule
-					put(to_string(target_module_prefix) & "_");
-				end if;
-				put_line(to_string(net.name) & row_separator_0 
-					& netlist_keyword_header_class & row_separator_0 & type_net_class'image(net_class_default));
+				while net_cursor /= type_map_of_nets.no_element loop
+					net := element(net_cursor); -- load a net
 
-				-- write pins in lines like "R3 ? 270K RESC1005X40N 1"
-				for p in 1..length(net.pins) loop
-					pin := element(net.pins, positive(p)); -- load a pin
-
-					if pin.mounted then -- address only active assembly variants
-						put("  ");
-						if cad_import_target_module = m1_import.sub then -- insert module prefix if it is a submodule
-							put(to_string(target_module_prefix) & "_");
-						end if;
-						put_line(to_string(pin.name_device) 
-							& row_separator_0 & type_device_class'image(device_class_default) 
-							& row_separator_0 & get_value_and_package(pin.name_device) 
-							& row_separator_0 & to_string(pin.name_pin)
-							);
+					write_message (
+						file_handle => file_import_cad_messages,
+						text => to_string(key(net_cursor)),
+						identation => 2,
+						console => false);
+					
+					-- write net header like "SubSection CORE_EXT_SRST class NA"
+					put(row_separator_0 & section_mark.subsection & row_separator_0);
+					if cad_import_target_module = m1_import.sub then -- insert module prefix if it is a submodule
+						put(to_string(target_module_prefix) & "_");
 					end if;
+					put_line(to_string(key(net_cursor)) & row_separator_0 
+						& netlist_keyword_header_class & row_separator_0 & type_net_class'image(net_class_default));
+
+					if length(net.pins) > 0 then -- if there a pins in the net at all
+						
+						-- write pins in lines like "R3 ? 270K RESC1005X40N 1"
+						for p in 1..length(net.pins) loop
+							pin := element(net.pins, positive(p)); -- load a pin
+
+							put("  ");
+							if cad_import_target_module = m1_import.sub then -- insert module prefix if it is a submodule
+								put(to_string(target_module_prefix) & "_");
+							end if;
+							put_line(to_string(pin.name_device) 
+								& row_separator_0 & type_device_class'image(device_class_default) 
+								& row_separator_0 & get_value_and_package(pin.name_device) 
+								& row_separator_0 & to_string(pin.name_pin)
+								);
+						end loop;
+
+					end if;
+					
+					put_line(row_separator_0 & section_mark.endsubsection); new_line;
+
+					next(net_cursor);
 				end loop;
 
-				put_line(row_separator_0 & section_mark.endsubsection); new_line;
-			end loop;
-		end write_nets_with_variants;
+			end if;
+		end write_nets;
 		
-		procedure write_regular_nets is
-		begin
-			null;
-		end write_regular_nets;
 
 	begin -- write_skeleton
 		new_line(file_import_cad_messages);
@@ -511,12 +481,8 @@ package body m1_import is
 		put_line(section_mark.section & row_separator_0 & text_skeleton_section_netlist); 
 		new_line;
 
-		if assembly_variants then
-			write_nets_with_variants;
-		else
-			write_regular_nets;
-		end if;
-
+		write_nets;
+		
 		put_line(section_mark.endsection);
 		set_output(standard_output);
 		close(file_skeleton);
