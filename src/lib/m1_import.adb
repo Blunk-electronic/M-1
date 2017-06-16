@@ -317,7 +317,7 @@ package body m1_import is
 
 
 	procedure write_skeleton (
-	-- Writes the skeleton file from the map_of_regular_nets and map_of_devices.								 
+	-- writes the skeleton file based on map_of_devices and map_of_nets
 		module_name : in string;
 		module_version : in string) is
 

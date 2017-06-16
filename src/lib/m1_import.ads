@@ -175,15 +175,14 @@ package m1_import is
 	map_of_nets : type_map_of_nets.map;
 
 	-- If we deal with assembly variants, a net has pins with the "mounted"-flag:
-	-- We store those nets in a vector (CS: map)
+	-- We store those nets in a map.
 	type type_net_with_variants is record
-        name    : type_net_name.bounded_string;
         pins    : type_list_of_pins_of_variants.vector;
     end record;
-	package type_list_of_nets_with_variants is new vectors ( 
-		index_type => positive, 
-		element_type => type_net_with_variants); -- CS: map ?
-	list_of_nets_with_variants : type_list_of_nets_with_variants.vector;
+	package type_map_of_nets_with_variants is new ordered_maps ( 
+		key_type => type_net_name.bounded_string,
+		element_type => type_net_with_variants);
+	map_of_nets_with_variants : type_map_of_nets_with_variants.map;
 
 	
 -- DEVICES
@@ -199,11 +198,12 @@ package m1_import is
 		element_type => type_device);
 	map_of_devices : type_map_of_devices.map;
 
-	-- Devices which have assembly variants are stored in a vector and accessed by a positive:	
+	-- Devices which have assembly variants are stored in a vector and are accessed by a positive.
+	-- This type should be used when devices occure multiple times within the CAD netlist (like protel)
 	type type_device_with_variants is new type_device with record
         name    		: type_device_name.bounded_string;
-		has_variants	: boolean 	:= false; 	-- set by manage_assembly_variants as first action
-		variant_id		: positive 	:= 1;		-- the variant number
+		has_variants	: boolean 	:= false;
+		variant_id		: positive 	:= 1;		-- the variant number in the order of appearance in netlist
 		mounted			: boolean	:= false;
 		processed		: boolean	:= false;
     end record;
@@ -216,9 +216,10 @@ package m1_import is
 
 	
 	procedure write_skeleton (
+	-- writes the skeleton file based on map_of_devices and map_of_nets
 		module_name : in string;
 		module_version : in string);
-	-- writes the skeleton file from list_of_nets and list_of_devices
+
 	
 end m1_import;
 

@@ -41,6 +41,7 @@ with ada.strings.bounded; 		use ada.strings.bounded;
 with ada.strings.fixed; 		use ada.strings.fixed;
 with ada.containers;            use ada.containers;
 with ada.containers.vectors;
+--with ada.containers.ordered_maps;
 with ada.exceptions; 			use ada.exceptions;
 
 with ada.command_line;			use ada.command_line;
@@ -80,7 +81,7 @@ procedure impprotel is
 	use m1_import.type_list_of_pins;
 	use type_list_of_pins_of_variants;
 
-	use type_list_of_nets_with_variants;
+	use type_map_of_nets_with_variants;
 	use type_map_of_nets;
 
 	
@@ -387,7 +388,7 @@ procedure impprotel is
 		-- If a device/pin has assembly variants, the position X of the active variant in list_of_assembly_variants
 		-- serves to mark the Xth occurence of the device/pin (in the net) as "mounted".
 		-- If device/pin has assembly variants but none is active, it will NOT be marked as "mounted".
-			ln : positive := natural(length(list_of_nets_with_variants));
+			--ln : positive := natural(length(list_of_nets_with_variants));
 			active_variant_position : natural;
 			pin_occurence : positive;
 			
@@ -428,12 +429,15 @@ procedure impprotel is
 			function pin_occurence_in_net (
 			-- Returns the occurence of a pin of an assembly variant of given
 			-- device name within the given net.
-				net		: in m1_import.type_net_with_variants; -- the net of interest
-				pin_id	: in positive; -- the position of the given pin in the pinlist
-				device	: in type_device_name.bounded_string -- the device of interest
+				--net		: in type_net_with_variants; -- the net of interest
+				net_cursor	: in type_map_of_nets_with_variants.cursor;
+				pin_id		: in positive; -- the position of the given pin in the pinlist
+				device		: in type_device_name.bounded_string -- the device of interest
 				) return positive is 
 				
 				occurence 	: natural := 0; -- counts the occurences of the given device
+
+				net			: type_net_with_variants := element(net_cursor); -- load the net indicated by given net_cursor
 				lp 			: positive := positive(length(net.pins)); -- length of pinlist
 				scratch		: type_device_name.bounded_string;
 
@@ -460,7 +464,8 @@ procedure impprotel is
 						file_handle => file_import_cad_messages,
 						text => message_error & "No variant for device " 
 							& to_string(device) 
-							& " found in net " & to_string(net.name) & " !",
+							--& " found in net " & to_string(net.name) & " !",
+							& " found in net " & to_string(key(net_cursor)) & " !",
 						console => true);
 					raise constraint_error;
 				end if;
@@ -468,6 +473,7 @@ procedure impprotel is
 				return occurence;
 			end pin_occurence_in_net;
 
+			net_cursor : type_map_of_nets_with_variants.cursor := first(map_of_nets_with_variants);
 		begin -- apply_assembly_variants_on_netlist
 			write_message(
 				file_handle => file_import_cad_messages,
@@ -475,12 +481,15 @@ procedure impprotel is
 				identation => 1,
 				console => false);
 			
-			for n in 1..ln loop -- loop in netlist
-				net_scratch := element(list_of_nets_with_variants, n); -- load a net
+			--for n in 1..ln loop -- loop in netlist
+			while net_cursor /= type_map_of_nets_with_variants.no_element loop
+				--net_scratch := element(list_of_nets_with_variants, n); -- load a net
+				net_scratch := element(net_cursor); -- load a net
 
 				write_message(
 					file_handle => file_import_cad_messages,
-					text => "net " & to_string(net_scratch.name),
+					--text => "net " & to_string(net_scratch.name),
+					text => "net " & to_string(key(net_cursor)),
 					identation => 2,
 					console => false);
 				
@@ -498,7 +507,8 @@ procedure impprotel is
 							-- If it equals the active_variant_position the pin is to be marked as "mounted".
 							
 							pin_occurence := pin_occurence_in_net(
-												net_scratch,
+												--net_scratch,
+												net_cursor,
 												positive(p),
 												pin_scratch.name_device); 
 
@@ -516,7 +526,10 @@ procedure impprotel is
 				end loop;
 
 				-- write modified net back in list_of_nets
-				replace_element(list_of_nets_with_variants, n, net_scratch);
+				--replace_element(list_of_nets_with_variants, n, net_scratch);
+				replace_element(map_of_nets_with_variants, net_cursor, net_scratch);
+
+				next(net_cursor);
 			end loop;
 
 		end apply_assembly_variants_on_netlist;
@@ -530,12 +543,15 @@ procedure impprotel is
 		end mark_all_devices_as_mounted;
 		
 		procedure mark_all_pins_as_mounted is
-			ln	: count_type := length(list_of_nets_with_variants);
+			--ln	: count_type := length(list_of_nets_with_variants);
 			lp 	: count_type;
-			net	: m1_import.type_net_with_variants;
+			net	: type_net_with_variants;
+			net_cursor : type_map_of_nets_with_variants.cursor := first(map_of_nets_with_variants);
 		begin
-			for n in 1..ln loop -- loop in netlist
-				net := element(list_of_nets_with_variants, positive(n)); -- load a net
+			--for n in 1..ln loop -- loop in netlist
+			while net_cursor /= type_map_of_nets_with_variants.no_element loop
+				--net := element(list_of_nets_with_variants, positive(n)); -- load a net
+				net := element(net_cursor); -- load a net
 				lp := length( net.pins ); -- set number of pins
 				if lp > 0 then -- if there are pins in the net
 					
@@ -547,7 +563,10 @@ procedure impprotel is
 					end loop;
 					
 				end if; -- if there are pins in the net
-				replace_element(list_of_nets_with_variants, positive(n), net);
+				--replace_element(list_of_nets_with_variants, positive(n), net);
+				replace_element(map_of_nets_with_variants, net_cursor, net);
+
+				next(net_cursor);
 			end loop;
 		end mark_all_pins_as_mounted;
 		
@@ -666,12 +685,13 @@ procedure impprotel is
 		device_attribute_next : type_device_attribute;
 
 		net_entered : boolean := false;
-		net_scratch : m1_import.type_net_with_variants;
+		net_name	: type_net_name.bounded_string;
+		net_scratch : type_net_with_variants;
 		
 		type type_net_item is (name, pin);
 		net_item_next : type_net_item;
 		
-	begin
+	begin -- read_netlist
 		write_message (
 			file_handle => file_import_cad_messages,
 			text => "reading protel netlist file ...",
@@ -746,7 +766,8 @@ procedure impprotel is
 						write_message (
 							file_handle => file_import_cad_messages,
 							identation => 1,
-							text => "net " & to_string(net_scratch.name)
+							--text => "net " & to_string(net_scratch.name)
+							text => "net " & to_string(net_name)
 								& " with:",
 							console => false);
 
@@ -764,20 +785,24 @@ procedure impprotel is
 							write_message (
 								file_handle => file_import_cad_messages,
 								identation => 1,
-								text => message_warning & "net " & to_string(net_scratch.name)
+								--text => message_warning & "net " & to_string(net_scratch.name)
+								text => message_warning & "net " & to_string(net_name)
 									& " has no pins/pads connected !",
 								console => false);
 						end if;
 						
-						append(list_of_nets_with_variants, net_scratch); -- add net to list
+						--append(list_of_nets_with_variants, net_scratch); -- add net to list
+						insert(map_of_nets_with_variants, net_name, net_scratch);
 
 						-- purge net contents for next spin
-						net_scratch.name := to_bounded_string(""); -- clear name
+						--net_scratch.name := to_bounded_string(""); -- clear name
+						net_name := to_bounded_string(""); -- clear name for next spin
 						delete(net_scratch.pins,1,length(net_scratch.pins)); -- clear pin list
 					else
 						case net_item_next is
 							when name => -- read net name from a line like "motor_on"
-								net_scratch.name := to_bounded_string(
+								--net_scratch.name := to_bounded_string(
+								net_name := to_bounded_string(
 									get_field_from_line(text_in => to_string(line), position => 1));                        
 								net_item_next := pin;
 							when pin => -- read pin nme from a line like "C37-2"
@@ -819,16 +844,19 @@ procedure impprotel is
 
 	procedure make_net_map is
 	-- Copies nets with mounted pins from list_of_nets to map_of_regular_nets.
-		net_in : m1_import.type_net_with_variants;
-		pin_in : m1_import.type_pin_of_variant;
+		net_in : type_net_with_variants;
+		pin_in : type_pin_of_variant;
 
 		net_out : m1_import.type_net;
-		
+	
+		net_cursor : type_map_of_nets_with_variants.cursor := first(map_of_nets_with_variants);		
 	begin
 		put_line(" making net map ...");	
-		if length(list_of_nets_with_variants) > 0 then -- we do that if there are nets at all
-			for i in 1..positive(length(list_of_nets_with_variants)) loop
-				net_in := element(list_of_nets_with_variants, i); -- load a net from list_of_nets
+		if length(map_of_nets_with_variants) > 0 then -- we do that if there are nets at all
+			--for i in 1..positive(length(list_of_nets_with_variants)) loop
+			while net_cursor /= type_map_of_nets_with_variants.no_element loop
+				--net_in := element(list_of_nets_with_variants, i); -- load a net from list_of_nets
+				net_in := element(net_cursor); -- load a net from list_of_nets_with_variants
 
 				-- copy mounted pins:
 				if length(net_in.pins) > 0 then -- if the net has pins at all
@@ -848,15 +876,18 @@ procedure impprotel is
 					end loop;
 				end if;
 
-				-- insert the new net_out in map_of_regular_nets
+				-- insert the new net_out in map_of_regular_nets with the same key as net_in
 				insert(
 					container	=> map_of_nets,
-					key 		=> net_in.name,
+					--key 		=> net_in.name,
+					key 		=> key(net_cursor),
 					new_item	=> net_out
 					);
 
 				-- clear pinlist of net_out for next spin
 				net_out.pins := m1_import.type_list_of_pins.empty_vector;
+				
+				next(net_cursor);
 			end loop;
 		end if;
 	end make_net_map;
