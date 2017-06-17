@@ -27,6 +27,8 @@
 --   info@blunk-electronic.de
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
+--   NOTE: This importer has been tested with CR5000 format.
+
 --   history of changes:
 --
 
@@ -56,7 +58,7 @@ with m1_string_processing;		use m1_string_processing;
 
 procedure impzuken is
 
-	version			: constant string (1..3) := "003";
+	version			: constant string (1..3) := "001";
     prog_position	: natural := 0;
 
 	use type_net_name;
@@ -72,18 +74,41 @@ procedure impzuken is
 	use type_universal_string;
 	use type_name_file_skeleton_submodule;
 	
-	type type_line_of_zuken_netlist is record		
-		net			: type_net_name.bounded_string;
-		device		: type_device_name.bounded_string;
-		value		: type_device_value.bounded_string;
-		packge 		: type_package_name.bounded_string;
-		pin  		: type_pin_name.bounded_string;
+	
+
+	line_counter : natural := 0; -- the line number in the given zuken netlist file
+
+	-- Every line in the netlist file stands for a pin.
+	-- example: 
+	-- "GND" : GROUND: "SN74HC00" : "SN74HC00" : "U700" : "7" : UNFIXED  : "7.cmp169" : "2" : PACKAGESYMBOL;
+	-- Sometimes such an entry is broken into fragments and spread over more than one line like:
+
+	-- "GND" : GROUND: "SN74HC00" 
+	-- : "SN74HC00" : "U700" : "7" : UNFIXED  : "7.cmp169" : "2" 
+	-- : PACKAGESYMBOL;
+
+	-- Zuken does allow an unnamed net, means the first field is empty.
+	-- For such cases the line number of the first field of the entry (the net name) is stored in line_number for 
+	-- design warnings.
+
+	-- this is the upper limit of fields in a line in the netlist file:
+	maximum_field_count_per_line : constant count_type := 10; 
+
+	-- This type specifies an entry in the zuken netlist.
+	type type_entry_in_zuken_netlist is record		
+		net			: type_net_name.bounded_string;		-- the net name (CAUTION: may be empty)
+		device		: type_device_name.bounded_string;	-- the device name like IC45
+		value		: type_device_value.bounded_string;	-- the value like SN74HC00
+		packge 		: type_package_name.bounded_string;	-- the package of the device like SO14
+		pin  		: type_pin_name.bounded_string;		-- the pin name like 4 or E34
+		line_number	: positive;							-- the line number of the net name field
 		-- CS: other elements ?
-		processed	: Boolean := false;
+		processed	: Boolean := false; -- used to mark a processed line
 	end record;
 
+	-- Entries of the zuken netlist are stored in a vector named zuken_netlist.
 	package type_zuken_netlist is new vectors ( 
-		element_type => type_line_of_zuken_netlist,
+		element_type => type_entry_in_zuken_netlist,
 		index_type => positive);
 	use type_zuken_netlist;
 	zuken_netlist : type_zuken_netlist.vector; -- when reading the netlist file, everything goes here
@@ -91,50 +116,12 @@ procedure impzuken is
 
 
 
--- 		-- make skeleton netlist from netlist_array
--- 		entries_counter := 1;
--- 		while entries_counter <= line_ct 
--- 			loop
--- 				if netlist_array(entries_counter).processed = false then -- care for unprocessed entries only
--- 					net_ct := net_ct + 1;
--- 					new_line;
--- 					put_line(" SubSection " & netlist_array(entries_counter).net & " class NA"); -- write net section header
--- 					put_line("  " & netlist_array(entries_counter).device & " ? " & netlist_array(entries_counter).value & " " & netlist_array(entries_counter).packge & " " & netlist_array(entries_counter).pin);
--- 					netlist_array(entries_counter).processed := true; -- mark entry as processed
--- 
--- 					-- search for entries having the same net name
--- 					ct := 1;
--- 					while ct <= line_ct  
--- 						loop
--- 							if netlist_array(ct).processed = false then -- care for unprocessed entries only
--- 								if netlist_array(ct).net = netlist_array(entries_counter).net then -- on net name match write dev, val, pack, pin in tmp/nets.tmp
--- 									put_line("  " & netlist_array(ct).device & " ? " & netlist_array(ct).value & " " & netlist_array(ct).packge & " " & netlist_array(ct).pin);
--- 									netlist_array(ct).processed := true; -- mark entry as processed
--- 								end if;
--- 							end if;
--- 							ct := ct + 1; -- advance entry pointer
--- 						end loop;
--- 					put_line(" EndSubSection"); -- close net section
--- 				end if;
--- 			
--- 				entries_counter := entries_counter + 1;	-- advance entry pointer
--- 			
--- 			end loop;
--- 		put_line("EndSection"); -- close netlist skeleton
--- 
--- 		return net_ct;
--- 	end make_netlist_array;
--- 
-
-	line_counter : natural := 0;
-
-	maximum_field_count_per_line : constant count_type := 10;
-
 	procedure read_netlist is
-	-- Reads the given netlist and stores it in a zuken_netlist
-		line : type_fields_of_line;
-		line_bak : type_fields_of_line;
-		complete : boolean := true;
+	-- Reads the given netlist file and stores it in vector zuken_netlist
+		line 		: type_fields_of_line;
+		line_bak	: type_fields_of_line;
+		complete 	: boolean := true;
+		line_number_bak : positive;
 	begin
 		write_message (
 			file_handle => file_import_cad_messages,
@@ -145,8 +132,17 @@ procedure impzuken is
 		set_input(file_cad_netlist);
 
 		put_line("NOTE: The line number indicates the line in the given netlist where the last property of a pin has been found in.");
+
+		-- CS: reserve_capacity(line.fields, maximum_field_count_per_line);
+
 		while not end_of_file loop
 			line_counter := line_counter + 1;
+
+			-- progrss bar
+			if (line_counter rem 100) = 0 then
+				put(standard_output,'.');
+			end if;
+
 			line := read_line(get_line, latin_1.colon);
 			case line.field_count is
 				when 0 => null; -- empty line. nothing to do
@@ -158,19 +154,20 @@ procedure impzuken is
 						packge =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 4),both))),
 						device =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 5),both))),
 						pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 6),both))),
+						line_number => line_counter,
 						processed => false
 						));
 
 				when 1..9 => -- An incomplete line has been found and must be stored in line_bak.
 					-- The next line is expected to contain the remaining fields and is read in the next spin.
-
+					-- CS: rework comments
 					if complete then
 						line_bak := line;
 						complete := false;
-
+						line_number_bak := line_counter; -- backup line number where entry starts
 					else
 						line := append(line_bak,line); 
-						-- Now, line contains the complete line and should have maximum_field_count_per_line.
+						-- Now, line should contain the complete line and should have maximum_field_count_per_line.
 						-- If the two fragments have more than maximum_field_count_per_line the netlist file is
 						-- considered as corrupted.
 						if line.field_count = maximum_field_count_per_line then
@@ -179,16 +176,18 @@ procedure impzuken is
 							-- Every complete line represents a pin:
 							put_line(" line" & positive'image(line_counter) & " pin " & to_string(line));
 							
-							-- Append the complete line to the netlist:
+							-- Append the complete entry to the zuken_netlist (use line number where the entry had started):
 							append(zuken_netlist, ( 
 								net => 		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 1),both))),
 								value =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 3),both))),
 								packge =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 4),both))),
 								device =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 5),both))),
 								pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 6),both))),
+								line_number => line_number_bak,
 								processed => false
 								));
 						else
+							-- if entry still not complete
 							line_bak := line;
 						end if;
 					end if;
@@ -200,7 +199,9 @@ procedure impzuken is
 						console => true);
 					raise constraint_error;
 			end case;
+
 		end loop;
+		new_line(standard_output); -- finishes the progress bar
 
 		-- Finally the complete-flag must be found set.
 		if not complete then
@@ -217,12 +218,12 @@ procedure impzuken is
 
 	procedure sort_netlist is
 	-- reads the zuken_netlist and builds the map_of_nets
-		line_a		: type_line_of_zuken_netlist; -- this is an entry within list "zuken_netlist"
-		line_b		: type_line_of_zuken_netlist; -- this is an entry within list "zuken_netlist"
+		line_a		: type_entry_in_zuken_netlist; -- this is an entry within list "zuken_netlist"
+		line_b		: type_entry_in_zuken_netlist; -- this is an entry within list "zuken_netlist"
 		net 		: m1_import.type_net; -- scratch place to assemble a net before inserting in map_of_nets
 		net_name	: type_net_name.bounded_string;
 
-		procedure set_processed_flag (l : in out type_line_of_zuken_netlist) is
+		procedure set_processed_flag (l : in out type_entry_in_zuken_netlist) is
 		begin
 			l.processed := true;
 		end set_processed_flag;
@@ -238,6 +239,11 @@ procedure impzuken is
 
 			if not line_a.processed then -- skip already processed lines
 				net_name := line_a.net; -- set the name of the net to be assembled
+
+				-- warn operator if name-less net detected:
+				if length(net_name) = 0 then
+					put_line(message_warning & "net without a name in line" & positive'image(line_a.line_number));
+				end if;
 
 				-- for the logs:
 				put_line(" net " & to_string(net_name) & " with pins: ");
@@ -286,7 +292,7 @@ procedure impzuken is
 	
 	procedure make_map_of_devices is
 	-- reads the zuken_netlist and builds the map_of_devices
-		line : type_line_of_zuken_netlist; -- this is an entry within list "zuken_netlist"
+		line : type_entry_in_zuken_netlist; -- this is an entry within list "zuken_netlist"
 		inserted : boolean;
 		cursor : type_map_of_devices.cursor;
 	begin
