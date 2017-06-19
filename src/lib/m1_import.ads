@@ -220,6 +220,12 @@ package m1_import is
 		module_name : in string;
 		module_version : in string);
 
+
+	function virtual_net_name (
+	-- builds from a given device and pin name something like "virtual_net_on_device_IC300_pin_P77"
+		device	: in type_device_name.bounded_string; -- like IC300
+		pin		: in type_pin_name.bounded_string) -- like 5, P77 or AM54
+		return type_net_name.bounded_string;
 	
 end m1_import;
 

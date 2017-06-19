@@ -87,10 +87,11 @@ procedure impzuken is
 	-- : "SN74HC00" : "U700" : "7" : UNFIXED  : "7.cmp169" : "2" 
 	-- : PACKAGESYMBOL;
 
-	-- Zuken does allow an unnamed net, means the first field is empty.
+	-- If the first field (the name field) is emtpy, the pin is not connected.
+	-- We create a virtual net attached to this pin. It will later be addressed by the test generators.
 	-- For such cases the line number of the first field of the entry (the net name) is stored in line_number for 
-	-- design warnings.
-
+	-- log messages.
+	
 	-- this is the upper limit of fields in a line in the netlist file:
 	maximum_field_count_per_line : constant count_type := 10; 
 
@@ -118,11 +119,17 @@ procedure impzuken is
 
 	procedure read_netlist is
 	-- Reads the given netlist file and stores it in vector zuken_netlist
-		line 		: type_fields_of_line;
-		line_bak	: type_fields_of_line;
-		complete 	: boolean := true;
-		line_number_bak : positive;
-	begin
+		pin_entry 				: type_fields_of_line; -- every entry represents a pin
+		pin_entry_bak			: type_fields_of_line;
+		last_entry_was_complete	: boolean := true; -- goes false once an incomplete entry was found
+		line_number_bak 		: positive;
+
+		procedure log_line (number : in positive) is begin
+		-- Every complete line represents a pin:
+			put_line(" line" & positive'image(number) & ": " & to_string(pin_entry));
+		end log_line;
+
+	begin -- read_netlist
 		write_message (
 			file_handle => file_import_cad_messages,
 			text => "reading zuken netlist file ...",
@@ -131,68 +138,82 @@ procedure impzuken is
 		open (file => file_cad_netlist, mode => in_file, name => to_string(name_file_cad_netlist));
 		set_input(file_cad_netlist);
 
-		put_line("NOTE: The line number indicates the line in the given netlist where the last property of a pin has been found in.");
-
 		-- CS: reserve_capacity(line.fields, maximum_field_count_per_line);
 
 		while not end_of_file loop
 			line_counter := line_counter + 1;
 
 			-- progrss bar
-			if (line_counter rem 100) = 0 then
+			if (line_counter rem 200) = 0 then
 				put(standard_output,'.');
 			end if;
 
-			line := read_line(get_line, latin_1.colon);
-			case line.field_count is
+			-- Read a line from the netlist file in variable pin_entry.
+			-- The fields of an entry are separated by colon:
+			pin_entry := read_line(get_line, latin_1.colon);
+
+			-- Empty lines are skipped.
+			-- Lines with maximum_field_count_per_line contain all required fields and can be appended to zuken_netlist right away.
+			-- Lines with less fields are concatenated until maximum_field_count_per_line is reached and then
+			-- appended to zuken_netlist.
+			-- The line number where an entry starts (the line holding the net name field) is stored along with the actual fields.
+			case pin_entry.field_count is
 				when 0 => null; -- empty line. nothing to do
-				when maximum_field_count_per_line => -- Line complete. Alle fields can be appended to netlist right away.
+				
+				when maximum_field_count_per_line => 
+					-- Entry complete. Alle fields can be appended to netlist right away:
+
+					log_line(line_counter);
 					
 					append(zuken_netlist, ( 
-						net => 		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 1),both))),
-						value =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 3),both))),
-						packge =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 4),both))),
-						device =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 5),both))),
-						pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 6),both))),
+						net => 		to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 1),both))),
+						value =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 3),both))),
+						packge =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 4),both))),
+						device =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 5),both))),
+						pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 6),both))),
 						line_number => line_counter,
-						processed => false
+						processed => false -- will be later used when sorting the zuken_netlist.
 						));
-
-				when 1..9 => -- An incomplete line has been found and must be stored in line_bak.
-					-- The next line is expected to contain the remaining fields and is read in the next spin.
-					-- CS: rework comments
-					if complete then
-						line_bak := line;
-						complete := false;
+				
+				when 1..9 => 
+					-- This entry is incomplete. last_entry_was_complete goes false.
+					-- We store what we have got so far in line_bak and append the fields of next line to line_bak
+					-- until maximum_field_count_per_line reached.
+					if last_entry_was_complete then
+						pin_entry_bak := pin_entry;
+						last_entry_was_complete := false;
 						line_number_bak := line_counter; -- backup line number where entry starts
+						
 					else
-						line := append(line_bak,line); 
-						-- Now, line should contain the complete line and should have maximum_field_count_per_line.
-						-- If the two fragments have more than maximum_field_count_per_line the netlist file is
-						-- considered as corrupted.
-						if line.field_count = maximum_field_count_per_line then
-							complete := true;
+						pin_entry := append(pin_entry_bak,pin_entry); 
 
-							-- Every complete line represents a pin:
-							put_line(" line" & positive'image(line_counter) & " pin " & to_string(line));
+						-- If all fields read, append entry to zuken_netlist.
+						if pin_entry.field_count = maximum_field_count_per_line then
+
+							-- CS: test if last field ends with semicolon
+														
+							last_entry_was_complete := true;
+
+							log_line(line_number_bak);
 							
 							-- Append the complete entry to the zuken_netlist (use line number where the entry had started):
 							append(zuken_netlist, ( 
-								net => 		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 1),both))),
-								value =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 3),both))),
-								packge =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 4),both))),
-								device =>	to_bounded_string(strip_quotes(trim(get_field_from_line(line, 5),both))),
-								pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(line, 6),both))),
+								net => 		to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 1),both))),
+								value =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 3),both))),
+								packge =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 4),both))),
+								device =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 5),both))),
+								pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 6),both))),
 								line_number => line_number_bak,
 								processed => false
 								));
+							
 						else
-							-- if entry still not complete
-							line_bak := line;
+							-- if entry still not complete save what we have got in pin_entry__bak
+							pin_entry_bak := pin_entry;
 						end if;
 					end if;
 
-				when others => -- If line contains more than maximum_field_count_per_line we have a corrupted netlist.
+				when others => -- If entry contains more than maximum_field_count_per_line we have a corrupted netlist.
 					write_message (
 						file_handle => file_import_cad_messages,
 						text => message_error & "too many fields in line " & natural'image(line_counter) & " !",
@@ -203,8 +224,8 @@ procedure impzuken is
 		end loop;
 		new_line(standard_output); -- finishes the progress bar
 
-		-- Finally the complete-flag must be found set.
-		if not complete then
+		-- Finally last_entry_was_complete must be found true.
+		if not last_entry_was_complete then
 			write_message (
 				file_handle => file_import_cad_messages,
 				text => message_error & "too less fields in line" & natural'image(line_counter) & " !" 
@@ -217,15 +238,18 @@ procedure impzuken is
 
 
 	procedure sort_netlist is
-	-- reads the zuken_netlist and builds the map_of_nets
-		line_a		: type_entry_in_zuken_netlist; -- this is an entry within list "zuken_netlist"
-		line_b		: type_entry_in_zuken_netlist; -- this is an entry within list "zuken_netlist"
+	-- Reads the zuken_netlist and builds the map_of_nets. 
+	-- map_of_nets is required by procedure write_skeleton.
+		entry_a		: type_entry_in_zuken_netlist; -- an entry in zuken_netlist. we call it the primary entry.
+		entry_b		: type_entry_in_zuken_netlist; -- an entry in zuken_netlist. we call it the secondary entry.
 		net 		: m1_import.type_net; -- scratch place to assemble a net before inserting in map_of_nets
 		net_name	: type_net_name.bounded_string;
 
-		procedure set_processed_flag (l : in out type_entry_in_zuken_netlist) is
+		nc_pin		: boolean; -- goes true if entry has an empty net name
+	
+		procedure set_processed_flag (e : in out type_entry_in_zuken_netlist) is
 		begin
-			l.processed := true;
+			e.processed := true;
 		end set_processed_flag;
 		
 	begin -- sort_netlist
@@ -234,53 +258,64 @@ procedure impzuken is
 			text => "sorting netlist ...",
 			console => true);
 
+		-- Every entry in zuken_netlist represents a pin.
+		-- Search for equal net names in zuken_netlist and collect pins in scratch variable "net.pins".
+		-- Processed entries are crossed out by setting flag "processed".
 		for a in 1..positive(length(zuken_netlist)) loop
-			line_a := element(zuken_netlist, a); -- load line
+			entry_a := element(zuken_netlist, a); -- load the primary entry
 
-			if not line_a.processed then -- skip already processed lines
-				net_name := line_a.net; -- set the name of the net to be assembled
+			if not entry_a.processed then -- care for non-processed entries only
+				net_name := entry_a.net; -- derive the name of the net to be assembled from the primary entry
 
-				-- warn operator if name-less net detected:
+				-- Create virtual nets for unconnected pins (net name is empty).
 				if length(net_name) = 0 then
-					put_line(message_warning & "net without a name in line" & positive'image(line_a.line_number));
+					net_name := virtual_net_name(device => entry_a.device, pin => entry_a.pin);
+					put_line(" line" & positive'image(entry_a.line_number)
+						& ": unconnected pin -> create virtual net " 
+						& to_string(net_name)); 
+					nc_pin := true;
+				else
+					put_line(" net " & to_string(net_name) & " with pins: ");
+					put_line("  " & to_string(entry_a.device) & row_separator_0 & to_string(entry_a.pin));
+					nc_pin := false;
 				end if;
-
-				-- for the logs:
-				put_line(" net " & to_string(net_name) & " with pins: ");
-				put_line("  " & to_string(line_a.device) & row_separator_0 & to_string(line_a.pin));
 
 				-- append the device and pin name to scratch net
 				append(net.pins, (
-					name_device	=> line_a.device,
-					name_pin	=> line_a.pin
+					name_device	=> entry_a.device,
+					name_pin	=> entry_a.pin
 					));
 
 				-- count pins for statistics
 				pin_count := pin_count + 1;
 
-				-- search further down the zuken netlist for other appearances of the net_name
-				for b in a+1 .. positive(length(zuken_netlist)) loop
-					line_b := element(zuken_netlist, b);
-					if line_b.net = net_name then -- net found
+				if not nc_pin then
+					-- search further down the zuken_netlist for other pins with the same net_name
+					for b in a+1 .. positive(length(zuken_netlist)) loop
+						entry_b := element(zuken_netlist, b); -- load a secondary entry
+						--if entry_b.net = net_name then -- net found
+						if entry_b.net = entry_a.net then -- net found
 
-						-- append device an pin name to scrach net
-						append(net.pins, (
-							name_device	=> line_b.device,
-							name_pin 	=> line_b.pin
-							));
+							-- append device an pin name to scrach net
+							append(net.pins, (
+								name_device	=> entry_b.device,
+								name_pin 	=> entry_b.pin
+								));
 
-						-- count pins for statistics
-						pin_count := pin_count + 1;
+							-- count pins for statistics
+							pin_count := pin_count + 1;
 
-						-- for the logs:
-						put_line("  " & to_string(line_b.device) & row_separator_0 & to_string(line_b.pin));
+							-- for the logs:
+							put_line("  " & to_string(entry_b.device) & row_separator_0 & to_string(entry_b.pin));
 
-						-- mark line of zuken_netlist as processed so that further spins can ignore it
-						update_element(zuken_netlist, b, set_processed_flag'access);
-					end if;
-				end loop;
-
-				-- now all pins of the net have been collected. net is ready for insertion in map_of_nets
+							-- mark line of zuken_netlist as processed so that further spins can ignore it
+							update_element(zuken_netlist, b, set_processed_flag'access);
+						end if;
+					end loop;
+				end if;
+				
+				-- Now all pins of the net have been collected. net is ready for insertion in map_of_nets.
+				-- (We use the net_name as key in case it has been named with default_name_for_noname_nets.)
 				insert(container => map_of_nets, key => net_name, new_item => net);
 
 				-- clear pinlist for next spin
