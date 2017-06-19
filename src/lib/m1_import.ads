@@ -166,7 +166,7 @@ package m1_import is
 
 -- NETS
 	-- The basic net is specified as:
-	-- By default all nets in a CAE-netlist are real world things.
+	-- By default all nets in a CAE-netlist are realworld things.
 	-- Some CAE vendors (like Zuken) write unconnected pins in the netlist (which is a good idea)
 	-- If unconnected pins are encountered, they may get connected to a virtual net.
 	-- The purpose of a virtual net is to address unconnected pins in later test generation,

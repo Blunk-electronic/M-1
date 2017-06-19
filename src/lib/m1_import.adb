@@ -342,6 +342,8 @@ package body m1_import is
 	
 		procedure write_statistics is
 		-- Writes the statistics in the skeleton file.
+		-- If virtual nets present in map_of_nets, shows their number and subtracts them
+		-- from the total number of nets.
 			virtual_net_count : natural := virtual_nets;
 		begin
 			new_line(file_import_cad_messages);		
@@ -356,18 +358,22 @@ package body m1_import is
 			put_line(file_skeleton, "  devices"
 				& count_type'image(length(map_of_devices)));
 
-			put_line(file_skeleton, "  nets"
-			--put_line(file_skeleton, count_type'image(length(map_of_nets)));
-				& natural'image( natural(length(map_of_nets)) - virtual_net_count )
-				& " -- without virtual nets");
+			-- If there are no virtual nets, just write number of nets.
+			-- Otherwise subtract number of virtual nets from total number 
+			-- and notify operator about virtual nets:
+			put(file_skeleton, "  nets");
+			if virtual_net_count = 0 then
+				put_line(file_skeleton, count_type'image(length(map_of_nets)));
+			else
+				put_line(natural'image( natural(length(map_of_nets)) - virtual_net_count )
+					 & " -- without virtual nets");
+				put_line(file_skeleton, "  virtual nets / unconnected pins"
+					& natural'image(virtual_net_count));
+			end if;
 			
 			put_line(file_skeleton, "  connected pins"
 				& natural'image(pin_count));
 
-			put_line(file_skeleton, "  virtual nets / unconnected pins"
-				& natural'image(virtual_net_count));
-		
-	-- 		put_line(file_skeleton,section_mark.endsection);		
 		end write_statistics;
 
 		procedure write_info is

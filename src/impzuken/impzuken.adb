@@ -138,8 +138,6 @@ procedure impzuken is
 		open (file => file_cad_netlist, mode => in_file, name => to_string(name_file_cad_netlist));
 		set_input(file_cad_netlist);
 
-		-- CS: reserve_capacity(line.fields, maximum_field_count_per_line);
-
 		while not end_of_file loop
 			line_counter := line_counter + 1;
 
@@ -244,8 +242,6 @@ procedure impzuken is
 		entry_b		: type_entry_in_zuken_netlist; -- an entry in zuken_netlist. we call it the secondary entry.
 		net 		: m1_import.type_net; -- scratch place to assemble a net before inserting in map_of_nets
 		net_name	: type_net_name.bounded_string;
-
-		nc_pin		: boolean; -- goes true if entry has an empty net name
 	
 		procedure set_processed_flag (e : in out type_entry_in_zuken_netlist) is
 		begin
@@ -273,13 +269,16 @@ procedure impzuken is
 					put_line(" line" & positive'image(entry_a.line_number)
 						& ": unconnected pin -> create virtual net " 
 						& to_string(net_name)); 
-					nc_pin := true;
-					net.virtual := true;
+					net.virtual := true; -- mark net as virtual. relevant for later statistics
 				else
 					put_line(" net " & to_string(net_name) & " with pins: ");
 					put_line("  " & to_string(entry_a.device) & row_separator_0 & to_string(entry_a.pin));
-					nc_pin := false;
-					net.virtual := false;
+					net.virtual := false; -- mark net as real. relevant for later statistics
+
+					-- Since every entry in zuken_netlist represents a pin, we count
+					-- realworld pins here for later statistics:
+					pin_count := pin_count + 1;					
+
 				end if;
 
 				-- append the device and pin name to scratch net
@@ -288,10 +287,8 @@ procedure impzuken is
 					name_pin	=> entry_a.pin
 					));
 
-				-- count pins for statistics
-				pin_count := pin_count + 1;
-
-				if not nc_pin then
+				-- For realworld nets, we search for other entries in zuken_netlist belonging to the same net.
+				if not net.virtual then
 					-- search further down the zuken_netlist for other pins with the same net_name
 					for b in a+1 .. positive(length(zuken_netlist)) loop
 						entry_b := element(zuken_netlist, b); -- load a secondary entry
@@ -304,7 +301,7 @@ procedure impzuken is
 								name_pin 	=> entry_b.pin
 								));
 
-							-- count pins for statistics
+							-- count pins for statistics (these are realworld pins)
 							pin_count := pin_count + 1;
 
 							-- for the logs:
@@ -317,7 +314,6 @@ procedure impzuken is
 				end if;
 				
 				-- Now all pins of the net have been collected. net is ready for insertion in map_of_nets.
-				-- (We use the net_name as key in case it has been named with default_name_for_noname_nets.)
 				insert(container => map_of_nets, key => net_name, new_item => net);
 
 				-- clear pinlist for next spin
@@ -328,29 +324,33 @@ procedure impzuken is
 	end sort_netlist;
 	
 	procedure make_map_of_devices is
-	-- reads the zuken_netlist and builds the map_of_devices
-		line : type_entry_in_zuken_netlist; -- this is an entry within list "zuken_netlist"
-		inserted : boolean;
-		cursor : type_map_of_devices.cursor;
+	-- Reads the zuken_netlist and builds the map_of_devices.
+	-- map_of_devices is required by procedure write_skeleton.
+		entry_netlist	: type_entry_in_zuken_netlist; -- this is an entry within list "zuken_netlist"
+		inserted 		: boolean; -- indicates whether an item has been inserted. goes false if already in map.
+		cursor 			: type_map_of_devices.cursor;
 	begin
 		write_message (
 			file_handle => file_import_cad_messages,
 			text => "building device map ...",
 			console => true);
 
+		-- Read zuken_netlist and insert all devices into map_of_devices.
+		-- Since map_of_devices is a map, a device like IC4 can appear there only once.
 		for i in 1..positive(length(zuken_netlist)) loop
-			line := element(zuken_netlist, i); -- load line
+			entry_netlist := element(zuken_netlist, i); -- load an entry
 
 			-- insert device in map_of_devices
 			type_map_of_devices.insert(
 				container	=> map_of_devices,
-				key			=> line.device,
+				key			=> entry_netlist.device,
 				position	=> cursor,
-				new_item	=> (packge => line.packge, value => line.value),
+				new_item	=> (packge => entry_netlist.packge, value => entry_netlist.value),
 				inserted	=> inserted);
 
+			-- log the device if it has been inserted
 			if inserted then
-				put_line(row_separator_0 & to_string(line.device));
+				put_line(row_separator_0 & to_string(entry_netlist.device));
 			end if;
 		end loop;
 
