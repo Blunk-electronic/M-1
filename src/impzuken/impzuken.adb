@@ -91,6 +91,8 @@ procedure impzuken is
 	-- We create a virtual net attached to this pin. It will later be addressed by the test generators.
 	-- For such cases the line number of the first field of the entry (the net name) is stored in line_number for 
 	-- log messages.
+
+	-- If the 6th field is empty. No pin name is provided. Such lines are skipped as the contain things like fiducials.
 	
 	-- this is the upper limit of fields in a line in the netlist file:
 	maximum_field_count_per_line : constant count_type := 10; 
@@ -118,17 +120,41 @@ procedure impzuken is
 
 
 	procedure read_netlist is
-	-- Reads the given netlist file and stores it in vector zuken_netlist
+	-- Reads the given netlist file and stores it in vector zuken_netlist.
+	-- Entries which has an empty pin name field are skipped as they do not contain real electrical devices.
+	-- Such lines contain things like fiducials.
 		pin_entry 				: type_fields_of_line; -- every entry represents a pin
 		pin_entry_bak			: type_fields_of_line;
 		last_entry_was_complete	: boolean := true; -- goes false once an incomplete entry was found
 		line_number_bak 		: positive;
-
+	
 		procedure log_line (number : in positive) is begin
 		-- Every complete line represents a pin:
 			put_line(" line" & positive'image(number) & ": " & to_string(pin_entry));
 		end log_line;
 
+		procedure append_pin_entry (line : in positive) is 
+		-- Appends pin_entry to zuken_netlist.
+		-- Checks if pin name is empty and thus skips the entry.
+			pin_name : type_pin_name.bounded_string;
+		begin
+			pin_name := to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 6),both)));
+			if length(pin_name) > 0 then
+				append(zuken_netlist, ( 
+					net => 		to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 1),both))),
+					value =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 3),both))),
+					packge =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 4),both))),
+					device =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 5),both))),
+					pin =>		pin_name,
+					line_number => line,
+					processed => false -- will be later used when sorting the zuken_netlist.
+					));
+			else
+				put_line("  -> no pin name. line skipped");
+			end if;
+		end append_pin_entry;
+
+		
 	begin -- read_netlist
 		write_message (
 			file_handle => file_import_cad_messages,
@@ -162,17 +188,9 @@ procedure impzuken is
 					-- Entry complete. Alle fields can be appended to netlist right away:
 
 					log_line(line_counter);
-					
-					append(zuken_netlist, ( 
-						net => 		to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 1),both))),
-						value =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 3),both))),
-						packge =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 4),both))),
-						device =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 5),both))),
-						pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 6),both))),
-						line_number => line_counter,
-						processed => false -- will be later used when sorting the zuken_netlist.
-						));
-				
+
+					append_pin_entry (line_counter);
+			
 				when 1..9 => 
 					-- This entry is incomplete. last_entry_was_complete goes false.
 					-- We store what we have got so far in line_bak and append the fields of next line to line_bak
@@ -193,17 +211,9 @@ procedure impzuken is
 							last_entry_was_complete := true;
 
 							log_line(line_number_bak);
-							
+
 							-- Append the complete entry to the zuken_netlist (use line number where the entry had started):
-							append(zuken_netlist, ( 
-								net => 		to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 1),both))),
-								value =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 3),both))),
-								packge =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 4),both))),
-								device =>	to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 5),both))),
-								pin =>		to_bounded_string(strip_quotes(trim(get_field_from_line(pin_entry, 6),both))),
-								line_number => line_number_bak,
-								processed => false
-								));
+							append_pin_entry (line_number_bak);
 							
 						else
 							-- if entry still not complete save what we have got in pin_entry__bak
