@@ -324,8 +324,25 @@ package body m1_import is
 		use type_map_of_devices;
 		use type_map_of_nets;
 
+		function virtual_nets return natural is
+		-- counts virtual nets and returns their number
+			net_cursor : type_map_of_nets.cursor := first(map_of_nets);
+			vi : natural := 0;
+		begin
+			if length(map_of_nets) > 0 then -- if there are nets at all
+				while net_cursor /= type_map_of_nets.no_element loop
+					if element(net_cursor).virtual then
+						vi := vi + 1;
+					end if;
+					next(net_cursor);
+				end loop;
+			end if;
+			return vi;
+		end virtual_nets;
+	
 		procedure write_statistics is
 		-- Writes the statistics in the skeleton file.
+			virtual_net_count : natural := virtual_nets;
 		begin
 			new_line(file_import_cad_messages);		
 			write_message (
@@ -336,15 +353,20 @@ package body m1_import is
 
 			put_line(file_skeleton, " statistics:");
 
-			put(file_skeleton, "  devices :");
-			put_line(file_skeleton, count_type'image(length(map_of_devices)));
+			put_line(file_skeleton, "  devices"
+				& count_type'image(length(map_of_devices)));
 
-			put(file_skeleton, "  nets    :");
-			put_line(file_skeleton, count_type'image(length(map_of_nets)));
+			put_line(file_skeleton, "  nets"
+			--put_line(file_skeleton, count_type'image(length(map_of_nets)));
+				& natural'image( natural(length(map_of_nets)) - virtual_net_count )
+				& " -- without virtual nets");
+			
+			put_line(file_skeleton, "  connected pins"
+				& natural'image(pin_count));
 
-			put(file_skeleton, "  pins    :");
-			put_line(file_skeleton, natural'image(pin_count));
-
+			put_line(file_skeleton, "  virtual nets / unconnected pins"
+				& natural'image(virtual_net_count));
+		
 	-- 		put_line(file_skeleton,section_mark.endsection);		
 		end write_statistics;
 

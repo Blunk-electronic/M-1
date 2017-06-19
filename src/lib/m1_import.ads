@@ -165,9 +165,21 @@ package m1_import is
 		element_type => type_pin_of_variant);
 
 -- NETS
+	-- The basic net is specified as:
+	-- By default all nets in a CAE-netlist are real world things.
+	-- Some CAE vendors (like Zuken) write unconnected pins in the netlist (which is a good idea)
+	-- If unconnected pins are encountered, they may get connected to a virtual net.
+	-- The purpose of a virtual net is to address unconnected pins in later test generation,
+	-- thus increasing test converage.
+	-- When writing the skeleton file, the statistics function uses the virtual-flag to distiguish
+	-- between real and virtual nets.
+	type type_net_base is tagged record
+		virtual : boolean := false; 
+	end record;
+	
 	-- This type specifies a regular net.
 	-- We store those nets in map_of_nets:
-	type type_net is record
+	type type_net is new type_net_base with record
         pins    : type_list_of_pins.vector;
     end record;
 	use type_net_name;
@@ -176,7 +188,7 @@ package m1_import is
 
 	-- If we deal with assembly variants, a net has pins with the "mounted"-flag:
 	-- We store those nets in a map.
-	type type_net_with_variants is record
+	type type_net_with_variants is new type_net_base with record
         pins    : type_list_of_pins_of_variants.vector;
     end record;
 	package type_map_of_nets_with_variants is new ordered_maps ( 

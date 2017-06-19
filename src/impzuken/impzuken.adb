@@ -274,10 +274,12 @@ procedure impzuken is
 						& ": unconnected pin -> create virtual net " 
 						& to_string(net_name)); 
 					nc_pin := true;
+					net.virtual := true;
 				else
 					put_line(" net " & to_string(net_name) & " with pins: ");
 					put_line("  " & to_string(entry_a.device) & row_separator_0 & to_string(entry_a.pin));
 					nc_pin := false;
+					net.virtual := false;
 				end if;
 
 				-- append the device and pin name to scratch net
