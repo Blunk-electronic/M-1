@@ -532,6 +532,8 @@ package body m1_string_processing is
 						write(name_module_cad_importer_zuken);
 					when orcad =>
 						write(name_module_cad_importer_orcad);
+					when kicad =>
+						write(name_module_cad_importer_kicad);
 					when others => null; -- CS: add more importers here
 				end case;
 
@@ -670,6 +672,8 @@ package body m1_string_processing is
 						write(name_module_cad_importer_zuken);
 					when orcad =>
 						write(name_module_cad_importer_orcad);
+					when kicad =>
+						write(name_module_cad_importer_kicad);
 					when others => null; -- CS: add more importers here
 				end case;
 

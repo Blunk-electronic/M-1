@@ -61,6 +61,7 @@ package m1_import is
 	-- CAD / NETLIST / PARTLIST IMPORT 
 	type type_format_cad is (
 		EAGLE,
+		KICAD,
 		ORCAD,
 		PROTEL,
 		ZUKEN

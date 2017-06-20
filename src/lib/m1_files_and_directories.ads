@@ -46,6 +46,7 @@ package m1_files_and_directories is
 	name_module_mkproject				: constant string (1..9) 	:= "mkproject";
 	name_module_importer_bsdl			: constant string (1..7) 	:= "impbsdl";
 	name_module_cad_importer_orcad		: constant string (1..8) 	:= "imporcad";
+	name_module_cad_importer_kicad		: constant string (1..8) 	:= "impkicad";
 	name_module_cad_importer_protel		: constant string (1..9) 	:= "impprotel";
 	name_module_cad_importer_zuken		: constant string (1..8) 	:= "impzuken";
 	name_module_cad_importer_eagle		: constant string (1..8) 	:= "impeagle";
