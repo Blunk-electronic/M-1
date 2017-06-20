@@ -41,6 +41,7 @@ with ada.characters.handling;	use ada.characters.handling;
 with ada.strings;				use ada.strings;
 with ada.strings.bounded; 		use ada.strings.bounded;
 with ada.strings.fixed; 		use ada.strings.fixed;
+with ada.strings.maps;			use ada.strings.maps;
 with ada.containers;            use ada.containers;
 with ada.containers.vectors;
 with ada.exceptions; 			use ada.exceptions;
@@ -78,6 +79,53 @@ procedure impkicad is
 
 	line_counter : natural := 0; -- the line number in the given kicad netlist file
 
+	procedure read_netlist is
+	-- Reads the given netlist file.
+
+		opening_bracket : constant string (1..1) := "("; --latin_1.left_parenthesis; -- '('
+		closing_bracket : constant string (1..1) := ")"; --latin_1.right_parenthesis; -- ')'
+		char_seq : constant string (1..3) := latin_1.space & latin_1.ht & latin_1.lf;
+		char_set : character_set := to_set(char_seq);
+
+	
+		procedure process_line (line : in string) is
+			pos_obr, pos_cbr : positive; -- position of opening/closing bracket
+			pos_cursor : positive := 1; 
+
+			pos_keyword_start, pos_keyword_end : positive := 1;
+
+		begin
+			put_line("line" & positive'image(line_counter) & ":" & line);
+			pos_obr := index(line, opening_bracket, pos_cursor);
+			pos_keyword_start := index_non_blank(source => line, from => pos_cursor+1);
+			--pos_keyword_end := index(source => line, from => pos_keyword_start, set => char_set);
+			pos_keyword_end := index(source => line, from => 1, set => char_set);
+			put_line(positive'image(pos_keyword_end));
+			
+		end process_line;
+		
+	begin -- read_netlist
+		write_message (
+			file_handle => file_import_cad_messages,
+			text => "reading kicad netlist file ...",
+			console => true);
+
+		open (file => file_cad_netlist, mode => in_file, name => to_string(name_file_cad_netlist));
+		set_input(file_cad_netlist);
+		
+		while not end_of_file loop
+			line_counter := line_counter + 1;
+
+			-- progrss bar
+-- 			if (line_counter rem 200) = 0 then
+-- 				put(standard_output,'.');
+-- 			end if;
+
+			process_line(get_line);
+		end loop;
+		--new_line(standard_output); -- finishes the progress bar
+
+	end read_netlist;
 
 
 
@@ -128,7 +176,7 @@ begin
 	end if;
 	
 	prog_position	:= 50;	
-	--read_netlist;
+	read_netlist;
 
 	--sort_netlist;
 	--make_map_of_devices;
