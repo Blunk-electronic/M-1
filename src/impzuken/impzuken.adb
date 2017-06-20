@@ -92,7 +92,8 @@ procedure impzuken is
 	-- For such cases the line number of the first field of the entry (the net name) is stored in line_number for 
 	-- log messages.
 
-	-- If the 6th field is empty. No pin name is provided. Such lines are skipped as the contain things like fiducials.
+	-- If the 6th field is empty, no pin name is provided. Such lines are skipped as they contain
+	-- pseudeo pins or pseudeo parts like fiducials.
 	
 	-- this is the upper limit of fields in a line in the netlist file:
 	maximum_field_count_per_line : constant count_type := 10; 
