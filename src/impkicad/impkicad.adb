@@ -75,6 +75,8 @@ procedure impkicad is
 	use type_universal_string;
 	use type_name_file_skeleton_submodule;
 	
+-- 	type type_keyword is (
+-- 		export,
 	
 
 	line_counter : natural := 0; -- the line number in the given kicad netlist file
@@ -84,23 +86,98 @@ procedure impkicad is
 
 		opening_bracket : constant string (1..1) := "("; --latin_1.left_parenthesis; -- '('
 		closing_bracket : constant string (1..1) := ")"; --latin_1.right_parenthesis; -- ')'
-		char_seq : constant string (1..3) := latin_1.space & latin_1.ht & latin_1.lf;
+		char_seq : constant string (1..4) := latin_1.space & latin_1.ht & latin_1.lf & ')';
 		char_set : character_set := to_set(char_seq);
+		pos_obr, pos_cbr : natural; -- position of opening/closing bracket
+		pos_cursor : positive; 
+		pos_keyword_start, pos_keyword_end : positive := 1;
+		pos_arg_start, pos_arg_end : natural := 1;
+		--eol : boolean := false;
+		level : natural := 0;
 
-	
+		procedure increment_level is begin level := level + 1; end increment_level;
+		procedure decrement_level is begin level := level - 1; end decrement_level;
+
+		procedure test_keyword (keyword : in string) is
+		begin
+			put_line(standard_output,"level" & natural'image(level) & " keyword " & keyword);
+			-- CS: do the test here
+		end test_keyword;
+
+		procedure test_argument (argument : in string) is
+		begin
+			put_line(standard_output,"level" & natural'image(level) & " argument " & argument);
+			-- CS: do the test here
+		end test_argument;
+
+		
 		procedure process_line (line : in string) is
-			pos_obr, pos_cbr : positive; -- position of opening/closing bracket
-			pos_cursor : positive := 1; 
-
-			pos_keyword_start, pos_keyword_end : positive := 1;
-
 		begin
 			put_line("line" & positive'image(line_counter) & ":" & line);
-			pos_obr := index(line, opening_bracket, pos_cursor);
-			pos_keyword_start := index_non_blank(source => line, from => pos_cursor+1);
-			--pos_keyword_end := index(source => line, from => pos_keyword_start, set => char_set);
-			pos_keyword_end := index(source => line, from => 1, set => char_set);
-			put_line(positive'image(pos_keyword_end));
+			pos_cursor := 1; 
+			--while not eol loop
+			loop
+				-- RULE 1: AFTER AN OPENING BRACKET A KEYWORD FOLLOWS.
+
+				-- example: (export (version D)
+					
+				-- get pos of opening bracket after current cursor position:
+				pos_obr := index(source => line, pattern => opening_bracket, from => pos_cursor);
+
+				if pos_obr /= 0 then -- if there is an opening bracket. read follwing keyword:
+
+					-- RULE 2: AN OPENING BRACKET INCREASES THE HIERARCHY LEVEL BY ONE.
+					increment_level;
+
+					-- get start pos of keyword after opening bracket
+					pos_keyword_start := index_non_blank(source => line, from => pos_obr + 1);
+					--put_line(standard_output, positive'image(pos_keyword_start));
+
+					-- get end pos of keyword
+					pos_keyword_end := index(source => line, from => pos_keyword_start, set => char_set) -1;
+					--put_line(standard_output, positive'image(pos_keyword_end));
+
+					-- test keyword
+					test_keyword(keyword => (line(pos_keyword_start..pos_keyword_end)) );
+
+					-- RULE 3: AFTER A KEYWORD WE EXPECT AN ARGUMENT.
+					-- The argument may start:
+					--  - with an opening bracket (to indicate another underlying level).
+					--  - with other character (if it is a single argument)
+					
+					-- read argument
+					pos_arg_start := index_non_blank(source => line, from => pos_keyword_end + 1);
+					
+					if pos_arg_start /= 0 then -- there is an argument
+						if line(pos_arg_start) = opening_bracket(1) then
+							increment_level;
+						
+							-- expect keyword
+
+							-- update cursor pos.
+							pos_cursor := pos_arg_start;
+
+						else
+							-- We have a single argument. It ends in a character defined by char_set.
+							pos_arg_end := index(source => line, from => pos_arg_start, set => char_set) -1;
+							test_argument(argument => (line(pos_arg_start..pos_arg_end)) );
+							
+							-- update cursor pos.
+							pos_cursor := pos_arg_end;
+						end if;
+							
+					else -- no argument provided after keyword -> abort processing the line
+						exit;
+					end if;
+					
+				end if;
+
+				-- exit if end of line reached
+				if pos_cursor = line'last then
+					exit;
+				end if;
+				
+			end loop;
 			
 		end process_line;
 		
