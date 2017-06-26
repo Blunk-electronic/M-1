@@ -75,127 +75,35 @@ procedure impkicad is
 	use type_name_file_netlist;
 	use type_universal_string;
 	use type_name_file_skeleton_submodule;
-	
--- 	type type_keyword is (
--- 		export,
-	
 
 	line_counter : natural := 0; -- the line number in the given kicad netlist file
 
 	procedure read_netlist is
 	-- Reads the given netlist file.
 
--- 		opening_bracket : constant string (1..1) := "("; --latin_1.left_parenthesis; -- '('
--- 		closing_bracket : constant string (1..1) := ")"; --latin_1.right_parenthesis; -- ')'
+		ob : constant character := '(';
+		cb : constant character := ')';
 
--- 		pos_obr, pos_cbr : natural; -- position of opening/closing bracket
--- 		pos_cursor : positive; 
--- 		pos_keyword_start, pos_keyword_end : positive := 1;
--- 		pos_arg_start, pos_arg_end : natural := 1;
--- 		--eol : boolean := false;
--- 		level : natural := 0;
+		-- Here we define the set of characters that terminate a command or an argument.
+		--char_seq : constant string (1..4) := latin_1.space & latin_1.ht & latin_1.lf & ')'; -- no need any more
+		-- When a line has been fetched from file the horizontal tabs are replaced by space.
+		-- Line-feeds are already removed by get_line. So we have to watch out for
+		-- characters space and ')'.
+		term_char_seq : constant string (1..2) := latin_1.space & ')';
+		term_char_set : character_set := to_set(term_char_seq);
 
--- 		procedure increment_level is begin level := level + 1; end increment_level;
--- 		procedure decrement_level is begin level := level - 1; end decrement_level;
--- 
--- 		procedure test_keyword (keyword : in string) is
--- 		begin
--- 			put_line(standard_output,"level" & natural'image(level) & " keyword " & keyword);
--- 			-- CS: do the test here
--- 		end test_keyword;
--- 
--- 		procedure test_argument (argument : in string) is
--- 		begin
--- 			put_line(standard_output,"level" & natural'image(level) & " argument " & argument);
--- 			-- CS: do the test here
--- 		end test_argument;
+		line : unbounded_string; -- the line being processed
+		cursor : natural; -- the position of the cursor
 
-		
--- 		procedure process_line (line : in string) is
--- 		begin
--- 			put_line("line" & positive'image(line_counter) & ":" & line);
--- 			pos_cursor := 1; 
--- 			--while not eol loop
--- 			loop
--- 				-- RULE 1: AFTER AN OPENING BRACKET A KEYWORD FOLLOWS.
--- 
--- 				-- example: (export (version D)
--- 					
--- 				-- get pos of opening bracket after current cursor position:
--- 				pos_obr := index(source => line, pattern => opening_bracket, from => pos_cursor);
--- 
--- 				if pos_obr /= 0 then -- if there is an opening bracket. read follwing keyword:
--- 
--- 					-- RULE 2: AN OPENING BRACKET INCREASES THE HIERARCHY LEVEL BY ONE.
--- 					increment_level;
--- 
--- 					-- get start pos of keyword after opening bracket
--- 					pos_keyword_start := index_non_blank(source => line, from => pos_obr + 1);
--- 					--put_line(standard_output, positive'image(pos_keyword_start));
--- 
--- 					-- get end pos of keyword
--- 					pos_keyword_end := index(source => line, from => pos_keyword_start, set => char_set) -1;
--- 					--put_line(standard_output, positive'image(pos_keyword_end));
--- 
--- 					-- test keyword
--- 					test_keyword(keyword => (line(pos_keyword_start..pos_keyword_end)) );
--- 
--- 					-- RULE 3: AFTER A KEYWORD WE EXPECT AN ARGUMENT.
--- 					-- The argument may start:
--- 					--  - with an opening bracket (to indicate another underlying level).
--- 					--  - with other character (if it is a single argument)
--- 					
--- 					-- read argument
--- 					pos_arg_start := index_non_blank(source => line, from => pos_keyword_end + 1);
--- 					
--- 					if pos_arg_start /= 0 then -- there is an argument
--- 						if line(pos_arg_start) = opening_bracket(1) then
--- 							increment_level;
--- 						
--- 							-- expect keyword
--- 
--- 							-- update cursor pos.
--- 							pos_cursor := pos_arg_start;
--- 
--- 						else
--- 							-- We have a single argument. It ends in a character defined by char_set.
--- 							pos_arg_end := index(source => line, from => pos_arg_start, set => char_set) -1;
--- 							test_argument(argument => (line(pos_arg_start..pos_arg_end)) );
--- 							
--- 							-- update cursor pos.
--- 							pos_cursor := pos_arg_end;
--- 						end if;
--- 							
--- 					else -- no argument provided after keyword -> abort processing the line
--- 						exit;
--- 					end if;
--- 					
--- 				end if;
--- 
--- 				-- exit if end of line reached
--- 				if pos_cursor = line'last then
--- 					exit;
--- 				end if;
--- 				
--- 			end loop;
--- 			
--- 		end process_line;
-		
-		char_seq : constant string (1..4) := latin_1.space & latin_1.ht & latin_1.lf & ')';
-		-- CS: char_seq : constant string (1..4) := latin_1.space & ')';
-		char_set : character_set := to_set(char_seq);
-
-		line : unbounded_string;
-		cursor : natural;
-
-		package command_stack is new stack_lifo(max => 10, item => unbounded_string);
+		-- instantiate the command stack. 
+		-- We assume there is no deeper hierarchy than 20 currently. CS: increase if necessary.
+		package command_stack is new stack_lifo(max => 20, item => unbounded_string);
         --use command_stack;
 
-		-- command_stack.init;
-		-- push(4);
-		-- a := pop;
-
 		procedure get_next_line is
+		-- Fetches a new line. 
+		-- Replaces all horizontal tabs by spaces.
+		-- Increments line_counter.
 		begin
 			--new_line;
 			line_counter := line_counter + 1;
@@ -204,6 +112,9 @@ procedure impkicad is
 		end get_next_line;
 		
 		procedure p1 is
+		-- Updates the cursor position to the position of the next
+		-- non_space character starting from the current cursor position.
+		-- Fetches a new line if no further characters after current cursor position.
 		begin
 			cursor := index_non_blank(source => line, from => cursor + 1);
 			while cursor = 0 loop
@@ -214,13 +125,16 @@ procedure impkicad is
 		end p1;
 
 		procedure read_cmd is 
+		-- Reads the command from current cursor position until termination
+		-- character or its last character.
+		-- Stores the command on command_stack.
 			end_of_cmd : integer;  -- may become negative if no terminating character present
-			cmd : unbounded_string;
+			cmd : unbounded_string; -- here the command goes finally
 		begin
 			--put_line("cmd start at: " & natural'image(cursor));
 
 			-- get position of last character
-			end_of_cmd := index(source => line, from => cursor, set => char_set) -1;
+			end_of_cmd := index(source => line, from => cursor, set => term_char_set) -1;
 
 			-- if no terminating character found, end_of_cmd assumes length of line
 			if end_of_cmd = -1 then
@@ -231,23 +145,26 @@ procedure impkicad is
 
 			-- compose command from cursor..end_of_cmd
 			cmd := to_unbounded_string( slice(line,cursor,end_of_cmd) );
-			put_line("cmd " & to_string(cmd));
 
 			-- update cursor
 			cursor := end_of_cmd;
 
 			-- CS: verify cmd
 			command_stack.push(cmd);
+			put_line(" level" & natural'image(command_stack.depth) 
+				& " : cmd " & to_string(cmd));
 		end read_cmd;
 
 		procedure read_arg is
+		-- Reads the argument from current cursor position until termination
+		-- character or its last character.
 			end_of_arg : integer; -- may become negative if no terminating character present
-			arg : unbounded_string;
+			arg : unbounded_string; -- here the argument goes finally
 		begin
 			--put_line("arg start at: " & natural'image(cursor));
 
 			-- get position of last character
-			end_of_arg := index(source => line, from => cursor, set => char_set) -1;
+			end_of_arg := index(source => line, from => cursor, set => term_char_set) -1;
 
 			-- if no terminating character found, end_of_arg assumes length of line
 			if end_of_arg = -1 then
@@ -258,7 +175,7 @@ procedure impkicad is
 
 			-- compose argument from cursor..end_of_arg
 			arg := to_unbounded_string( slice(line,cursor,end_of_arg) );
-			put_line("arg " & to_string(arg));
+			put_line("  arg " & to_string(arg));
 
 			-- update cursor
 			cursor := end_of_arg;
@@ -273,12 +190,7 @@ procedure impkicad is
 			null;
 			cmd := command_stack.pop;
 		end exec_cmd;
-	
-		
-		
-		ob : constant character := '(';
-		cb : constant character := ')';
-		
+			
 	begin -- read_netlist
 		write_message (
 			file_handle => file_import_cad_messages,
