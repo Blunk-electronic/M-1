@@ -530,6 +530,39 @@ package body m1_import is
 			& to_string(pin)
 			);
 	end virtual_net_name;
+
+
+
+-- GENERICS
+	
+	package body stack_lifo is
+		s : array (1..max) of item;
+		top : natural range 0..max;
+
+		procedure push(x : item) is
+		begin
+			top := top + 1;
+			s(top) := x;
+		end push;
+
+		function pop return item is
+		begin
+			top := top - 1;
+			return s(top + 1);
+		end pop;
+
+		function depth return natural is
+		begin
+			return top;
+		end depth;
+
+		procedure init is
+		begin
+			top := 0;
+		end init;
+	
+	end stack_lifo;
+
 		
 end m1_import;
 

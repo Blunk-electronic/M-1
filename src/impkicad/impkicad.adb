@@ -182,21 +182,25 @@ procedure impkicad is
 -- 		end process_line;
 		
 		char_seq : constant string (1..4) := latin_1.space & latin_1.ht & latin_1.lf & ')';
+		-- CS: char_seq : constant string (1..4) := latin_1.space & ')';
 		char_set : character_set := to_set(char_seq);
 
 		line : unbounded_string;
 		cursor : natural;
 
-		--ht_to_space : character_mapping := to_mapping(from => "a", to => "B");
-		
+		package command_stack is new stack_lifo(max => 10, item => unbounded_string);
+        --use command_stack;
+
+		-- command_stack.init;
+		-- push(4);
+		-- a := pop;
+
 		procedure get_next_line is
 		begin
-			new_line;
+			--new_line;
 			line_counter := line_counter + 1;
-			--line := to_unbounded_string(trim(get_line,both));
-			--line := to_unbounded_string( trim( translate(get_line,ht_to_space'access),both) );
 			line := to_unbounded_string( translate(get_line,ht_to_space'access) );
-			put_line("line" & positive'image(line_counter) & "->" & to_string(line) & "<-");
+			--put_line("line" & positive'image(line_counter) & "->" & to_string(line) & "<-");
 		end get_next_line;
 		
 		procedure p1 is
@@ -209,31 +213,65 @@ procedure impkicad is
 			--put_line("cursor at pos of next char" & natural'image(cursor));	
 		end p1;
 
-		procedure read_cmd is
-			end_of_cmd : positive := index(source => line, from => cursor, set => char_set) -1;
-			length_of_cmd : positive := end_of_cmd - cursor + 1;
-			cmd : string (1..length_of_cmd) := slice(line,cursor,end_of_cmd);
+		procedure read_cmd is 
+			end_of_cmd : integer;  -- may become negative if no terminating character present
+			cmd : unbounded_string;
 		begin
+			--put_line("cmd start at: " & natural'image(cursor));
+
+			-- get position of last character
+			end_of_cmd := index(source => line, from => cursor, set => char_set) -1;
+
+			-- if no terminating character found, end_of_cmd assumes length of line
+			if end_of_cmd = -1 then
+				end_of_cmd := length(line);
+			end if;
+
+			--put_line("cmd end at  : " & positive'image(end_of_cmd));
+
+			-- compose command from cursor..end_of_cmd
+			cmd := to_unbounded_string( slice(line,cursor,end_of_cmd) );
+			put_line("cmd " & to_string(cmd));
+
+			-- update cursor
 			cursor := end_of_cmd;
-			put_line("cmd " & cmd);
+
 			-- CS: verify cmd
-			-- CS: push cmd
+			command_stack.push(cmd);
 		end read_cmd;
 
 		procedure read_arg is
-			end_of_arg : positive := index(source => line, from => cursor, set => char_set) -1;
-			length_of_arg : positive := end_of_arg - cursor + 1;
-			cmd : string (1..length_of_arg) := slice(line,cursor,end_of_arg);
+			end_of_arg : integer; -- may become negative if no terminating character present
+			arg : unbounded_string;
 		begin
+			--put_line("arg start at: " & natural'image(cursor));
+
+			-- get position of last character
+			end_of_arg := index(source => line, from => cursor, set => char_set) -1;
+
+			-- if no terminating character found, end_of_arg assumes length of line
+			if end_of_arg = -1 then
+				end_of_arg := length(line);
+			end if;
+
+			--put_line("arg end at  : " & positive'image(end_of_arg));
+
+			-- compose argument from cursor..end_of_arg
+			arg := to_unbounded_string( slice(line,cursor,end_of_arg) );
+			put_line("arg " & to_string(arg));
+
+			-- update cursor
 			cursor := end_of_arg;
-			put_line("arg " & cmd);
+
 			-- CS: verify arg
 			-- CS: apply cmd + arg
 		end read_arg;
 
 		procedure exec_cmd is
+			cmd : unbounded_string;
 		begin
 			null;
+			cmd := command_stack.pop;
 		end exec_cmd;
 	
 		
@@ -250,18 +288,11 @@ procedure impkicad is
 		open (file => file_cad_netlist, mode => in_file, name => to_string(name_file_cad_netlist));
 		set_input(file_cad_netlist);
 
+		command_stack.init;
 		get_next_line;
 		cursor := index(source => line, pattern => 1 * ob);
 		
 		while not end_of_file loop
-			
-			-- progrss bar
--- 			if (line_counter rem 200) = 0 then
--- 				put(standard_output,'.');
--- 			end if;
-
---			process_line(get_line);
-
 			
 			<<label_1>>
 				p1; -- cursor at pos of next char
@@ -276,7 +307,7 @@ procedure impkicad is
 				end if;
 			<<label_2>>
 				exec_cmd;
-				-- CS: if level = 0 then end
+				if command_stack.depth = 0 then exit; end if;
 				p1;
 				case element(line, cursor) is
 					when cb => goto label_2;
@@ -287,6 +318,7 @@ procedure impkicad is
 				end case;
 		end loop;
 		--new_line(standard_output); -- finishes the progress bar
+		put_line("done");
 
 	end read_netlist;
 
