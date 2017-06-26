@@ -59,6 +59,15 @@ with m1_test_gen_and_exec;		use m1_test_gen_and_exec;
 
 package body m1_string_processing is
 
+	function ht_to_space (c : in character) return character is
+	begin 
+		case c is
+			when latin_1.ht => return latin_1.space;
+			when others => return c;
+		end case;
+	end ht_to_space;		
+
+	
 	function wildcard_match (text_with_wildcards : in string; text_exact : in string) return boolean is
 	-- Returns true if text_with_wildcards matches text_exact.
 	-- text_with_wildcards is something like R41* , text_exact is something like R415

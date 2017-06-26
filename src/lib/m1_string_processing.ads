@@ -146,6 +146,8 @@ package m1_string_processing is
 	extended_string_length_max	: constant natural := 100000;
 	package type_extended_string is new generic_bounded_length(extended_string_length_max);
 
+	function ht_to_space (c : in character) return character;
+	
 	function wildcard_match (text_with_wildcards : in string; text_exact : in string) return boolean;
 	-- Returns true if text_with_wildcards matches text_exact.
 	-- text_with_wildcards is something like R41* , text_exact is something like R415
