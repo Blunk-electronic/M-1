@@ -156,29 +156,63 @@ procedure impkicad is
 		end read_cmd;
 
 		procedure read_arg is
-		-- Reads the argument from current cursor position until termination
-		-- character or its last character.
+		-- Reads the argument of a command.
+		-- Mostly the argument is separated from the command by space.
+		-- Some arguments are wrapped in quotations.
+		-- Leaves the cursor at the position of the last character of the argument.
+		-- If the argument was enclosed in quotations the cursor is left with
+		-- the position of the trailing quotation.
 			end_of_arg : integer; -- may become negative if no terminating character present
 			arg : unbounded_string; -- here the argument goes finally
 		begin
 			--put_line("arg start at: " & natural'image(cursor));
 
-			-- get position of last character
-			end_of_arg := index(source => line, from => cursor, set => term_char_set) -1;
+			-- We handle an argument that is wrapped in quotation different than
+			-- a non-wrapped argument:
+			if element(line, cursor) = latin_1.quotation then
+				-- Read the quotation-wrapped argument (strip quotations)
 
-			-- if no terminating character found, end_of_arg assumes length of line
-			if end_of_arg = -1 then
-				end_of_arg := length(line);
+				-- get position of last character (before trailing quotation)
+				end_of_arg := index(source => line, from => cursor+1, pattern => 1 * latin_1.quotation) -1;
+
+				--put_line("arg end at  : " & positive'image(end_of_arg));
+
+				-- if no trailing quotation found -> error
+				if end_of_arg = -1 then
+					put_line(message_error & "line" 
+						& positive'image(line_counter) & " : "
+						& latin_1.quotation & " expected");
+						raise constraint_error;
+				end if;
+
+				-- compose argument from first character after quotation until end_of_arg
+				arg := to_unbounded_string( slice(line,cursor+1,end_of_arg) );
+
+				-- update cursor (to position of trailing quotation)
+				cursor := end_of_arg+1;
+			else
+				-- Read the argument from current cursor position until termination
+				-- character or its last character.
+
+				-- get position of last character
+				end_of_arg := index(source => line, from => cursor, set => term_char_set) -1;
+
+				-- if no terminating character found, end_of_arg assumes length of line
+				if end_of_arg = -1 then
+					end_of_arg := length(line);
+				end if;
+
+				--put_line("arg end at  : " & positive'image(end_of_arg));
+
+				-- compose argument from cursor..end_of_arg
+				arg := to_unbounded_string( slice(line,cursor,end_of_arg) );
+
+				-- update cursor
+				cursor := end_of_arg;
 			end if;
 
-			--put_line("arg end at  : " & positive'image(end_of_arg));
-
-			-- compose argument from cursor..end_of_arg
-			arg := to_unbounded_string( slice(line,cursor,end_of_arg) );
 			put_line("  arg " & to_string(arg));
 
-			-- update cursor
-			cursor := end_of_arg;
 
 			-- CS: verify arg
 			-- CS: apply cmd + arg
@@ -214,7 +248,9 @@ procedure impkicad is
 				read_arg;
 				p1;
 				if element(line, cursor) /= cb then
-					put_line(message_error & cb & " expected");
+					put_line(message_error & "line" 
+						& positive'image(line_counter) & " : "
+						& cb & " expected");
 					raise constraint_error;
 				end if;
 			<<label_2>>
@@ -225,7 +261,9 @@ procedure impkicad is
 					when cb => goto label_2;
 					when ob => goto label_1;
 					when others =>
-						put_line(message_error & cb & " or " & ob & " expected"); -- CS
+						put_line(message_error & "line" 
+							& positive'image(line_counter) & " : "
+							& cb & " or " & ob & " expected"); -- CS
 						raise constraint_error;
 				end case;
 		end loop;
