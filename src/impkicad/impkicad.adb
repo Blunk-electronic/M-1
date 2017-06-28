@@ -81,6 +81,8 @@ procedure impkicad is
 	procedure read_netlist is
 	-- Reads the given netlist file.
 
+		-- Round brackets are used throuhout the netlist in order to nest
+		-- sections:
 		ob : constant character := '(';
 		cb : constant character := ')';
 
@@ -124,6 +126,80 @@ procedure impkicad is
 			--put_line("cursor at pos of next char" & natural'image(cursor));	
 		end p1;
 
+		cmd_prefix : constant string (1..4) := "cmd_";
+		type type_command is (
+			cmd_export,
+			cmd_version,
+			cmd_design,
+			cmd_source,
+			cmd_date,
+			cmd_tool,
+			cmd_sheet,
+			cmd_number,
+			cmd_name,
+			cmd_tstamps,
+			cmd_title_block,
+			cmd_title,
+			cmd_company,
+			cmd_rev,
+			cmd_comment,
+			cmd_value
+			-- CS: others
+			);
+
+		entered_export, 
+		entered_version,
+		entered_design,
+		entered_source,
+		entered_date,
+		entered_tool,
+		entered_sheet,
+		entered_number,
+		entered_name,
+		entered_tstamps,
+		entered_title_block,
+		entered_title,
+		entered_company,
+		entered_rev,
+		entered_comment,
+		entered_value : boolean := false;
+		
+		procedure verify_cmd ( cmd : in unbounded_string) is
+			depth : natural := command_stack.depth;
+
+			procedure error_on_invalid_level is
+			begin
+				put_line(message_error & "line" 
+					& positive'image(line_counter) & " : "
+					& "keyword '"
+					& to_string(cmd) & "'"
+					& " not allowed in this level");
+				raise constraint_error;
+			end error_on_invalid_level;
+
+		begin -- verify_cmd
+			case type_command'value(cmd_prefix & to_string(cmd)) is
+
+				when cmd_export => 
+					if depth = 1 then
+						entered_export := true;
+					else
+						error_on_invalid_level;
+					end if;
+
+				when cmd_version =>
+					if depth = 2 then
+						entered_version := true;
+					else
+						error_on_invalid_level;
+					end if;
+
+				when others => null;
+
+			end case;
+		end verify_cmd;
+
+
 		procedure read_cmd is 
 		-- Reads the command from current cursor position until termination
 		-- character or its last character.
@@ -149,10 +225,20 @@ procedure impkicad is
 			-- update cursor
 			cursor := end_of_cmd;
 
-			-- CS: verify cmd
 			command_stack.push(cmd);
+
+			verify_cmd(cmd);
+
 			put_line(" level" & natural'image(command_stack.depth) 
 				& " : cmd " & to_string(cmd));
+
+			exception
+				when constraint_error =>
+					put_line(message_error & "line" 
+						& positive'image(line_counter) & " : "
+						& "invalid keyword '"
+						& to_string(cmd) & "'");
+					raise;
 		end read_cmd;
 
 		procedure read_arg is
