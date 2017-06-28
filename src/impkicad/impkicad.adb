@@ -245,6 +245,7 @@ procedure impkicad is
 				read_cmd; -- cursor at end of cmd
 				p1; -- cursor at pos of next char
 				if element(line, cursor) = ob then goto label_1; end if;
+			<<label_3>>
 				read_arg;
 				p1;
 				if element(line, cursor) /= cb then
@@ -257,14 +258,23 @@ procedure impkicad is
 				exec_cmd;
 				if command_stack.depth = 0 then exit; end if;
 				p1;
+
+				-- Test for cb, ob or other character:
 				case element(line, cursor) is
+
+					-- If closing bracket after argument. example: (libpart (lib conn) (part CONN_01X02)
 					when cb => goto label_2;
+
+					-- If another command at a deeper level follows. example: (lib conn)
 					when ob => goto label_1;
-					when others =>
-						put_line(message_error & "line" 
-							& positive'image(line_counter) & " : "
-							& cb & " or " & ob & " expected"); -- CS
-						raise constraint_error;
+
+					-- In case an argument not enclosed in brackets 
+					-- follows a closing bracket. example: (field (name Reference) P)
+					when others => goto label_3; 
+-- 						put_line(message_error & "line" 
+-- 							& positive'image(line_counter) & " : "
+-- 							& cb & " or " & ob & " expected"); -- CS
+-- 						raise constraint_error;
 				end case;
 		end loop;
 		--new_line(standard_output); -- finishes the progress bar
