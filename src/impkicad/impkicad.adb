@@ -130,7 +130,7 @@ procedure impkicad is
 		type type_command is (
 			cmd_export,
 			cmd_version,
-			cmd_design,
+			cmd_design,		
 			cmd_source,
 			cmd_date,
 			cmd_tool,
@@ -143,27 +143,48 @@ procedure impkicad is
 			cmd_company,
 			cmd_rev,
 			cmd_comment,
-			cmd_value
+			cmd_value,
+			cmd_components,
+			cmd_comp,
+			cmd_ref,
+			cmd_footprint,
+			cmd_libsource,
+			cmd_sheetpath,
+			cmd_tstamp
 			-- CS: others
 			);
 
 		entered_export, 
 		entered_version,
-		entered_design,
-		entered_source,
-		entered_date,
-		entered_tool,
-		entered_sheet,
-		entered_number,
-		entered_name,
-		entered_tstamps,
-		entered_title_block,
-		entered_title,
-		entered_company,
-		entered_rev,
-		entered_comment,
-		entered_value : boolean := false;
-		
+-- 		entered_design,		-- not used
+-- 		entered_source,		-- not used
+-- 		entered_date,		-- not used
+-- 		entered_tool,		-- not used
+-- 		entered_sheet,		-- not used
+-- 		entered_number,		-- not used
+-- 		entered_name,		-- not used
+-- 		entered_tstamps,	-- not used
+-- 		entered_title_block,-- not used
+-- 		entered_title,		-- not used
+-- 		entered_company,	-- not used
+-- 		entered_rev,		-- not used
+-- 		entered_comment,	-- not used
+-- 		entered_value,		-- not used
+		entered_components,	-- not used
+		entered_comp,		-- not used
+		entered_ref,		-- not used
+		entered_value,		-- not used
+		entered_footprint	-- not used
+-- 		entered_libsource,	-- not used
+--		entered_sheetpath,	-- not used
+--		entered_tstamp,		-- not used
+					: boolean := false;
+
+--		section_components_entered : boolean := false;
+
+		cmd : unbounded_string;
+		arg : unbounded_string; -- here the argument goes finally
+
 		procedure verify_cmd ( cmd : in unbounded_string) is
 			depth : natural := command_stack.depth;
 
@@ -194,6 +215,14 @@ procedure impkicad is
 						error_on_invalid_level;
 					end if;
 
+				when cmd_components =>
+					if depth = 2 then
+						entered_components := true;
+						put_line("section components entered");
+					else
+						error_on_invalid_level;
+					end if;
+					
 				when others => null;
 
 			end case;
@@ -205,7 +234,7 @@ procedure impkicad is
 		-- character or its last character.
 		-- Stores the command on command_stack.
 			end_of_cmd : integer;  -- may become negative if no terminating character present
-			cmd : unbounded_string; -- here the command goes finally
+			--cmd : unbounded_string; -- here the command goes finally
 		begin
 			--put_line("cmd start at: " & natural'image(cursor));
 
@@ -228,6 +257,7 @@ procedure impkicad is
 			command_stack.push(cmd);
 
 			verify_cmd(cmd);
+			--set_section_flag(cmd);
 
 			put_line(" level" & natural'image(command_stack.depth) 
 				& " : cmd " & to_string(cmd));
@@ -249,7 +279,7 @@ procedure impkicad is
 		-- If the argument was enclosed in quotations the cursor is left with
 		-- the position of the trailing quotation.
 			end_of_arg : integer; -- may become negative if no terminating character present
-			arg : unbounded_string; -- here the argument goes finally
+-- 			arg : unbounded_string; -- here the argument goes finally
 		begin
 			--put_line("arg start at: " & natural'image(cursor));
 
@@ -300,14 +330,25 @@ procedure impkicad is
 			put_line("  arg " & to_string(arg));
 
 
-			-- CS: verify arg
-			-- CS: apply cmd + arg
+			-- CS: verify arg -- remove from flow-chart ?
+			-- CS: apply cmd + arg -- remove from flow-chart ?
 		end read_arg;
 
 		procedure exec_cmd is
-			cmd : unbounded_string;
+-- 			cmd : unbounded_string;
 		begin
-			null;
+			if entered_version then
+				put_line("section version: " & to_string(cmd) & " " & to_string(arg));
+				entered_version := false;
+			end if;
+
+			if entered_components then
+				put_line("section components left");
+				entered_components := false;
+			end if;
+
+			
+			-- restore parent command from stack
 			cmd := command_stack.pop;
 		end exec_cmd;
 			
