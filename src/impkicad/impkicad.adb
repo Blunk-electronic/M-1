@@ -78,6 +78,35 @@ procedure impkicad is
 
 	line_counter : natural := 0; -- the line number in the given kicad netlist file
 
+	cmd_prefix : constant string (1..4) := "cmd_";
+	type type_command is (
+		cmd_export,
+		cmd_version,
+		cmd_design,		
+		cmd_source,
+		cmd_date,
+		cmd_tool,
+		cmd_sheet,
+		cmd_number,
+		cmd_name,
+		cmd_tstamps,
+		cmd_title_block,
+		cmd_title,
+		cmd_company,
+		cmd_rev,
+		cmd_comment,
+		cmd_value,
+		cmd_components,
+		cmd_comp,
+		cmd_ref,
+		cmd_footprint,
+		cmd_libsource, cmd_lib, cmd_part,
+		cmd_sheetpath, cmd_names,
+		cmd_tstamp
+		-- CS: others
+		);
+
+	
 	procedure read_netlist is
 	-- Reads the given netlist file.
 
@@ -126,34 +155,6 @@ procedure impkicad is
 			--put_line("cursor at pos of next char" & natural'image(cursor));	
 		end p1;
 
-		cmd_prefix : constant string (1..4) := "cmd_";
-		type type_command is (
-			cmd_export,
-			cmd_version,
-			cmd_design,		
-			cmd_source,
-			cmd_date,
-			cmd_tool,
-			cmd_sheet,
-			cmd_number,
-			cmd_name,
-			cmd_tstamps,
-			cmd_title_block,
-			cmd_title,
-			cmd_company,
-			cmd_rev,
-			cmd_comment,
-			cmd_value,
-			cmd_components,
-			cmd_comp,
-			cmd_ref,
-			cmd_footprint,
-			cmd_libsource,
-			cmd_sheetpath,
-			cmd_tstamp
-			-- CS: others
-			);
-
 		entered_export, 
 		entered_version,
 -- 		entered_design,		-- not used
@@ -201,19 +202,19 @@ procedure impkicad is
 		begin -- verify_cmd
 			case type_command'value(cmd_prefix & to_string(cmd)) is
 
-				when cmd_export => 
-					if depth = 1 then
-						entered_export := true;
-					else
-						error_on_invalid_level;
-					end if;
-
-				when cmd_version =>
-					if depth = 2 then
-						entered_version := true;
-					else
-						error_on_invalid_level;
-					end if;
+-- 				when cmd_export => 
+-- 					if depth = 1 then
+-- 						entered_export := true;
+-- 					else
+-- 						error_on_invalid_level;
+-- 					end if;
+-- 
+-- 				when cmd_version =>
+-- 					if depth = 2 then
+-- 						entered_version := true;
+-- 					else
+-- 						error_on_invalid_level;
+-- 					end if;
 
 				when cmd_components =>
 					if depth = 2 then
@@ -234,7 +235,6 @@ procedure impkicad is
 		-- character or its last character.
 		-- Stores the command on command_stack.
 			end_of_cmd : integer;  -- may become negative if no terminating character present
-			--cmd : unbounded_string; -- here the command goes finally
 		begin
 			--put_line("cmd start at: " & natural'image(cursor));
 
@@ -259,8 +259,9 @@ procedure impkicad is
 			verify_cmd(cmd);
 			--set_section_flag(cmd);
 
-			put_line(" level" & natural'image(command_stack.depth) 
-				& " : cmd " & to_string(cmd));
+ 			put_line("LEVEL" & natural'image(command_stack.depth)); 
+-- 				& " : cmd " & to_string(cmd));
+			put_line(" INIT CMD " & to_string(cmd));
 
 			exception
 				when constraint_error =>
@@ -276,10 +277,9 @@ procedure impkicad is
 		-- Mostly the argument is separated from the command by space.
 		-- Some arguments are wrapped in quotations.
 		-- Leaves the cursor at the position of the last character of the argument.
-		-- If the argument was enclosed in quotations the cursor is left with
+		-- If the argument was enclosed in quotations the cursor is left at
 		-- the position of the trailing quotation.
 			end_of_arg : integer; -- may become negative if no terminating character present
--- 			arg : unbounded_string; -- here the argument goes finally
 		begin
 			--put_line("arg start at: " & natural'image(cursor));
 
@@ -327,7 +327,7 @@ procedure impkicad is
 				cursor := end_of_arg;
 			end if;
 
-			put_line("  arg " & to_string(arg));
+			--put_line("  arg " & to_string(arg));
 
 
 			-- CS: verify arg -- remove from flow-chart ?
@@ -335,21 +335,27 @@ procedure impkicad is
 		end read_arg;
 
 		procedure exec_cmd is
--- 			cmd : unbounded_string;
 		begin
-			if entered_version then
-				put_line("section version: " & to_string(cmd) & " " & to_string(arg));
-				entered_version := false;
-			end if;
+			
+			--if entered_version then
+-- 			if cmd = "version" then
+-- 				put_line("section version: " & to_string(cmd) & " " & to_string(arg));
+-- 				entered_version := false;
+-- 			end if;
+-- 
+-- 			--if entered_components then
 
-			if entered_components then
+			
+			-- pop last command from stack
+			cmd := command_stack.pop;
+			put_line(" EXEC CMD " & to_string(cmd));
+
+			if cmd = "components" then
 				put_line("section components left");
 				entered_components := false;
 			end if;
 
-			
-			-- restore parent command from stack
-			cmd := command_stack.pop;
+
 		end exec_cmd;
 			
 	begin -- read_netlist
