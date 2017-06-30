@@ -188,6 +188,10 @@ procedure impkicad is
 		cmd : type_command;
 		arg : unbounded_string; -- here the argument goes finally
 
+		device_name	: type_device_name.bounded_string;
+		device		: type_device;
+
+
 		function strip_prefix (cmd : in type_command) return string is
 		-- Removes the prefix from given command and returns the command as lowercase string.
 		begin
@@ -232,7 +236,11 @@ procedure impkicad is
 -- 					else
 -- 						error_on_invalid_level;
 -- 					end if;
-					
+
+-- 				when cmd_comp =>
+-- 						entered_comp := true;
+
+
 				when others => null;
 
 			end case;
@@ -341,8 +349,10 @@ procedure impkicad is
 
 		procedure exec_cmd is
 		begin
-			
 			-- pop last command from stack
+			-- That is the command encountered after the last opening bracket.
+			-- For example: When the closing bracket of a line like "(value NetChanger)" is reached,
+			-- the command popped from stack is "value".
 			cmd := command_stack.pop;
 			put_line(" EXEC " & strip_prefix(cmd));
 
@@ -355,6 +365,28 @@ procedure impkicad is
 					put_line("section components left");
 					entered_components := false;
 
+				when cmd_ref =>
+					--put_line(standard_output, to_string(arg));
+					device_name := to_bounded_string(to_string(arg));
+
+				when cmd_value =>
+					--put_line(standard_output, to_string(arg));
+					device.value := to_bounded_string(to_string(arg));
+
+				when cmd_footprint =>
+					--put_line(standard_output, to_string(arg));
+					device.packge := to_bounded_string(to_string(arg));
+
+				when cmd_comp =>
+					--entered_comp := false;
+					-- insert device in map
+					null;
+					type_map_of_devices.insert(
+						container	=> map_of_devices,
+						key			=> device_name,
+						new_item	=> device);
+					
+					
 				when others => null;
 			end case;
 
