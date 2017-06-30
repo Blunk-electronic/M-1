@@ -233,6 +233,8 @@ procedure bsmcl is
 		
 		-- set name of importer executable file
 		case format is
+			when kicad => 
+				importer := to_bounded_string(name_module_cad_importer_kicad);
 			when orcad => 
 				importer := to_bounded_string(name_module_cad_importer_orcad);
 			when zuken =>
@@ -406,7 +408,7 @@ begin
 				name_file_cad_netlist := to_bounded_string(argument(3));
 
 				case format_cad is
-					when orcad | protel | zuken => -- CS: update documentation and help
+					when kicad | orcad | protel | zuken => -- CS: update documentation and help
 						if exists_netlist(name_file_cad_netlist) then
 						
 							prog_position := "INE10";
