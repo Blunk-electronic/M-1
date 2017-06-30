@@ -28,10 +28,13 @@
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   NOTE: This importer has been tested with kicad v4
-
+--
 --   history of changes:
 --
-
+--	TODO: See comments starting with "CS". CS means "construction side"
+--		Issue #1: Kicad exports nets for unconnected pins which is in general a good idea.
+--				  But, pin_count (used for later statistics) increments on every pin. So pin_count
+--				  does not represent the exact number of connected pins (see header in skeleon file)
 
 with ada.text_io;				use ada.text_io;
 with ada.characters;			use ada.characters;
@@ -76,8 +79,15 @@ procedure impkicad is
 	use type_universal_string;
 	use type_name_file_skeleton_submodule;
 
+	-- IMPORTANT: This importer ready netlists of version D.
+	type type_netlist_version is (D); -- other netlist versions ?
+	netlist_version : type_netlist_version := D;
+
+	
 	line_counter : natural := 0; -- the line number in the given kicad netlist file
 
+	-- These are section names used in the kicad netlist. Since some of them conflict with 
+	-- already reserved GNAT keywords, we prepend a prefix "cmd_".
 	cmd_prefix : constant string (1..4) := "cmd_";
 	type type_command is (
 		cmd_export,
@@ -102,13 +112,15 @@ procedure impkicad is
 		cmd_footprint,
 		cmd_libsource, cmd_lib, cmd_part,
 		cmd_sheetpath, cmd_names,
-		cmd_tstamp
-		-- CS: others
+        cmd_tstamp,
+        cmd_libparts, cmd_libpart,
+        cmd_description,
+        cmd_footprints, cmd_fp,
+        cmd_fields, cmd_field,
+        cmd_pins, cmd_pin, cmd_num, cmd_type,
+        cmd_libraries, cmd_library, cmd_logical, cmd_uri,
+        cmd_nets, cmd_net, cmd_code, cmd_node
 		);
-
-	-- IMPORTANT: This importer ready netlists of version D.
-	type type_netlist_version is (D); -- other netlist versions ?
-	netlist_version : type_netlist_version := D;
 	
 	procedure read_netlist is
 	-- Reads the given netlist file.
@@ -158,8 +170,9 @@ procedure impkicad is
 			--put_line("cursor at pos of next char" & natural'image(cursor));	
 		end p1;
 
-		entered_export, 
-		entered_version,
+		-- These flags should be used when processing sections. Currently they are not used. CS
+-- 		entered_export, 
+-- 		entered_version,
 -- 		entered_design,		-- not used
 -- 		entered_source,		-- not used
 -- 		entered_date,		-- not used
@@ -174,23 +187,27 @@ procedure impkicad is
 -- 		entered_rev,		-- not used
 -- 		entered_comment,	-- not used
 -- 		entered_value,		-- not used
-		entered_components,	-- not used
-		entered_comp,		-- not used
-		entered_ref,		-- not used
-		entered_value,		-- not used
-		entered_footprint	-- not used
+-- 		entered_components,	-- not used
+-- 		entered_comp,		-- not used
+-- 		entered_ref,		-- not used
+-- 		entered_value,		-- not used
+-- 		entered_footprint	-- not used
 -- 		entered_libsource,	-- not used
 --		entered_sheetpath,	-- not used
 --		entered_tstamp,		-- not used
-					: boolean := false;
+-- 					: boolean := false;
 
 
 		cmd : type_command;
 		arg : unbounded_string; -- here the argument goes finally
 
+		-- These are scratch variables used when reading devices, pins and nets:
 		device_name	: type_device_name.bounded_string;
 		device		: type_device;
-
+		net_name    : type_net_name.bounded_string;
+		pin			: m1_import.type_pin;
+		list_of_pins: m1_import.type_list_of_pins.vector;
+		net			: m1_import.type_net;
 
 		function strip_prefix (cmd : in type_command) return string is
 		-- Removes the prefix from given command and returns the command as lowercase string.
@@ -203,6 +220,20 @@ procedure impkicad is
 				)); 
 		end strip_prefix;
 
+		procedure write_pinlist is
+		-- Dumps the list_of_pins.
+			pin : m1_import.type_pin;
+		begin
+			put_line(" with pins:");
+			if length(list_of_pins) > 0 then
+				for p in 1..positive(length(list_of_pins)) loop
+					pin := element(list_of_pins, p);
+					put_line("  device " & to_string(pin.name_device) 
+						& " pin " & to_string(pin.name_pin));
+				end loop;
+			end if;
+		end write_pinlist;
+		
 		procedure verify_cmd is
 		-- Verifies if command is allowed at this level. CS
 		-- Verifies if command is among allowed subcommands. CS
@@ -231,14 +262,14 @@ procedure impkicad is
 
 				when cmd_components =>
 -- 					if depth = 2 then
-						entered_components := true;
-						put_line("section components entered");
+-- 						entered_components := true;
+						put_line("reading devices ...");
 -- 					else
 -- 						error_on_invalid_level;
 -- 					end if;
 
--- 				when cmd_comp =>
--- 						entered_comp := true;
+				when cmd_nets =>
+						put_line("reading nets ...");
 
 
 				when others => null;
@@ -277,15 +308,18 @@ procedure impkicad is
 
 			verify_cmd;
 
- 			put_line("LEVEL" & natural'image(command_stack.depth)); 
-			put_line(" INIT " & strip_prefix(cmd));
+ 			--put_line("LEVEL" & natural'image(command_stack.depth)); 
+			--put_line(" INIT " & strip_prefix(cmd));
 
 			exception
-				when constraint_error =>
-					put_line(message_error & "line" 
-						& positive'image(line_counter) & " : "
-						& "invalid keyword '"
-						& strip_prefix(cmd) & "'");
+                when constraint_error =>
+                    write_message(
+                        file_handle => file_import_cad_messages,
+                        text => message_error & "line" 
+                            & positive'image(line_counter) & " : "
+                            & "invalid keyword '"
+                            & slice(line,cursor,end_of_cmd) & "'",
+                        console => true);
 					raise;
 		end read_cmd;
 
@@ -354,21 +388,25 @@ procedure impkicad is
 			-- For example: When the closing bracket of a line like "(value NetChanger)" is reached,
 			-- the command popped from stack is "value".
 			cmd := command_stack.pop;
-			put_line(" EXEC " & strip_prefix(cmd));
+			--put_line(" EXEC " & strip_prefix(cmd));
 
 			case cmd is
+
+			-- GENERAL STUFF
 				when cmd_version =>
 					netlist_version := type_netlist_version'value(to_string(arg));
 					put_line("netlist version " & type_netlist_version'image(netlist_version));
-					
-				when cmd_components =>
-					put_line("section components left");
-					entered_components := false;
+
+			-- DEVICES
+                when cmd_components =>
+                    null;
+					put_line("reading devices done");
 
 				when cmd_ref =>
 					--put_line(standard_output, to_string(arg));
 					device_name := to_bounded_string(to_string(arg));
-
+					pin.name_device := to_bounded_string(to_string(arg));
+					
 				when cmd_value =>
 					--put_line(standard_output, to_string(arg));
 					device.value := to_bounded_string(to_string(arg));
@@ -378,14 +416,49 @@ procedure impkicad is
 					device.packge := to_bounded_string(to_string(arg));
 
 				when cmd_comp =>
-					--entered_comp := false;
+                    put_line(
+                        " device " & to_string(device_name) 
+                        & " value " & to_string(device.value)
+                        & " package " & to_string(device.packge));
+                        
 					-- insert device in map
-					null;
 					type_map_of_devices.insert(
 						container	=> map_of_devices,
 						key			=> device_name,
 						new_item	=> device);
+
+			-- NETS
+                when cmd_nets =>
+                    null;
+                    put_line("reading nets done");
+
+                when cmd_name =>
+                    net_name := to_bounded_string(to_string(arg));
+
+-- 				when cmd_ref =>
+-- 					pin.device_name := to_bounded_string(to_string(arg));
+
+				when cmd_pin =>
+					pin.name_pin := to_bounded_string(to_string(arg));
+	
+				when cmd_node =>
+					-- append pin to list_of_pins and update pin_count (for statistics)
+					append(list_of_pins, pin);
+					pin_count := pin_count + 1;
 					
+				when cmd_net =>
+                    put(" " & to_string(net_name));
+					write_pinlist;
+					
+					net.pins := list_of_pins;
+					
+					type_map_of_nets.insert(
+						container 	=> map_of_nets,
+						key			=> net_name,
+						new_item	=> net);
+
+					-- clean up list_of_pins for next net
+					clear(list_of_pins);
 					
 				when others => null;
 			end case;
@@ -504,7 +577,7 @@ begin
 	--sort_netlist;
 	--make_map_of_devices;
 
-	--write_skeleton (name_module_cad_importer_zuken, version);
+	write_skeleton (name_module_cad_importer_kicad, version);
 
 	prog_position	:= 100;
 	write_log_footer;	
