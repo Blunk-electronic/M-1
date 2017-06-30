@@ -106,6 +106,9 @@ procedure impkicad is
 		-- CS: others
 		);
 
+	-- IMPORTANT: This importer ready netlists of version D.
+	type type_netlist_version is (D); -- other netlist versions ?
+	netlist_version : type_netlist_version := D;
 	
 	procedure read_netlist is
 	-- Reads the given netlist file.
@@ -128,7 +131,7 @@ procedure impkicad is
 
 		-- instantiate the command stack. 
 		-- We assume there is no deeper hierarchy than 20 currently. CS: increase if necessary.
-		package command_stack is new stack_lifo(max => 20, item => unbounded_string);
+		package command_stack is new stack_lifo(max => 20, item => type_command);
         --use command_stack;
 
 		procedure get_next_line is
@@ -181,26 +184,39 @@ procedure impkicad is
 --		entered_tstamp,		-- not used
 					: boolean := false;
 
---		section_components_entered : boolean := false;
 
-		cmd : unbounded_string;
+		cmd : type_command;
 		arg : unbounded_string; -- here the argument goes finally
 
-		procedure verify_cmd ( cmd : in unbounded_string) is
-			depth : natural := command_stack.depth;
+		function strip_prefix (cmd : in type_command) return string is
+		-- Removes the prefix from given command and returns the command as lowercase string.
+		begin
+			return to_lower( type_command'image(cmd)
+				(
+				cmd_prefix'length+1 			-- from character after cmd_prefix
+				..								-- to
+				type_command'image(cmd)'length	-- last character of cmd
+				)); 
+		end strip_prefix;
+
+		procedure verify_cmd is
+		-- Verifies if command is allowed at this level. CS
+		-- Verifies if command is among allowed subcommands. CS
+		
+			--level : natural := command_stack.depth;
 
 			procedure error_on_invalid_level is
 			begin
 				put_line(message_error & "line" 
 					& positive'image(line_counter) & " : "
 					& "keyword '"
-					& to_string(cmd) & "'"
+					& strip_prefix(cmd) & "'"
 					& " not allowed in this level");
 				raise constraint_error;
 			end error_on_invalid_level;
 
 		begin -- verify_cmd
-			case type_command'value(cmd_prefix & to_string(cmd)) is
+			case cmd is
 
 -- 				when cmd_export => 
 -- 					if depth = 1 then
@@ -208,21 +224,14 @@ procedure impkicad is
 -- 					else
 -- 						error_on_invalid_level;
 -- 					end if;
--- 
--- 				when cmd_version =>
+
+				when cmd_components =>
 -- 					if depth = 2 then
--- 						entered_version := true;
+						entered_components := true;
+						put_line("section components entered");
 -- 					else
 -- 						error_on_invalid_level;
 -- 					end if;
-
-				when cmd_components =>
-					if depth = 2 then
-						entered_components := true;
-						put_line("section components entered");
-					else
-						error_on_invalid_level;
-					end if;
 					
 				when others => null;
 
@@ -248,27 +257,27 @@ procedure impkicad is
 
 			--put_line("cmd end at  : " & positive'image(end_of_cmd));
 
-			-- compose command from cursor..end_of_cmd
-			cmd := to_unbounded_string( slice(line,cursor,end_of_cmd) );
+			-- Compose command from cursor..end_of_cmd.
+			-- This is an implicit general test whether the command is a valid keyword.
+			cmd := type_command'value( cmd_prefix & slice(line,cursor,end_of_cmd) );
 
 			-- update cursor
 			cursor := end_of_cmd;
 
+			-- save command on stack
 			command_stack.push(cmd);
 
-			verify_cmd(cmd);
-			--set_section_flag(cmd);
+			verify_cmd;
 
  			put_line("LEVEL" & natural'image(command_stack.depth)); 
--- 				& " : cmd " & to_string(cmd));
-			put_line(" INIT CMD " & to_string(cmd));
+			put_line(" INIT " & strip_prefix(cmd));
 
 			exception
 				when constraint_error =>
 					put_line(message_error & "line" 
 						& positive'image(line_counter) & " : "
 						& "invalid keyword '"
-						& to_string(cmd) & "'");
+						& strip_prefix(cmd) & "'");
 					raise;
 		end read_cmd;
 
@@ -327,33 +336,27 @@ procedure impkicad is
 				cursor := end_of_arg;
 			end if;
 
-			--put_line("  arg " & to_string(arg));
 
-
-			-- CS: verify arg -- remove from flow-chart ?
-			-- CS: apply cmd + arg -- remove from flow-chart ?
 		end read_arg;
 
 		procedure exec_cmd is
 		begin
 			
-			--if entered_version then
--- 			if cmd = "version" then
--- 				put_line("section version: " & to_string(cmd) & " " & to_string(arg));
--- 				entered_version := false;
--- 			end if;
--- 
--- 			--if entered_components then
-
-			
 			-- pop last command from stack
 			cmd := command_stack.pop;
-			put_line(" EXEC CMD " & to_string(cmd));
+			put_line(" EXEC " & strip_prefix(cmd));
 
-			if cmd = "components" then
-				put_line("section components left");
-				entered_components := false;
-			end if;
+			case cmd is
+				when cmd_version =>
+					netlist_version := type_netlist_version'value(to_string(arg));
+					put_line("netlist version " & type_netlist_version'image(netlist_version));
+					
+				when cmd_components =>
+					put_line("section components left");
+					entered_components := false;
+
+				when others => null;
+			end case;
 
 
 		end exec_cmd;
