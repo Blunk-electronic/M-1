@@ -1,6 +1,6 @@
 (export (version D)
   (design
-    (source /home/luno/git/BEL/kicad-training/projects/transmission_line.sch)
+    (source /home/xyz/tmp/transmission_line.sch)
     (date "Fri 23 Dec 2016 05:55:34 PM CET")
     (tool "Eeschema 4.0.4-stable")
     (sheet (number 1) (name /) (tstamps /)
