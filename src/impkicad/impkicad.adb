@@ -28,6 +28,7 @@
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --   NOTE: This importer has been tested with kicad v4
+--	 DOCUMENTION: http://www.blunk-electronic.de/pdf/how_to_parse_the_kicad_netlist.pdf
 --
 --   history of changes:
 --
@@ -86,52 +87,52 @@ procedure impkicad is
 	
 	line_counter : natural := 0; -- the line number in the given kicad netlist file
 
-	-- These are section names used in the kicad netlist. Since some of them conflict with 
-	-- already reserved GNAT keywords, we prepend a prefix "cmd_".
-	cmd_prefix : constant string (1..4) := "cmd_";
-	type type_command is (
-		cmd_export,
-		cmd_version,
-		cmd_design,		
-		cmd_source,
-		cmd_date,
-		cmd_tool,
-		cmd_sheet,
-		cmd_number,
-		cmd_name,
-		cmd_tstamps,
-		cmd_title_block,
-		cmd_title,
-		cmd_company,
-		cmd_rev,
-		cmd_comment,
-		cmd_value,
-		cmd_components,
-		cmd_comp,
-		cmd_ref,
-		cmd_footprint,
-		cmd_libsource, cmd_lib, cmd_part,
-		cmd_sheetpath, cmd_names,
-        cmd_tstamp,
-        cmd_libparts, cmd_libpart,
-        cmd_description,
-        cmd_footprints, cmd_fp,
-        cmd_fields, cmd_field,
-        cmd_pins, cmd_pin, cmd_num, cmd_type,
-        cmd_libraries, cmd_library, cmd_logical, cmd_uri,
-        cmd_nets, cmd_net, cmd_code, cmd_node
+	-- These are section names (or keywords) used in the kicad netlist. Since some of them conflict with 
+	-- already reserved GNAT keywords, we prepend a prefix "sec_". Sometimes the prefix must be stripped
+	-- in order to get the original keyword back.
+	sec_prefix : constant string (1..4) := "sec_";
+	type type_section is (
+		sec_export,
+		sec_version,
+		sec_design,		
+		sec_source,
+		sec_date,
+		sec_tool,
+		sec_sheet,
+		sec_number,
+		sec_name,
+		sec_tstamps,
+		sec_title_block,
+		sec_title,
+		sec_company,
+		sec_rev,
+		sec_comment,
+		sec_value,
+		sec_components,
+		sec_comp,
+		sec_ref,
+		sec_footprint,
+		sec_libsource, sec_lib, sec_part,
+		sec_sheetpath, sec_names,
+        sec_tstamp,
+        sec_libparts, sec_libpart,
+        sec_description,
+        sec_footprints, sec_fp,
+        sec_fields, sec_field,
+        sec_pins, sec_pin, sec_num, sec_type,
+        sec_libraries, sec_library, sec_logical, sec_uri,
+        sec_nets, sec_net, sec_code, sec_node
 		);
 	
 	procedure read_netlist is
 	-- Reads the given netlist file.
 
-		-- Round brackets are used throuhout the netlist in order to nest
+		-- Round brackets are used througout the netlist in order to nest
 		-- sections:
 		ob : constant character := '(';
 		cb : constant character := ')';
 
-		-- Here we define the set of characters that terminate a command or an argument.
-		--char_seq : constant string (1..4) := latin_1.space & latin_1.ht & latin_1.lf & ')'; -- no need any more
+		-- Here we define the set of characters that terminate a section or an argument.
 		-- When a line has been fetched from file the horizontal tabs are replaced by space.
 		-- Line-feeds are already removed by get_line. So we have to watch out for
 		-- characters space and ')'.
@@ -139,12 +140,12 @@ procedure impkicad is
 		term_char_set : character_set := to_set(term_char_seq);
 
 		line : unbounded_string; -- the line being processed
-		cursor : natural; -- the position of the cursor
+		cursor : natural; -- the position of the cursor within the line
 
-		-- instantiate the command stack. 
+		-- instantiate the sections/keyword stack. 
 		-- We assume there is no deeper hierarchy than 20 currently. CS: increase if necessary.
-		package command_stack is new stack_lifo(max => 20, item => type_command);
-        --use command_stack;
+		package sections_stack is new stack_lifo(max => 20, item => type_section);
+        --use sections_stack;
 
 		procedure get_next_line is
 		-- Fetches a new line. 
@@ -198,7 +199,7 @@ procedure impkicad is
 -- 					: boolean := false;
 
 
-		cmd : type_command;
+		section : type_section;
 		arg : unbounded_string; -- here the argument goes finally
 
 		-- These are scratch variables used when reading devices, pins and nets:
@@ -209,14 +210,14 @@ procedure impkicad is
 		list_of_pins: m1_import.type_list_of_pins.vector;
 		net			: m1_import.type_net;
 
-		function strip_prefix (cmd : in type_command) return string is
-		-- Removes the prefix from given command and returns the command as lowercase string.
+		function strip_prefix (section : in type_section) return string is
+		-- Removes the prefix from given type_section and returns the section name as lowercase string.
 		begin
-			return to_lower( type_command'image(cmd)
+			return to_lower( type_section'image(section)
 				(
-				cmd_prefix'length+1 			-- from character after cmd_prefix
+				sec_prefix'length+1 			-- from character after sec_prefix
 				..								-- to
-				type_command'image(cmd)'length	-- last character of cmd
+				type_section'image(section)'length	-- last character of section
 				)); 
 		end strip_prefix;
 
@@ -234,33 +235,33 @@ procedure impkicad is
 			end if;
 		end write_pinlist;
 		
-		procedure verify_cmd is
-		-- Verifies if command is allowed at this level. CS
-		-- Verifies if command is among allowed subcommands. CS
+		procedure verify_section is
+		-- Verifies if section/keyword is allowed at this level. CS
+		-- Verifies if section/keyword is among allowed subsections. CS
 		
-			--level : natural := command_stack.depth;
+			--level : natural := sections_stack.depth;
 
 			procedure error_on_invalid_level is
 			begin
 				put_line(message_error & "line" 
 					& positive'image(line_counter) & " : "
 					& "keyword '"
-					& strip_prefix(cmd) & "'"
+					& strip_prefix(section) & "'"
 					& " not allowed in this level");
 				raise constraint_error;
 			end error_on_invalid_level;
 
-		begin -- verify_cmd
-			case cmd is
+		begin -- verify_section
+			case section is
 
--- 				when cmd_export => 
+-- 				when sec_export => 
 -- 					if depth = 1 then
 -- 						entered_export := true;
 -- 					else
 -- 						error_on_invalid_level;
 -- 					end if;
 
-				when cmd_components =>
+				when sec_components =>
 -- 					if depth = 2 then
 -- 						entered_components := true;
 						put_line("reading devices ...");
@@ -268,48 +269,48 @@ procedure impkicad is
 -- 						error_on_invalid_level;
 -- 					end if;
 
-				when cmd_nets =>
+				when sec_nets =>
 						put_line("reading nets ...");
 
 
 				when others => null;
 
 			end case;
-		end verify_cmd;
+		end verify_section;
 
 
-		procedure read_cmd is 
-		-- Reads the command from current cursor position until termination
+		procedure read_section is 
+		-- Reads the section name from current cursor position until termination
 		-- character or its last character.
-		-- Stores the command on command_stack.
-			end_of_cmd : integer;  -- may become negative if no terminating character present
+		-- Stores the section name on sections_stack.
+			end_of_kw : integer;  -- may become negative if no terminating character present
 		begin
-			--put_line("cmd start at: " & natural'image(cursor));
+			--put_line("kw start at: " & natural'image(cursor));
 
 			-- get position of last character
-			end_of_cmd := index(source => line, from => cursor, set => term_char_set) -1;
+			end_of_kw := index(source => line, from => cursor, set => term_char_set) -1;
 
-			-- if no terminating character found, end_of_cmd assumes length of line
-			if end_of_cmd = -1 then
-				end_of_cmd := length(line);
+			-- if no terminating character found, end_of_kw assumes length of line
+			if end_of_kw = -1 then
+				end_of_kw := length(line);
 			end if;
 
-			--put_line("cmd end at  : " & positive'image(end_of_cmd));
+			--put_line("kw end at  : " & positive'image(end_of_kw));
 
-			-- Compose command from cursor..end_of_cmd.
-			-- This is an implicit general test whether the command is a valid keyword.
-			cmd := type_command'value( cmd_prefix & slice(line,cursor,end_of_cmd) );
+			-- Compose section name from cursor..end_of_kw.
+			-- This is an implicit general test whether the keyword is a valid keyword.
+			section := type_section'value( sec_prefix & slice(line,cursor,end_of_kw) );
 
 			-- update cursor
-			cursor := end_of_cmd;
+			cursor := end_of_kw;
 
-			-- save command on stack
-			command_stack.push(cmd);
+			-- save section name on stack
+			sections_stack.push(section);
 
-			verify_cmd;
+			verify_section;
 
- 			--put_line("LEVEL" & natural'image(command_stack.depth)); 
-			--put_line(" INIT " & strip_prefix(cmd));
+ 			--put_line("LEVEL" & natural'image(sections_stack.depth)); 
+			--put_line(" INIT " & strip_prefix(section));
 
 			exception
                 when constraint_error =>
@@ -318,14 +319,14 @@ procedure impkicad is
                         text => message_error & "line" 
                             & positive'image(line_counter) & " : "
                             & "invalid keyword '"
-                            & slice(line,cursor,end_of_cmd) & "'",
+                            & slice(line,cursor,end_of_kw) & "'",
                         console => true);
 					raise;
-		end read_cmd;
+		end read_section;
 
 		procedure read_arg is
-		-- Reads the argument of a command.
-		-- Mostly the argument is separated from the command by space.
+		-- Reads the argument of a section (or keyword).
+		-- Mostly the argument is separated from the section name by space.
 		-- Some arguments are wrapped in quotations.
 		-- Leaves the cursor at the position of the last character of the argument.
 		-- If the argument was enclosed in quotations the cursor is left at
@@ -381,41 +382,41 @@ procedure impkicad is
 
 		end read_arg;
 
-		procedure exec_cmd is
+		procedure exec_section is
 		begin
-			-- pop last command from stack
-			-- That is the command encountered after the last opening bracket.
+			-- Pop last section name from stack.
+			-- That is the section name encountered after the last opening bracket.
 			-- For example: When the closing bracket of a line like "(value NetChanger)" is reached,
-			-- the command popped from stack is "value".
-			cmd := command_stack.pop;
-			--put_line(" EXEC " & strip_prefix(cmd));
+			-- the section name popped from stack is "value".
+			section := sections_stack.pop;
+			--put_line(" EXEC " & strip_prefix(section));
 
-			case cmd is
+			case section is
 
 			-- GENERAL STUFF
-				when cmd_version =>
+				when sec_version =>
 					netlist_version := type_netlist_version'value(to_string(arg));
 					put_line("netlist version " & type_netlist_version'image(netlist_version));
 
 			-- DEVICES
-                when cmd_components =>
+                when sec_components =>
                     null;
 					put_line("reading devices done");
 
-				when cmd_ref =>
+				when sec_ref =>
 					--put_line(standard_output, to_string(arg));
 					device_name := to_bounded_string(to_string(arg));
 					pin.name_device := to_bounded_string(to_string(arg));
 					
-				when cmd_value =>
+				when sec_value =>
 					--put_line(standard_output, to_string(arg));
 					device.value := to_bounded_string(to_string(arg));
 
-				when cmd_footprint =>
+				when sec_footprint =>
 					--put_line(standard_output, to_string(arg));
 					device.packge := to_bounded_string(to_string(arg));
 
-				when cmd_comp =>
+				when sec_comp =>
                     put_line(
                         " device " & to_string(device_name) 
                         & " value " & to_string(device.value)
@@ -428,25 +429,25 @@ procedure impkicad is
 						new_item	=> device);
 
 			-- NETS
-                when cmd_nets =>
+                when sec_nets =>
                     null;
                     put_line("reading nets done");
 
-                when cmd_name =>
+                when sec_name =>
                     net_name := to_bounded_string(to_string(arg));
 
--- 				when cmd_ref =>
+-- 				when sec_ref =>
 -- 					pin.device_name := to_bounded_string(to_string(arg));
 
-				when cmd_pin =>
+				when sec_pin =>
 					pin.name_pin := to_bounded_string(to_string(arg));
 	
-				when cmd_node =>
+				when sec_node =>
 					-- append pin to list_of_pins and update pin_count (for statistics)
 					append(list_of_pins, pin);
 					pin_count := pin_count + 1;
 					
-				when cmd_net =>
+				when sec_net =>
                     put(" " & to_string(net_name));
 					write_pinlist;
 					
@@ -464,7 +465,7 @@ procedure impkicad is
 			end case;
 
 
-		end exec_cmd;
+		end exec_section;
 			
 	begin -- read_netlist
 		write_message (
@@ -475,7 +476,7 @@ procedure impkicad is
 		open (file => file_cad_netlist, mode => in_file, name => to_string(name_file_cad_netlist));
 		set_input(file_cad_netlist);
 
-		command_stack.init;
+		sections_stack.init;
 		get_next_line;
 		cursor := index(source => line, pattern => 1 * ob);
 		
@@ -483,7 +484,7 @@ procedure impkicad is
 			
 			<<label_1>>
 				p1; -- cursor at pos of next char
-				read_cmd; -- cursor at end of cmd
+				read_section; -- cursor at end of section
 				p1; -- cursor at pos of next char
 				if element(line, cursor) = ob then goto label_1; end if;
 			<<label_3>>
@@ -496,8 +497,8 @@ procedure impkicad is
 					raise constraint_error;
 				end if;
 			<<label_2>>
-				exec_cmd;
-				if command_stack.depth = 0 then exit; end if;
+				exec_section;
+				if sections_stack.depth = 0 then exit; end if;
 				p1;
 
 				-- Test for cb, ob or other character:
@@ -506,7 +507,7 @@ procedure impkicad is
 					-- If closing bracket after argument. example: (libpart (lib conn) (part CONN_01X02)
 					when cb => goto label_2;
 
-					-- If another command at a deeper level follows. example: (lib conn)
+					-- If another section at a deeper level follows. example: (lib conn)
 					when ob => goto label_1;
 
 					-- In case an argument not enclosed in brackets 
