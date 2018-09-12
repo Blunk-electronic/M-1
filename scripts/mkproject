@@ -2,7 +2,7 @@
 
 set -e
 
-version=020
+version=021
 install_dir=$HOME/.M-1/snippets
 
 echo project creator version $version;
@@ -40,7 +40,7 @@ mkdir $project_name/scripts;
 mkdir $project_name/msg;
 mkdir $project_name/messages;
 
-echo "Project description:" > $project_name/proj_desc.txt
+echo "Project description:" > $project_name/project_description.txt
 
 cp $install_dir/scanpath.txt $project_name/$project_name.udb
 cp $install_dir/test_init_general.txt $project_name/setup/
