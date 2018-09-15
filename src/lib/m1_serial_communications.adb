@@ -72,51 +72,51 @@ package body m1_serial_communications is
 
 		-- COMPUTE HAMMING CODE BITS EDC[3:0]
 		-- edc[3]
-		edc := edc + 8 * (
-				(byte and 16#80#) / 128 xor -- bit 7
-				(byte and 16#40#) /  64 xor -- bit 6
-				(byte and 16#10#) /  16 xor -- bit 4
-				(byte and 16#08#) /   8 xor -- bit 3
-				(byte and 16#02#) /   2);   -- bit 1
-
-		-- edc[2]
-		edc := edc + 4 * (
-				(byte and 16#80#) / 128 xor -- bit 7
-				(byte and 16#20#) /  32 xor -- bit 5
-				(byte and 16#10#) /  16 xor -- bit 4
-				(byte and 16#04#) /   4 xor -- bit 2
-				(byte and 16#02#) /   2);   -- bit 1
-
-		-- edc[1]
-		edc := edc + 2 * (
-				(byte and 16#40#) /  64 xor -- bit 6
-				(byte and 16#20#) /  32 xor -- bit 5
-				(byte and 16#10#) /  16 xor -- bit 4
-				(byte and 16#01#) /   1);   -- bit 0
-
-		-- edc[0]
-		edc := edc + 1 * (
-				(byte and 16#08#) /   8 xor -- bit 3
-				(byte and 16#04#) /   4 xor -- bit 2
-				(byte and 16#02#) /   2 xor -- bit 1
-				(byte and 16#01#) /   1);   -- bit 0
-		
-		unsigned_8'write (serial_if'access, edc); -- send hamming code
+-- 		edc := edc + 8 * (
+-- 				(byte and 16#80#) / 128 xor -- bit 7
+-- 				(byte and 16#40#) /  64 xor -- bit 6
+-- 				(byte and 16#10#) /  16 xor -- bit 4
+-- 				(byte and 16#08#) /   8 xor -- bit 3
+-- 				(byte and 16#02#) /   2);   -- bit 1
+-- 
+-- 		-- edc[2]
+-- 		edc := edc + 4 * (
+-- 				(byte and 16#80#) / 128 xor -- bit 7
+-- 				(byte and 16#20#) /  32 xor -- bit 5
+-- 				(byte and 16#10#) /  16 xor -- bit 4
+-- 				(byte and 16#04#) /   4 xor -- bit 2
+-- 				(byte and 16#02#) /   2);   -- bit 1
+-- 
+-- 		-- edc[1]
+-- 		edc := edc + 2 * (
+-- 				(byte and 16#40#) /  64 xor -- bit 6
+-- 				(byte and 16#20#) /  32 xor -- bit 5
+-- 				(byte and 16#10#) /  16 xor -- bit 4
+-- 				(byte and 16#01#) /   1);   -- bit 0
+-- 
+-- 		-- edc[0]
+-- 		edc := edc + 1 * (
+-- 				(byte and 16#08#) /   8 xor -- bit 3
+-- 				(byte and 16#04#) /   4 xor -- bit 2
+-- 				(byte and 16#02#) /   2 xor -- bit 1
+-- 				(byte and 16#01#) /   1);   -- bit 0
+-- 		
+-- 		unsigned_8'write (serial_if'access, edc); -- send hamming code
 	end interface_write;
 
 	
 	function interface_read return unsigned_8 is
 		byte 		: unsigned_8;
-		edc			: unsigned_8;
+-- 		edc			: unsigned_8;
 	
-		syndrome	: unsigned_8 := 0; -- low nibble used only
+-- 		syndrome	: unsigned_8 := 0; -- low nibble used only
 		rx_error 	: boolean := false; -- true when error detected
 	begin
 		-- RECEIVE DATA BYTE
 		unsigned_8'read (serial_if'access, byte);
 
 		-- RECEIVE EDC BYTE
-		unsigned_8'read (serial_if'access, edc);
+-- 		unsigned_8'read (serial_if'access, edc);
 
 		-- edac testing
 --		byte := byte and 2#01111111#; -- simulate bit x stuck at zero
@@ -124,113 +124,113 @@ package body m1_serial_communications is
 		
 		-- DECODE EDC (HAMMING CODE)
 		-- syndrome[0]
-		syndrome := syndrome + 1 * (
-					(edc 	and 16#08#) /   8 xor -- edc bit 3
-					(byte 	and 16#80#) / 128 xor -- data bit 7
-					(byte 	and 16#40#) /  64 xor -- data bit 6
-					(byte 	and 16#10#) /  16 xor -- data bit 4
-					(byte 	and 16#08#) /   8 xor -- data bit 3
-					(byte 	and 16#02#) /   2);   -- data bit 1
-
-		-- syndrome[1]
-		syndrome := syndrome + 2 * (
-					(edc 	and 16#04#) /   4 xor -- edc bit 2
-					(byte 	and 16#80#) / 128 xor -- data bit 7
-					(byte 	and 16#20#) /  32 xor -- data bit 5
-					(byte 	and 16#10#) /  16 xor -- data bit 4
-					(byte 	and 16#04#) /   4 xor -- data bit 2
-					(byte 	and 16#02#) /   2);   -- data bit 1
-
-		-- syndrome[2]
-		syndrome := syndrome + 4 * (
-					(edc 	and 16#02#) /   2 xor -- edc bit 1
-					(byte 	and 16#40#) /  64 xor -- data bit 6
-					(byte 	and 16#20#) /  32 xor -- data bit 5
-					(byte 	and 16#10#) /  16 xor -- data bit 4
-					(byte 	and 16#01#) /   1);   -- data bit 0
-
-		-- syndrome[3]
-		syndrome := syndrome + 8 * (
-					(edc 	and 16#01#) /   1 xor -- edc bit 0
-					(byte 	and 16#08#) /   8 xor -- data bit 3
-					(byte 	and 16#04#) /   4 xor -- data bit 2
-					(byte 	and 16#02#) /   2 xor -- data bit 1
-					(byte 	and 16#01#) /   1);   -- data bit 0
-
-		-- correct rx errors
-		case syndrome is
-			when 0 => 
-				null; -- everything fine
-				
-			when 1 | 2 | 4 | 8 => 
-				rx_error := true; -- syndrome error but no data correction required
-
-			when 3 => 
-				rx_error := true; -- data error, bit 7 corrupted -> must be inverted: 
-				if (byte and 2#10000000#) > 0 then -- if bit set
-					byte := byte and 2#01111111#; -- clear bit position
-				else
-					byte := byte or  2#10000000#; -- set bit position
-				end if;
-
-			when 5 => 
-				rx_error := true; -- data error, bit 6 corrupted -> must be inverted: 
-				if (byte and 2#01000000#) > 0 then -- if bit set
-					byte := byte and 2#10111111#; -- clear bit position
-				else
-					byte := byte or  2#01000000#; -- set bit position
-				end if;
-
-			when 6 => 
-				rx_error := true; -- data error, bit 5 corrupted -> must be inverted: 
-				if (byte and 2#00100000#) > 0 then -- if bit set
-					byte := byte and 2#11011111#; -- clear bit position
-				else
-					byte := byte or  2#00100000#; -- set bit position
-				end if;
-				
-			when 7 => 
-				rx_error := true; -- data error, bit 4 corrupted -> must be inverted: 
-				if (byte and 2#00010000#) > 0 then -- if bit set
-					byte := byte and 2#11101111#; -- clear bit position
-				else
-					byte := byte or  2#00010000#; -- set bit position
-				end if;
-
-			when 9 => 
-				rx_error := true; -- data error, bit 3 corrupted -> must be inverted: 
-				if (byte and 2#00001000#) > 0 then -- if bit set
-					byte := byte and 2#11110111#; -- clear bit position
-				else
-					byte := byte or  2#00001000#; -- set bit position
-				end if;
-
-			when 10 => 
-				rx_error := true; -- data error, bit 2 corrupted -> must be inverted: 
-				if (byte and 2#00000100#) > 0 then -- if bit set
-					byte := byte and 2#11111011#; -- clear bit position
-				else
-					byte := byte or  2#00000100#; -- set bit position
-				end if;
-
-			when 11 => 
-				rx_error := true; -- data error, bit 1 corrupted -> must be inverted: 
-				if (byte and 2#00000010#) > 0 then -- if bit set
-					byte := byte and 2#11111101#; -- clear bit position
-				else
-					byte := byte or  2#00000010#; -- set bit position
-				end if;
-				
-			when 12 => 
-				rx_error := true; -- data error, bit 0 corrupted -> must be inverted: 
-				if (byte and 2#00000001#) > 0 then -- if bit set
-					byte := byte and 2#11111110#; -- clear bit position
-				else
-					byte := byte or  2#00000001#; -- set bit position
-				end if;
-				
-			when others => null; -- CS: count errors ; rx_error := true;
-		end case;
+-- 		syndrome := syndrome + 1 * (
+-- 					(edc 	and 16#08#) /   8 xor -- edc bit 3
+-- 					(byte 	and 16#80#) / 128 xor -- data bit 7
+-- 					(byte 	and 16#40#) /  64 xor -- data bit 6
+-- 					(byte 	and 16#10#) /  16 xor -- data bit 4
+-- 					(byte 	and 16#08#) /   8 xor -- data bit 3
+-- 					(byte 	and 16#02#) /   2);   -- data bit 1
+-- 
+-- 		-- syndrome[1]
+-- 		syndrome := syndrome + 2 * (
+-- 					(edc 	and 16#04#) /   4 xor -- edc bit 2
+-- 					(byte 	and 16#80#) / 128 xor -- data bit 7
+-- 					(byte 	and 16#20#) /  32 xor -- data bit 5
+-- 					(byte 	and 16#10#) /  16 xor -- data bit 4
+-- 					(byte 	and 16#04#) /   4 xor -- data bit 2
+-- 					(byte 	and 16#02#) /   2);   -- data bit 1
+-- 
+-- 		-- syndrome[2]
+-- 		syndrome := syndrome + 4 * (
+-- 					(edc 	and 16#02#) /   2 xor -- edc bit 1
+-- 					(byte 	and 16#40#) /  64 xor -- data bit 6
+-- 					(byte 	and 16#20#) /  32 xor -- data bit 5
+-- 					(byte 	and 16#10#) /  16 xor -- data bit 4
+-- 					(byte 	and 16#01#) /   1);   -- data bit 0
+-- 
+-- 		-- syndrome[3]
+-- 		syndrome := syndrome + 8 * (
+-- 					(edc 	and 16#01#) /   1 xor -- edc bit 0
+-- 					(byte 	and 16#08#) /   8 xor -- data bit 3
+-- 					(byte 	and 16#04#) /   4 xor -- data bit 2
+-- 					(byte 	and 16#02#) /   2 xor -- data bit 1
+-- 					(byte 	and 16#01#) /   1);   -- data bit 0
+-- 
+-- 		-- correct rx errors
+-- 		case syndrome is
+-- 			when 0 => 
+-- 				null; -- everything fine
+-- 				
+-- 			when 1 | 2 | 4 | 8 => 
+-- 				rx_error := true; -- syndrome error but no data correction required
+-- 
+-- 			when 3 => 
+-- 				rx_error := true; -- data error, bit 7 corrupted -> must be inverted: 
+-- 				if (byte and 2#10000000#) > 0 then -- if bit set
+-- 					byte := byte and 2#01111111#; -- clear bit position
+-- 				else
+-- 					byte := byte or  2#10000000#; -- set bit position
+-- 				end if;
+-- 
+-- 			when 5 => 
+-- 				rx_error := true; -- data error, bit 6 corrupted -> must be inverted: 
+-- 				if (byte and 2#01000000#) > 0 then -- if bit set
+-- 					byte := byte and 2#10111111#; -- clear bit position
+-- 				else
+-- 					byte := byte or  2#01000000#; -- set bit position
+-- 				end if;
+-- 
+-- 			when 6 => 
+-- 				rx_error := true; -- data error, bit 5 corrupted -> must be inverted: 
+-- 				if (byte and 2#00100000#) > 0 then -- if bit set
+-- 					byte := byte and 2#11011111#; -- clear bit position
+-- 				else
+-- 					byte := byte or  2#00100000#; -- set bit position
+-- 				end if;
+-- 				
+-- 			when 7 => 
+-- 				rx_error := true; -- data error, bit 4 corrupted -> must be inverted: 
+-- 				if (byte and 2#00010000#) > 0 then -- if bit set
+-- 					byte := byte and 2#11101111#; -- clear bit position
+-- 				else
+-- 					byte := byte or  2#00010000#; -- set bit position
+-- 				end if;
+-- 
+-- 			when 9 => 
+-- 				rx_error := true; -- data error, bit 3 corrupted -> must be inverted: 
+-- 				if (byte and 2#00001000#) > 0 then -- if bit set
+-- 					byte := byte and 2#11110111#; -- clear bit position
+-- 				else
+-- 					byte := byte or  2#00001000#; -- set bit position
+-- 				end if;
+-- 
+-- 			when 10 => 
+-- 				rx_error := true; -- data error, bit 2 corrupted -> must be inverted: 
+-- 				if (byte and 2#00000100#) > 0 then -- if bit set
+-- 					byte := byte and 2#11111011#; -- clear bit position
+-- 				else
+-- 					byte := byte or  2#00000100#; -- set bit position
+-- 				end if;
+-- 
+-- 			when 11 => 
+-- 				rx_error := true; -- data error, bit 1 corrupted -> must be inverted: 
+-- 				if (byte and 2#00000010#) > 0 then -- if bit set
+-- 					byte := byte and 2#11111101#; -- clear bit position
+-- 				else
+-- 					byte := byte or  2#00000010#; -- set bit position
+-- 				end if;
+-- 				
+-- 			when 12 => 
+-- 				rx_error := true; -- data error, bit 0 corrupted -> must be inverted: 
+-- 				if (byte and 2#00000001#) > 0 then -- if bit set
+-- 					byte := byte and 2#11111110#; -- clear bit position
+-- 				else
+-- 					byte := byte or  2#00000001#; -- set bit position
+-- 				end if;
+-- 				
+-- 			when others => null; -- CS: count errors ; rx_error := true;
+-- 		end case;
 
 		-- COUNT RX ERRORS
 		if rx_error then
