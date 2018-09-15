@@ -173,6 +173,7 @@ package m1_firmware is
 	bsc_text_state_tap					: constant string (1..9)  := "tap [2:1]";
 	bsc_text_scanport_bits				: constant string (1..19) := "scanport bits [2:1]";
 	bsc_text_state_i2c_master			: constant string (1..16) := "state i2c master";
+	bsc_text_address_rf_out				: constant string (1..14) := "address rf out";
 	bsc_text_ram_address_ex_out			: constant string (1..20) := "RAM address exec out";
 	--bsc_text_ram_address_ex_in			: constant string (1..20) := "RAM address exec in ";
 	bsc_text_output_ram_data			: constant string (1..15) := "output RAM data";	
@@ -204,6 +205,7 @@ package m1_firmware is
 	bsc_register_scanport_bits_1_2		: unsigned_16; -- port 1 lowbyte. TDI,EXP,MASK,FAIL,TRST,TDO,TMS,TCK
 	bsc_register_state_i2c_master		: unsigned_8;
 	bsc_register_ram_address_ex_out		: unsigned_32; -- actually 24 bit wide
+	bsc_register_address_rf_out			: unsigned_32 := 0; -- actually 24 bit wide
 	--	bsc_register_ram_address_ex_in		: unsigned_32; -- actually 24 bit wide	
 	bsc_register_output_ram_data		: unsigned_8;
 	-- bsc_register_input_ram_data			: unsigned_8;
