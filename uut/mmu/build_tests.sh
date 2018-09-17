@@ -24,6 +24,7 @@ bsmcl chkpsn $database_sram_2
 # Clean up journal in order to save memory in boundary scan controller.
 [ -e setup/journal.txt ] && rm setup/journal.txt
 
+
 # infrastructure and interconnect tests
 bsmcl generate mmu_default.udb infrastructure infra
 bsmcl compile mmu_default.udb infra
