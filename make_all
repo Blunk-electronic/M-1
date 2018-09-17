@@ -10,7 +10,7 @@ procedure_make()
 	[ $? -ne 0 ] && exit 1	
 	make clean # clean up
 	#[ $? -ne 0 ] && exit 1			
-	make # compile
+	make -j 4 # compile
 	[ $? -ne 0 ] && exit 1
 	make install # install
 	[ $? -ne 0 ] && exit 1	
@@ -47,7 +47,7 @@ procedure_make mkoptions
 procedure_make mktoggle
 procedure_make mkclock
 #procedure_make mkvmod
-procedure_gnatmake bsmgui
+#procedure_gnatmake bsmgui
 
 exit
 echo done
