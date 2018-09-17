@@ -2592,12 +2592,11 @@ package body m1_test_gen_and_exec is
 		interface_write(sercom_addr_addr_ram_c); -- highbyte
 		bsc_register_ram_address_ex_out := bsc_register_ram_address_ex_out + 256 * 256 * unsigned_32(interface_read);
 
-		put_line ("XXXXXXXXXXX");
-		-- output RAM data
-		interface_write(sercom_head_read);
-		interface_write(sercom_addr_data);
-		bsc_register_output_ram_data := interface_read; -- increments address output by rf
-
+        -- output RAM data
+--      interface_write(sercom_head_read);
+--      interface_write(sercom_addr_data);
+--      bsc_register_output_ram_data := interface_read; -- increments address output by rf
+        
 		-- CS: input RAM data
 		
 		-- firmware
@@ -2639,7 +2638,7 @@ package body m1_test_gen_and_exec is
 			put_line(bsc_text_state_i2c_master & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_state_i2c_master), base => 16, length => 2));
 			put_line (bsc_text_address_rf_out & row_separator_0 & natural_to_string (natural_in => natural (bsc_register_address_rf_out), base => 16, length => 8));
 			put_line(bsc_text_ram_address_ex_out & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_ram_address_ex_out), base => 16, length => 8));
-			put_line(bsc_text_output_ram_data & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_output_ram_data), base => 16, length => 2));
+			--put_line(bsc_text_output_ram_data & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_output_ram_data), base => 16, length => 2));
 			put_line(bsc_text_firmware_executor & row_separator_0 & natural_to_string(natural_in => natural(bsc_register_firmware_executor), base => 16, length => 4));
 		end if;
 
