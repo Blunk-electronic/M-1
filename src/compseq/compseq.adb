@@ -2939,7 +2939,8 @@ procedure compseq is
 	begin -- unknown_yet
 		--	set_output(standard_output);
 		-- 		put_line("found" & natural'image(summary.scanport_ct) & " scanpaths(s)");
-		put_line("found" & count_type'image(length(list_of_scanports)) & " scanport(s)");		
+        --put_line("found" & count_type'image(length(list_of_scanports)) & " scanport(s)");
+        put_line("found" & natural'image (number_of_active_scanports) & " active scanport(s)");		
 
 		prog_position	:= 210;
 		for sp in 1..scanport_count_max loop -- loop for every physical available scanport (regardless if it is active or not)
@@ -3273,8 +3274,11 @@ begin
 	-- the total number of test steps (inc. low level commands) is test_step_id divided by scanpath_ct.
 	-- why ?: test_step_id is incremented on every test step per scanpath. since all scanpaths have equal test step counts
 	-- it must be divided by scanpath_ct to obtain the real number of steps.
-	-- 	put_line("test steps total:" & positive'image(test_step_id/summary.scanport_ct) & " (incl. low level commands)");
-	put_line("test steps total:" & positive'image(test_step_id/ positive(length(list_of_scanports))) & " (incl. low level commands)");	
+    -- 	put_line("test steps total:" & positive'image(test_step_id/summary.scanport_ct) & " (incl. low level commands)");
+    --put_line("test steps total:" & positive'image (test_step_id) & " (incl. low level commands)");
+    --put_line("scanpaths  total:" & positive'image (positive (length (list_of_scanports))));    
+    --put_line("test steps total:" & positive'image(test_step_id/ positive(length(list_of_scanports))) & " (incl. low level commands)");
+    put_line("test steps total:" & positive'image (test_step_id / number_of_active_scanports) & " (incl. low level commands)");
  	while not seq_io_unsigned_byte.end_of_file(file_vector) loop
 
 		-- read byte from vector file
@@ -3285,9 +3289,11 @@ begin
 		-- ct_tmp (starts with 1) serves as pointer to the byte position to be modified
 		case ct_tmp is
 		-- 			when 10 => ubyte_scratch := unsigned_8(test_step_id/summary.scanport_ct); -- write lowbyte of step count
-			when 10 => ubyte_scratch := unsigned_8(test_step_id/ positive(length(list_of_scanports))); -- write lowbyte of step count		
+            --when 10 => ubyte_scratch := unsigned_8(test_step_id/ positive(length(list_of_scanports))); -- write lowbyte of step count
+            when 10 => ubyte_scratch := unsigned_8 (test_step_id / number_of_active_scanports); -- write lowbyte of step count		
 		-- 			when 11 => ubyte_scratch := unsigned_8(shift_right(unsigned_16(test_step_id/summary.scanport_ct),8)); -- write highbyte of step count
-			when 11 => ubyte_scratch := unsigned_8(shift_right(unsigned_16(test_step_id/ positive(length(list_of_scanports))),8)); -- write highbyte of step count			
+            --when 11 => ubyte_scratch := unsigned_8(shift_right(unsigned_16(test_step_id/ positive(length(list_of_scanports))),8)); -- write highbyte of step count
+            when 11 => ubyte_scratch := unsigned_8 (shift_right (unsigned_16 (test_step_id / number_of_active_scanports),8)); -- write highbyte of step count			
 			when others => null; -- other bytes untouched
 		end case;
 		ct_tmp := ct_tmp + 1;
