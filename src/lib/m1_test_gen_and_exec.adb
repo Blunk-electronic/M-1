@@ -1011,7 +1011,7 @@ package body m1_test_gen_and_exec is
 		name_test_netlist := to_bounded_string(to_string(test_name) & "/netlist.txt"); -- compose name of netlist file
 		--put_line("---0---> ");
 		if exists(to_string(name_test_netlist)) then
-			-- read netlist
+            -- read netlist
 			open(
 				file => input_file,
 				mode => in_file,
@@ -1024,7 +1024,7 @@ package body m1_test_gen_and_exec is
 			-- once found, the last net name found must be saved
 			while not end_of_file
 			loop
-				line := to_bounded_string(remove_comment_from_line(get_line));
+                line := to_bounded_string(remove_comment_from_line(get_line));
 				if get_field_count(to_string(line)) > 0 then -- if line contains anything
 
 					if get_field_from_line(to_string(line),1) = "SubSection" and get_field_from_line(to_string(line),2) /= "secondary_nets_of" then
@@ -1034,28 +1034,51 @@ package body m1_test_gen_and_exec is
 					end if;
 
 					if get_field_from_line(to_string(line),1) = to_string(device) then
-						--put_line(line);
-						if 	(to_lower(get_field_from_line(to_string(line),10)) = "input" and type_cell_id'value(get_field_from_line(to_string(line),8)) = bit_pos) or
-							(to_lower(get_field_from_line(to_string(line),18)) = "input" and type_cell_id'value(get_field_from_line(to_string(line),16)) = bit_pos) then
-							-- cs: add more possible fields for input cell, self monitoring cells, ...
-	-- 						new_line;
-	-- 						if secondary_net then
-	-- 							put_line("secondary net : " & net_name);
-	-- 						else
-	-- 							put_line("primary net   : " & net_name);
-	-- 							net_name_primary := net_name;
-	-- 						end if;
-							--put_line("---2---> " & to_string(net_name));
-							exit;
-							-- cs: show pins
-							-- cs: show primary/secondary nets
-						end if;
-					end if;
+--                         put_line (type_line.to_string (line));
+                        case type_line.count (line, "|") is
+                            when 1 =>
+                                if to_lower (get_field_from_line (to_string (line),10)) = "input" then
+                                    if type_cell_id'value (get_field_from_line (to_string (line),8)) = bit_pos then
+                                        exit;
+                                    end if;
+
+-- cs: add more possible fields for input cell, self monitoring cells, ...
+            -- 						new_line;
+            -- 						if secondary_net then
+            -- 							put_line("secondary net : " & net_name);
+            -- 						else
+            -- 							put_line("primary net   : " & net_name);
+            -- 							net_name_primary := net_name;
+            -- 						end if;
+--                                     put_line("---2---> " & to_string(net_name));
+--                                     exit;
+                                    -- cs: show pins
+                                    -- cs: show primary/secondary nets
+                                end if;
+
+                            when 2 =>
+                                if to_lower (get_field_from_line (to_string (line),10)) = "input" then
+                                    if type_cell_id'value (get_field_from_line (to_string (line),8)) = bit_pos then 
+                                        exit;
+                                    end if;
+                                elsif to_lower (get_field_from_line (to_string (line),18)) = "input" then
+									if type_cell_id'value (get_field_from_line (to_string (line),16)) = bit_pos then
+										exit;
+                                    end if;
+                                end if;
+                                
+                            when others => null;
+
+                        end case;
+                        
+                    end if;
 				end if; -- if line contains anything
 			end loop;
 			put_line("net class         : " & type_net_class'image(net_class));
 			-- now, we know the net name and net class
 
+--             put_line ("XXXXXXXXXX");
+            
 			-- step 2:
 			-- find net again by the name found before and find out if it is a primary or secondary net
 			reset(input_file);
