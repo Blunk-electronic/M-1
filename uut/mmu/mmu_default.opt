@@ -113,7 +113,7 @@ Section LED7 class NR -- bscan cluster
  EndSubSection
 EndSection
 
-Section /CPU_MREQ class PU -- single bscan net
+Section /CPU_MREQ class EH -- single bscan net
   -- IC101 NA 74LS04 DIL14 11 
   -- IC300 NA XC9536 PLCC-S44 28 PB01_13 | 14 BC_1 INPUT X | 13 BC_1 OUTPUT3 X 12 0 Z
   -- JP404 NA EXT_CTRL&DATA 2X20 22 
@@ -144,21 +144,21 @@ Section /CPU_WR class PU -- single bscan net
   -- RN402 NA 8x10k SIL9 6 
 EndSection
 
-Section /CS_000-800H class NA -- single bscan net
+Section /CS_000-800H class EH -- single bscan net
   -- IC103 NA 74LS00 DIL14 11 
   -- IC200 NA none AM29F040 22 
   -- IC300 NA XC9536 PLCC-S44 2 PB00_00 | 107 BC_1 INPUT X | 106 BC_1 OUTPUT3 X 105 0 Z
   -- JP403 NA MON2 2X20 18 
 EndSection
 
-Section /CS_1000-7000H class NA -- single bscan net
+Section /CS_1000-7000H class EH -- single bscan net
   -- IC102 NA 74LS10 DIL14 12 
   -- IC202 NA UM62256_DIP DIL28-6 20 
   -- IC300 NA XC9536 PLCC-S44 3 PB00_01 | 104 BC_1 INPUT X | 103 BC_1 OUTPUT3 X 102 0 Z
   -- JP403 NA MON2 2X20 20 
 EndSection
 
-Section /CS_8000H-EOR class NA -- single bscan net
+Section /CS_8000H-EOR class EH -- single bscan net
   -- IC102 NA 74LS10 DIL14 8 
   -- IC201 NA none AM29F040 22 
   -- IC203 NA UM62256_DIP DIL28-6 20 
@@ -166,14 +166,14 @@ Section /CS_8000H-EOR class NA -- single bscan net
   -- JP403 NA MON2 2X20 22 
 EndSection
 
-Section /CT_PL class NA -- single bscan net
+Section /CT_PL class EH -- single bscan net
   -- IC301 NA XC9536 PLCC-S44 28 PB01_13 | 14 BC_1 INPUT X | 13 BC_1 OUTPUT3 X 12 0 Z
   -- IC302 NA 74LS193 DIL16 11 
   -- JP403 NA MON2 2X20 10 
   -- RN300 NA 8x1k8 SIL9 2 
 EndSection
 
-Section /DRV_EN class PU -- single bscan net
+Section /DRV_EN class PD -- single bscan net
   -- IC301 NA XC9536 PLCC-S44 27 PB01_14 | 11 BC_1 INPUT X | 10 BC_1 OUTPUT3 X 9 0 Z
   -- IC303 NA SN74BCT8240ADWR SOIC24 1 OE_NEG1 | 17 BC_1 INPUT 1
   -- IC303 NA SN74BCT8240ADWR SOIC24 24 OE_NEG2 | 16 BC_1 INPUT 1
@@ -181,7 +181,7 @@ Section /DRV_EN class PU -- single bscan net
   -- RN301 NA 8x220 SIL9 3 
 EndSection
 
-Section /OSC_HALT class EH -- single bscan net -- enables on-board oscillator
+Section /OSC_HALT class PU -- single bscan net -- enables on-board oscillator
   -- IC103 NA 74LS00 DIL14 2 
   -- IC301 NA XC9536 PLCC-S44 26 PB01_15 | 8 BC_1 INPUT X | 7 BC_1 OUTPUT3 X 6 0 Z
   -- JP403 NA MON2 2X20 16 

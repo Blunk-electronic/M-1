@@ -19,15 +19,15 @@ bsmcl chkpsn $database_default
 
 
 # infrastructure and interconnect tests
-bsmcl generate $database_default infrastructure infra
-bsmcl compile $database_default infra
-bsmcl load infra
+#bsmcl generate $database_default infrastructure infra
+#bsmcl compile $database_default infra
+#bsmcl load infra
 #
 bsmcl generate $database_default interconnect intercon
 bsmcl compile $database_default intercon
 bsmcl load intercon
 
-bsmcl run infra
+#bsmcl run infra
 bsmcl run intercon
 
 exit
