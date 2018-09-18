@@ -2179,7 +2179,7 @@ procedure compseq is
 							-- PROCESSING SECTION OPTIONS BEGIN
 
 							-- NOTE: if a particular option missing -> default to option as specified for type type_scanpath_options (see m1_internal.ads)
-							--put_line(extended_string.to_string(to_string(line_of_file)));
+							--put_line (standard_output, to_string (line_of_file));
 
 							-- search for option on_fail
 							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.on_fail then
@@ -2220,7 +2220,6 @@ procedure compseq is
 							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.voltage_out_port_1 then
 								so.voltage_out_port_1 := type_voltage_out'value(get_field_from_line(to_string(line_of_file),2));
                                 -- check if voltage is supported by bsc
-                                put_line (standard_output, "voltage port 1; " & type_voltage_out'image (so.voltage_out_port_1));
 								if not is_voltage_out_discrete(so.voltage_out_port_1) then
 									raise constraint_error;
 								end if;
@@ -2262,11 +2261,6 @@ procedure compseq is
 									raise constraint_error;
 								end if;
 							end if;
-
-							-- search for option voltage_out_port_2. if not found, default to lowest value
-							--if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.voltage_out_port_2 then
-							--	so.voltage_out_port_2 := type_voltage_out'value(get_field_from_line(to_string(line_of_file),2));
-							--end if;
 
 							-- search for option tck_driver_port_2. if not found, use default
 							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.tck_driver_port_2 then
@@ -2311,9 +2305,10 @@ procedure compseq is
 			-- convert frequency to scan clock timer value
 			so.frequency_prescaler_unsigned_8 := frequency_float_to_unsigned_8(so.frequency);
 			
-			-- calculate 8bit values required for DACs (by DAC resolution and full-scale value)
-			-- CS: depends on transeiver hardware
-			-- driver voltages:
+			-- Calculate driver voltages: 
+			-- 8bit values are required for DACs (by DAC resolution and full-scale value)
+			-- NOTE: This depends on transceiver hardware. If transceiver uses MOSFET switches (instead of DACs)
+			-- for voltage regulators, only values for 1.5, 1.8, 2.5, and 3.3V matter.
 			scratch_float := (float(so.voltage_out_port_1) * 255.0)/3.3;
 			so.voltage_out_port_1_unsigned_8 := unsigned_8(natural(scratch_float));
 			scratch_float := (float(so.voltage_out_port_2) * 255.0)/3.3;
