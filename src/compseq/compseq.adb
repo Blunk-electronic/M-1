@@ -2155,7 +2155,8 @@ procedure compseq is
 		end frequency_float_to_unsigned_8;
 		
 	begin
-		reset(file_sequence);
+        --put_line (standard_output, "reading scanpath options ...");
+        reset(file_sequence);
 		line_counter := 0;
 		while not end_of_file
 			loop
@@ -2163,7 +2164,7 @@ procedure compseq is
 				line_of_file := to_bounded_string(remove_comment_from_line(get_line));
 
 				if get_field_count(to_string(line_of_file)) > 0 then -- if line contains anything
-					--put_line(line);
+                    --put_line(line);
 					--Put( Integer'Image( Integer'Value("16#1A2B3C#") ) );  
 					if section_entered then
 						-- once inside section "options", wait for end of section mark
@@ -2172,7 +2173,9 @@ procedure compseq is
 							-- SECTION "OPTIONS" READING DONE.
 							exit;
 
-						else
+                        else
+                            --put_line (standard_output, type_long_string.to_string (line_of_file));
+                            
 							-- PROCESSING SECTION OPTIONS BEGIN
 
 							-- NOTE: if a particular option missing -> default to option as specified for type type_scanpath_options (see m1_internal.ads)
@@ -2216,7 +2219,8 @@ procedure compseq is
 							-- search for option voltage_out_port_1. if not found, default to lowest value
 							if get_field_from_line(to_string(line_of_file),1) = section_scanpath_options_item.voltage_out_port_1 then
 								so.voltage_out_port_1 := type_voltage_out'value(get_field_from_line(to_string(line_of_file),2));
-								-- check if voltage is supported by bsc
+                                -- check if voltage is supported by bsc
+                                put_line (standard_output, "voltage port 1; " & type_voltage_out'image (so.voltage_out_port_1));
 								if not is_voltage_out_discrete(so.voltage_out_port_1) then
 									raise constraint_error;
 								end if;

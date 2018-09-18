@@ -32,6 +32,7 @@
 with m1_firmware;				use m1_firmware;
 --with m1_sercom; 				--use m1_sercom;
 with gnat.serial_communications;	use gnat.serial_communications;
+with ada.text_io;				use ada.text_io;
 
 package body m1_serial_communications is
 
@@ -42,7 +43,7 @@ package body m1_serial_communications is
 		speed	: in data_rate := sercom_speed
 		) is
 		--flow_control 	: flow_control := rts_cts;
-	begin
+    begin
 		open(
 			port	=> serial_if,
 			name	=> port_name(interface_name)
@@ -111,13 +112,18 @@ package body m1_serial_communications is
 	
 		syndrome	: unsigned_8 := 0; -- low nibble used only
 		rx_error 	: boolean := false; -- true when error detected
-	begin
+    begin
+        put_line ("read 0");
+        delay 0.05;
+        
 		-- RECEIVE DATA BYTE
 		unsigned_8'read (serial_if'access, byte);
 
+        put_line ("read 1");
+    
 		-- RECEIVE EDC BYTE
 		unsigned_8'read (serial_if'access, edc);
-
+        
 		-- edac testing
 --		byte := byte and 2#01111111#; -- simulate bit x stuck at zero
 --		byte := byte or  2#00001000#; -- simulate bit x stuck at one
