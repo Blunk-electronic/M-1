@@ -7311,7 +7311,7 @@ package body m1_database is
 -- 				end if;
 				-- complete summary end
 
-			when compile =>
+			when generate | compile => -- both generators and compiler must know active scanpaths
 				mark_active_scanport;
 			
 			when others => null;
