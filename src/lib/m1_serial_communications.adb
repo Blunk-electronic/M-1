@@ -113,13 +113,13 @@ package body m1_serial_communications is
 		syndrome	: unsigned_8 := 0; -- low nibble used only
 		rx_error 	: boolean := false; -- true when error detected
     begin
-        put_line ("read 0");
-        delay 0.05;
+        --put_line ("read 0");
+        --delay 0.05;
         
 		-- RECEIVE DATA BYTE
 		unsigned_8'read (serial_if'access, byte);
 
-        put_line ("read 1");
+        --put_line ("read 1");
     
 		-- RECEIVE EDC BYTE
 		unsigned_8'read (serial_if'access, edc);
