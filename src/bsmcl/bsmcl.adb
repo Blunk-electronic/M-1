@@ -310,7 +310,7 @@ begin
 
 	new_line;
 	put_line(name_system & " Command Line Interface Version "& version);
-	put_line(column_separator_2);
+	put_line("================================================================");
 
 	-- all puts go into the logfile
 	write_log_header;
