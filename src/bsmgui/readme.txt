@@ -15,7 +15,28 @@ Compiling
 gprbuild -P bsmgui.gpr
 
 
+Installing
+----------
+
+-- The binary always goes into the bin directory of $HOME:
+gprinstall -p --prefix=$HOME --mode=usage bsmgui.gpr
+
+
 Cleaning up
 -----------
 
 gprclean
+
+
+Uninstalling
+------------
+
+-- The binary is removed from $HOME/bin:
+gprinstall --uninstall -p --prefix=$HOME --mode=usage bsmgui.gpr
+
+
+Furhter Docs
+------------
+http://docs.adacore.com/gprbuild-docs/pdf/gprbuild_ug.pdf
+https://www.adacore.com/gems/gem-159-gprinstall-part-2
+
