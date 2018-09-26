@@ -1,0 +1,83 @@
+xmlada
+------
+xmlada-xmlada-16.1 entpacken
+
+
+gprbuild
+--------
+
+git clone https://github.com/AdaCore/gprbuild.git
+
+./bootstrap.sh --with-xmlada=../xmlada-xmlada-16.1 --prefix=./bootstrap
+
+in bootstrap/share/gprconfig compilers.xml Abschnitt GNAT editieren:
+-- Beginnt mit
+   <!--   GNAT
+   <compiler_description>
+    <name>GNAT</name> ...
+    
+Abschnitt runtimes ursprünglich:
+
+    <runtimes default="default,kernel,native">
+       <directory group="default" >\.\./lib/gcc(-lib)?/$TARGET/$gcc_version/adalib/</directory>
+       <directory group="default" contents="^rts-">\.\./lib/gcc(-lib)?/$TARGET/$gcc_version/ada_object_path</directory>
+       <directory group="2" >\.\./lib/gcc(-lib)?/$TARGET/$gcc_version/rts-(.*)/adalib/</directory>
+       <directory group="1" >\.\./$TARGET/lib/gnat/(.*)/adalib/</directory>
+    </runtimes>
+
+auf 64bit opensuse tumbleweed ändern nach:
+
+    <runtimes default="default,kernel,native">
+       <directory group="default" >\.\./lib64/gcc(-lib)?/$TARGET/8/adalib/</directory>
+       <directory group="default" contents="^rts-">\.\./lib64/gcc(-lib)?/$TARGET/8/ada_object_path</directory>
+       <directory group="2" >\.\./lib64/gcc(-lib)?/$TARGET/8/rts-(.*)/adalib/</directory>
+       <directory group="1" >\.\./$TARGET/lib/gnat/(.*)/adalib/</directory>
+    </runtimes>
+
+auf 32bit opensuse tumbleweed ändern nach:
+
+    <runtimes default="default,kernel,native">
+       <directory group="default" >\.\./lib/gcc(-lib)?/$TARGET/8/adalib/</directory>
+       <directory group="default" contents="^rts-">\.\./lib/gcc(-lib)?/$TARGET/8/ada_object_path</directory>
+       <directory group="2" >\.\./lib/gcc(-lib)?/$TARGET/8/rts-(.*)/adalib/</directory>
+       <directory group="1" >\.\./$TARGET/lib/gnat/(.*)/adalib/</directory>
+    </runtimes>
+
+    
+
+make install
+wenn nicht geht: 
+ - copy inhalt von bootstrap/bin nach /usr/local/bin
+ - copy bootstrap/share/gpr und bootstrap/share/gprconfig nach /usr/local/share
+ - copy bootstrap/libexec nach /usr/local
+
+ 
+gtkada-gtkada-17.0
+------------------
+32bit:
+./configure --prefix=/usr/lib/gcc/i586-suse-linux/8
+
+falls make abbricht:
+./configure --prefix=/usr/lib/gcc/i586-suse-linux/8 --without-GL
+
+64bit:
+./configure --prefix=/usr/lib64/gcc/x86_64-suse-linux/8
+
+make
+
+make install
+
+
+Ada Project Path
+----------------
+make sure the environment variable ADA_PROJECT_PATH is set so that
+gtkada.gpr can be found. For example do this in /etc/profile.local via these
+lines:
+
+#64bit:
+ADA_PROJECT_PATH=/usr/lib64/gcc/x86_64-suse-linux/8/lib/gnat/
+export ADA_PROJECT_PATH
+
+#32bit:
+ADA_PROJECT_PATH=/usr/lib/gcc/i586-suse-linux/8/lib/gnat/
+export ADA_PROJECT_PATH
