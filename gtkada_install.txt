@@ -1,5 +1,5 @@
-HOWTO INSTALL GTKADA ON OPENSUSE TUMBLEWEED
-===========================================
+HOWTO INSTALL GTKADA ON OPENSUSE TUMBLEWEED i586 and x86_64 machines
+====================================================================
 
 date: 2018-09-26
 author: Mario Blunk / http://www.blunk-electronic.de
