@@ -1,22 +1,35 @@
+HOWTO INSTALL GTKADA ON OPENSUSE TUMBLEWEED
+===========================================
+
+date: 2018-09-26
+author: Mario Blunk / http://www.blunk-electronic.de
+
+Any feedback his highly welcome ! Thanks.
+
+
+Create a tmp directory in your non-root home directory.
+
 xmlada
 ------
-xmlada-xmlada-16.1 entpacken
-
+Download https://github.com/AdaCore/xmlada/archive/xmlada-16.1.tar.gz in tmp directory.
+Unpack xmlada-xmlada-16.1 here. 
+There is no need to build xmlada.
 
 gprbuild
 --------
+Clone gprbuild in tmp directory via command:
+$ git clone https://github.com/AdaCore/gprbuild.git
 
-git clone https://github.com/AdaCore/gprbuild.git
+Build gprbuild via command:
+$ /bootstrap.sh --with-xmlada=../xmlada-xmlada-16.1 --prefix=./bootstrap
 
-./bootstrap.sh --with-xmlada=../xmlada-xmlada-16.1 --prefix=./bootstrap
-
-in bootstrap/share/gprconfig compilers.xml Abschnitt GNAT editieren:
--- Beginnt mit
+Edit in bootstrap/share/gprconfig file compilers.xml section "GNAT":
+The section starts with:
    <!--   GNAT
    <compiler_description>
     <name>GNAT</name> ...
     
-Abschnitt runtimes ursprünglich:
+Section "runtimes" should read in its initial form:
 
     <runtimes default="default,kernel,native">
        <directory group="default" >\.\./lib/gcc(-lib)?/$TARGET/$gcc_version/adalib/</directory>
@@ -25,7 +38,10 @@ Abschnitt runtimes ursprünglich:
        <directory group="1" >\.\./$TARGET/lib/gnat/(.*)/adalib/</directory>
     </runtimes>
 
-auf 64bit opensuse tumbleweed ändern nach:
+If you want to build on a 64bit machine:
+- replace $gcc_version by just 8 (or older gnat version)
+- replace \.\./lib by \.\./lib64
+- The section should read now:
 
     <runtimes default="default,kernel,native">
        <directory group="default" >\.\./lib64/gcc(-lib)?/$TARGET/8/adalib/</directory>
@@ -34,7 +50,9 @@ auf 64bit opensuse tumbleweed ändern nach:
        <directory group="1" >\.\./$TARGET/lib/gnat/(.*)/adalib/</directory>
     </runtimes>
 
-auf 32bit opensuse tumbleweed ändern nach:
+If you want to build on a 32bit machine (there are still around):
+- replace $gcc_version by just 8 (or older gnat version)
+- The section should read now:
 
     <runtimes default="default,kernel,native">
        <directory group="default" >\.\./lib/gcc(-lib)?/$TARGET/8/adalib/</directory>
@@ -43,35 +61,62 @@ auf 32bit opensuse tumbleweed ändern nach:
        <directory group="1" >\.\./$TARGET/lib/gnat/(.*)/adalib/</directory>
     </runtimes>
 
-    
+- log in as root    
+- compile via command
+$ make install
+- If that fails: 
+ - Copy content of directory bootstrap/bin to /usr/local/bin
+ - Copy bootstrap/share/gpr and bootstrap/share/gprconfig to /usr/local/share
+ - Copy bootstrap/libexec to /usr/local
 
-make install
-wenn nicht geht: 
- - copy inhalt von bootstrap/bin nach /usr/local/bin
- - copy bootstrap/share/gpr und bootstrap/share/gprconfig nach /usr/local/share
- - copy bootstrap/libexec nach /usr/local
+test gprbuild:
+as non-root type command:
+$ gprconfig 
+- It should output this. Most important is the first point in the list. It
+indicates, that gprconfig has detected your GNAT compiler properly. No need
+to select or save anything here. Just press CTRL-C :
+--------------------------------------------------
+gprconfig has found the following compilers on your PATH.
+Only those matching the target and the selected compilers are displayed.
+   1. GNAT for Ada in /usr/bin/ version 8.2 (default runtime)
+   2. GCC-ASM for Asm in /usr/bin/ version 8.2.1
+   3. GCC-ASM for Asm2 in /usr/bin/ version 8.2.1
+   4. GCC-ASM for Asm_Cpp in /usr/bin/ version 8.2.1
+   5. GCC for C in /usr/bin/ version 8.2.1
+   6. G++ for C++ in /usr/bin/ version 8.2.1
+Select or unselect the following compiler (or "s" to save): 
+
 
  
 gtkada-gtkada-17.0
 ------------------
-32bit:
-./configure --prefix=/usr/lib/gcc/i586-suse-linux/8
+be non-root user:
 
-falls make abbricht:
-./configure --prefix=/usr/lib/gcc/i586-suse-linux/8 --without-GL
+download https://github.com/AdaCore/gtkada/archive/gtkada-17.0.tar.gz in tmp
+directory
 
-64bit:
-./configure --prefix=/usr/lib64/gcc/x86_64-suse-linux/8
+On a 32bit machine type command:
+$ ./configure --prefix=/usr/lib/gcc/i586-suse-linux/8
 
-make
+On a 64bit machine type command:
+$ ./configure --prefix=/usr/lib64/gcc/x86_64-suse-linux/8
 
-make install
+Build gtkada via command:
+$ make
+
+In case make fails, configure anew with option GL turned off like
+$ ./configure --prefix=/usr/lib/gcc/i586-suse-linux/8 --without-GL
+
+then run make again.
+
+as root:
+$ make install
 
 
 Ada Project Path
 ----------------
-make sure the environment variable ADA_PROJECT_PATH is set so that
-gtkada.gpr can be found. For example do this in /etc/profile.local via these
+Make sure the environment variable ADA_PROJECT_PATH is set so that
+gtkada.gpr can be found. For example do this (as root) in /etc/profile.local via these
 lines:
 
 #64bit:
@@ -81,3 +126,8 @@ export ADA_PROJECT_PATH
 #32bit:
 ADA_PROJECT_PATH=/usr/lib/gcc/i586-suse-linux/8/lib/gnat/
 export ADA_PROJECT_PATH
+
+reboot
+
+Now you should be able to compile your ada gtk projects.
+
