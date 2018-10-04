@@ -2510,8 +2510,6 @@ procedure compseq is
 	
 
 	procedure unknown_yet is
--- 		b : type_ptr_bscan_ic;
-
 		-- The first group of bytes of the vector file contains header_length bytes: 
 		-- compiler version major/minor  2 bytes, 
 		-- vector format major/minor 2 bytes,
@@ -2934,7 +2932,10 @@ procedure compseq is
 		end order_img;
 
 		bic_cursor : type_list_of_bics.cursor;
--- 		pos : count_type := 0;
+		
+		subtype type_bic_position is count_type range 1 .. length (list_of_bics) + 1;
+		bic_position : type_bic_position;
+		
 	begin -- unknown_yet
 		--	set_output(standard_output);
 		-- 		put_line("found" & natural'image(summary.scanport_ct) & " scanpaths(s)");
@@ -2958,9 +2959,9 @@ procedure compseq is
 			end if;
 
 			-- process active scanpaths only
-			prog_position	:= 230;
+			prog_position := 230;
  			if is_scanport_active(sp) then
-				put_line("compiling active scanpath" & natural'image(sp) & " ...");
+				put_line ("compiling active scanpath" & natural'image (sp) & " ...");
 				scanpath_being_compiled := sp; -- set global variable scanpath_being_compiled to active scanport (pointed to by sp)
 				--put_line("active" & natural'image(sp) );
 
@@ -2969,7 +2970,6 @@ procedure compseq is
 				prog_position	:= 240;
  				create( 
 					file => scanport(sp).register_file,
-					--name => (universal_string_type.to_string(name_test) & "/members_" & trim(natural'image(sp), side => left) & ".reg")
 					name => compose(
 								to_string(name_test),
 								to_string(name_test) & "_" & trim(positive'image(sp),left),
@@ -2978,40 +2978,35 @@ procedure compseq is
  
 				-- search for bic in the scanpath being processed
 				prog_position	:= 250;
--- 				for p in 1..summary.bic_ct loop -- loop here for as much as bics are present. 
--- 				-- position search starts with position 1, that is the device closes to BSC TDO (first in subsection chain x)
--- 					b := ptr_bic; -- set bic pointer at end of bic list
--- 					while b /= null loop
--- 				for b in 1..length(list_of_bics) loop
-				bic_cursor := first(list_of_bics);
-				while bic_cursor /= type_list_of_bics.no_element loop
--- 					pos := pos + 1;
-				-- NOTE: element(list_of_bics, positive(b)) means the current bic
---					if element(list_of_bics, positive(b)).chain = sp then -- on match of scanpath id
-					if element(bic_cursor).chain = sp then -- on match of scanpath id				
--- 							if b.position = p then -- on match of position 
-							-- write in register file something like "device 1 IC301 irl 8 bsl 108" in the reg file"
--- 								put_line(scanport(sp).register_file,"device" & count_type'image(b)
--- 									& row_separator_0 & to_string(element(list_of_bics, positive(b)).name)
--- 									& row_separator_0 & "irl" & positive'image(element(list_of_bics, positive(b)).len_ir)
--- 									& row_separator_0 & "bsl" & positive'image(element(list_of_bics, positive(b)).len_bsr)
--- 									);
-							put_line(scanport(sp).register_file,"device" & positive'image(element(bic_cursor).position)
-								& row_separator_0 & to_string(key(bic_cursor))
-								& row_separator_0 & "irl" & positive'image(element(bic_cursor).len_ir)
-								& row_separator_0 & "bsl" & positive'image(element(bic_cursor).len_bsr)
-								);
 
-							-- sum up irl of chain members of that scanpath
-							-- CS: assumption is that no device is bypassed or added/inserted in the chain later
-							--scanport(sp).irl_total := scanport(sp).irl_total + b.len_ir + trailer_length ;
--- 								scanport(sp).irl_total := scanport(sp).irl_total + element(list_of_bics, positive(b)).len_ir;
-							scanport(sp).irl_total := scanport(sp).irl_total + element(bic_cursor).len_ir;
--- 							end if;
-					end if;
-					next(bic_cursor);
--- 					end loop;
+				-- position search starts with position 1, that is the device closes to BSC TDO (first in subsection chain x)
+				bic_position := type_bic_position'first;
+				while bic_position < type_bic_position'last loop
+
+					bic_cursor := first (list_of_bics);
+					while bic_cursor /= type_list_of_bics.no_element loop
+						if element (bic_cursor).chain = sp then -- on match of scanpath id
+							if type_bic_position (element (bic_cursor).position) = bic_position then -- on match of position in scanpath
+							
+								-- write in register file something like "device 1 IC301 irl 8 bsl 108" in the reg file"
+								put_line (scanport (sp).register_file,"device" & positive'image (element (bic_cursor).position)
+									& row_separator_0 & to_string (key (bic_cursor))
+									& row_separator_0 & "irl" & positive'image (element (bic_cursor).len_ir)
+									& row_separator_0 & "bsl" & positive'image (element (bic_cursor).len_bsr)
+									);
+
+								-- sum up irl of chain members of that scanpath
+								-- CS: assumption is that no device is bypassed or added/inserted in the chain later
+								scanport (sp).irl_total := scanport (sp).irl_total + element (bic_cursor).len_ir;
+							end if;
+						end if;
+
+						next (bic_cursor);
+					end loop;
+
+					bic_position := bic_position + 1;
 				end loop;
+					
 				-- add trailer length to obtain the total sir length
 				scanport(sp).irl_total := scanport(sp).irl_total + trailer_length;
 
