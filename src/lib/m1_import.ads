@@ -63,12 +63,13 @@ package m1_import is
 		EAGLE,
 		KICAD,
 		ORCAD,
-		PROTEL,
+		PROTEL, -- altium
+		TESTEXPERT,
 		ZUKEN
 		);
 	format_cad		: type_format_cad;
 	
-	type type_cad_import_target_module is ( main , sub );
+	type type_cad_import_target_module is (MAIN, SUB);
 
 	text_skeleton_section_info			: constant string (1..4) := "info";
 
@@ -118,7 +119,7 @@ package m1_import is
 	
 	
 	cad_import_target_module 			: type_cad_import_target_module;
-	target_module_prefix 				: type_universal_string.bounded_string;
+	target_module_prefix 				: type_universal_string.bounded_string; -- CS dedicated type !
 	
 	keyword_assembly_variant_active		: constant string (1..6) := "active";
 	
@@ -148,22 +149,26 @@ package m1_import is
 	pin_count : natural := 0;
 	-- NOTE: device and net count is to be taken from length of map_of_devices and type_map_of_regular_nets
 
--- PINS
+-- PINS / PADS / TERMINALS
 	-- This type specifies a regular pin. Pins are stored in a vector type_list_of_pins:.
 	type type_pin is tagged record
 		name_device	: type_device_name.bounded_string;
 		name_pin 	: type_pin_name.bounded_string;		
 	end record;
-	package type_list_of_pins is new vectors ( index_type => positive, element_type => type_pin);	
+	
+	package type_list_of_pins is new vectors (
+		index_type		=> positive, 
+		element_type	=> type_pin);
 
 	-- If we deal with assembly variants, a pin has the additional "mounted"-flag.
 	-- Those pins are stored in a vector type_list_of_pins_of_variants:
 	type type_pin_of_variant is new type_pin with record
 		mounted 	: boolean := false;
 	end record;
+	
 	package type_list_of_pins_of_variants is new vectors (
-		index_type => positive,
-		element_type => type_pin_of_variant);
+		index_type		=> positive,
+		element_type	=> type_pin_of_variant);
 
 -- NETS
 	-- The basic net is specified as:
@@ -184,7 +189,11 @@ package m1_import is
         pins    : type_list_of_pins.vector;
     end record;
 	use type_net_name;
-    package type_map_of_nets is new ordered_maps ( key_type => type_net_name.bounded_string, element_type => type_net);
+	
+	package type_map_of_nets is new ordered_maps (
+		key_type		=> type_net_name.bounded_string,
+		element_type	=> type_net);
+	
 	map_of_nets : type_map_of_nets.map;
 
 	-- If we deal with assembly variants, a net has pins with the "mounted"-flag:
@@ -206,9 +215,11 @@ package m1_import is
 		value   : type_device_value.bounded_string;
     end record;
 	use type_device_name;
+	
 	package type_map_of_devices is new ordered_maps ( 
-		key_type => type_device_name.bounded_string,
-		element_type => type_device);
+		key_type		=> type_device_name.bounded_string,
+		element_type	=> type_device);
+	
 	map_of_devices : type_map_of_devices.map;
 
 	-- Devices which have assembly variants are stored in a vector and are accessed by a positive.

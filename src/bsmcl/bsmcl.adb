@@ -243,6 +243,8 @@ procedure bsmcl is
 				importer := to_bounded_string(name_module_cad_importer_protel);
 			when eagle =>
 				importer := to_bounded_string(name_module_cad_importer_eagle);
+			when testexpert =>
+				importer := to_bounded_string (name_module_cad_importer_testexpert);
 		end case;
 		
 		new_line;
@@ -428,7 +430,7 @@ begin
 							
 						end if;
 
-					when eagle => -- CS: update documentation and help
+					when eagle | testexpert => -- CS: update documentation and help
 						if exists_netlist(name_file_cad_netlist) then
 							name_file_cad_partlist := to_bounded_string(argument(4));
 							if exists_partlist(name_file_cad_partlist) then

@@ -49,6 +49,7 @@ package m1_files_and_directories is
 	name_module_cad_importer_kicad		: constant string (1..8) 	:= "impkicad";
 	name_module_cad_importer_protel		: constant string (1..9) 	:= "impprotel";
 	name_module_cad_importer_zuken		: constant string (1..8) 	:= "impzuken";
+	name_module_cad_importer_testexpert	: constant string (1..13) 	:= "imptestexpert";
 	name_module_cad_importer_eagle		: constant string (1..8) 	:= "impeagle";
 	name_module_mknets					: constant string (1..6) 	:= "mknets";
 	name_module_mkvmod					: constant string (1..6) 	:= "mkvmod";
