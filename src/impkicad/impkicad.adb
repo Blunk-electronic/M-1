@@ -522,6 +522,11 @@ procedure impkicad is
 		--new_line(standard_output); -- finishes the progress bar
 		put_line("done");
 
+		-- CS: shouldn't the netlist be closed properly ?
+		-- set_input (standard_input);
+		-- close (file_cad_netlist);
+
+		
 	end read_netlist;
 
 
