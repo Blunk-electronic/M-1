@@ -3,18 +3,13 @@
 # This is the install script for System M-1. 
 # If started with option "-make" the binaries will not be built.
 
-version=001
+version=002
 
 set -e
 
 #CS: check for ada compiler, gcc, make, ...
 #CS: check for gtk3-devel
-#CS: check for gtkada. must be installed from:
-# https://github.com/AdaCore/gtkada/archive/gtkada-3.4.1.tar.gz (at the same directory level as lbr_ada)
-# gtkada installation:
-#  - ./configure
-#  - make
-#  - make install (requires root privileges)
+#CS: check for gtkada. must be installed from: https://github.com/AdaCore/gtkada
 
 source_script_dir=scripts
 source_img_dir=img
@@ -123,7 +118,9 @@ if [ ! "$1" = "-make" ]
 		procedure_make udbinfo
 		procedure_make compseq
 		procedure_make impbsdl
-		#procedure_make impzuken
+		procedure_make impkicad
+		procedure_make imptestexpert
+		procedure_make impzuken
 		procedure_make impprotel
 		procedure_make joinnetlist
 		procedure_make mkinfra
