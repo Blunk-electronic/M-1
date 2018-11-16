@@ -50,7 +50,7 @@ procedure_gnatmake()
 	target=$1
 	echo "-" $target
 	cd src/$target # change into source dir
-	./make_clean.sh
+	gprclean
 	cd - # change back to origin dir
 	}
 
