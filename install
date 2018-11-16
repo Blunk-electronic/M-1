@@ -18,6 +18,8 @@ dest_conf_dir=$HOME/.M-1
 dest_script_dir=$HOME/bin
 echo "System M-1 installer version" $version
 
+mkdir -p $dest_script_dir
+
 procedure_copy_script()
 	{
 	name=$1
