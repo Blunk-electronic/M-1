@@ -20,9 +20,9 @@ install:
 	install -D $(TARGET) $(BINDIR)/$(TARGET)
 
 uninstall:
-	-rm $(BINDIR)/$(TARGET)
+	-rm -f $(BINDIR)/$(TARGET)
 
 clean:
-	rm *.o *.ali $(TARGET)
+	rm -f *.o *.ali $(TARGET)
 
 
