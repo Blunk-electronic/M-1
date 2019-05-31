@@ -1,0 +1,87 @@
+# Target: XC2C384 in TQ144 package
+
+# I2C MAIN BUS
+NET "SCL"					LOC =  "P32";
+NET "SDA"					LOC =  "P31";
+
+# ON BOARD INTERCONNECTS
+#NET "OBI_1" 				LOC = "P139";
+#NET "OBI_2"				LOC =  "P52";
+#NET "OBI_3"				LOC =  "P51";
+#NET "OBI_4" 				LOC =  "P45";
+#NET "OBI_5" 				LOC =  "P43";
+
+
+# 7 SEGMENT DISPLAYS
+NET "SEG_OUT_1[0]"			LOC = "P7"; # A
+NET "SEG_OUT_1[1]"			LOC = "P6"; # B
+NET "SEG_OUT_1[2]"			LOC = "P4"; # C
+NET "SEG_OUT_1[3]"			LOC = "P2"; # D
+NET "SEG_OUT_1[4]"			LOC = "P3"; # E
+NET "SEG_OUT_1[5]"			LOC = "P5"; # F
+NET "SEG_OUT_1[6]"			LOC = "P23"; # G
+NET "SEG_OUT_1[7]"			LOC = "P25"; # H
+
+NET "SEG_OUT_2[0]"			LOC = "P26"; # A
+NET "SEG_OUT_2[1]"			LOC = "P28"; # B
+NET "SEG_OUT_2[2]"			LOC = "P24"; # C
+NET "SEG_OUT_2[3]"			LOC = "P50"; # D
+NET "SEG_OUT_2[4]"			LOC = "P49"; # E
+NET "SEG_OUT_2[5]"			LOC = "P44"; # F
+NET "SEG_OUT_2[6]"			LOC = "P46"; # G
+NET "SEG_OUT_2[7]"			LOC = "P48"; # H
+
+
+# SCANPORTS
+NET "SP_1_TRST_N" 			LOC = "P106";
+NET "SP_2_TRST_N" 			LOC =  "P86";
+NET "SP_1_TCK"				LOC = "P104";
+NET "SP_2_TCK"				LOC =  "P92";
+NET "SP_1_TMS"				LOC = "P103";
+NET "SP_2_TMS"				LOC =  "P91";
+NET "SP_1_TDO"				LOC = "P107";
+NET "SP_2_TDO"				LOC =  "P88";
+
+# DIO ADJUSTABLE # currently not used
+#NET "SP_1_DIO_1_ADJ"		LOC = "P102";
+#NET "SP_1_DIO_2_ADJ"		LOC = "P105";
+#NET "SP_2_DIO_1_ADJ"		LOC =  "P87";
+#NET "SP_2_DIO_2_ADJ"		LOC =  "P85";
+
+# DIO P3V3 # currently not used
+#NET "SP_1_DIO_1_P3V3"		LOC = "P135";
+#NET "SP_1_DIO_2_P3V3"		LOC = "P136";
+#NET "SP_2_DIO_1_P3V3"		LOC =  "P53";
+#NET "SP_2_DIO_2_P3V3"		LOC =  "P54";
+
+
+# COMPARATOR OUTPUTS
+NET "SP_1_TDI_COMP" 		LOC = "P137";
+NET "SP_2_TDI_COMP" 		LOC = "P138";
+
+# RESET
+NET "SYS_RESET" 			LOC = "P35";
+
+# SCANPORT FPGA-CPLD
+NET "SP_1_TCK_FPGA" 		LOC = "P9";
+NET "SP_1_TDI_FPGA" 		LOC = "P17";
+NET "SP_1_TMS_FPGA" 		LOC = "P10";
+NET "SP_1_TDO_FPGA" 		LOC = "P11";
+NET "SP_1_TRST_FPGA" 		LOC = "P12";
+
+NET "SP_2_TCK_FPGA" 		LOC = "P13";
+NET "SP_2_TDI_FPGA" 		LOC = "P18";
+NET "SP_2_TMS_FPGA" 		LOC = "P14";
+NET "SP_2_TDO_FPGA" 		LOC = "P15";
+NET "SP_2_TRST_FPGA" 		LOC = "P16";
+
+
+# SCANPORT VCCIO ADJUSTMENT
+NET "SP_1_VCC_P1V5_SET" 	LOC = "P134";
+NET "SP_1_VCC_P1V8_SET" 	LOC = "P133";
+NET "SP_1_VCC_P2V5_SET" 	LOC = "P132";
+
+NET "SP_2_VCC_P1V5_SET" 	LOC = "P131";
+NET "SP_2_VCC_P1V8_SET" 	LOC = "P130";
+NET "SP_2_VCC_P2V5_SET" 	LOC = "P129";
+

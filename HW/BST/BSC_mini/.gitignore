@@ -1,0 +1,5 @@
+*.seq
+*.vec
+*.reg
+*.udb
+mkoptions.conf

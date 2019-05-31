@@ -1,0 +1,43 @@
+[Eagle]
+Version="06 05 00"
+Platform="Linux"
+Serial="7007BAFAC8-LSR-WLM10CP"
+Globals="Globals"
+Desktop="Desktop"
+
+[Globals]
+AutoSaveProject=1
+
+[Win_1]
+Type="Control Panel"
+Loc="0 0 599 399"
+State=1
+Number=0
+
+[Win_2]
+Type="Schematic Editor"
+Loc="0 0 599 399"
+State=1
+Number=1
+# FIXME: File="unknown.sch"
+
+[Win_3]
+Type="Board Editor"
+Loc="0 0 599 399"
+State=1
+Number=2
+# FIXME: File="unknown.brd"
+
+[Win_4]
+Type="Library Editor"
+Loc="0 0 599 399"
+State=1
+Number=3
+# FIXME: File="unknown.lbr"
+
+[Desktop]
+Screen="800 600"
+Window="Win_4"
+Window="Win_3"
+Window="Win_2"
+Window="Win_1"
