@@ -1,0 +1,51 @@
+Section info
+	value			AS6C4008-55PCN
+	compatibles		628512
+	date			2016-10-13
+	version			001
+	status			verified
+	author			MBL / Blunk electronic
+	class			RAM
+	manufacturer	AMI
+	write_protect	false
+	protocol		parallel
+	ram_type		SRAM
+EndSection
+
+
+Section port_pin_map NDIP32
+		data inout D[7:0] 13 14 15 17 18 19 20 21
+		address in A[18:0] 1 30 2 31 3 28 4 25 23 26 27 5 6 7 8 9 10 11 12
+--		option address min 1000h
+		control in CE	22
+		control in OE 	24
+		control in WE 	29
+EndSection
+
+------------------------------------------------------------------------------
+
+Section prog
+	SubSection init
+		-- step port value
+		step 1	ADDR	drive 7FFFFh 	DATA drive 00h		CTRL drive 111b
+	EndSubSection
+
+	SubSection write
+		--Option wordcount 1
+		--Option 
+		-- step port value
+		step 2	ADDR	drive ATG		DATA drive ATG		CTRL drive 010b
+		step 3	ADDR	drive ATG		DATA drive ATG		CTRL drive 011b
+	EndSubSection
+
+	SubSection read
+		-- step port value
+		step 4	ADDR	drive ATG		DATA expect ATG		CTRL drive 001b
+	EndSubSection
+
+	SubSection disable
+		-- step port value
+		step 5	ADDR	drive 7FFFFh 	DATA drive FFh		CTRL drive 111b
+	EndSubSection
+	
+EndSection

@@ -1,0 +1,375 @@
+Partlist
+
+Exported from BSC_mini.brd at 9/12/18 2:52 PM
+
+EAGLE Version 7.7.0 Copyright (c) 1988-2016 CadSoft
+
+Assembly variant: 
+
+Part     Value                  Package                          Library             Position (mm)         Orientation
+
+C101     100u                   S_RADIAL_10MM                    be_rcl              (20.24 8.89)          R270
+C201     100n                   S_0805                           be_rcl              (84.6 13.2)           R180
+C202     100n                   S_0805                           be_rcl              (68.6 13.2)           R180
+C203     100n                   S_0805                           be_rcl              (224.8 13.2)          R180
+C204     1u                     S_0805                           be_rcl              (228.8 13.2)          R0
+C205     1u                     S_0805                           be_rcl              (89 13.2)             R0
+C206     1u                     S_0805                           be_rcl              (73 13.2)             R0
+C207     100n                   S_0805                           be_rcl              (177 13.2)            R180
+C208     100n                   S_0805                           be_rcl              (51.8 28)             R90
+C209     1u                     S_0805                           be_rcl              (181.4 13.2)          R0
+C210     1u                     S_0805                           be_rcl              (51.8 23.6)           R270
+C301     100n                   S_0805                           be_rcl              (208.6 13.2)          R180
+C302     1u                     S_0805                           be_rcl              (212.8 13.2)          R0
+C303     100n                   S_0805                           be_rcl              (192.6 13.2)          R180
+C304     1u                     S_0805                           be_rcl              (196.8 13.2)          R0
+C401     1u                     S_0805                           be_rcl              (224.2 111.6)         R270
+C402     100u                   S_6032                           be_rcl              (214.2 111.8)         R0
+C403     100n                   S_0805                           be_rcl              (208.2 119.6)         R270
+C601     100n                   S_0805                           be_rcl              (155 117)             R0
+C602     100n                   S_0805                           be_rcl              (106 117)             R0
+C603     100n                   S_0805                           be_rcl              (130 117)             R0
+C701     100n                   S_0805                           be_rcl              (99.6 65.2)           MR90
+C702     100n                   S_0805                           be_rcl              (164 115)             R180
+C801     100n                   S_0805                           be_rcl              (71.44 93.39)         R0
+C802     100n                   S_0805                           be_rcl              (71.4 87.6)           R0
+C803     100n                   S_0805                           be_rcl              (62 63.2)             R270
+C804     100n                   S_0805                           be_rcl              (59 56)               MR180
+C805     100n                   S_0805                           be_rcl              (71.4 77.2)           R0
+C806     100n                   S_0805                           be_rcl              (58.2 100.8)          R90
+C807     100n                   S_0805                           be_rcl              (55.8 63.2)           R270
+C808     100n                   S_0805                           be_rcl              (47 100.8)            R90
+C809     100n                   S_0805                           be_rcl              (47.6 63)             R270
+C810     100n                   S_0805                           be_rcl              (33.6 86.8)           R180
+C811     100n                   S_0805                           be_rcl              (33.6 76.2)           R180
+C1101    100n                   S_0805                           be_rcl              (55.2 55.4)           R270
+C1102    100n                   S_0805                           be_rcl              (33.6 83.6)           R180
+C1103    100n                   S_0805                           be_rcl              (71.4 84.6)           R0
+C1104    100n                   S_0805                           be_rcl              (33.6 92.2)           R180
+C1105    100n                   S_0805                           be_rcl              (71.4 80.2)           R0
+C1106    100n                   S_0805                           be_rcl              (50.4 63)             R270
+C1107    100n                   S_0805                           be_rcl              (43.6 63)             R270
+C1108    100n                   S_0805                           be_rcl              (33.6 79.21)          R180
+C1109    100n                   S_0805                           be_rcl              (33.6 70.6)           R180
+C1110    100n                   S_0805                           be_rcl              (55.2 100.8)          R90
+C1111    100n                   S_0805                           be_rcl              (43.6 100.6)          R90
+C1112    100n                   S_0805                           be_rcl              (71.4 71.6)           R0
+C1113    100n                   S_0805                           be_rcl              (63.26 106.32)        R90
+C1114    100n                   S_0805                           be_rcl              (58 63.2)             R270
+C1115    100n                   S_0805                           be_rcl              (61.6 100.8)          R90
+C1116    100n                   S_0805                           be_rcl              (49.8 100.8)          R90
+C1117    100n                   S_0805                           be_rcl              (56.6 93.4)           MR270
+C1118    100n                   S_0805                           be_rcl              (48.2 93.4)           MR270
+C1119    100n                   S_0805                           be_rcl              (57 70.6)             MR90
+C1120    100n                   S_0805                           be_rcl              (48.6 70.6)           MR90
+C1301    100n                   S_0805                           be_rcl              (228.44 73.74)        R0
+C1302    100n                   S_0805                           be_rcl              (228.4 55)            R0
+C1401    100n                   S_0805                           be_rcl              (228.4 63.4)          R180
+C1601    100n                   S_0805                           be_rcl              (206.58 81.95)        R0
+C1602    100n                   S_0805                           be_rcl              (182.37 74.25)        R180
+C1603    100n                   S_0805                           be_rcl              (182.52 77.25)        R180
+C1604    100n                   S_0805                           be_rcl              (196.65 82.93)        R90
+C1605    100n                   S_0805                           be_rcl              (182.22 64.45)        R180
+C1606    100n                   S_0805                           be_rcl              (210.83 64.75)        R0
+C1607    100n                   S_0805                           be_rcl              (210.88 70.55)        R0
+C1608    100n                   S_0805                           be_rcl              (188.85 82.93)        R90
+C1609    100n                   S_0805                           be_rcl              (188.15 54.62)        R270
+C1610    100n                   S_0805                           be_rcl              (210.63 59.55)        R0
+C1611    100n                   S_0805                           be_rcl              (197.05 54.72)        R270
+C1801    100n                   S_0805                           be_rcl              (186.6 128.4)         R270
+C1802    100n                   S_0805                           be_rcl              (195 128.4)           R270
+C2001    1u                     S_0805                           be_rcl              (31.6 43.2)           R0
+C2002    100n                   S_0805                           be_rcl              (26.8 62)             MR0
+D101     S1A                    S_DO214AC                        be_diode            (12.19 6.8)           R90
+D401     1N4148                 S_SOD123                         be_diode            (207.2 112.2)         R0
+D1401    BAT54S                 S_SOT23                          be_diode            (237 69)              R270
+D1402    BAT54S                 S_SOT23                          be_diode            (237 65)              R270
+D2301    1N4148                 S_SOD123                         be_diode            (263 81)              R0
+D2302    1N4148                 S_SOD123                         be_diode            (263 78)              R0
+D2303    1N4148                 S_SOD123                         be_diode            (263 75)              R0
+D2401    1N4148                 S_SOD123                         be_diode            (263 10)              R0
+D2402    1N4148                 S_SOD123                         be_diode            (263 7)               R0
+D2403    1N4148                 S_SOD123                         be_diode            (263 4)               R0
+DIS1901  VQE14                  T_VQEXX_2DIGIT                   be_opt              (140.2 62.6)          R0
+FD1801   FIDUCIAL_CROSSHAIR     CROSSHAIR                        be_marks            (29 135)              R0
+FD1802   FIDUCIAL_CROSSHAIR     CROSSHAIR                        be_marks            (296 13)              R0
+H201     HOLE_4.1_PAD           4.1_PAD                          be_holes            (101 12.2)            R0
+H202     HOLE_4.1_PAD           4.1_PAD                          be_holes            (167.4 12.2)          R0
+H203     HOLE_4.1_PAD           4.1_PAD                          be_holes            (240.8 12.2)          R0
+H1801    HOLE_4.1_PAD           4.1_PAD                          be_holes            (5 5)                 R0
+H1802    HOLE_4.1_PAD           4.1_PAD                          be_holes            (295 5)               R0
+H1803    HOLE_4.1_PAD           4.1_PAD                          be_holes            (5 135)               R0
+H1804    HOLE_4.1_PAD           4.1_PAD                          be_holes            (295 135)             R0
+IC201    LM1117T-ADJ            T_TO220-3_VERTICAL               be_vreg_vref        (88 9.2)              R180
+IC202    LM1117T-ADJ            T_TO220-3_VERTICAL               be_vreg_vref        (72 9.2)              R180
+IC203    LM1117T-ADJ            T_TO220-3_VERTICAL               be_vreg_vref        (227.8 9.2)           R180
+IC204    LM1117T-ADJ            T_TO220-3_VERTICAL               be_vreg_vref        (180.4 9.2)           R180
+IC205    LM1117T-ADJ            T_TO220-3_VERTICAL               be_vreg_vref        (47.8 24.6)           R90
+IC301    LM1117T-ADJ            T_TO220-3_VERTICAL               be_vreg_vref        (211.8 9.2)           R180
+IC302    LM1117T-ADJ            T_TO220-3_VERTICAL               be_vreg_vref        (195.8 9.2)           R180
+IC401    4093N                  T_NDIP14                         be_logic            (219.2 119.6)         R0
+IC601    AS6C4008-55PCN         T_NDIP32                         be_memory           (144 99)              R270
+IC602    AS6C4008-55PCN         T_NDIP32                         be_memory           (95 99)               R270
+IC603    AS6C4008-55PCN         T_NDIP32                         be_memory           (119 99)              R270
+IC701    AM29LV040B             T_PLCC32                         be_memory           (109.2 62.8)          R90
+IC702    24LC256-I/SN           S_SOIC8                          be_memory           (164 111)             R270
+IC801    XC3S400-4PQG208C       S_PQ208                          be_xilinx           (52.59 81.91)         R0
+IC802    XCF04SVOG20C           S_TSSOP20                        be_xilinx           (60.4 55.4)           R0
+IC1101   50MHz                  S_XO91                           be_osc              (58.4 106.6)          R180
+IC1201   XC2C384-10TQG144C      S_TQFP144                        be_xilinx           (196.6 68.6)          R0
+IC1301   MAX517ACSA+            S_SO8                            be_dac              (228.6 77.4)          R90
+IC1302   MAX517ACSA+            S_SO8                            be_dac              (228.6 58.8)          R90
+IC1401   MAX962ESA+             S_SO8                            be_opamp_comparator (228.58 67.08)        R90
+IC2001   4093N                  T_NDIP14                         be_logic            (24.4 52.4)           R270
+J201                            S_SOLDER_JUMPER_NARROW           be_con_jump         (88 19.8)             R90
+J202                            S_SOLDER_JUMPER_NARROW           be_con_jump         (72 19.8)             R90
+J203                            S_SOLDER_JUMPER_NARROW           be_con_jump         (227.8 19.8)          R90
+J204                            S_SOLDER_JUMPER_NARROW           be_con_jump         (180.4 19.8)          R90
+J205                            S_SOLDER_JUMPER_NARROW           be_con_jump         (36 37.4)             R180
+J301                            S_SOLDER_JUMPER_NARROW           be_con_jump         (211.8 19.8)          R90
+J302                            S_SOLDER_JUMPER_NARROW           be_con_jump         (195.8 19.6)          R90
+J501                            T_MALE_2X1_VERTICAL_GRID_2.54MM  be_con_jump         (19 83)               R270
+J801     JUMPER_2X10-T-VERTICAL T_MALE_2X10_VERTICAL_GRID_2.54MM be_con_jump         (54.2 47)             R0
+J1201                           T_MALE_2X1_VERTICAL_GRID_2.54MM  be_con_jump         (19 106)              R270
+J1901                           S_SOLDER_JUMPER_NARROW           be_con_jump         (137 59)              MR90
+J1902                           S_SOLDER_JUMPER_NARROW           be_con_jump         (137 63)              MR270
+J1903                           S_SOLDER_JUMPER_NARROW           be_con_jump         (141 59)              MR270
+J1904                           S_SOLDER_JUMPER_NARROW           be_con_jump         (141 63)              MR90
+LED201   green                  S_0805                           be_opt              (10 20.8)             R90
+LED1701  green                  S_0805                           be_opt              (10 70)               R270
+LED1702  green                  S_0805                           be_opt              (10 46)               R270
+LED1703  yellow                 S_0805                           be_opt              (10 74)               R270
+LED1704  yellow                 S_0805                           be_opt              (10 50)               R270
+LED1705  blue                   S_0805                           be_opt              (10 78)               R270
+LED1706  red                    S_0805                           be_opt              (10 54)               R270
+LED1707  red                    S_0805                           be_opt              (10 66)               R270
+LED1708  blue                   S_0805                           be_opt              (10 58)               R270
+LED1801  green                  S_0805                           be_opt              (229 135)             R0
+LED1802  red                    S_0805                           be_opt              (237 135)             R0
+LED1901  yellow                 S_0805                           be_opt              (10 40)               R270
+LED1902  blue                   S_0805                           be_opt              (10 36)               R270
+LED2101  yellow                 S_0805                           be_opt              (273 96)              R270
+LED2102  yellow                 S_0805                           be_opt              (273 26)              R270
+LED2103  blue                   S_0805                           be_opt              (273 101)             R270
+LED2104  blue                   S_0805                           be_opt              (273 31)              R270
+LED2105  green                  S_0805                           be_opt              (273 111)             R270
+LED2106  green                  S_0805                           be_opt              (273 41)              R270
+LED2107  red                    S_0805                           be_opt              (273 116)             R270
+LED2108  red                    S_0805                           be_opt              (273 46)              R270
+LED2109  green                  S_0805                           be_opt              (273 106)             R270
+LED2110  green                  S_0805                           be_opt              (273 36)              R270
+LED2111  red                    S_0805                           be_opt              (286 106)             R270
+LED2112  red                    S_0805                           be_opt              (286 36)              R270
+LED2201  green                  S_0805                           be_opt              (273 121)             R270
+LED2202  green                  S_0805                           be_opt              (273 51)              R270
+LED2203  green                  S_0805                           be_opt              (273 126)             R270
+LED2204  green                  S_0805                           be_opt              (273 56)              R270
+LED2205  green                  S_0805                           be_opt              (273 131)             R270
+LED2206  green                  S_0805                           be_opt              (273 61)              R270
+LED2207  green                  S_0805                           be_opt              (273 136)             R270
+LED2208  green                  S_0805                           be_opt              (273 66)              R270
+LED2301  blue                   S_0805                           be_opt              (273 75)              R270
+LED2302  green                  S_0805                           be_opt              (273 80)              R270
+LED2303  yellow                 S_0805                           be_opt              (273 90)              R270
+LED2304  green                  S_0805                           be_opt              (273 85)              R270
+LED2401  blue                   S_0805                           be_opt              (273 4)               R270
+LED2402  green                  S_0805                           be_opt              (273 9)               R270
+LED2403  green                  S_0805                           be_opt              (273 14)              R270
+LED2404  yellow                 S_0805                           be_opt              (273 19)              R270
+R201     240                    S_0805                           be_rcl              (77.8 13.2)           R0
+R202     715                    S_0805                           be_rcl              (233.2 13.2)          R0
+R203     240                    S_0805                           be_rcl              (233.2 16.2)          R180
+R204     240                    S_0805                           be_rcl              (93.6 13.2)           R0
+R205     240                    S_0805                           be_rcl              (77.8 16.2)           R180
+R206     330                    S_0805                           be_rcl              (15 20.8)             R0
+R207     105                    S_0805                           be_rcl              (185.6 13.2)          R0
+R208     392                    S_0805                           be_rcl              (51.8 19.2)           R270
+R209     240                    S_0805                           be_rcl              (185.6 16.2)          R180
+R210     240                    S_0805                           be_rcl              (54.8 19.2)           R90
+R301     71R5                   S_0805                           be_rcl              (156.6 33)            R0
+R302     392                    S_0805                           be_rcl              (217.4 13.2)          R0
+R303     169                    S_0805                           be_rcl              (156.6 27.2)          R0
+R304     240                    S_0805                           be_rcl              (217.4 16.2)          R180
+R305     698                    S_0805                           be_rcl              (156.6 21.2)          R0
+R306     71R5                   S_0805                           be_rcl              (166.2 33)            R0
+R307     169                    S_0805                           be_rcl              (166.2 27.2)          R0
+R308     392                    S_0805                           be_rcl              (201.4 13.2)          R0
+R309     698                    S_0805                           be_rcl              (166.2 21.2)          R0
+R310     240                    S_0805                           be_rcl              (201.4 16.2)          R180
+R401     1M                     S_0805                           be_rcl              (215.4 126)           R0
+R402     1M                     S_0805                           be_rcl              (225.4 126)           R0
+R403     1M                     S_0805                           be_rcl              (221.2 111.6)         R90
+R404     1k5                    S_0805                           be_rcl              (205.2 119.6)         R90
+R405     33                     S_0805                           be_rcl              (203 115)             R180
+R406     27k                    S_0805                           be_rcl              (207.2 115)           R180
+R407     1k5                    S_0805                           be_rcl              (202 123.4)           R0
+R501     330                    S_0805                           be_rcl              (11.4 98)             R270
+R502     330                    S_0805                           be_rcl              (13.69 98)            R270
+R701     4k7                    S_0805                           be_rcl              (155.8 94.2)          R90
+R702     4k7                    S_0805                           be_rcl              (80.2 74)             R270
+R703     4k7                    S_0805                           be_rcl              (131 94.2)            R90
+R704     4k7                    S_0805                           be_rcl              (119.6 52.4)          R180
+R801     4k7                    S_0805                           be_rcl              (45.2 42.2)           R270
+R802     4k7                    S_0805                           be_rcl              (60.6 42.2)           R270
+R803     4k7                    S_0805                           be_rcl              (65.8 42.2)           R270
+R804     330                    S_0805                           be_rcl              (63.2 42.2)           R270
+R805     330                    S_0805                           be_rcl              (47.8 42.2)           R270
+R806     330                    S_0805                           be_rcl              (50.4 42.2)           R270
+R807     330                    S_0805                           be_rcl              (53 42.2)             R270
+R1201    330                    S_0805                           be_rcl              (11.4 121.2)          R270
+R1202    330                    S_0805                           be_rcl              (13.6 121.2)          R270
+R1301    4k7                    S_0805                           be_rcl              (183.2 128.4)         R270
+R1302    4k7                    S_0805                           be_rcl              (180.6 128.4)         R270
+R1401    8k2                    S_0805                           be_rcl              (236.4 79.6)          R90
+R1402    2k7                    S_0805                           be_rcl              (236.4 75.6)          R90
+R1403    8k2                    S_0805                           be_rcl              (236.8 61)            R90
+R1404    2k7                    S_0805                           be_rcl              (236.8 57)            R90
+R1701    160                    S_0805                           be_rcl              (15 70)               R180
+R1702    160                    S_0805                           be_rcl              (15 46)               R180
+R1703    470                    S_0805                           be_rcl              (15 74)               R180
+R1704    470                    S_0805                           be_rcl              (15 50)               R180
+R1705    330                    S_0805                           be_rcl              (15 78)               R180
+R1706    750                    S_0805                           be_rcl              (15 54)               R180
+R1707    750                    S_0805                           be_rcl              (15 66)               R180
+R1708    330                    S_0805                           be_rcl              (15 58)               R180
+R1801    160                    S_0805                           be_rcl              (229 128.4)           R90
+R1802    750                    S_0805                           be_rcl              (237 128.4)           R90
+R1803    1M                     S_0805                           be_rcl              (189.4 128.4)         R270
+R1804    1M                     S_0805                           be_rcl              (192 128.4)           R270
+R1901    470                    S_0805                           be_rcl              (15 40)               R180
+R1902    330                    S_0805                           be_rcl              (15 36)               R180
+R2001    1M                     S_0805                           be_rcl              (31 49.2)             R90
+R2101    470                    S_0805                           be_rcl              (268 96)              R0
+R2102    470                    S_0805                           be_rcl              (268 26)              R0
+R2103    330                    S_0805                           be_rcl              (268 101)             R180
+R2104    330                    S_0805                           be_rcl              (268 31)              R180
+R2105    160                    S_0805                           be_rcl              (268 111)             R0
+R2106    160                    S_0805                           be_rcl              (268 41)              R0
+R2107    750                    S_0805                           be_rcl              (268 116)             R0
+R2108    750                    S_0805                           be_rcl              (268 46)              R0
+R2109    160                    S_0805                           be_rcl              (268 106)             R0
+R2110    160                    S_0805                           be_rcl              (268 36)              R0
+R2111    750                    S_0805                           be_rcl              (286 111)             R180
+R2112    750                    S_0805                           be_rcl              (286 41)              R180
+R2201    160                    S_0805                           be_rcl              (268 121)             R0
+R2202    160                    S_0805                           be_rcl              (268 51)              R0
+R2203    160                    S_0805                           be_rcl              (268 126)             R0
+R2204    160                    S_0805                           be_rcl              (268 56)              R0
+R2205    160                    S_0805                           be_rcl              (268 131)             R0
+R2206    160                    S_0805                           be_rcl              (268 61)              R0
+R2207    160                    S_0805                           be_rcl              (268 136)             R0
+R2208    160                    S_0805                           be_rcl              (268 66)              R0
+R2301    2k7                    S_0805                           be_rcl              (240 93)              R0
+R2302    2k7                    S_0805                           be_rcl              (240 98)              R0
+R2303    2k7                    S_0805                           be_rcl              (240 103)             R0
+R2304    330                    S_0805                           be_rcl              (268 75)              R180
+R2305    2k7                    S_0805                           be_rcl              (258 86)              R180
+R2306    160                    S_0805                           be_rcl              (268 80)              R0
+R2307    2k7                    S_0805                           be_rcl              (258 91)              R0
+R2308    470                    S_0805                           be_rcl              (268 90)              R0
+R2309    160                    S_0805                           be_rcl              (268 85)              R0
+R2401    2k7                    S_0805                           be_rcl              (246 26)              R0
+R2402    2k7                    S_0805                           be_rcl              (246 31)              R0
+R2403    2k7                    S_0805                           be_rcl              (246 36)              R0
+R2404    330                    S_0805                           be_rcl              (268 4)               R180
+R2405    2k7                    S_0805                           be_rcl              (258 15)              R180
+R2406    160                    S_0805                           be_rcl              (268 9)               R0
+R2407    2k7                    S_0805                           be_rcl              (258 20)              R0
+R2408    160                    S_0805                           be_rcl              (268 14)              R0
+R2409    470                    S_0805                           be_rcl              (268 19)              R0
+RN301    10k                    S_1206_4X                        be_rcl              (150.8 36.8)          R0
+RN302    10k                    S_1206_4X                        be_rcl              (160.2 36.8)          R0
+RN501    10k                    S_1206_4X                        be_rcl              (11.45 83.94)         R0
+RN1201   10k                    S_1206_4X                        be_rcl              (11.63 106.74)        R0
+RN1901   100                    T_SIL8                           be_rcl              (169 85)              R270
+RN1902   100                    T_SIL8                           be_rcl              (164 85)              R270
+RN1903   100                    T_SIL8                           be_rcl              (159.6 61.6)          R270
+RN1904   100                    T_SIL8                           be_rcl              (145.6 28.4)          R270
+S1801                           T_PUSH_BUTTON_6X6                be_switch           (208 133)             R270
+S1802                           T_PUSH_BUTTON_6X6                be_switch           (220 133)             R270
+T301     DMG3420U               S_SOT23                          be_transistor       (152.6 33)            R270
+T302     DMG3420U               S_SOT23                          be_transistor       (152.6 27.2)          R270
+T303     DMG3420U               S_SOT23                          be_transistor       (152.6 21.2)          R270
+T304     DMG3420U               S_SOT23                          be_transistor       (162.2 33)            R270
+T305     DMG3420U               S_SOT23                          be_transistor       (162.2 27.2)          R270
+T306     DMG3420U               S_SOT23                          be_transistor       (162.2 21.2)          R270
+T401     DMG3420U               S_SOT23                          be_transistor       (201.6 119.6)         R90
+T1901    DMG3420U               S_SOT23                          be_transistor       (20 40)               R90
+T1902    DMG3420U               S_SOT23                          be_transistor       (20 36)               R90
+T2101    DMG3420U               S_SOT23                          be_transistor       (263 96)              R270
+T2102    DMG3420U               S_SOT23                          be_transistor       (263 26)              R270
+T2103    DMG3420U               S_SOT23                          be_transistor       (263 101)             R270
+T2104    DMG3420U               S_SOT23                          be_transistor       (263 31)              R270
+T2105    DMG3420U               S_SOT23                          be_transistor       (263 111)             R270
+T2106    DMG3420U               S_SOT23                          be_transistor       (263 41)              R270
+T2107    NX2301P                S_SOT23                          be_transistor       (263 116)             R270
+T2108    NX2301P                S_SOT23                          be_transistor       (263 46)              R270
+T2109    DMG3420U               S_SOT23                          be_transistor       (263 106)             R270
+T2110    DMG3420U               S_SOT23                          be_transistor       (263 36)              R270
+T2111    DMG3420U               S_SOT23                          be_transistor       (157 86)              R270
+T2112    DMG3420U               S_SOT23                          be_transistor       (157 81)              R270
+T2201    DMG3420U               S_SOT23                          be_transistor       (263 121)             R270
+T2202    DMG3420U               S_SOT23                          be_transistor       (263 51)              R270
+T2203    DMG3420U               S_SOT23                          be_transistor       (263 126)             R270
+T2204    DMG3420U               S_SOT23                          be_transistor       (263 56)              R270
+T2205    DMG3420U               S_SOT23                          be_transistor       (263 131)             R270
+T2206    DMG3420U               S_SOT23                          be_transistor       (263 61)              R270
+T2207    DMG3420U               S_SOT23                          be_transistor       (263 136)             R270
+T2208    DMG3420U               S_SOT23                          be_transistor       (263 66)              R270
+T2301    NX2301P                S_SOT23                          be_transistor       (230 93)              R270
+T2302    NX2301P                S_SOT23                          be_transistor       (230 98)              R270
+T2303    NX2301P                S_SOT23                          be_transistor       (230 103)             R270
+T2304    NX2301P                S_SOT23                          be_transistor       (235 93)              R270
+T2305    NX2301P                S_SOT23                          be_transistor       (235 98)              R270
+T2306    NX2301P                S_SOT23                          be_transistor       (235 103)             R270
+T2307    DMG3420U               S_SOT23                          be_transistor       (263 85)              R270
+T2308    DMG3420U               S_SOT23                          be_transistor       (263 90)              R270
+T2401    NX2301P                S_SOT23                          be_transistor       (236 26)              R270
+T2402    NX2301P                S_SOT23                          be_transistor       (236 31)              R270
+T2403    NX2301P                S_SOT23                          be_transistor       (236 36)              R270
+T2404    NX2301P                S_SOT23                          be_transistor       (241 26)              R270
+T2405    NX2301P                S_SOT23                          be_transistor       (241 31)              R270
+T2406    NX2301P                S_SOT23                          be_transistor       (241 36)              R270
+T2407    DMG3420U               S_SOT23                          be_transistor       (263 14)              R270
+T2408    DMG3420U               S_SOT23                          be_transistor       (263 19)              R270
+TP201                           T_TEST_POINT_SMALL               be_con_jump         (227.8 17.2)          R0
+TP202    +1V2                   T_TEST_POINT_SMALL               be_con_jump         (88 17.2)             R0
+TP203    +2V5                   T_TEST_POINT_SMALL               be_con_jump         (72 17.4)             R0
+TP204                           T_TEST_POINT_SMALL               be_con_jump         (180.4 17.4)          R0
+TP205    +2V5                   T_TEST_POINT_SMALL               be_con_jump         (56 24.6)             R270
+TP301                           T_TEST_POINT_SMALL               be_con_jump         (211.8 17.2)          R0
+TP302                           T_TEST_POINT_SMALL               be_con_jump         (195.8 17.2)          R0
+TP401    clk_slow               T_TEST_POINT_SMALL               be_con_jump         (219.2 112.6)         R0
+TP601                           T_TEST_POINT_SMALL               be_con_jump         (73 99.8)             R0
+TP602                           T_TEST_POINT_SMALL               be_con_jump         (73 96.2)             R0
+TP603                           T_TEST_POINT_SMALL               be_con_jump         (73 98)               R0
+TP1001                          T_TEST_POINT_SMALL               be_con_jump         (62.57 69.78)         MR0
+TP1002                          T_TEST_POINT_SMALL               be_con_jump         (53.82 75.78)         MR0
+TP1003                          T_TEST_POINT_SMALL               be_con_jump         (52.27 75.78)         MR0
+TP1101                          T_TEST_POINT_SMALL               be_con_jump         (53.6 104.4)          R0
+TP1401                          T_TEST_POINT_SMALL               be_con_jump         (234.2 69)            R90
+TP1402                          T_TEST_POINT_SMALL               be_con_jump         (228 71)              R90
+TP1403                          T_TEST_POINT_SMALL               be_con_jump         (234.2 65)            R90
+TP1404                          T_TEST_POINT_SMALL               be_con_jump         (230 71)              R90
+TP1405                          T_TEST_POINT_SMALL               be_con_jump         (223 68)              R90
+TP1406                          T_TEST_POINT_SMALL               be_con_jump         (223 66)              R90
+TP1701                          T_TEST_POINT_SMALL               be_con_jump         (187.8 90.8)          R0
+TP1901                          T_TEST_POINT_SMALL               be_con_jump         (140 30)              R270
+TP1902                          T_TEST_POINT_SMALL               be_con_jump         (140 28)              R270
+TP1903                          T_TEST_POINT_SMALL               be_con_jump         (140 26)              R270
+TP1904                          T_TEST_POINT_SMALL               be_con_jump         (140 24)              R270
+TP2001   clk_slow               T_TEST_POINT_SMALL               be_con_jump         (32.8 48.2)           R0
+X101                            T_WIRE_CLAMP_1X2_2.5MM           be_con_jump         (8 13.6)              R270
+X102                            T_MALE_2X5_VERTICAL_GRID_2.54MM  be_con_jump         (18 134)              R0
+X103     MALE_1X3               T_MALE_3X1_VERTICAL              be_con_jump         (4 30.4)              R180
+X104                            T_MALE_2X13_VERTICAL_GRID_2.54MM be_con_jump         (295 101)             R90
+X105     MALE_1X3               T_MALE_3X1_VERTICAL              be_con_jump         (296.2 127.8)         R180
+X106                            T_MALE_2X13_VERTICAL_GRID_2.54MM be_con_jump         (295 49)              R90
+X107     MALE_1X3               T_MALE_3X1_VERTICAL              be_con_jump         (296.2 24)            R180
+X301     MALE_1X3               T_MALE_3X1_VERTICAL              be_con_jump         (135.4 12.2)          R90
+X501                            T_MALE_2X5_VERTICAL_GRID_2.54MM  be_con_jump         (6 92)                R270
+X502                            T_MALE_2X5_VERTICAL_GRID_2.54MM  be_con_jump         (19 92)               R270
+X1201                           T_MALE_2X5_VERTICAL_GRID_2.54MM  be_con_jump         (6 115)               R270
+X1202                           T_MALE_2X5_VERTICAL_GRID_2.54MM  be_con_jump         (19 115)              R270
+X1701                           T_MALE_2X20_VERTICAL_GRID_2.54MM be_con_jump         (173 134)             R0
+X1702                           T_MALE_2X20_VERTICAL_GRID_2.54MM be_con_jump         (67 134)              R0

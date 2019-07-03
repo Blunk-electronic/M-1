@@ -99,4 +99,6 @@ eagle.rc
 # KATE
 *.kate-swp
 
-*.txt
+*~
+
+#*.txt

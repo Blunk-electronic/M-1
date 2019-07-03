@@ -1,0 +1,48 @@
+Section scanpath_configuration
+-- version 003
+
+ SubSection options
+  on_fail power_down -- default is power_down. NOTE: similar commands: hstrst (hard+soft scanpath reset)
+  frequency 0.05 -- unit is Mhz, use numbers like 0.1, 1, 4.5
+  trailer_ir 01010010 -- 8 bit binary value -- equals 52h
+  trailer_dr 01010010
+  voltage_out_port_1 2.5 -- unit is V. supported values: 1.8  2.5  3.3
+  voltage_out_port_2 3.3    
+
+  tck_driver_port_1 push_pull  -- NOTE: similar commands: weak1, weak0, tie_high, tie_low, high_z
+  tms_driver_port_1 push_pull
+  tdo_driver_port_1 push_pull
+  trst_driver_port_1 push_pull 
+  tck_driver_port_2 push_pull
+  tms_driver_port_2 push_pull
+  tdo_driver_port_2 push_pull
+  trst_driver_port_2 push_pull 
+
+  threshold_tdi_port_1 0.8  -- unit is V. range: 0..3.3
+  threshold_tdi_port_2 0.8
+ EndSubSection
+
+ SubSection chain 1
+ 	--UUT_TDI_1 / BSC_TDO_1
+	--device, package, path to bsdl model, option [ remove_pin_prefix p ]
+	--NOTE 1: use lower case letters for package names 
+	--NOTE 2: position 1 is closest to BSC TDO !
+
+    IC801 pq208 models/xc3s400_pq208.bsd option remove_pin_prefix P
+	IC802 vo20  models/xcf04s_vo20.bsd
+    
+	--UUT_TDO_1 / BSC_TDI_1
+ EndSubSection
+
+ SubSection chain 2
+ 	--UUT_TDI_1 / BSC_TDO_1
+	--device, package, path to bsdl model, option [ remove_pin_prefix p ]
+	--NOTE 1: use lower case letters for package names 
+	--NOTE 2: position 1 is closest to BSC TDO !
+
+	IC1201 tq144 models/xc2c384_tq144.bsd 
+
+	--UUT_TDO_1 / BSC_TDI_1
+ EndSubSection
+ 
+EndSection

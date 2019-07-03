@@ -1,0 +1,1698 @@
+Netlist
+
+Exported from BSC_mini.brd at 9/12/18 2:52 PM
+
+EAGLE Version 7.7.0 Copyright (c) 1988-2016 CadSoft
+
+Net                        Part     Pad
+
+ACL_IN                     IC2001   11
+                           R2001    2
+
+ACL_OUT                    IC2001   10
+                           IC801    2
+
+ACL_RC                     C2001    1
+                           IC2001   8
+                           R2001    1
+                           TP2001   1
+                           X1702    40
+
+CLK_MASTER                 IC1101   3
+                           IC801    181
+                           TP1101   1
+
+CLK_SLOW                   IC401    4
+                           IC801    154
+                           R403     1
+                           TP401    1
+                           X1701    16
+
+CONF_CCLK                  IC801    104
+                           IC802    3
+                           J801     13
+
+CONF_DIN                   IC801    92
+                           IC802    1
+                           J801     11
+
+CONF_DONE                  IC801    103
+                           IC802    10
+                           J801     17
+                           R804     1
+
+CONF_DOUT                  IC801    81
+                           TP1002   1
+
+CONF_HSW_EN                IC801    206
+                           J801     3
+
+CONF_INIT_B                IC801    83
+                           IC802    8
+                           J801     15
+                           R802     1
+
+CONF_M0                    IC801    55
+                           J801     5
+                           R805     1
+
+CONF_M1                    IC801    54
+                           J801     7
+                           R806     1
+
+CONF_M2                    IC801    56
+                           J801     9
+                           R807     1
+
+CONF_PROG_B                IC801    207
+                           IC802    7
+                           J801     19
+                           R803     1
+
+CTRL_IN_START_N            C1801    1
+                           IC801    35
+                           R1803    1
+                           S1801    2
+                           S1801    4
+                           X1701    34
+
+CTRL_IN_STOP_N             C1802    1
+                           IC801    34
+                           R1804    1
+                           S1802    2
+                           S1802    4
+                           X1701    36
+
+CTRL_OUT_FAIL              IC801    58
+                           R1802    1
+                           X1701    32
+
+CTRL_OUT_FAIL_LED          LED1802  A
+                           R1802    2
+
+CTRL_OUT_PASS              IC801    57
+                           R1801    1
+                           X1701    30
+
+CTRL_OUT_PASS_LED          LED1801  A
+                           R1801    2
+
+DBG_3                      IC801    43
+                           X1702    8
+
+DBG_4                      IC801    96
+                           X1702    10
+
+DBG_5                      IC801    40
+                           X1702    12
+
+DBG_6                      IC801    39
+                           X1702    14
+
+DBG_10_LED                 LED1702  C
+                           R1702    2
+
+DBG_11_LED                 LED1704  C
+                           R1704    2
+
+DBG_12_LED                 LED1706  C
+                           R1706    2
+
+DBG_13_LED                 LED1708  C
+                           R1708    2
+
+DBG_80                     IC801    80
+                           TP1003   1
+
+DBG_81                     IC801    97
+                           TP1001   1
+
+DCL_1                      IC2001   3
+                           IC2001   5
+
+DCL_OUT                    IC2001   4
+                           IC801    3
+
+DEBUG_0                    IC801    61
+                           R1701    1
+                           X1702    2
+
+DEBUG_1                    IC801    33
+                           R1703    1
+                           X1702    4
+
+DEBUG_2                    IC801    44
+                           R1705    1
+                           X1702    6
+
+DEBUG_3                    IC801    37
+                           X1702    16
+
+DEBUG_4                    IC801    149
+                           TP603    1
+
+DEBUG_5                    IC801    150
+                           TP602    1
+
+DEBUG_6                    IC801    152
+                           TP601    1
+
+DEBUG_10                   IC1201   143
+                           X1702    32
+
+DEBUG_11                   IC1201   142
+                           TP1701   1
+                           X1701    14
+
+DEBUG_12                   IC1201   34
+                           X1702    28
+
+DEBUG_13                   IC1201   33
+                           X1702    30
+
+DEBUG_14                   IC1201   38
+                           IC2001   1
+                           X1702    26
+
+DEBUG_15                   IC1201   39
+                           IC2001   2
+                           R1708    1
+                           X1702    24
+
+DEBUG_16                   IC1201   40
+                           IC2001   6
+                           R1706    1
+                           X1702    22
+
+DEBUG_17                   IC1201   41
+                           IC2001   9
+                           R1704    1
+                           X1702    20
+
+DEBUG_18                   IC1201   42
+                           IC2001   12
+                           IC2001   13
+                           R1702    1
+                           X1702    18
+
+DGB_0_LED                  LED1701  C
+                           R1701    2
+
+DGB_1_LED                  LED1703  C
+                           R1703    2
+
+DGB_2_LED                  LED1705  C
+                           R1705    2
+
+DISP_1_COM                 DIS1901  4
+                           J1901    2
+                           J1902    2
+
+DISP_1_SEG_A               IC1201   7
+                           RN1901   1
+
+DISP_1_SEG_A_R             DIS1901  16
+                           RN1901   2
+
+DISP_1_SEG_B               IC1201   6
+                           RN1901   3
+
+DISP_1_SEG_B_R             DIS1901  14
+                           RN1901   4
+
+DISP_1_SEG_C               IC1201   4
+                           RN1901   5
+
+DISP_1_SEG_C_R             DIS1901  1
+                           RN1901   6
+
+DISP_1_SEG_D               IC1201   2
+                           RN1901   7
+
+DISP_1_SEG_D_R             DIS1901  3
+                           RN1901   8
+
+DISP_1_SEG_E               IC1201   3
+                           RN1902   1
+
+DISP_1_SEG_E_R             DIS1901  2
+                           RN1902   2
+
+DISP_1_SEG_F               IC1201   5
+                           RN1902   3
+
+DISP_1_SEG_F_R             DIS1901  15
+                           RN1902   4
+
+DISP_1_SEG_G               IC1201   23
+                           RN1902   5
+
+DISP_1_SEG_G_R             DIS1901  17
+                           RN1902   6
+
+DISP_1_SEG_H               IC1201   25
+                           RN1902   7
+
+DISP_1_SEG_H_R             DIS1901  18
+                           RN1902   8
+
+DISP_2_COM                 DIS1901  5
+                           J1903    1
+                           J1904    1
+
+DISP_2_SEG_A               IC1201   26
+                           RN1903   2
+
+DISP_2_SEG_A_R             DIS1901  11
+                           RN1903   1
+
+DISP_2_SEG_B               IC1201   28
+                           RN1903   4
+
+DISP_2_SEG_B_R             DIS1901  13
+                           RN1903   3
+
+DISP_2_SEG_C               IC1201   24
+                           RN1903   6
+
+DISP_2_SEG_C_R             DIS1901  8
+                           RN1903   5
+
+DISP_2_SEG_D               IC1201   50
+                           RN1903   8
+
+DISP_2_SEG_D_R             DIS1901  6
+                           RN1903   7
+
+DISP_2_SEG_E               IC1201   49
+                           RN1904   2
+
+DISP_2_SEG_E_R             DIS1901  7
+                           RN1904   1
+
+DISP_2_SEG_F               IC1201   44
+                           RN1904   4
+
+DISP_2_SEG_F_R             DIS1901  12
+                           RN1904   3
+
+DISP_2_SEG_G               IC1201   46
+                           RN1904   6
+
+DISP_2_SEG_G_R             DIS1901  10
+                           RN1904   5
+
+DISP_2_SEG_H               IC1201   48
+                           RN1904   7
+
+DISP_2_SEG_H_R             DIS1901  9
+                           RN1904   8
+
+GND                        C101     -
+                           C1101    2
+                           C1102    2
+                           C1103    2
+                           C1104    2
+                           C1105    2
+                           C1106    2
+                           C1107    2
+                           C1108    2
+                           C1109    2
+                           C1110    2
+                           C1111    2
+                           C1112    2
+                           C1113    2
+                           C1114    2
+                           C1115    2
+                           C1116    2
+                           C1117    2
+                           C1118    2
+                           C1119    2
+                           C1120    2
+                           C1301    2
+                           C1302    2
+                           C1401    1
+                           C1601    2
+                           C1602    2
+                           C1603    2
+                           C1604    2
+                           C1605    2
+                           C1606    2
+                           C1607    2
+                           C1608    2
+                           C1609    2
+                           C1610    2
+                           C1611    2
+                           C1801    2
+                           C1802    2
+                           C2001    2
+                           C2002    2
+                           C201     2
+                           C202     2
+                           C203     2
+                           C204     2
+                           C205     2
+                           C206     2
+                           C207     2
+                           C208     2
+                           C209     2
+                           C210     2
+                           C301     2
+                           C302     2
+                           C303     2
+                           C304     2
+                           C401     2
+                           C402     -
+                           C403     2
+                           C601     2
+                           C602     2
+                           C603     2
+                           C701     2
+                           C702     2
+                           C801     2
+                           C802     2
+                           C803     2
+                           C804     2
+                           C805     2
+                           C806     2
+                           C807     2
+                           C808     2
+                           C809     2
+                           C810     2
+                           C811     2
+                           D1401    1
+                           D1402    1
+                           H1801    H1
+                           H1802    H1
+                           H1803    H1
+                           H1804    H1
+                           IC1101   2
+                           IC1201   108
+                           IC1201   123
+                           IC1201   144
+                           IC1201   29
+                           IC1201   36
+                           IC1201   47
+                           IC1201   62
+                           IC1201   72
+                           IC1201   89
+                           IC1201   90
+                           IC1201   99
+                           IC1301   2
+                           IC1301   5
+                           IC1301   6
+                           IC1302   2
+                           IC1302   5
+                           IC1401   5
+                           IC2001   7
+                           IC201    1
+                           IC401    7
+                           IC601    16
+                           IC602    16
+                           IC603    16
+                           IC701    16
+                           IC702    1
+                           IC702    2
+                           IC702    3
+                           IC702    4
+                           IC702    7
+                           IC801    1
+                           IC801    105
+                           IC801    112
+                           IC801    118
+                           IC801    129
+                           IC801    134
+                           IC801    14
+                           IC801    145
+                           IC801    151
+                           IC801    157
+                           IC801    163
+                           IC801    170
+                           IC801    179
+                           IC801    186
+                           IC801    195
+                           IC801    202
+                           IC801    25
+                           IC801    30
+                           IC801    41
+                           IC801    47
+                           IC801    53
+                           IC801    59
+                           IC801    66
+                           IC801    75
+                           IC801    8
+                           IC801    82
+                           IC801    91
+                           IC801    99
+                           IC802    11
+                           J1902    1
+                           J1904    2
+                           J801     14
+                           J801     16
+                           J801     18
+                           J801     20
+                           LED1801  C
+                           LED1802  C
+                           LED201   C
+                           LED2107  C
+                           LED2108  C
+                           LED2301  C
+                           LED2302  C
+                           LED2304  C
+                           LED2401  C
+                           LED2402  C
+                           LED2403  C
+                           R1201    1
+                           R1202    1
+                           R1402    1
+                           R1404    1
+                           R201     1
+                           R202     1
+                           R204     1
+                           R207     1
+                           R208     1
+                           R2301    2
+                           R2302    2
+                           R2303    2
+                           R2305    2
+                           R2401    2
+                           R2402    2
+                           R2403    2
+                           R2405    2
+                           R302     1
+                           R308     1
+                           R404     1
+                           R501     1
+                           R502     1
+                           R805     2
+                           R806     2
+                           R807     2
+                           S1801    1
+                           S1801    3
+                           S1802    1
+                           S1802    3
+                           T1901    2
+                           T1902    2
+                           T2101    2
+                           T2102    2
+                           T2103    2
+                           T2104    2
+                           T2105    2
+                           T2106    2
+                           T2109    2
+                           T2110    2
+                           T2111    2
+                           T2112    2
+                           T2201    2
+                           T2202    2
+                           T2203    2
+                           T2204    2
+                           T2205    2
+                           T2206    2
+                           T2207    2
+                           T2208    2
+                           T2307    2
+                           T2308    2
+                           T2407    2
+                           T2408    2
+                           T301     2
+                           T302     2
+                           T303     2
+                           T304     2
+                           T305     2
+                           T306     2
+                           T401     2
+                           X101     1
+                           X102     1
+                           X102     3
+                           X102     5
+                           X102     7
+                           X102     9
+                           X103     1
+                           X103     2
+                           X103     3
+                           X104     10
+                           X104     12
+                           X104     14
+                           X104     16
+                           X104     18
+                           X104     2
+                           X104     20
+                           X104     22
+                           X104     24
+                           X104     26
+                           X104     4
+                           X104     6
+                           X104     8
+                           X105     1
+                           X105     2
+                           X105     3
+                           X106     10
+                           X106     12
+                           X106     14
+                           X106     16
+                           X106     18
+                           X106     2
+                           X106     20
+                           X106     22
+                           X106     24
+                           X106     26
+                           X106     4
+                           X106     6
+                           X106     8
+                           X107     1
+                           X107     2
+                           X107     3
+                           X1201    2
+                           X1201    4
+                           X1201    6
+                           X1201    8
+                           X1202    2
+                           X1202    4
+                           X1202    6
+                           X1202    8
+                           X1701    1
+                           X1701    11
+                           X1701    13
+                           X1701    15
+                           X1701    17
+                           X1701    19
+                           X1701    21
+                           X1701    23
+                           X1701    25
+                           X1701    27
+                           X1701    29
+                           X1701    3
+                           X1701    31
+                           X1701    33
+                           X1701    35
+                           X1701    37
+                           X1701    39
+                           X1701    5
+                           X1701    7
+                           X1701    9
+                           X1702    1
+                           X1702    11
+                           X1702    13
+                           X1702    15
+                           X1702    17
+                           X1702    19
+                           X1702    21
+                           X1702    23
+                           X1702    25
+                           X1702    27
+                           X1702    29
+                           X1702    3
+                           X1702    31
+                           X1702    33
+                           X1702    35
+                           X1702    37
+                           X1702    39
+                           X1702    5
+                           X1702    7
+                           X1702    9
+                           X301     1
+                           X301     2
+                           X301     3
+                           X501     2
+                           X501     4
+                           X501     6
+                           X501     8
+                           X502     2
+                           X502     4
+                           X502     6
+                           X502     8
+
+I2C_SCL                    IC1201   32
+                           IC1301   3
+                           IC1302   3
+                           IC702    6
+                           IC801    51
+                           R1301    1
+                           T1901    1
+                           X1701    28
+
+I2C_SCL_LED                LED1901  C
+                           R1901    2
+
+I2C_SCL_TR                 R1901    1
+                           T1901    3
+
+I2C_SDA                    IC1201   31
+                           IC1301   4
+                           IC1302   4
+                           IC702    5
+                           IC801    52
+                           R1302    1
+                           T1902    1
+                           X1701    26
+
+I2C_SDA_LED                LED1902  C
+                           R1902    2
+
+I2C_SDA_TR                 R1902    1
+                           T1902    3
+
+MEM_A0                     IC601    12
+                           IC602    12
+                           IC603    12
+                           IC701    12
+                           IC801    122
+
+MEM_A1                     IC601    11
+                           IC602    11
+                           IC603    11
+                           IC701    11
+                           IC801    123
+
+MEM_A2                     IC601    10
+                           IC602    10
+                           IC603    10
+                           IC701    10
+                           IC801    124
+
+MEM_A3                     IC601    9
+                           IC602    9
+                           IC603    9
+                           IC701    9
+                           IC801    125
+
+MEM_A4                     IC601    8
+                           IC602    8
+                           IC603    8
+                           IC701    8
+                           IC801    126
+
+MEM_A5                     IC601    7
+                           IC602    7
+                           IC603    7
+                           IC701    7
+                           IC801    128
+
+MEM_A6                     IC601    6
+                           IC602    6
+                           IC603    6
+                           IC701    6
+                           IC801    130
+
+MEM_A7                     IC601    5
+                           IC602    5
+                           IC603    5
+                           IC701    5
+                           IC801    131
+
+MEM_A8                     IC601    27
+                           IC602    27
+                           IC603    27
+                           IC701    27
+                           IC801    132
+
+MEM_A9                     IC601    26
+                           IC602    26
+                           IC603    26
+                           IC701    26
+                           IC801    133
+
+MEM_A10                    IC601    23
+                           IC602    23
+                           IC603    23
+                           IC701    23
+                           IC801    135
+
+MEM_A11                    IC601    25
+                           IC602    25
+                           IC603    25
+                           IC701    25
+                           IC801    137
+
+MEM_A12                    IC601    4
+                           IC602    4
+                           IC603    4
+                           IC701    4
+                           IC801    138
+
+MEM_A13                    IC601    28
+                           IC602    28
+                           IC603    28
+                           IC701    28
+                           IC801    139
+
+MEM_A14                    IC601    3
+                           IC602    3
+                           IC603    3
+                           IC701    29
+                           IC801    140
+
+MEM_A15                    IC601    31
+                           IC602    31
+                           IC603    31
+                           IC701    3
+                           IC801    141
+
+MEM_A16                    IC601    2
+                           IC602    2
+                           IC603    2
+                           IC701    2
+                           IC801    143
+
+MEM_A17                    IC601    30
+                           IC602    30
+                           IC603    30
+                           IC701    30
+                           IC801    144
+
+MEM_A18                    IC601    1
+                           IC602    1
+                           IC603    1
+                           IC701    1
+                           IC801    146
+
+MEM_D0                     IC602    13
+                           IC603    13
+                           IC701    13
+                           IC801    106
+
+MEM_D1                     IC602    14
+                           IC603    14
+                           IC701    14
+                           IC801    107
+
+MEM_D2                     IC602    15
+                           IC603    15
+                           IC701    15
+                           IC801    108
+
+MEM_D3                     IC602    17
+                           IC603    17
+                           IC701    17
+                           IC801    109
+
+MEM_D4                     IC602    18
+                           IC603    18
+                           IC701    18
+                           IC801    111
+
+MEM_D5                     IC602    19
+                           IC603    19
+                           IC701    19
+                           IC801    113
+
+MEM_D6                     IC602    20
+                           IC603    20
+                           IC701    20
+                           IC801    114
+
+MEM_D7                     IC602    21
+                           IC603    21
+                           IC701    21
+                           IC801    115
+
+MON_SP_1_DIO_1_ADJ_LED_A   LED2201  A
+                           R2201    2
+
+MON_SP_1_DIO_1_ADJ_LED_C   LED2201  C
+                           T2201    3
+
+MON_SP_1_DIO_1_P3V3_LED_A  LED2205  A
+                           R2205    2
+
+MON_SP_1_DIO_1_P3V3_LED_C  LED2205  C
+                           T2205    3
+
+MON_SP_1_DIO_2_ADJ_LED_A   LED2203  A
+                           R2203    2
+
+MON_SP_1_DIO_2_ADJ_LED_C   LED2203  C
+                           T2203    3
+
+MON_SP_1_DIO_2_P3V3_LED_A  LED2207  A
+                           R2207    2
+
+MON_SP_1_DIO_2_P3V3_LED_C  LED2207  C
+                           T2207    3
+
+MON_SP_1_FAIL_LED_A        LED2111  A
+                           R2111    2
+
+MON_SP_1_FAIL_LED_C        LED2111  C
+                           T2111    3
+
+MON_SP_1_TCK_LED_A         LED2101  A
+                           R2101    2
+
+MON_SP_1_TCK_LED_C         LED2101  C
+                           T2101    3
+
+MON_SP_1_TDI_LED_A1        LED2109  A
+                           R2109    2
+
+MON_SP_1_TDI_LED_C1        LED2109  C
+                           T2109    3
+
+MON_SP_1_TDO_LED_A1        LED2105  A
+                           R2105    2
+
+MON_SP_1_TDO_LED_C1        LED2105  C
+                           T2105    3
+
+MON_SP_1_TMS_LED_A1        LED2103  A
+                           R2103    1
+
+MON_SP_1_TMS_LED_C1        LED2103  C
+                           T2103    3
+
+MON_SP_1_TRST_LED_A        LED2107  A
+                           R2107    2
+
+MON_SP_1_VCC_P1V5_LED_A    LED2301  A
+                           R2304    1
+
+MON_SP_1_VCC_P1V8_LED_A    LED2302  A
+                           R2306    2
+
+MON_SP_1_VCC_P2V5_LED_A    LED2304  A
+                           R2309    2
+
+MON_SP_1_VCC_P3V3_D        R2307    2
+                           T2307    3
+                           T2308    1
+
+MON_SP_1_VCC_P3V3_G        D2301    C
+                           D2302    C
+                           D2303    C
+                           R2305    1
+                           T2307    1
+
+MON_SP_1_VCC_P3V3_LED_A    LED2303  A
+                           R2308    2
+
+MON_SP_1_VCC_P3V3_LED_C    LED2303  C
+                           T2308    3
+
+MON_SP_2_DIO_1_ADJ_LED_A   LED2202  A
+                           R2202    2
+
+MON_SP_2_DIO_1_ADJ_LED_C   LED2202  C
+                           T2202    3
+
+MON_SP_2_DIO_1_P3V3_LED_A  LED2206  A
+                           R2206    2
+
+MON_SP_2_DIO_1_P3V3_LED_C1 LED2206  C
+                           T2206    3
+
+MON_SP_2_DIO_2_ADJ_LED_A   LED2204  A
+                           R2204    2
+
+MON_SP_2_DIO_2_ADJ_LED_C   LED2204  C
+                           T2204    3
+
+MON_SP_2_DIO_2_P3V3_LED_A  LED2208  A
+                           R2208    2
+
+MON_SP_2_DIO_2_P3V3_LED_C  LED2208  C
+                           T2208    3
+
+MON_SP_2_FAIL_LED_A        LED2112  A
+                           R2112    2
+
+MON_SP_2_FAIL_LED_C        LED2112  C
+                           T2112    3
+
+MON_SP_2_TCK_LED_A1        LED2102  A
+                           R2102    2
+
+MON_SP_2_TCK_LED_C1        LED2102  C
+                           T2102    3
+
+MON_SP_2_TDI_LED_A2        LED2110  A
+                           R2110    2
+
+MON_SP_2_TDI_LED_C2        LED2110  C
+                           T2110    3
+
+MON_SP_2_TDO_LED_A2        LED2106  A
+                           R2106    2
+
+MON_SP_2_TDO_LED_C2        LED2106  C
+                           T2106    3
+
+MON_SP_2_TMS_LED_A2        LED2104  A
+                           R2104    1
+
+MON_SP_2_TMS_LED_C2        LED2104  C
+                           T2104    3
+
+MON_SP_2_TRST_LED_A        LED2108  A
+                           R2108    2
+
+MON_SP_2_VCC_P1V5_LED_A    LED2401  A
+                           R2404    1
+
+MON_SP_2_VCC_P1V8_LED_A    LED2402  A
+                           R2406    2
+
+MON_SP_2_VCC_P2V5_LED_A    LED2403  A
+                           R2408    2
+
+MON_SP_2_VCC_P3V3_D        R2407    2
+                           T2407    3
+                           T2408    1
+
+MON_SP_2_VCC_P3V3_G        D2401    C
+                           D2402    C
+                           D2403    C
+                           R2405    1
+                           T2407    1
+
+MON_SP_2_VCC_P3V3_LED_A    LED2404  A
+                           R2409    2
+
+MON_SP_2_VCC_P3V3_LED_C    LED2404  C
+                           T2408    3
+
+OBI_1                      IC1201   139
+                           IC801    36
+
+OBI_2                      IC1201   52
+                           IC801    4
+                           TP1904   1
+
+OBI_3                      IC1201   51
+                           IC801    10
+                           TP1903   1
+
+OBI_4                      IC1201   45
+                           IC801    11
+                           TP1902   1
+
+OBI_5                      IC1201   43
+                           IC801    12
+                           TP1901   1
+
+OBI_6                      IC1201   140
+                           IC801    29
+
+OBI_7                      IC1201   22
+                           IC601    21
+                           IC801    50
+
+OBI_8                      IC1201   21
+                           IC601    20
+                           IC801    48
+
+OBI_9                      IC1201   20
+                           IC601    19
+                           IC801    46
+
+OBI_10                     IC1201   19
+                           IC601    18
+                           IC801    45
+
+OSC_RC                     C401     1
+                           IC401    5
+                           IC401    6
+                           R403     2
+
+P1V2                       C1117    1
+                           C1118    1
+                           C1119    1
+                           C1120    1
+                           IC801    174
+                           IC801    192
+                           IC801    70
+                           IC801    88
+                           J201     2
+
+P1V8                       C1603    1
+                           C1606    1
+                           C1609    1
+                           IC1201   1
+                           IC1201   37
+                           IC1201   84
+                           J204     2
+
+P2V5                       C1114    1
+                           C802     1
+                           C803     1
+                           C804     1
+                           C805     1
+                           C806     1
+                           C807     1
+                           C808     1
+                           C809     1
+                           C810     1
+                           C811     1
+                           IC801    121
+                           IC801    142
+                           IC801    17
+                           IC801    173
+                           IC801    193
+                           IC801    38
+                           IC801    69
+                           IC801    84
+                           IC801    89
+                           IC801    98
+                           IC802    19
+                           IC802    20
+                           J202     2
+                           J501     1
+                           J801     10
+                           J801     6
+                           J801     8
+                           R801     2
+                           R802     2
+                           R803     2
+                           R804     2
+
+P3V3                       C1101    1
+                           C1102    1
+                           C1103    1
+                           C1104    1
+                           C1105    1
+                           C1106    1
+                           C1107    1
+                           C1108    1
+                           C1109    1
+                           C1110    1
+                           C1111    1
+                           C1112    1
+                           C1113    1
+                           C1115    1
+                           C1116    1
+                           C1401    2
+                           C1602    1
+                           C1605    1
+                           C1608    1
+                           C1611    1
+                           C2002    1
+                           C403     1
+                           C601     1
+                           C602     1
+                           C603     1
+                           C701     1
+                           C702     1
+                           C801     1
+                           D1401    2
+                           D1402    2
+                           D401     C
+                           IC1101   4
+                           IC1201   141
+                           IC1201   27
+                           IC1201   55
+                           IC1201   8
+                           IC1301   8
+                           IC1302   8
+                           IC1401   8
+                           IC2001   14
+                           IC401    14
+                           IC601    32
+                           IC602    32
+                           IC603    32
+                           IC701    32
+                           IC702    8
+                           IC801    110
+                           IC801    127
+                           IC801    136
+                           IC801    153
+                           IC801    164
+                           IC801    177
+                           IC801    188
+                           IC801    201
+                           IC801    23
+                           IC801    32
+                           IC801    49
+                           IC801    6
+                           IC801    60
+                           IC801    73
+                           IC802    18
+                           J1201    1
+                           J1901    1
+                           J1903    2
+                           J205     2
+                           LED1701  A
+                           LED1702  A
+                           LED1703  A
+                           LED1704  A
+                           LED1705  A
+                           LED1706  A
+                           LED1707  A
+                           LED1708  A
+                           LED1901  A
+                           LED1902  A
+                           R1301    2
+                           R1302    2
+                           R1401    2
+                           R1403    2
+                           R1803    2
+                           R1804    2
+                           R2101    1
+                           R2102    1
+                           R2103    2
+                           R2104    2
+                           R2105    1
+                           R2106    1
+                           R2109    1
+                           R2110    1
+                           R2111    1
+                           R2112    1
+                           R2201    1
+                           R2202    1
+                           R2203    1
+                           R2204    1
+                           R2205    1
+                           R2206    1
+                           R2207    1
+                           R2208    1
+                           R2307    1
+                           R2308    1
+                           R2407    1
+                           R2409    1
+                           R401     1
+                           R402     1
+                           R404     2
+                           R406     2
+                           R407     2
+                           R701     2
+                           R702     2
+                           R703     2
+                           R704     2
+                           RN301    6
+                           RN301    7
+                           RN301    8
+                           RN302    6
+                           RN302    7
+                           RN302    8
+                           T2107    2
+                           T2108    2
+                           T2301    2
+                           T2302    2
+                           T2303    2
+                           T2304    2
+                           T2305    2
+                           T2306    2
+                           T2401    2
+                           T2402    2
+                           T2403    2
+                           T2404    2
+                           T2405    2
+                           T2406    2
+
+P5V                        C1301    1
+                           C1302    1
+                           IC1301   7
+                           IC1302   6
+                           IC1302   7
+                           J203     2
+
+PWR_ADJ_P1V8               IC204    1
+                           R207     2
+                           R209     1
+
+PWR_ADJ_P2V5               IC202    1
+                           R201     2
+                           R205     1
+
+PWR_ADJ_P3V3               IC205    1
+                           R208     2
+                           R210     1
+
+PWR_ADJ_P5V                IC203    1
+                           R202     2
+                           R203     1
+
+PWR_IN                     D101     A
+                           X101     2
+
+PWR_IN_PROT                C101     +
+                           C201     1
+                           C202     1
+                           C203     1
+                           C207     1
+                           C208     1
+                           C301     1
+                           C303     1
+                           D101     C
+                           IC201    3
+                           IC202    3
+                           IC203    3
+                           IC204    3
+                           IC205    3
+                           IC301    3
+                           IC302    3
+
+PWR_LED_P5V                LED201   A
+                           R206     1
+
+PWR_P1V2                   C205     1
+                           IC201    2
+                           J201     1
+                           R204     2
+                           TP202    1
+
+PWR_P1V8                   C209     1
+                           IC204    2
+                           J204     1
+                           R209     2
+                           TP204    1
+
+PWR_P2V5                   C206     1
+                           IC202    2
+                           J202     1
+                           R205     2
+                           TP203    1
+
+PWR_P3V3                   C210     1
+                           IC205    2
+                           J205     1
+                           R210     2
+                           TP205    1
+
+PWR_P5V                    C204     1
+                           IC203    2
+                           J203     1
+                           R203     2
+                           R206     2
+                           TP201    1
+
+RAM_IN_CS_N                IC601    22
+                           IC801    117
+                           R701     1
+
+RAM_OE_N                   IC601    24
+                           IC602    24
+                           IC603    24
+                           IC701    24
+                           IC801    120
+
+RAM_OUT_CS_1_N             IC602    22
+                           IC801    116
+                           R702     1
+
+RAM_OUT_CS_2_N             IC603    22
+                           IC801    147
+                           R703     1
+
+RAM_WE_N                   IC601    29
+                           IC602    29
+                           IC603    29
+                           IC701    31
+                           IC801    119
+                           X1702    34
+
+RESET_RC_N                 C402     +
+                           D401     A
+                           IC401    1
+                           IC401    2
+                           R405     1
+                           R406     1
+
+RESET_SWITCH_N             R405     2
+                           X1701    40
+
+ROM_CS_N                   IC701    22
+                           IC801    148
+                           R704     1
+
+SP_1_DIO_1_ADJ             IC1201   102
+                           T2201    1
+                           X104     11
+
+SP_1_DIO_1_P3V3            IC1201   135
+                           T2205    1
+                           X104     15
+
+SP_1_DIO_2_ADJ             IC1201   105
+                           T2203    1
+                           X104     13
+
+SP_1_DIO_2_P3V3            IC1201   136
+                           T2207    1
+                           X104     17
+
+SP_1_FAIL_FPGA             IC601    14
+                           IC801    63
+                           T2111    1
+
+SP_1_TCK                   IC1201   104
+                           T2101    1
+                           X104     1
+
+SP_1_TCK_FPGA              IC1201   9
+                           IC801    76
+
+SP_1_TDI                   D1401    3
+                           IC1401   3
+                           TP1401   1
+                           X104     5
+
+SP_1_TDI_COMP              IC1201   137
+                           IC1401   6
+                           T2109    1
+                           TP1405   1
+
+SP_1_TDI_FPGA              IC1201   17
+                           IC601    13
+                           IC801    78
+
+SP_1_TDI_VREF              IC1301   1
+                           IC1401   4
+                           R1401    1
+                           R1402    2
+                           TP1402   1
+                           X1701    2
+
+SP_1_TDO                   IC1201   107
+                           T2105    1
+                           X104     7
+
+SP_1_TDO_FPGA              IC1201   11
+                           IC801    68
+
+SP_1_TMS                   IC1201   103
+                           T2103    1
+                           X104     3
+
+SP_1_TMS_FPGA              IC1201   10
+                           IC801    74
+
+SP_1_TRST_D                R2107    1
+                           T2107    3
+
+SP_1_TRST_FPGA             IC1201   12
+                           IC801    65
+
+SP_1_TRST_N                IC1201   106
+                           T2107    1
+                           X104     9
+
+SP_1_VCC                   C1601    1
+                           C1604    1
+                           IC1201   109
+                           IC1201   127
+                           J301     2
+
+SP_1_VCC_ADJ               IC301    1
+                           R301     2
+                           R302     2
+                           R303     2
+                           R304     1
+                           R305     2
+
+SP_1_VCC_P1V5_D            R301     1
+                           T301     3
+
+SP_1_VCC_P1V5_SET          IC1201   134
+                           RN301    3
+                           T2301    1
+                           T301     1
+
+SP_1_VCC_P1V5_SET_N        R2301    1
+                           T2301    3
+                           T2304    1
+
+SP_1_VCC_P1V5_SET_OR       D2303    A
+                           R2304    2
+                           T2304    3
+
+SP_1_VCC_P1V8_D            R303     1
+                           T302     3
+
+SP_1_VCC_P1V8_SET          IC1201   133
+                           RN301    2
+                           T2302    1
+                           T302     1
+
+SP_1_VCC_P1V8_SET_N        R2302    1
+                           T2302    3
+                           T2305    1
+
+SP_1_VCC_P1V8_SET_OR       D2302    A
+                           R2306    1
+                           T2305    3
+
+SP_1_VCC_P2V5_D            R305     1
+                           T303     3
+
+SP_1_VCC_P2V5_SET          IC1201   132
+                           RN301    1
+                           T2303    1
+                           T303     1
+
+SP_1_VCC_P2V5_SET_N        R2303    1
+                           T2303    3
+                           T2306    1
+
+SP_1_VCC_P2V5_SET_OR       D2301    A
+                           R2309    1
+                           T2306    3
+
+SP_1_VCC_REG               C302     1
+                           IC301    2
+                           J301     1
+                           R304     2
+                           TP301    1
+
+SP_2_DIO_1_ADJ             IC1201   87
+                           T2202    1
+                           X106     11
+
+SP_2_DIO_1_P3V3            IC1201   53
+                           T2206    1
+                           X106     15
+
+SP_2_DIO_2_ADJ             IC1201   85
+                           T2204    1
+                           X106     13
+
+SP_2_DIO_2_P3V3            IC1201   54
+                           T2208    1
+                           X106     17
+
+SP_2_FAIL_FPGA             IC601    17
+                           IC801    62
+                           T2112    1
+
+SP_2_TCK                   IC1201   92
+                           T2102    1
+                           X106     1
+
+SP_2_TCK_FPGA              IC1201   13
+                           IC801    77
+
+SP_2_TDI                   D1402    3
+                           IC1401   1
+                           TP1403   1
+                           X106     5
+
+SP_2_TDI_COMP              IC1201   138
+                           IC1401   7
+                           T2110    1
+                           TP1406   1
+
+SP_2_TDI_FPGA              IC1201   18
+                           IC601    15
+                           IC801    71
+
+SP_2_TDI_VREF              IC1302   1
+                           IC1401   2
+                           R1403    1
+                           R1404    2
+                           TP1404   1
+                           X1701    4
+
+SP_2_TDO                   IC1201   88
+                           T2106    1
+                           X106     7
+
+SP_2_TDO_FPGA              IC1201   15
+                           IC801    67
+
+SP_2_TMS                   IC1201   91
+                           T2104    1
+                           X106     3
+
+SP_2_TMS_FPGA              IC1201   14
+                           IC801    72
+
+SP_2_TRST_D                R2108    1
+                           T2108    3
+
+SP_2_TRST_FPGA             IC1201   16
+                           IC801    64
+
+SP_2_TRST_N                IC1201   86
+                           T2108    1
+                           X106     9
+
+SP_2_VCC                   C1607    1
+                           C1610    1
+                           IC1201   73
+                           IC1201   93
+                           J302     2
+
+SP_2_VCC_ADJ               IC302    1
+                           R306     2
+                           R307     2
+                           R308     2
+                           R309     2
+                           R310     1
+
+SP_2_VCC_P1V5_D            R306     1
+                           T304     3
+
+SP_2_VCC_P1V5_SET          IC1201   131
+                           RN302    3
+                           T2401    1
+                           T304     1
+
+SP_2_VCC_P1V5_SET_N        R2401    1
+                           T2401    3
+                           T2404    1
+
+SP_2_VCC_P1V5_SET_OR       D2403    A
+                           R2404    2
+                           T2404    3
+
+SP_2_VCC_P1V8_D            R307     1
+                           T305     3
+
+SP_2_VCC_P1V8_SET          IC1201   130
+                           RN302    2
+                           T2402    1
+                           T305     1
+
+SP_2_VCC_P1V8_SET_N        R2402    1
+                           T2402    3
+                           T2405    1
+
+SP_2_VCC_P1V8_SET_OR       D2402    A
+                           R2406    1
+                           T2405    3
+
+SP_2_VCC_P2V5_D            R309     1
+                           T306     3
+
+SP_2_VCC_P2V5_SET          IC1201   129
+                           RN302    1
+                           T2403    1
+                           T306     1
+
+SP_2_VCC_P2V5_SET_N        R2403    1
+                           T2403    3
+                           T2406    1
+
+SP_2_VCC_P2V5_SET_OR       D2401    A
+                           R2408    1
+                           T2406    3
+
+SP_2_VCC_REG               C304     1
+                           IC302    2
+                           J302     1
+                           R310     2
+                           TP302    1
+
+ST_1_IN                    IC401    12
+                           IC401    13
+                           R401     2
+                           X1701    18
+
+ST_1_OUT                   IC401    11
+                           IC801    166
+                           X1701    22
+
+ST_2_IN                    IC401    8
+                           IC401    9
+                           R402     2
+                           X1701    20
+
+ST_2_OUT                   IC401    10
+                           IC801    165
+                           X1701    24
+
+SYS_RESET                  IC401    3
+                           T401     1
+
+SYS_RESET_LED              LED1707  C
+                           R1707    2
+
+SYS_RESET_N                IC1201   35
+                           IC801    182
+                           R1707    1
+                           R407     1
+                           T401     3
+                           X1701    38
+
+TEST_1_TCK                 IC801    159
+                           IC802    6
+                           R501     2
+                           X501     1
+                           X502     1
+
+TEST_1_TDI                 IC801    208
+                           RN501    2
+                           X501     7
+                           X502     7
+
+TEST_1_TDO                 IC802    17
+                           RN501    3
+                           X501     5
+                           X502     5
+
+TEST_1_TMS                 IC801    160
+                           IC802    5
+                           R502     2
+                           X501     3
+                           X502     3
+
+TEST_1_VREF                J501     2
+                           RN501    6
+                           RN501    7
+                           X501     10
+                           X502     10
+
+TEST_2_TCK                 IC1201   67
+                           R1201    2
+                           X1201    1
+                           X1202    1
+
+TEST_2_TDI                 IC1201   63
+                           RN1201   2
+                           X1201    7
+                           X1202    7
+
+TEST_2_TDO                 IC1201   122
+                           RN1201   3
+                           X1201    5
+                           X1202    5
+
+TEST_2_TMS                 IC1201   65
+                           R1202    2
+                           X1201    3
+                           X1202    3
+
+TEST_2_VREF                J1201    2
+                           RN1201   6
+                           RN1201   7
+                           X1201    10
+                           X1202    10
+
+TEST_TDI_PROM              IC802    4
+                           J801     2
+                           R801     1
+
+TEST_TDO_FPGA              IC801    158
+                           J801     1
+
+UART_CTS                   IC801    199
+                           X102     4
+
+UART_RTS                   IC801    198
+                           X102     2
+
+UART_RXD                   IC801    203
+                           X102     8
+
+UART_TXD                   IC801    200
+                           X102     6
+

@@ -40,12 +40,12 @@ bsmcl compile $database_ram_out_2 ram_out_2
 bsmcl generate $database_ram_in memconnect ram_in IC601 models/AS6C4008.txt NDIP32
 bsmcl compile $database_ram_in ram_in
 
-#bsmcl generate $database_clock_test clock clk_slow IC801 154 10 1
+# bsmcl generate $database_clock_test clock clk_slow IC801 154 10 1
 #manually modified for intrusive mode
 bsmcl compile $database_clock_test clk_slow
 
-#bsmcl generate $database_clock_test clock clk_master IC801 181 10 0.1
-#manually modified for intrusive mode
+# bsmcl generate $database_clock_test clock clk_master IC801 181 10 0.1
+# manually modified for intrusive mode
 bsmcl compile $database_clock_test clk_master
 
 #cluster tests

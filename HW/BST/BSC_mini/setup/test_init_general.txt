@@ -1,0 +1,17 @@
+
+ delay 0.2
+ power up gnd       -- connects supply GND with UUT. NOTE: similar commands: power up/down gnd,1,2,3,all
+ delay 0.2
+ imax 1 0.5 timeout 2 -- set maximum current of power channel 1 to 1 A , timeout to shutdown is 2 sec 
+-- imax 2 0.5 timeout 2 -- NOTE: max. current range: 0.1 to 5 Amps | timeout range: 0.02 to 5 sec
+-- imax 3 0.5 timeout 2
+ power up 1
+-- power up 2
+-- power up 3
+ delay 1            -- wait for UUT power to settle down -- unit is seconds, max. 25sec allowed
+ connect port 1     -- connect TAP 1 signals with UUT. NOTE: similar commands: (dis)connect port 1,2
+ connect port 2
+ delay 0.2
+ -- test begin
+
+ trst -- hard+soft scanpath reset. NOTE: similar commands: strst,htrst (for soft/hard scanpath reset)

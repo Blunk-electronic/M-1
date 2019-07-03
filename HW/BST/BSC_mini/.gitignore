@@ -3,3 +3,7 @@
 *.reg
 *.udb
 mkoptions.conf
+*/netlist.txt
+setup/journal.txt
+skeleton.txt
+messages
