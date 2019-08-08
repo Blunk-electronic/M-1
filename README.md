@@ -1,4 +1,4 @@
-# M-1
+# SYSTEM M-1
 ## An OpenSource Boundary Scan Test System (JTAG / IEEE1149.x) for:
 - design checking
 - low level hardware testing and repairing
@@ -6,9 +6,9 @@
 - bring-up of prototypes and systems
 - system testing in the field
 
-### Test Pattern Generators and UUT datastructures open for:
-- In-Circuit and Flying Probe Test
-- optical inspection (AOI/AXI)
+### Test Pattern Generators and UUT data structures open for:
+- interaction with In-Circuit and Flying Probe Test
+- interaction optical inspection (AOI/AXI)
 - customer specific requirements and extensions
 
 ### Special Features
@@ -23,8 +23,16 @@
 - the boundary scan controller for training, development and education:
 ![BSC mini](HW/img/bsc_mini.jpg)
 
-### More
+#### Why Ada ??
+- The only programming language that provides a robust and strong typing system is Ada.
+- Objects and structures within such a test system are very complex things and require sound modelling.
+- If saftey/mission critical and military applications use Ada, then is must be good for an advanced ECAD system as well.
+- Ada is defined by ISO/IEC 8652:2012 and MIL-STD-1815
+- Ada is beautiful :-)
+
+### More Download Stuff
 - find training material and user manual at http://www.blunk-electronic.de/products.html
 
-### WE LOOK FORWARD TO WORK WITH YOU !
-
+### Collaboration
+- We need a nice web site for the project.
+- You are highly welcome !
