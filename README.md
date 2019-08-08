@@ -24,7 +24,7 @@
 - the boundary scan controller for training, development and education:
 ![BSC mini](HW/img/bsc_mini.jpg)
 
-#### Why Ada ??
+### Why Ada ??
 - The only programming language that provides a robust and strong typing system is Ada.
 - Objects and structures within such a test system are very complex things and require sound modelling.
 - If saftey/mission critical and military applications use Ada, then is must be good for such a system as well.
