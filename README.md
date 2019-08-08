@@ -16,6 +16,9 @@ Special Features:
 - source code written in Ada (for mission critical applications)
 - rugged boundary scan controller hardware
 
+Boundary Scan Controller OpenSourced:
+![BSC mini](HW/img/bsc_mini.jpg)
+
 Find more colorful details at:
 http://www.blunk-electronic.de/products.html
 
