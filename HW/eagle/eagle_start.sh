@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-BASE_DIR="../.."
+BASE_DIR="../../.."
 
 DFLT_EPF_PATH="."
 DFLT_LBR_PATH="$BASE_DIR/lbr_eagle/lbr/misc:$BASE_DIR/lbr_eagle/lbr/passive:$BASE_DIR/lbr_eagle/lbr/active"
