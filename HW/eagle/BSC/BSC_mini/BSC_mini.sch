@@ -9310,7 +9310,7 @@ date: 2015-10-16</description>
 <text x="403.86" y="355.6" size="1.27" layer="97" font="fixed">bei 12V nom.</text>
 <text x="403.86" y="353.06" size="1.27" layer="97" font="fixed">45mA alle Jumper offen</text>
 <text x="403.86" y="322.58" size="1.27" layer="97" font="fixed">450mA alle Spannungsregler jumper zu</text>
-<text x="403.86" y="342.9" size="1.27" layer="97" font="fixed">120mA wenn 1,25V jumper geschlossen</text>
+<text x="403.86" y="342.9" size="1.27" layer="97" font="fixed">120..160mA wenn 1,25V jumper geschlossen</text>
 <text x="403.86" y="347.98" size="1.27" layer="97" font="fixed">inbetriebname:</text>
 <text x="403.86" y="345.44" size="1.27" layer="97" font="fixed">-----------------------------------</text>
 <text x="403.86" y="340.36" size="1.27" layer="97" font="fixed">90mA wenn 2,5V jumper geschlossen</text>
@@ -10228,6 +10228,8 @@ date: 2015-10-16</description>
 <text x="38.1" y="35.56" size="1.27" layer="91" font="fixed">invalid ?</text>
 <text x="149.86" y="35.56" size="1.27" layer="91" font="fixed">invalid ?</text>
 <text x="71.12" y="152.4" size="1.27" layer="97" font="fixed">5.2mA</text>
+<text x="66.04" y="165.1" size="1.778" layer="97" font="fixed">P3V3 when J301 open</text>
+<text x="190.5" y="165.1" size="1.778" layer="97" font="fixed">P3V3 when J302 open</text>
 </plain>
 <instances>
 <instance part="FRAME_PRODUCT23" gate="G$1" x="0" y="0" smashed="yes">
