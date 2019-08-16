@@ -91,7 +91,7 @@ Section CONF_PROG_B class PU -- single bscan net allowed class DH DL NR
   -- R803 NA 4k7 S_0805 1 
 EndSection
 
-Section CTRL_IN_START_N class NR -- single bscan net
+Section CTRL_IN_START_N class EH -- single bscan net
   -- C1801 NA 100n S_0805 1 
   -- IC801 NA XC3S400-4PQG208C S_PQ208 35 IO_P35 | 349 BC_2 INPUT X | 348 BC_2 OUTPUT3 X 347 1 PULL0
   -- R1803 NA 1M S_0805 1 
@@ -100,7 +100,7 @@ Section CTRL_IN_START_N class NR -- single bscan net
   -- X1701 NA none T_MALE_2X20_VERTICAL_GRID_2.54MM 34 
 EndSection
 
-Section CTRL_IN_STOP_N class NR -- single bscan net
+Section CTRL_IN_STOP_N class EH -- single bscan net
   -- C1802 NA 100n S_0805 1 
   -- IC801 NA XC3S400-4PQG208C S_PQ208 34 IO_P34 | 346 BC_2 INPUT X | 345 BC_2 OUTPUT3 X 344 1 PULL0
   -- R1804 NA 1M S_0805 1 
