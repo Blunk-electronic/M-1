@@ -12242,6 +12242,8 @@ in-system-programming</text>
 <text x="149.86" y="149.225" size="1.27" layer="97" font="fixed">M0-2 must be low per default !
 leave 5-6 / 7-8 / 9-10 open.</text>
 <text x="154.94" y="157.48" size="1.27" layer="97" font="fixed">1-2 closed</text>
+<text x="139.7" y="134.62" size="1.27" layer="97" font="fixed">close 19-20 for BST</text>
+<text x="65.405" y="137.795" size="1.27" layer="97" font="fixed">5MHz</text>
 </plain>
 <instances>
 <instance part="GND73" gate="1" x="139.7" y="139.7" smashed="yes" rot="R90">
