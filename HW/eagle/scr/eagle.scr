@@ -1,0 +1,158 @@
+# EAGLE CONFIGURATION SCRIPT
+############################################################
+# This script is executed automaticall every time eagle is started.
+
+# The two letters "CS" indicate a "construction site" where things are not
+# finished yet or intended for the future.
+
+
+# EVERYTHING THAT SHALL BE EXECUTED IN THE LAYOUT EDITOR:
+############################################################
+BRD:
+GRI mm;
+GRI 1;
+GRI alt mm;
+GRI alt 0.2;
+CHANGE font vector;
+CHANGE shape round;
+SET size_menu 0.5 0.6 0.8 1 1.25 1.5 2 3 4 0.25;
+SET width_menu 0 0.1 0.15 0.5 1 2 3 4 0.25;
+SET drill_menu 0.3 0.8 1 1.5 2 3 4 0.6;
+CHANGE size 1;
+CHANGE width 0.15;
+CHANGE ratio 13;
+CHANGE drill 0.3;
+
+ASSIGN CTRL+B disp none doc dim bpla bdoc bnam bval borig;
+ASSIGN CTRL+T disp none doc dim tpla tdoc tnam tval torig;
+
+ASSIGN ALT+T disp none dim doc tpla tnam tval top via pad
+ASSIGN ALT+B disp none dim doc bpla bnam bval bot via pad
+
+#ASSIGN ALT+R 'script rats'; #RIP @; DISP -2 -15;
+ASSIGN ALT+R rats; rip @;
+
+#ASSIGN ALT+V VIA;
+ASSIGN ALT+D 'drc;';
+
+# SET Option.AutoSetRouteWidthAndDrill 1;
+SET pad on;
+
+layer 53 tCopper;
+#SET color_layer tCopper 
+layer 54 bCopper;
+#SET color_layer bCopper 
+
+#SET vector_font on
+
+# MENU 'Tools {\
+# 		New Page : | \
+# 		Make Net/Partlist : | \
+# 			}';
+
+# show these layers on opening a layout (layer 120 contains placement
+# notes):
+display none dim doc tpla tdoc tval 120
+
+
+
+
+# EVERYTHING THAT SHALL BE EXECUTED IN THE SCHEMATIC EDITOR
+############################################################
+SCH:
+#attribute * project '';
+GRI inch;
+GRI 0.1;
+GRI alt inch;
+GRI alt 0.025;
+CHANGE font fixed;
+CHANGE ratio 8;
+SET width_menu 0.006 0.01 0.02;
+SET size_menu 0.1 0.07 0.05;
+CHANGE size 0.05;
+CHANGE width 0.006;
+SET color_layer info 5;
+SET AUTO_JUNCTION ON;
+#CLASS 1 gnd;
+#CLASS 2 supply;
+#CLASS 3 hv;
+
+# Never use shipped libraries incl. managed libraries:
+use -*;
+
+# Use custom libraries only.
+# On Linux uncomment these statements:
+use ../../../lbr_eagle/lbr/misc/*
+use ../../../lbr_eagle/lbr/active/*
+use ../../../lbr_eagle/lbr/passive/*
+
+# On Windows uncomment these statements (CS: test required):
+# use ..\..\..\lbr_eagle\lbr\misc\*
+# use ..\..\..\lbr_eagle\lbr\active\*
+# use ..\..\..\lbr_eagle\lbr\passive\*
+
+
+# MENU 'Tools {\
+# 		#New Page : SCR new_page; | \
+# 		Renumber Devices : RUN renumber-sheet.ulp -i 0 -n 100 -p TPX; | \
+# 		Make BOM : RUN bom.ulp; | \
+# 		#Make Net/Partlist : SCR make_net_part_list; | \
+# 			}';
+
+
+
+
+#
+# EVERYTHING THAT SHALL BE EXECUTED IN THE LIBRARY EDITOR
+############################################################
+LBR:
+
+
+
+
+#
+# EVERYTHING THAT SHALL BE EXECUTED IN THE DEVICE EDITOR
+############################################################
+DEV:
+#ASSIGN CTRL+A ATT commissioned '201x-xx-xx' constant; # nogo
+ASSIGN CTRL+A 'ATT commissioned constant; ATT updated constant; ATT function variable; \
+               ATT part_code_bel variable; ATT part_code_ext variable; ATT bom constant';
+
+               
+               
+
+# EVERYTHING THAT SHALL BE EXECUTED IN THE SYMBOL EDITOR
+############################################################
+SYM:
+CHANGE font fixed;
+GRI default;
+GRI alt 0.025;
+GRI on;
+CHANGE ratio 8;
+SET width_menu 0.006 0.01 0.015 0.02;
+CHANGE width 0.01;
+SET size_menu 0.1 0.07 0.05;
+CHANGE size 0.05;
+
+
+#
+# EVERYTHING THAT SHALL BE EXECUTED IN THE PACKAGE EDITOR
+############################################################
+PAC:
+GRID mm;
+GRID 0.5;
+GRID alt mm;
+GRID alt 0.1;
+GRI on;
+CHANGE ratio 13;
+CHANGE font vector;
+SET diameter_menu 5 4.5 4 3.5 3 2.5 2 1.5 1 auto;
+SET size_menu 0.5 0.6 0.8 1 1.25 1.5 2 3 4 0.25;
+SET width_menu 0.1 0.15 0.5 1 2 3 4 0.25;
+SET drill_menu 0.3 0.8 1 1.5 2 3 4 0.6;
+CHANGE width 0.15;
+CHANGE size 1;
+CHANGE drill 0.8;
+SET diameter auto;
+
+
