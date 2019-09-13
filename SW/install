@@ -3,7 +3,7 @@
 # This is the install script for System M-1. 
 # If started with option "-make" the binaries will not be built.
 
-version=002
+version=003
 
 set -e
 
@@ -85,7 +85,7 @@ procedure_copy_script imporcad
 procedure_copy_script open_report
 procedure_copy_script run_and_log_sequence
 procedure_copy_script mkproject
-procedure_copy_script run_continuous
+procedure_copy_script run-continuous
 #procedure_copy_script set_breakpoint
 
 lib_examples_uut_dir=M-1

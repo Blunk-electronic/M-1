@@ -79,7 +79,7 @@ procedure_remove_script run_and_log_sequence
 #procedure_remove_script version
 #procedure_remove_script stop_sequence
 procedure_remove_script mkproject
-procedure_remove_script run_continuous
+procedure_remove_script run-continuous
 #procedure_remove_script set_breakpoint
 
 lib_examples_uut_dir=M-1
