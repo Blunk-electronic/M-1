@@ -3,7 +3,7 @@
 # This is the install script for System M-1. 
 # If started with option "-make" the binaries will not be built.
 
-version=003
+version=004
 
 set -e
 
@@ -56,8 +56,8 @@ procedure_gnatmake()
 	target=$1
 	echo "-" $target
 	cd src/$target # change into source dir
-	./make_clean.sh
-	./make.sh
+	gprbuild bsmgui
+# 	gprinstall 
 	cd - # change back to origin dir
 	}
 

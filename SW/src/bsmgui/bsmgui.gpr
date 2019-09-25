@@ -2,8 +2,9 @@ with "gtkada.gpr";
 
  project bsmgui is
 
-	for exec_dir use ".";
- 	for object_dir use "obj";
+	--for exec_dir use ".";
+	for exec_dir use external ("HOME") & "/bin";
+	for object_dir use "obj";
  	for source_dirs use ("." , "src" , "src/include");
 -- 
 -- 	for library_kind use "static";
