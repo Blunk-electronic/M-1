@@ -13,3 +13,5 @@ with "gtkada.gpr";
 -- 
  end bsmgui;
 
+-- build with command "gprbuild"
+-- clean up with command "gprclean"

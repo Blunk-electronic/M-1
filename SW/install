@@ -57,7 +57,6 @@ procedure_gnatmake()
 	echo "-" $target
 	cd src/$target # change into source dir
 	gprbuild bsmgui
-# 	gprinstall 
 	cd - # change back to origin dir
 	}
 
